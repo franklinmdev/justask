@@ -2,11 +2,15 @@ import {
 	ask,
 	type Candidate,
 	fuzzyShortlist,
-	type Provider,
 	type ProviderAnswer,
 } from "justask";
 import { describe, expect, it } from "vitest";
-import { fakeProvider } from "./fake-provider.ts";
+import {
+	failingProvider,
+	fakeProvider,
+	hangingProvider,
+	rawProvider,
+} from "./fake-provider.ts";
 
 type Vendor = { id: number; name: string };
 
@@ -34,10 +38,6 @@ const base = {
 	facts: { today: "2026-09-22" },
 	timeoutMs: 1_000,
 };
-
-function provider(answer: () => Promise<ProviderAnswer>): Provider {
-	return { answer };
-}
 
 describe("ask: search", () => {
 	it("fills the item when the provider picks a candidate and none stays below the gate, in one call", async () => {
@@ -133,7 +133,7 @@ describe("ask: search", () => {
 		for (const probabilities of tied) {
 			const result = await ask({
 				...base,
-				provider: provider(async () => ({ search: probabilities })),
+				provider: rawProvider({ search: probabilities }),
 				search: vendorSearch(),
 			});
 
@@ -145,18 +145,11 @@ describe("ask: search", () => {
 	});
 
 	it("holds everything and returns a typed error when the provider fails, without retrying", async () => {
-		let calls = 0;
 		const cause = new Error("503 from the provider");
-		const result = await ask({
-			...base,
-			provider: provider(async () => {
-				calls++;
-				throw cause;
-			}),
-			search: vendorSearch(),
-		});
+		const provider = failingProvider(cause);
+		const result = await ask({ ...base, provider, search: vendorSearch() });
 
-		expect(calls).toBe(1);
+		expect(provider.calls).toHaveLength(1);
 		expect(result.error).toEqual({
 			kind: "provider",
 			message: "503 from the provider",
@@ -174,11 +167,9 @@ describe("ask: search", () => {
 	it("returns a typed error when the provider throws before returning a promise", async () => {
 		const result = await ask({
 			...base,
-			provider: {
-				answer: () => {
-					throw new Error("missing key");
-				},
-			},
+			provider: failingProvider(new Error("missing key"), {
+				synchronous: true,
+			}),
 			search: vendorSearch(),
 		});
 
@@ -190,23 +181,18 @@ describe("ask: search", () => {
 	});
 
 	it("holds everything and returns a timeout error when the provider outlasts the developer's timeout", async () => {
-		let signal: AbortSignal | undefined;
+		const provider = hangingProvider();
 		const result = await ask({
 			...base,
 			timeoutMs: 20,
-			provider: {
-				answer: (input) => {
-					signal = input.signal;
-					return new Promise(() => {});
-				},
-			},
+			provider,
 			search: vendorSearch(),
 		});
 
 		expect(result.error).toMatchObject({ kind: "timeout", timeoutMs: 20 });
 		expect(result.search.item).toBeNull();
 		expect(result.search.pick).toBeNull();
-		expect(signal?.aborted).toBe(true);
+		expect(provider.calls[0]?.signal.aborted).toBe(true);
 	});
 
 	it.each<[string, ProviderAnswer]>([
@@ -223,7 +209,7 @@ describe("ask: search", () => {
 	])("treats an answer that %s as a provider error", async (_, answer) => {
 		const result = await ask({
 			...base,
-			provider: provider(async () => answer),
+			provider: rawProvider(answer),
 			search: vendorSearch(),
 		});
 
@@ -234,17 +220,14 @@ describe("ask: search", () => {
 	});
 
 	it("holds without calling the provider when the shortlist is empty", async () => {
-		let calls = 0;
+		const provider = fakeProvider({});
 		const result = await ask({
 			...base,
-			provider: provider(async () => {
-				calls++;
-				return {};
-			}),
+			provider,
 			search: { ...vendorSearch(), shortlist: async () => [] },
 		});
 
-		expect(calls).toBe(0);
+		expect(provider.calls).toHaveLength(0);
 		expect(result.search.item).toBeNull();
 		expect(result.search.candidates).toEqual([]);
 		expect(result.error).toBeUndefined();
@@ -315,7 +298,7 @@ describe("ask: fuzzyShortlist", () => {
 		expect(await shortlisted("cater", 1)).toEqual(["catering"]);
 	});
 
-	it("fills the slots a text match left empty in catalog order, so the provider still judges", async () => {
+	it("fills the places a text match left empty in catalog order, so the provider still judges", async () => {
 		expect(await shortlisted("la limpieza de la oficina", 3)).toEqual([
 			"paper",
 			"catering",

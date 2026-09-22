@@ -26,7 +26,7 @@ const STOPWORDS = new Set([
 /** A fuzzy score below this is not a match at all. */
 const MINIMUM_SCORE = 0.15;
 
-/** Lowercase, strip accents, split on anything that is not a letter or digit. */
+/** Lowercase, strip accents, split on anything that is not a letter, digit or hyphen. */
 function tokens(text: string): string[] {
 	return text
 		.normalize("NFD")

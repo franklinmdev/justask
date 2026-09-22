@@ -1,4 +1,9 @@
-import type { Probabilities, Provider, ProviderAnswer } from "justask";
+import type {
+	Probabilities,
+	Provider,
+	ProviderAnswer,
+	ProviderInput,
+} from "justask";
 
 /** Fixed probabilities per question id, then per label. */
 export type FakeAnswers = Record<string, Probabilities>;
@@ -39,4 +44,38 @@ export function fakeProvider(answers: FakeAnswers): Provider & {
 			return answer;
 		},
 	};
+}
+
+type RecordingProvider = Provider & { calls: ProviderInput[] };
+
+function recording(answer: Provider["answer"]): RecordingProvider {
+	const calls: ProviderInput[] = [];
+	return {
+		calls,
+		answer(input) {
+			calls.push(input);
+			return answer(input);
+		},
+	};
+}
+
+/** Returns `answer` as is, unchecked, for answers that break the contract or tie. */
+export function rawProvider(answer: ProviderAnswer): RecordingProvider {
+	return recording(async () => answer);
+}
+
+/** Rejects with `cause`, or throws it before returning a promise when `synchronous`. */
+export function failingProvider(
+	cause: unknown,
+	{ synchronous = false } = {},
+): RecordingProvider {
+	return recording(() => {
+		if (synchronous) throw cause;
+		return Promise.reject(cause);
+	});
+}
+
+/** Never answers, so the developer's timeout is what ends the call. */
+export function hangingProvider(): RecordingProvider {
+	return recording(() => new Promise(() => {}));
 }
