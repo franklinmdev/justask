@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docs-location:
+    name: docs location
+    runs-on: ubuntu-latest
+    # Every push, plus pull requests from forks. Pull requests from a branch of
+    # this repository are already covered by the push event.
+    if: >-
+      github.event_name == 'push' ||
+      github.event.pull_request.head.repo.full_name != github.repository
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Markdown lives in docs/, beside the root canonicals; the allowlist in
+      # .claude/docs-allowlist adds this repo's exceptions.
+      - name: Check markdown location
+        run: bash scripts/check-docs-location.sh
