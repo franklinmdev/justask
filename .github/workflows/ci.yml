@@ -47,5 +47,7 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
-      # Proves the published entry points resolve from dist/, not only from src/.
+      # Tests resolve the entry points to src/. Build, then import each one
+      # through the exports map as Node would, to prove dist/ resolves too.
       - run: pnpm build
+      - run: node -e "Promise.all(['justask','justask/react','justask/jev'].map((e) => import(e)))"
