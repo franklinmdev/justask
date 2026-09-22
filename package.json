@@ -32,6 +32,11 @@
 			"source": "./src/jev/index.ts",
 			"types": "./dist/jev/index.d.ts",
 			"default": "./dist/jev/index.js"
+		},
+		"./eval": {
+			"source": "./src/eval/index.ts",
+			"types": "./dist/eval/index.d.ts",
+			"default": "./dist/eval/index.js"
 		}
 	},
 	"files": [
