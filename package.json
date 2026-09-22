@@ -1,0 +1,53 @@
+{
+	"name": "justask",
+	"version": "0.0.0",
+	"private": true,
+	"description": "Turns what a person types in plain language into an app's own state. Code finds the candidates, a provider model picks, code builds the result.",
+	"keywords": [
+		"natural-language",
+		"react",
+		"forms",
+		"filters",
+		"search",
+		"jev"
+	],
+	"license": "MIT",
+	"type": "module",
+	"packageManager": "pnpm@12.5.1",
+	"engines": {
+		"node": ">=24"
+	},
+	"exports": {
+		".": {
+			"source": "./src/index.ts",
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		},
+		"./react": {
+			"source": "./src/react/index.ts",
+			"types": "./dist/react/index.d.ts",
+			"default": "./dist/react/index.js"
+		},
+		"./jev": {
+			"source": "./src/jev/index.ts",
+			"types": "./dist/jev/index.d.ts",
+			"default": "./dist/jev/index.js"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run",
+		"lint": "biome check",
+		"format": "biome check --write"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.5.14",
+		"@types/node": "^24.13.6",
+		"typescript": "7.0.2",
+		"vitest": "5.0.1"
+	}
+}
