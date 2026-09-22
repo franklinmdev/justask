@@ -3,7 +3,7 @@ import type { UseSearch } from "./use-search.ts";
 
 export type SearchBoxProps = Omit<
 	ComponentPropsWithoutRef<"input">,
-	"type" | "value" | "defaultValue" | "onChange" | "children"
+	"type" | "value" | "defaultValue" | "onChange" | "children" | "aria-label"
 > & {
 	search: UseSearch<unknown>;
 	/** The box's accessible name, such as "Find a vendor". */
@@ -93,8 +93,7 @@ export type SearchEmptyProps = Omit<ComponentPropsWithoutRef<"div">, "role"> & {
  * the reason. A polite live region, so the empty state is announced.
  */
 export function SearchEmpty({ search, children, ...props }: SearchEmptyProps) {
-	const empty =
-		search.answered && search.item === null && search.request.trim() !== "";
+	const empty = search.answered && search.item === null;
 	return (
 		<div {...props} role="status" aria-busy={search.loading}>
 			{empty && children}

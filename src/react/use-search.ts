@@ -46,13 +46,13 @@ export type UseSearch<T> = {
 	/** The item to show, or null when held, failed or not asked yet. */
 	item: T | null;
 	error: SearchError | null;
-	/** True once the current request has an answer or an error, so an empty state can show. */
+	/** True once a request has an answer or an error, and false again when the box is emptied. */
 	answered: boolean;
 	/** Hands the shown item to `onChoose`. */
 	choose: () => void;
 };
 
-type Answer<T> = { result: SearchResult<T> | null; error: SearchError | null };
+type Outcome<T> = { result: SearchResult<T> | null; error: SearchError | null };
 
 /**
  * Drives a search from the host app's own markup: posts what the person types
@@ -66,7 +66,7 @@ export function useSearch<T>({
 	fetch: fetchImpl,
 }: UseSearchOptions<T>): UseSearch<T> {
 	const [request, setRequestState] = useState("");
-	const [answer, setAnswer] = useState<Answer<T> | null>(null);
+	const [answer, setAnswer] = useState<Outcome<T> | null>(null);
 	const [loading, setLoading] = useState(false);
 	const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 	const inFlight = useRef<AbortController | null>(null);
@@ -138,7 +138,7 @@ async function post<T>(
 	endpoint: string,
 	request: string,
 	signal: AbortSignal,
-): Promise<Answer<T>> {
+): Promise<Outcome<T>> {
 	const body: HandlerRequest = {
 		request,
 		timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
