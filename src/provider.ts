@@ -17,6 +17,8 @@ export type ProviderInput = {
 	request: string;
 	facts: Facts;
 	questions: Question[];
+	/** Aborted when the developer's timeout runs out; an adapter passes it to its SDK. */
+	signal: AbortSignal;
 };
 
 /** A probability for every label of one question. */
