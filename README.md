@@ -12,9 +12,90 @@ Private and unpublished. `package.json` sets `"private": true`, so npm refuses t
 
 | Import | What it holds |
 |---|---|
-| `justask` | The core, no UI: `ask` and the provider contract |
+| `justask` | The core, no UI: `ask`, the server handler and the provider contract |
 | `justask/react` | The React layer (hooks and unstyled pieces) |
 | `justask/jev` | The Jev provider adapter |
+
+## Server handler
+
+`createHandler` returns a function from a standard `Request` to a standard `Response`, so it mounts as is in any fetch-style server (Next.js route handlers, Hono, Remix, Bun, Deno, Cloudflare Workers). It runs on the server with the provider built there, so the provider's key never reaches the browser.
+
+```ts
+import { createHandler, fuzzyShortlist } from "justask";
+
+export const handler = createHandler({
+  provider, // a provider adapter, built on the server
+  timeoutMs: 2_000, // no default: measure it
+  facts: { local_currency: "USD" }, // the host app's configuration, written as facts
+  search: {
+    description: "the vendor the request means",
+    gate: 0.4, // no default: measure it on an eval set
+    shortlist: fuzzyShortlist(vendors, { limit: 10 }),
+  },
+});
+```
+
+The browser posts JSON with the request and its own time zone, and the handler writes today in that time zone as a fact:
+
+```ts
+await fetch("/api/justask", {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({
+    request: "invoices from Acme",
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  }),
+});
+```
+
+It answers:
+
+- `200` with `{ search, error? }`. A provider failure or timeout still answers `200`, with the item held and a typed `error` of kind `provider` or `timeout`. The provider's own message and cause never leave the server; pass `onError` to log them.
+- `400` with `{ error: { kind: "request", message } }` when the body is not JSON, has no `request` string or no valid `timeZone`.
+- `405` for anything but `POST`.
+
+Candidate values travel as JSON, so keep them plain data.
+
+### Node and Express
+
+Node's `http` module and Express speak their own request types. A few lines turn the handler into one of theirs:
+
+```ts
+import type { IncomingMessage, ServerResponse } from "node:http";
+import { buffer } from "node:stream/consumers";
+
+export function toNode(handler: (request: Request) => Promise<Response>) {
+  return async (req: IncomingMessage, res: ServerResponse) => {
+    const response = await handler(
+      new Request(`http://${req.headers.host}${req.url}`, {
+        method: req.method ?? "GET",
+        headers: req.headers as Record<string, string>,
+        body: req.method === "POST" ? await buffer(req) : null,
+      }),
+    );
+    res.writeHead(response.status, Object.fromEntries(response.headers));
+    res.end(Buffer.from(await response.arrayBuffer()));
+  };
+}
+```
+
+```ts
+// Node
+import { createServer } from "node:http";
+
+const mount = toNode(handler);
+createServer((req, res) => {
+  mount(req, res).catch(() => {
+    res.statusCode = 500;
+    res.end();
+  });
+}).listen(3000);
+
+// Express: mount it before express.json(), which would consume the body first.
+app.post("/api/justask", (req, res, next) => {
+  mount(req, res).catch(next);
+});
+```
 
 ## Development
 

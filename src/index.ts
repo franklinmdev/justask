@@ -7,6 +7,14 @@ export {
 	type SearchResult,
 } from "./ask.ts";
 export { fuzzyShortlist } from "./fuzzy-shortlist.ts";
+export {
+	createHandler,
+	type HandlerBadRequest,
+	type HandlerConfig,
+	type HandlerError,
+	type HandlerRequest,
+	type HandlerResponse,
+} from "./handler.ts";
 export type {
 	Facts,
 	Label,
