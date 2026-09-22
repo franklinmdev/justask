@@ -54,7 +54,8 @@ const SEARCH = "search";
 /**
  * Resolves a request to one item of the host app's catalog, or to none: code
  * shortlists the candidates, the provider picks in one call, code builds the
- * result (ADR 0002). A failed or late provider holds everything; no retries.
+ * result (ADR 0002). The item fills when a candidate wins outright and none
+ * stays below the gate. A failed or late provider holds everything; no retries.
  */
 export async function ask<T>({
 	request,
@@ -84,8 +85,11 @@ export async function ask<T>({
 
 	const probabilities = outcome.answer[SEARCH] ?? {};
 	const pick = readPick(probabilities);
+	// The gate reads none, not the winner (ADR 0005): near-duplicate candidates
+	// split the winner's probability, while none stays low whenever one fits.
+	const none = probabilities[NONE] ?? 1;
 	const winner =
-		pick && pick.label !== NONE && pick.probability >= search.gate
+		pick && pick.label !== NONE && none < search.gate
 			? candidates.find(({ id }) => id === pick.label)
 			: undefined;
 	return {

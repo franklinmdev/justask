@@ -17,7 +17,10 @@ export type Shortlist<T> = (
 export type Search<T> = {
 	/** What the searched item means in the host app, used in the question. */
 	description: string;
-	/** The minimum probability the winner needs to fill the item. No default (ADR 0003). */
+	/**
+	 * The probability of `none` at which the item is held (ADR 0005). The item
+	 * fills only while `none` stays below it. No default (ADR 0003).
+	 */
 	gate: number;
 	shortlist: Shortlist<T>;
 };

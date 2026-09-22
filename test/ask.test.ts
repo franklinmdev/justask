@@ -21,7 +21,7 @@ const northwind: Candidate<Vendor> = {
 	value: { id: 2, name: "Northwind Traders" },
 };
 
-function vendorSearch(gate = 0.9) {
+function vendorSearch(gate = 0.5) {
 	return {
 		description: "the vendor the request means",
 		gate,
@@ -40,7 +40,7 @@ function provider(answer: () => Promise<ProviderAnswer>): Provider {
 }
 
 describe("ask: search", () => {
-	it("fills the item when the provider picks a candidate above the gate, in one call", async () => {
+	it("fills the item when the provider picks a candidate and none stays below the gate, in one call", async () => {
 		const fake = fakeProvider({
 			search: { acme: 0.93, northwind: 0.05, none: 0.02 },
 		});
@@ -60,13 +60,28 @@ describe("ask: search", () => {
 			candidates: [acme, northwind],
 			pick: { label: "acme", probability: 0.93 },
 			probabilities: { acme: 0.93, northwind: 0.05, none: 0.02 },
-			gate: 0.9,
+			gate: 0.5,
 		});
+	});
+
+	it("fills the item when near-duplicates split the vote, as long as none stays below the gate", async () => {
+		const fake = fakeProvider({
+			search: { acme: 0.45, northwind: 0.35, none: 0.2 },
+		});
+
+		const result = await ask({
+			...base,
+			provider: fake,
+			search: vendorSearch(),
+		});
+
+		expect(result.search.item).toEqual({ id: 1, name: "Acme Supplies" });
+		expect(result.search.pick).toEqual({ label: "acme", probability: 0.45 });
 	});
 
 	it("holds the item when the provider picks none, whatever its probability", async () => {
 		const fake = fakeProvider({
-			search: { acme: 0.01, northwind: 0.01, none: 0.98 },
+			search: { acme: 0.3, northwind: 0.3, none: 0.4 },
 		});
 
 		const result = await ask({
@@ -76,35 +91,35 @@ describe("ask: search", () => {
 		});
 
 		expect(result.search.item).toBeNull();
-		expect(result.search.pick).toEqual({ label: "none", probability: 0.98 });
+		expect(result.search.pick).toEqual({ label: "none", probability: 0.4 });
 		expect(result.error).toBeUndefined();
 	});
 
-	it("holds the item when the winner is below the gate, and still exposes the pick", async () => {
+	it("holds the item when none reaches the gate, even though a candidate wins, and still exposes the pick", async () => {
 		const fake = fakeProvider({
-			search: { acme: 0.6, northwind: 0.3, none: 0.1 },
+			search: { acme: 0.5, northwind: 0.1, none: 0.4 },
 		});
 
 		const result = await ask({
 			...base,
 			provider: fake,
-			search: vendorSearch(0.7),
+			search: vendorSearch(0.4),
 		});
 
 		expect(result.search.item).toBeNull();
-		expect(result.search.pick).toEqual({ label: "acme", probability: 0.6 });
-		expect(result.search.gate).toBe(0.7);
+		expect(result.search.pick).toEqual({ label: "acme", probability: 0.5 });
+		expect(result.search.gate).toBe(0.4);
 	});
 
-	it("fills the item when the winner sits exactly on the gate", async () => {
+	it("fills the item when none sits just below the gate", async () => {
 		const fake = fakeProvider({
-			search: { acme: 0.7, northwind: 0.2, none: 0.1 },
+			search: { acme: 0.6, northwind: 0.01, none: 0.39 },
 		});
 
 		const result = await ask({
 			...base,
 			provider: fake,
-			search: vendorSearch(0.7),
+			search: vendorSearch(0.4),
 		});
 
 		expect(result.search.item).toEqual({ id: 1, name: "Acme Supplies" });
@@ -119,7 +134,7 @@ describe("ask: search", () => {
 			const result = await ask({
 				...base,
 				provider: provider(async () => ({ search: probabilities })),
-				search: vendorSearch(0.4),
+				search: vendorSearch(),
 			});
 
 			expect(result.search.item).toBeNull();
@@ -152,7 +167,7 @@ describe("ask: search", () => {
 			candidates: [acme, northwind],
 			pick: null,
 			probabilities: {},
-			gate: 0.9,
+			gate: 0.5,
 		});
 	});
 
@@ -286,7 +301,7 @@ describe("ask: fuzzyShortlist", () => {
 			}),
 			search: {
 				description: "the vendor the request means",
-				gate: 0.9,
+				gate: 0.5,
 				shortlist: fuzzyShortlist(catalog, { limit }),
 			},
 		});
