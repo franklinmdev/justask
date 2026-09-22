@@ -2,7 +2,11 @@ import { type AskError, ask, type SearchResult } from "./ask.ts";
 import type { Facts, Provider } from "./provider.ts";
 import type { Search } from "./search.ts";
 
-export type HandlerConfig<T> = {
+/**
+ * One handler per flow, each mounted at its own route: the browser never
+ * chooses the flow, and each route owns its facts and limits.
+ */
+export type SearchHandlerConfig<T> = {
 	provider: Provider;
 	/** How long the provider call may take before everything is held. No default. */
 	timeoutMs: number;
@@ -28,8 +32,8 @@ export type HandlerError =
 	| { kind: "provider"; message: string }
 	| { kind: "timeout"; message: string; timeoutMs: number };
 
-/** The body of a 200 response. `T` must survive JSON. */
-export type HandlerResponse<T> = {
+/** The body of a 200 response from the search handler. `T` must survive JSON. */
+export type SearchHandlerResponse<T> = {
 	search: SearchResult<T>;
 	error?: HandlerError;
 };
@@ -41,14 +45,14 @@ export type HandlerBadRequest = {
 
 /**
  * A server handler from a standard Request to a standard Response, so it
- * mounts in any fetch-style server. It runs `ask` with the provider built on
- * the server, so the key never reaches the browser; the browser only sends the
- * request and its time zone. A provider failure still answers 200, with
- * everything held and a typed error.
+ * mounts in any fetch-style server. It runs the search through `ask` with the
+ * provider built on the server, so the key never reaches the browser; the
+ * browser only sends the request and its time zone. A provider failure still
+ * answers 200, with everything held and a typed error.
  */
-export function createHandler<T>(
-	config: HandlerConfig<T>,
-): (request: Request) => Promise<Response> {
+export function createSearchHandler<T>(
+	config: SearchHandlerConfig<T>,
+): (httpRequest: Request) => Promise<Response> {
 	const { provider, timeoutMs, facts = {}, search, onError } = config;
 	if ("today" in facts) {
 		throw new TypeError(
@@ -56,50 +60,53 @@ export function createHandler<T>(
 		);
 	}
 
-	return async (request) => {
-		if (request.method !== "POST") {
+	return async (httpRequest) => {
+		if (httpRequest.method !== "POST") {
 			return new Response(null, { status: 405, headers: { allow: "POST" } });
 		}
-		const body = await readBody(request);
-		if (typeof body === "string") return badRequest(body);
+		const read = await readBody(httpRequest);
+		if ("error" in read) return badRequest(read.error);
 
 		const now = new Date();
 		const result = await ask({
-			request: body.request,
-			facts: { today: todayFact(now, body.timeZone), ...facts },
+			request: read.body.request,
+			facts: { today: todayFact(now, read.body.timeZone), ...facts },
 			provider,
 			timeoutMs,
 			search,
 		});
 		if (result.error) onError?.(result.error);
-		const response: HandlerResponse<T> = { search: result.search };
+		const response: SearchHandlerResponse<T> = { search: result.search };
 		if (result.error) response.error = forBrowser(result.error);
 		return Response.json(response);
 	};
 }
 
-/** The parsed body, or why it cannot be read. */
-async function readBody(request: Request): Promise<HandlerRequest | string> {
+async function readBody(
+	httpRequest: Request,
+): Promise<{ body: HandlerRequest } | { error: string }> {
 	let body: unknown;
 	try {
-		body = await request.json();
+		body = await httpRequest.json();
 	} catch {
-		return "The body is not JSON";
+		return { error: "The body is not JSON" };
 	}
 	if (typeof body !== "object" || body === null || Array.isArray(body)) {
-		return "The body is not a JSON object";
+		return { error: "The body is not a JSON object" };
 	}
-	const { request: text, timeZone } = body as Record<string, unknown>;
-	if (typeof text !== "string") return '"request" must be a string';
+	const { request, timeZone } = body as Record<string, unknown>;
+	if (typeof request !== "string") {
+		return { error: '"request" must be a string' };
+	}
 	if (typeof timeZone !== "string") {
-		return '"timeZone" must be the browser\'s IANA time zone';
+		return { error: '"timeZone" must be the browser\'s IANA time zone' };
 	}
 	try {
 		new Intl.DateTimeFormat("en", { timeZone });
 	} catch {
-		return `"${timeZone}" is not a time zone`;
+		return { error: `"${timeZone}" is not a time zone` };
 	}
-	return { request: text, timeZone };
+	return { body: { request, timeZone } };
 }
 
 function badRequest(message: string): Response {

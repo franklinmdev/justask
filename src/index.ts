@@ -8,12 +8,12 @@ export {
 } from "./ask.ts";
 export { fuzzyShortlist } from "./fuzzy-shortlist.ts";
 export {
-	createHandler,
+	createSearchHandler,
 	type HandlerBadRequest,
-	type HandlerConfig,
 	type HandlerError,
 	type HandlerRequest,
-	type HandlerResponse,
+	type SearchHandlerConfig,
+	type SearchHandlerResponse,
 } from "./handler.ts";
 export type {
 	Facts,

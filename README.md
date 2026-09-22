@@ -18,12 +18,14 @@ Private and unpublished. `package.json` sets `"private": true`, so npm refuses t
 
 ## Server handler
 
-`createHandler` returns a function from a standard `Request` to a standard `Response`, so it mounts as is in any fetch-style server (Next.js route handlers, Hono, Remix, Bun, Deno, Cloudflare Workers). It runs on the server with the provider built there, so the provider's key never reaches the browser.
+`createSearchHandler` returns a function from a standard `Request` to a standard `Response`, so it mounts as is in any fetch-style server (Next.js route handlers, Hono, Remix, Bun, Deno, Cloudflare Workers). It runs on the server with the provider built there, so the provider's key never reaches the browser.
+
+There is one handler per flow, each at its own route: the browser never chooses the flow, and each route owns its facts and limits. Filter and card get their own handlers.
 
 ```ts
-import { createHandler, fuzzyShortlist } from "justask";
+import { createSearchHandler, fuzzyShortlist } from "justask";
 
-export const handler = createHandler({
+export const handler = createSearchHandler({
   provider, // a provider adapter, built on the server
   timeoutMs: 2_000, // no default: measure it
   facts: { local_currency: "USD" }, // the host app's configuration, written as facts
@@ -54,7 +56,14 @@ It answers:
 - `400` with `{ error: { kind: "request", message } }` when the body is not JSON, has no `request` string or no valid `timeZone`.
 - `405` for anything but `POST`.
 
-Candidate values travel as JSON, so keep them plain data.
+### What leaves the server on each call
+
+Two destinations, and nothing else is sent:
+
+- **To the provider**, in one call: the request text, the facts (today plus every fact you configure), the search's `description`, and the `id` and `description` of every shortlist candidate. A candidate's `value` is never sent to the provider, so write each `description` knowing a third party reads it.
+- **To the browser**, in the response: every shortlist candidate in full (`id`, `description` and `value`, not only the picked one), the pick, every label's probability and the gate. Candidate values travel as JSON, so keep them plain data, and leave out of `value` anything the person may not see.
+
+The provider's key, the provider's own error messages and the error's cause stay on the server.
 
 ### Node and Express
 

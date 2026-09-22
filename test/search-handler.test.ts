@@ -1,4 +1,8 @@
-import { type Candidate, createHandler, type HandlerConfig } from "justask";
+import {
+	type Candidate,
+	createSearchHandler,
+	type SearchHandlerConfig,
+} from "justask";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	failingProvider,
@@ -27,8 +31,8 @@ const search = {
 
 const picksAcme = { search: { acme: 0.93, northwind: 0.05, none: 0.02 } };
 
-function handler(overrides: Partial<HandlerConfig<Vendor>> = {}) {
-	return createHandler<Vendor>({
+function handler(overrides: Partial<SearchHandlerConfig<Vendor>> = {}) {
+	return createSearchHandler<Vendor>({
 		provider: fakeProvider(picksAcme),
 		timeoutMs: 1_000,
 		facts: { local_currency: "USD" },
@@ -51,7 +55,7 @@ afterEach(() => {
 	vi.useRealTimers();
 });
 
-describe("createHandler", () => {
+describe("createSearchHandler", () => {
 	it("answers a search request with the result as JSON", async () => {
 		const response = await handler()(post(asked));
 
@@ -130,7 +134,7 @@ describe("createHandler", () => {
 
 	it("works with no configured facts", async () => {
 		const provider = fakeProvider(picksAcme);
-		await createHandler<Vendor>({ provider, timeoutMs: 1_000, search })(
+		await createSearchHandler<Vendor>({ provider, timeoutMs: 1_000, search })(
 			post(asked),
 		);
 
