@@ -4,11 +4,8 @@
 //   node --conditions=source scripts/jev-call.ts ["a request"]
 
 import { TypeSafeClient, type Usage } from "@typesafe-ai/sdk";
-import { ask, type Candidate } from "justask";
+import { ask, type Candidate, type Provider } from "justask";
 import { JEV_MODEL, jevProvider } from "justask/jev";
-
-// From https://docs.typesafe.ai/models.md, read 2026-09-22: input tokens only.
-const USD_PER_INPUT_TOKEN = 0.042 / 1_000_000;
 
 try {
 	process.loadEnvFile(".env");
@@ -37,7 +34,7 @@ const vendors: Candidate<string>[] = [
 const sdk = new TypeSafeClient();
 let usage: Usage | undefined;
 let model: string | undefined;
-const provider = jevProvider({
+const jev = jevProvider({
 	client: {
 		systemOne: (request, options) =>
 			sdk.systemOne(request, options).then((result) => {
@@ -47,6 +44,16 @@ const provider = jevProvider({
 			}),
 	},
 });
+
+// The adapter prices the call itself (ADR 0006).
+let costUsd: number | undefined;
+const provider: Provider = {
+	async answer(input) {
+		const result = await jev.answer(input);
+		costUsd = result.costUsd;
+		return result;
+	},
+};
 
 const request = process.argv[2] ?? "the invoices for our catering last week";
 const started = performance.now();
@@ -75,7 +82,7 @@ console.log(
 			error: result.error?.message,
 			latencyMs,
 			inputTokens: usage?.input_tokens,
-			costUsd: usage && usage.input_tokens * USD_PER_INPUT_TOKEN,
+			costUsd,
 		},
 		null,
 		2,

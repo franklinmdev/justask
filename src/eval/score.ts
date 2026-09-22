@@ -65,7 +65,8 @@ export type Report = {
  * Scores a saved run, by default at the gate it was run under, which gives the
  * verdict. Another gate rescores the same answers with no provider call; a
  * gate chosen after seeing the run gives no verdict, since it would be judged
- * on the rows it was tuned on. Error rows count only as errors.
+ * on the rows it was tuned on. Error rows count as errors, and in cost when
+ * the call was paid for.
  */
 export function scoreRun(run: Run, { gate = run.gate } = {}): Report {
 	checkGate(gate);
@@ -131,7 +132,7 @@ export function scoreRun(run: Run, { gate = run.gate } = {}): Report {
 		},
 		invented: invented.map(({ row }) => row.id),
 		leaked: leaked.map(({ row }) => row.id),
-		costPerCallUsd: costPerCall(answered),
+		costPerCallUsd: costPerCall(run.rows),
 		misses,
 		verdict: retuned ? null : judge(run.killLines, measures),
 	};
@@ -204,8 +205,15 @@ function judge(killLines: KillLines, measures: Measures): Verdict {
 	return { pass: lines.every(({ pass }) => pass), lines };
 }
 
-function costPerCall(answered: RunRow[]): number | null {
-	const calls = answered.filter(({ called }) => called);
+/**
+ * Over every call the provider answered, error rows included: an answer that
+ * broke the contract was still paid for. A timeout's cost is never known, so
+ * it is left out. Null when an answered call did not report its cost.
+ */
+function costPerCall(rows: RunRow[]): number | null {
+	const calls = rows.filter(
+		({ called, error, costUsd }) => called && (!error || costUsd !== undefined),
+	);
 	if (calls.length === 0) return null;
 	let total = 0;
 	for (const { costUsd } of calls) {

@@ -300,7 +300,7 @@ describe("runEval", () => {
  */
 function row(
 	fields: Pick<EvalRow, "id" | "kind"> &
-		Partial<Omit<RunRow, "id" | "kind" | "costUsd">> & {
+		Partial<Omit<RunRow, "id" | "kind">> & {
 			none?: number;
 			pick?: string;
 			priced?: boolean;
@@ -456,6 +456,30 @@ describe("scoreRun", () => {
 		);
 
 		expect(unpriced.costPerCallUsd).toBeNull();
+	});
+
+	it("counts the cost of a paid call whose answer broke the contract", () => {
+		const breached = scoreRun(
+			savedRun([
+				row({ id: "ok", kind: "item", expected: "acme", costUsd: 0.0001 }),
+				row({
+					id: "breach",
+					kind: "item",
+					expected: "acme",
+					error: { kind: "provider", message: "left out a label" },
+					costUsd: 0.0003,
+				}),
+				row({
+					id: "late",
+					kind: "item",
+					expected: "acme",
+					error: { kind: "timeout", message: "late" },
+					priced: false,
+				}),
+			]),
+		);
+
+		expect(breached.costPerCallUsd).toBeCloseTo(0.0002, 10);
 	});
 
 	it("gives no verdict at a retuned gate, since the gate was chosen after seeing the run", () => {
