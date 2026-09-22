@@ -44,9 +44,18 @@
 		"lint": "biome check",
 		"format": "biome check --write"
 	},
+	"peerDependencies": {
+		"@typesafe-ai/sdk": "^0.6.0"
+	},
+	"peerDependenciesMeta": {
+		"@typesafe-ai/sdk": {
+			"optional": true
+		}
+	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.14",
 		"@types/node": "^24.13.6",
+		"@typesafe-ai/sdk": "0.6.0",
 		"typescript": "7.0.2",
 		"vitest": "5.0.1"
 	}
