@@ -64,6 +64,10 @@ _Avoid_: Training set, validation set
 A pass or fail threshold on one measure (exact, coverage, invented, held ambiguous, p95, errors), written and frozen before the first scored run on an eval set.
 _Avoid_: Target, KPI, acceptance criterion
 
+**Run log**:
+The raw answers of one eval run, saved with the gate and kill lines it ran under. Rescoring at another gate and comparing a second run read it, never the provider.
+_Avoid_: Results, output, trace
+
 **Held field**:
 A field left empty because its pick did not clear the gate, because the provider picked `not_mentioned` or `not_available`, or because a parser marked its candidates ambiguous (such as "next Friday"). Empty looks the same whatever the reason.
 _Avoid_: Abstained field, unknown, null field
