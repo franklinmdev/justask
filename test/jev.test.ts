@@ -42,13 +42,18 @@ const answers = {
 	paid: { yes: 0.8, not_mentioned: 0.15, not_available: 0.05 },
 };
 
-const acmeSearch = {
-	description: "the vendor the request means",
-	gate: 0.5,
-	shortlist: () => [
-		{ id: "acme", description: "Acme Supplies", value: 1 },
-		{ id: "northwind", description: "Northwind Traders", value: 2 },
-	],
+const base = {
+	request: "invoices from Acme",
+	facts: {},
+	timeoutMs: 1_000,
+	search: {
+		description: "the vendor the request means",
+		gate: 0.5,
+		shortlist: () => [
+			{ id: "acme", description: "Acme Supplies", value: 1 },
+			{ id: "northwind", description: "Northwind Traders", value: 2 },
+		],
+	},
 };
 
 describe("jevProvider", () => {
@@ -114,11 +119,8 @@ describe("jevProvider", () => {
 		);
 
 		const result = await ask({
-			request: "invoices from Acme",
-			facts: {},
+			...base,
 			provider: jevProvider({ client }),
-			timeoutMs: 1_000,
-			search: acmeSearch,
 		});
 
 		expect(result.error).toBeUndefined();
@@ -138,11 +140,8 @@ describe("jevProvider", () => {
 			const client = fakeJevClient(() => Promise.reject(cause));
 
 			const result = await ask({
-				request: "invoices from Acme",
-				facts: {},
+				...base,
 				provider: jevProvider({ client }),
-				timeoutMs: 1_000,
-				search: acmeSearch,
 			});
 
 			expect(client.calls).toHaveLength(1);
@@ -161,11 +160,8 @@ describe("jevProvider", () => {
 		);
 
 		const result = await ask({
-			request: "invoices from Acme",
-			facts: {},
+			...base,
 			provider: jevProvider({ client }),
-			timeoutMs: 1_000,
-			search: acmeSearch,
 		});
 
 		expect(result.error?.kind).toBe("provider");
@@ -183,11 +179,9 @@ describe("jevProvider", () => {
 		);
 
 		const result = await ask({
-			request: "invoices from Acme",
-			facts: {},
-			provider: jevProvider({ client }),
+			...base,
 			timeoutMs: 20,
-			search: acmeSearch,
+			provider: jevProvider({ client }),
 		});
 
 		expect(result.error).toMatchObject({ kind: "timeout", timeoutMs: 20 });
@@ -198,13 +192,7 @@ describe("jevProvider", () => {
 		vi.stubEnv("TYPESAFE_API_KEY", "");
 		const provider = jevProvider();
 
-		const result = await ask({
-			request: "invoices from Acme",
-			facts: {},
-			provider,
-			timeoutMs: 1_000,
-			search: acmeSearch,
-		});
+		const result = await ask({ ...base, provider });
 
 		expect(result.error?.kind).toBe("provider");
 		expect(result.error?.message).toContain("TYPESAFE_API_KEY");
@@ -220,11 +208,8 @@ describe("jevProvider", () => {
 		});
 
 		const result = await ask({
-			request: "invoices from Acme",
-			facts: {},
+			...base,
 			provider: jevProvider(),
-			timeoutMs: 1_000,
-			search: acmeSearch,
 		});
 
 		expect(sent).toHaveLength(1);
