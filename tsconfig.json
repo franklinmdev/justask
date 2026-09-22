@@ -1,0 +1,20 @@
+{
+	"compilerOptions": {
+		"target": "es2023",
+		"lib": ["es2023", "dom", "dom.iterable"],
+		"module": "nodenext",
+		"moduleResolution": "nodenext",
+		"customConditions": ["source"],
+		"types": ["node"],
+		"strict": true,
+		"noUncheckedIndexedAccess": true,
+		"exactOptionalPropertyTypes": true,
+		"noImplicitOverride": true,
+		"verbatimModuleSyntax": true,
+		"rewriteRelativeImportExtensions": true,
+		"isolatedModules": true,
+		"skipLibCheck": true,
+		"noEmit": true
+	},
+	"include": ["src", "test", "vitest.config.ts"]
+}
