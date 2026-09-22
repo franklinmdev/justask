@@ -125,11 +125,11 @@ async function answer(
 	const call = Promise.resolve()
 		.then(() => provider.answer({ ...input, signal: controller.signal }))
 		.then(
-			(answer) => {
-				const breach = contractBreach(input.questions, answer);
+			({ answers }) => {
+				const breach = contractBreach(input.questions, answers);
 				return breach
 					? { error: providerError(new Error(breach)) }
-					: { answer };
+					: { answer: answers };
 			},
 			(cause: unknown) => ({ error: providerError(cause) }),
 		);

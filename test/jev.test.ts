@@ -116,10 +116,14 @@ describe("jevProvider", () => {
 		expect(client.calls[0]?.options?.timeout).toBe(2 ** 31 - 1);
 	});
 
-	it("returns a probability for every label of every question", async () => {
+	it("returns a probability for every label of every question, and the call's cost from its input tokens", async () => {
 		const client = fakeJevClient(async () => jevResult(answers));
 
-		expect(await jevProvider({ client }).answer(input)).toEqual(answers);
+		const result = await jevProvider({ client }).answer(input);
+
+		expect(result.answers).toEqual(answers);
+		// 120 input tokens at $0.042 per million; output tokens are free.
+		expect(result.costUsd).toBeCloseTo(120 * 0.042e-6, 12);
 	});
 
 	it("resolves a search through ask", async () => {

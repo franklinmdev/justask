@@ -12,6 +12,12 @@ import type { Provider, ProviderAnswer, ProviderInput } from "../provider.ts";
 export const JEV_MODEL = "jev-1.13.0";
 
 /**
+ * jev-1.13.0 is charged per input token, output tokens free: $0.042 per
+ * million, read from https://docs.typesafe.ai/models.md on 2026-09-22.
+ */
+const USD_PER_INPUT_TOKEN = 0.042 / 1_000_000;
+
+/**
  * The SDK times each attempt out after 10 s by default. The adapter sets
  * setTimeout's ceiling instead, since a larger value would fire at once, so
  * the developer's timeout, through the signal, is what ends a call.
@@ -40,7 +46,8 @@ export type JevProviderOptions = {
 /**
  * Jev as a provider (ADR 0001): all of a request's questions in one
  * `systemOne` call, each a `choice` question with every label, and a
- * probability back for every label. No retries, as the core asks.
+ * probability back for every label, with the call's cost. No retries, as
+ * the core asks.
  */
 export function jevProvider({ client }: JevProviderOptions = {}): Provider {
 	let jev = client;
@@ -48,7 +55,7 @@ export function jevProvider({ client }: JevProviderOptions = {}): Provider {
 		async answer({ request, facts, questions, signal }: ProviderInput) {
 			// The SDK refuses to run in a browser, so the key stays on the server.
 			jev ??= new TypeSafeClient();
-			const { answers } = await jev.systemOne(
+			const { answers, usage } = await jev.systemOne(
 				{
 					model: JEV_MODEL,
 					state: { request, facts },
@@ -75,7 +82,10 @@ export function jevProvider({ client }: JevProviderOptions = {}): Provider {
 					answer[id] = { ...response.probabilities };
 				}
 			}
-			return answer;
+			return {
+				answers: answer,
+				costUsd: usage.input_tokens * USD_PER_INPUT_TOKEN,
+			};
 		},
 	};
 }

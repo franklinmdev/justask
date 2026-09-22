@@ -27,7 +27,13 @@ export type Probabilities = Record<string, number>;
 /** Per question id, a probability for every label (ADR 0001). */
 export type ProviderAnswer = Record<string, Probabilities>;
 
+/** One call's answer, and what the call cost when the adapter knows (ADR 0006). */
+export type ProviderResult = {
+	answers: ProviderAnswer;
+	costUsd?: number;
+};
+
 /** The model service that answers questions. It picks; it never writes a value (ADR 0002). */
 export type Provider = {
-	answer(input: ProviderInput): Promise<ProviderAnswer>;
+	answer(input: ProviderInput): Promise<ProviderResult>;
 };

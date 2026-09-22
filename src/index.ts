@@ -22,6 +22,7 @@ export type {
 	Provider,
 	ProviderAnswer,
 	ProviderInput,
+	ProviderResult,
 	Question,
 } from "./provider.ts";
 export type { Candidate, Search, Shortlist } from "./search.ts";
