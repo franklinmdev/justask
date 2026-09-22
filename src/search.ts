@@ -1,4 +1,5 @@
-import type { Question } from "./provider.ts";
+import { type Pick, readPick } from "./pick.ts";
+import type { Probabilities, Question } from "./provider.ts";
 
 /** A value code found for the search before the provider is asked: one catalog row. */
 export type Candidate<T> = {
@@ -42,6 +43,22 @@ export function checkShortlist(candidates: Candidate<unknown>[]): void {
 		}
 		seen.add(id);
 	}
+}
+
+/**
+ * Reads a search's answer through its gate: the id of the candidate that
+ * fills the item, or null when the item is held. The gate reads none, not the
+ * winner (ADR 0005): near-duplicate candidates split the winner's probability,
+ * while none stays low whenever one fits. A none pick or a tie still holds.
+ */
+export function gateSearch(
+	probabilities: Probabilities,
+	gate: number,
+): { pick: Pick | null; filled: string | null } {
+	const pick = readPick(probabilities);
+	const none = probabilities[NONE] ?? 1;
+	const filled = pick && pick.label !== NONE && none < gate ? pick.label : null;
+	return { pick, filled };
 }
 
 export function searchQuestion(
