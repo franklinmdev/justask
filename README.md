@@ -121,6 +121,12 @@ pnpm build       # emit dist/
 
 Tests never call a real provider. They use the fake provider in `test/fake-provider.ts`, which returns fixed probabilities per question label. Real calls happen only in eval runs, by hand, with a key copied from `.env.example` into `.env`.
 
+To make one real Jev call by hand and see its latency and cost:
+
+```sh
+node --conditions=source scripts/jev-call.ts "invoices from Acme"
+```
+
 ## License
 
 MIT

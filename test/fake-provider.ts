@@ -1,9 +1,17 @@
 import type {
+	ChoiceResponse,
+	Questions,
+	RequestOptions,
+	SystemOneRequest,
+	SystemOneResult,
+} from "@typesafe-ai/sdk";
+import type {
 	Probabilities,
 	Provider,
 	ProviderAnswer,
 	ProviderInput,
 } from "justask";
+import type { JevClient } from "justask/jev";
 
 /** Fixed probabilities per question id, then per label. */
 export type FakeAnswers = Record<string, Probabilities>;
@@ -78,4 +86,49 @@ export function failingProvider(
 /** Never answers, so the developer's timeout is what ends the call. */
 export function hangingProvider(): RecordingProvider {
 	return recording(() => new Promise(() => {}));
+}
+
+type JevCall = {
+	request: SystemOneRequest;
+	options: RequestOptions | undefined;
+};
+
+/**
+ * A fake of the TypeSafe SDK client, for the Jev adapter's tests only: it
+ * records each `systemOne` call and answers through `respond`, with no network.
+ */
+export function fakeJevClient(
+	respond: (call: JevCall) => Promise<SystemOneResult<Questions>>,
+): JevClient & { calls: JevCall[] } {
+	const calls: JevCall[] = [];
+	return {
+		calls,
+		systemOne(request, options) {
+			const call = { request, options };
+			calls.push(call);
+			return respond(call);
+		},
+	};
+}
+
+/** Jev's answer to `choice` questions: per question id, a probability for every label. */
+export function jevResult(
+	probabilities: Record<string, Probabilities>,
+): SystemOneResult<Questions> {
+	const answers: Record<string, ChoiceResponse> = {};
+	for (const [id, byLabel] of Object.entries(probabilities)) {
+		const [choice = ""] =
+			Object.entries(byLabel).sort(([, a], [, b]) => b - a)[0] ?? [];
+		answers[id] = {
+			type: "choice",
+			choice,
+			confidence: byLabel[choice] ?? 0,
+			probabilities: byLabel,
+		};
+	}
+	return {
+		model: "jev-1.13.0",
+		answers,
+		usage: { input_tokens: 120, output_tokens: 0 },
+	};
 }
