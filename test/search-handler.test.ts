@@ -51,6 +51,8 @@ function post(body: unknown) {
 
 const asked = { request: "invoices from Acme", timeZone: "UTC" };
 
+// The clock is the one stub beside the provider: today must be fixed to test
+// midnight. setSystemTime alone fakes Date and leaves the timers real.
 afterEach(() => {
 	vi.useRealTimers();
 });
