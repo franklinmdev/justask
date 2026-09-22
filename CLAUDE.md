@@ -21,4 +21,4 @@ Single-context: `CONTEXT.md` at the root plus `docs/adr/`. See `docs/agents/doma
 - `pnpm test`: Vitest, once; `pnpm test test/ask.test.ts` for one file
 - `pnpm build`: emit `dist/`
 
-Tests import the package by its own name (`justask`, `justask/react`, `justask/jev`); the `source` export condition points those at `src/`. The only fake is the provider, `test/fake-provider.ts`; no test calls a real one.
+Tests import the package by its own name (`justask`, `justask/react`, `justask/jev`); the `source` export condition points those at `src/`. The only fake is the provider, `test/fake-provider.ts`; no test calls a real one. The one exception is the clock: a test that needs a fixed today stubs `Date` with `vi.setSystemTime`, never the timers, so the provider timeout stays real.
