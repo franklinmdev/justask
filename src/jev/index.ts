@@ -11,6 +11,13 @@ import type { Provider, ProviderAnswer, ProviderInput } from "../provider.ts";
 /** The Jev model every call names, so a gate measured on it stays measured. */
 export const JEV_MODEL = "jev-1.13.0";
 
+/**
+ * The SDK times each attempt out after 10 s by default. The adapter sets
+ * setTimeout's ceiling instead, since a larger value would fire at once, so
+ * the developer's timeout, through the signal, is what ends a call.
+ */
+const NO_SDK_TIMEOUT_MS = 2 ** 31 - 1;
+
 /** The part of the TypeSafe SDK client the adapter uses. */
 export type JevClient = {
 	systemOne(
@@ -24,6 +31,8 @@ export type JevProviderOptions = {
 	 * Defaults to a TypeSafe client that reads `TYPESAFE_API_KEY` from the
 	 * server environment, created on the first call so a missing key surfaces as
 	 * a provider error from `ask`. Pass one for tests or a custom transport.
+	 * The default client also reads `TYPESAFE_BASE_URL` and `TYPESAFE_LOG_LEVEL`;
+	 * at `debug` the SDK logs request bodies, which hold the request and facts.
 	 */
 	client?: JevClient;
 };
@@ -56,7 +65,7 @@ export function jevProvider({ client }: JevProviderOptions = {}): Provider {
 						]),
 					),
 				},
-				{ signal, retry: { maxRetries: 0 } },
+				{ signal, timeout: NO_SDK_TIMEOUT_MS, retry: { maxRetries: 0 } },
 			);
 			// Copied as Jev gave them; the core rejects an answer that misses a label.
 			const answer: ProviderAnswer = {};

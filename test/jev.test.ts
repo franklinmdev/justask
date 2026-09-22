@@ -107,6 +107,15 @@ describe("jevProvider", () => {
 		expect(client.calls[0]?.options?.retry).toEqual({ maxRetries: 0 });
 	});
 
+	it("leaves the call's length to the developer's timeout, not the SDK's 10 s default", async () => {
+		const client = fakeJevClient(async () => jevResult(answers));
+
+		await jevProvider({ client }).answer(input);
+
+		// setTimeout's ceiling: a larger value would fire at once.
+		expect(client.calls[0]?.options?.timeout).toBe(2 ** 31 - 1);
+	});
+
 	it("returns a probability for every label of every question", async () => {
 		const client = fakeJevClient(async () => jevResult(answers));
 
