@@ -1,0 +1,89 @@
+# justask
+
+Turns what a person types in plain language into an app's own state. Code finds the candidates, a provider model picks among them, code builds the result, and the person confirms it.
+
+## Language
+
+**Request**:
+What the person types, in plain language, in English or Spanish.
+_Avoid_: Prompt, query, input
+
+**Candidate**:
+A value code found for a decision before the provider is asked: a parsed date, time or amount, a catalog row, a file.
+_Avoid_: Option, suggestion
+
+**Catalog**:
+The host app's own list of things a request can point at: products, clients, services, files. It lives in the host app, never in justask.
+_Avoid_: Index, dataset
+
+**Shortlist**:
+The few catalog candidates the host app returns for one request, which the provider then orders.
+_Avoid_: Results, top-k
+
+**Parser**:
+Code that finds candidates in a request: dates, times, amounts. justask ships English and Spanish parsers; a host app can add its own.
+_Avoid_: Extractor, NER
+
+**Facts**:
+What the provider is told about the world alongside a request: today in the person's time zone, the host app's local currency, catalog descriptions. Written as facts; no question names a country.
+_Avoid_: Context, settings, metadata
+
+**Question**:
+One decision put to the provider as a single choice among labelled candidates, always including `not_mentioned` and `not_available` (or a `none` label where there is one target).
+_Avoid_: Prompt, field question
+
+**Pick**:
+The label the provider chose for one question, with its probability.
+_Avoid_: Answer, prediction, extraction
+
+**Provider**:
+The model service that answers questions. It picks; it never writes a value.
+_Avoid_: LLM, AI, backend
+
+**Field**:
+One named slot of a filter or card, declared by the developer with its kind, a description the question uses, and its gate.
+_Avoid_: Property, attribute, slot
+
+**Field kind**:
+Where a field's candidates come from: date, time, amount (from parsers), catalog (from the host app), or yes-or-no.
+_Avoid_: Type, field type
+
+**Gate**:
+The minimum probability a pick needs before its field is filled. Every field declares its own; there is no default. Fixed before any run and measured on an eval set.
+_Avoid_: Threshold, confidence cutoff
+
+**Eval set**:
+Real requests, each with the result a person expects, used to measure a gate before it is fixed.
+_Avoid_: Test set, benchmark, gold
+
+**Dev set**:
+Requests used to tune questions and parsers. It never decides a verdict.
+_Avoid_: Training set, validation set
+
+**Kill line**:
+A pass or fail threshold on one measure (exact, coverage, invented, held ambiguous, p95, errors), written and frozen before the first scored run on an eval set.
+_Avoid_: Target, KPI, acceptance criterion
+
+**Held field**:
+A field left empty because its pick did not clear the gate, because the provider picked `not_mentioned` or `not_available`, or because a parser marked its candidates ambiguous (such as "next Friday"). Empty looks the same whatever the reason.
+_Avoid_: Abstained field, unknown, null field
+
+**Confirm**:
+The person's explicit approval of a result before anything is saved. Nothing leaves justask for the host app without it.
+_Avoid_: Submit, auto-apply
+
+**Host app**:
+The developer's application that uses justask. It saves confirmed results and owns undo; justask hands it the confirmed object and the place for the undo control.
+_Avoid_: Client app, consumer
+
+## Flows
+
+**Search**:
+A request resolved to one item among candidates, or to none.
+
+**Filter**:
+A request resolved to the exact filter object a table in the host app already understands.
+
+**Card**:
+A request resolved to a filled record, such as an appointment, gated first by an intent question.
+_Avoid_: Form fill, record card
