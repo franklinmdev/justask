@@ -219,7 +219,7 @@ export const spanish: Content = {
 			intentLabels: {
 				new_record: "registra un gasto nuevo",
 				not_mentioned: "no pide ningún registro",
-				not_available: "cambia, borra o pregunta por uno",
+				not_available: "cambia, borra, envía o pregunta por uno",
 			},
 			intentBecause: (reason) => {
 				switch (reason.kind) {

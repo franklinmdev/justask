@@ -222,7 +222,7 @@ export const english: Content = {
 			intentLabels: {
 				new_record: "records a new expense",
 				not_mentioned: "asks for no record",
-				not_available: "changes, deletes or asks about one",
+				not_available: "changes, deletes, sends or asks about one",
 			},
 			intentBecause: (reason) => {
 				switch (reason.kind) {
