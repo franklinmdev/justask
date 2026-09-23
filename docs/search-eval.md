@@ -108,7 +108,7 @@ English: one flip, `whoever cleans the office`, Brightmop at `none` 0.19 in run 
 - **The two Spanish failures are confident single picks, not near-misses.** Relucir at 0.78 and Tecnoria at 0.77, with the runner-up at 0.08 and 0.04: the provider read each request as naming one vendor. No margin between the top two tells them from a right answer.
 - **The FAIL is close to the gate, and a lower gate would have passed.** Rescored with no call, and so with no verdict: at 0.15, run 1 clears every kill line in both languages (English coverage 1, held ambiguous 1; Spanish coverage 0.893, held ambiguous 0.833, `es39` held and `es35` still filled at 0.14), and so does run 2. At 0.1 every ambiguous row holds but coverage drops to 0.929 in English and 0.893 in Spanish. The item and ambiguous `none` values overlap in Spanish (items up to 0.16, `la firma de recursos humanos`; ambiguous from 0.14), so no gate separates them cleanly. The gate rule was fixed before the run and set 0.2, so the verdict stays FAIL; choosing 0.15 now would be tuning on the rows that judge it. The old demo gate of 0.5 would have held only 1 of 6 in English and 2 of 6 in Spanish, so the dev-run rule moved the gate the right way.
 - **`es35`** reads the words of one vendor's description (Relucir: "limpieza de oficinas y de ventanas") over the other's ("limpieza nocturna de oficinas"). Both vendors clean offices, so the row is ambiguous as drafted; the catalog's wording pulls it to one.
-- **`es39` may be a drafting error, the owner's call.** "tecnología" shares its root with the vendor's name, Tecnoria, which the English row (`our tech vendor` against Fixbright) does not. A Spanish speaker with a vendor called Tecnoria may well mean it. The row is left as frozen; if the owner rules it wrong, the ruling is logged here and the verdict stays with run 1 as written.
+- **`es39`: the owner ruled it stays as written (2026-09-22).** "tecnología" shares its root with the vendor's name, Tecnoria, which the English row (`our tech vendor` against Fixbright) does not, so it was raised as a possible drafting error. The row stands, and the FAIL stands as recorded.
 - **`es20`** held a request for the courier at `none` 0.66 and 0.58 in both runs: phrased as a question about who did something today, it read as nothing to find.
 
 ### Run logs
@@ -118,3 +118,12 @@ English: one flip, `whoever cleans the office`, Brightmop at `none` 0.19 in run 
 - Run 2: `demo/eval/runs/search-en-2.jsonl`, `demo/eval/runs/search-es-2.jsonl`
 
 Each rescores with `scoreRun(await readRun(path), { gate })` and no call.
+
+## Next round, fixed before any new data
+
+Decided by the owner on 2026-09-22, after this verdict and before any row of the next set exists:
+
+- **Gate: 0.15.** Chosen from this round's run 1, where it clears every kill line on a rescore; it is judged only on rows nobody has seen, never on these.
+- **Kill lines:** the same six, unchanged in `demo/eval/kill-lines.ts`.
+- **A fresh eval set per language,** 40 rows each (28 item, 6 nothing, 6 ambiguous), drafted by the orchestrator with the owner and pasted in once approved. New files beside these: `demo/eval/search-en.round2.jsonl` and `demo/eval/search-es.round2.jsonl`, run logs `demo/eval/runs/search-<language>-round2-<n>.jsonl`. This round's sets, logs and verdict stay as they are.
+- **No call until the fresh sets are approved and frozen.** Run 1 of the fresh sets gives that round's verdict; run 2 reports flips only.
