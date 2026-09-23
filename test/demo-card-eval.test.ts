@@ -231,18 +231,18 @@ describe("the frozen card eval", () => {
 });
 
 /**
- * The demo serves the gates the rule gives on dev run 4 of both languages,
- * the first with the command hold and the intent label that names sending
- * (ADR 0009), the intent's among them, read from the committed logs with no
- * call (docs/card-eval.md).
+ * The demo serves the gates the rule gives on dev run 5 of both languages,
+ * the first with the named-pair hold (ADR 0010) and the intent label that
+ * names setting a value, the intent's among them, read from the committed
+ * logs with no call (docs/card-eval.md).
  */
 describe("the card's gates", () => {
-	it("are the approved rule applied to dev run 4", async () => {
+	it("are the approved rule applied to dev run 5", async () => {
 		const reports = await Promise.all(
 			["en", "es"].map(async (language) => {
 				const { intent, fields } = scoreCardRun(
 					await readCardRun(
-						evalFile(`runs/card-${language}-dev-4.jsonl`).pathname,
+						evalFile(`runs/card-${language}-dev-5.jsonl`).pathname,
 					),
 				);
 				return { fields: { intent, ...fields } };

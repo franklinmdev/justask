@@ -291,7 +291,7 @@ describe("the demo's card page", () => {
 		expect(held.getByText("Held")).toBeDefined();
 		expect(
 			held.getByText(
-				"A pick (0.48) fell below the gate (0.50), so the field is held.",
+				"A pick (0.48) fell below the gate (0.70), so the field is held.",
 			),
 		).toBeDefined();
 		await expectNoAxeViolations(container);
