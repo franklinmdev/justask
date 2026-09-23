@@ -4,6 +4,7 @@ import {
 	useEffect,
 	useState,
 } from "react";
+import { ScaleContext } from "./calculator.tsx";
 import { CardPage } from "./card-page.tsx";
 import { english } from "./content/en.ts";
 import { spanish } from "./content/es.ts";
@@ -62,6 +63,9 @@ export function App({
 	const [open, setOpen] = useState(true);
 	const [shown, setShown] = useState<"app" | "hood">("app");
 	const [hoodView, setHoodView] = useState<HoodView>("trace");
+	// The calculator's starting point, a round figure for the person to change.
+	const [users, setUsers] = useState("1000");
+	const [actions, setActions] = useState("10");
 	const { language, case: shownCase } = view;
 	const content = contents[language];
 	const { copy } = content;
@@ -167,27 +171,29 @@ export function App({
 					role="tabpanel"
 					aria-labelledby={`case-tab-${shownCase}`}
 				>
-					{shownCase === "table" && (
-						<FilterPage
-							key={language}
-							recording={recordings?.table[language] ?? null}
-							{...shared}
-						/>
-					)}
-					{shownCase === "form" && (
-						<CardPage
-							key={language}
-							recording={recordings?.form[language] ?? null}
-							{...shared}
-						/>
-					)}
-					{shownCase === "search" && (
-						<SearchPage
-							key={language}
-							recording={recordings?.search[language] ?? null}
-							{...shared}
-						/>
-					)}
+					<ScaleContext value={{ users, setUsers, actions, setActions }}>
+						{shownCase === "table" && (
+							<FilterPage
+								key={language}
+								recording={recordings?.table[language] ?? null}
+								{...shared}
+							/>
+						)}
+						{shownCase === "form" && (
+							<CardPage
+								key={language}
+								recording={recordings?.form[language] ?? null}
+								{...shared}
+							/>
+						)}
+						{shownCase === "search" && (
+							<SearchPage
+								key={language}
+								recording={recordings?.search[language] ?? null}
+								{...shared}
+							/>
+						)}
+					</ScaleContext>
 				</div>
 			</main>
 		</HoodPlaceContext>

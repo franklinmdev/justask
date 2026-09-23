@@ -302,6 +302,26 @@ export const english: Content = {
 			unresolved: (mark) => `“${mark}” is not the local currency`,
 			ambiguous: "reads two ways",
 		},
+		calculator: {
+			title: "Cost per month",
+			users: "Users",
+			actions: "Actions per person a day",
+			costPerCall: "Cost per call",
+			perMonth: "Per month",
+			noCall: "No call yet",
+			notPriced: "Not priced",
+			idle: "The month is priced after the first call.",
+			unpriced:
+				"The provider did not report this call's cost, so the month cannot be priced.",
+			invalid: "Enter a whole number to price the month.",
+			formula: (users, actions, cost, days) =>
+				`${users} × ${actions} × ${cost} × ${days} days`,
+			measured: "The cost per call is the displayed run's measured cost.",
+			rate: (model, rate) =>
+				`${model} charges ${rate} per million input tokens, output tokens free.`,
+			readFrom: "Read from",
+			readOn: (date) => `on ${date}.`,
+		},
 	},
 	vendors: [
 		vendor(
