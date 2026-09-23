@@ -175,6 +175,16 @@ function declared(logged: LoggedCardField, gate: number): CardField {
 	}
 }
 
+/** Throws on the first gate that is not one, naming the card's or the field's. */
+function checkGates(gates: Record<string, number>): void {
+	for (const [name, gate] of Object.entries(gates)) {
+		checkGate(
+			gate,
+			name === INTENT ? "the card's gate" : `the gate of field "${name}"`,
+		);
+	}
+}
+
 /** The intent's pick, and whether it lets the card fill at this gate. */
 function readRowIntent(row: CardRunRow, gate: number) {
 	if (row.error) return { passes: false, pick: null };
@@ -236,12 +246,7 @@ export function scoreCardRun(
 	{ gates: overrides = {} }: { gates?: Record<string, number> } = {},
 ): CardReport {
 	const gates = { ...run.gates, ...overrides };
-	for (const [name, gate] of Object.entries(gates)) {
-		checkGate(
-			gate,
-			name === INTENT ? "the card's gate" : `the gate of field "${name}"`,
-		);
-	}
+	checkGates(gates);
 	const names = Object.keys(gates).filter((name) => name !== INTENT);
 	const answered = run.rows.filter((row) => !row.error);
 	const read = answered.map((row) => ({ row, ...readCard(row, gates) }));
@@ -506,12 +511,7 @@ export function compareCardRuns(
 	{ gates: overrides = {} }: { gates?: Record<string, number> } = {},
 ): CardFlip[] {
 	const gates = { ...first.gates, ...overrides };
-	for (const [name, gate] of Object.entries(gates)) {
-		checkGate(
-			gate,
-			name === INTENT ? "the card's gate" : `the gate of field "${name}"`,
-		);
-	}
+	checkGates(gates);
 	const again = new Map(second.rows.map((row) => [row.id, row]));
 	const flips: CardFlip[] = [];
 	for (const row of first.rows) {
