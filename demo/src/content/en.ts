@@ -96,6 +96,8 @@ export const english: Content = {
 		shortlistLabel: "Shortlist",
 		shortlist: (count, catalog) => `${count} of ${catalog} vendors`,
 		roundTrip: "Round trip",
+		inputTokens: "Input tokens",
+		cost: "Cost",
 		filter: {
 			transactions: "Transactions",
 			boxLabel: "Filter the transactions",

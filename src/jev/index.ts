@@ -46,8 +46,8 @@ export type JevProviderOptions = {
 /**
  * Jev as a provider (ADR 0001): all of a request's questions in one
  * `systemOne` call, each a `choice` question with every label, and a
- * probability back for every label, with the call's cost. No retries, as
- * the core asks.
+ * probability back for every label, with the call's input tokens and cost.
+ * No retries, as the core asks.
  */
 export function jevProvider({ client }: JevProviderOptions = {}): Provider {
 	let jev = client;
@@ -85,6 +85,7 @@ export function jevProvider({ client }: JevProviderOptions = {}): Provider {
 			return {
 				answers: answer,
 				costUsd: usage.input_tokens * USD_PER_INPUT_TOKEN,
+				inputTokens: usage.input_tokens,
 			};
 		},
 	};

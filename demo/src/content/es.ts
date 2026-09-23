@@ -97,6 +97,8 @@ export const spanish: Content = {
 		shortlistLabel: "Lista corta",
 		shortlist: (count, catalog) => `${count} de ${catalog} proveedores`,
 		roundTrip: "Ida y vuelta",
+		inputTokens: "Tokens de entrada",
+		cost: "Costo",
 		filter: {
 			transactions: "Transacciones",
 			boxLabel: "Filtrar las transacciones",

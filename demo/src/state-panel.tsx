@@ -2,7 +2,7 @@ import type { SearchResult } from "justask";
 import type { UseSearch } from "justask/react";
 import type { Content, HeldReason, Vendor } from "./content/types.ts";
 import { formats } from "./format.ts";
-import { Bar, failureOf } from "./parts.tsx";
+import { Bar, failureOf, TraceFigures } from "./parts.tsx";
 import type { Trace } from "./trace.ts";
 
 /** The search question's own labels, asked beside the candidates (ADR 0005, 0007). */
@@ -144,12 +144,7 @@ export function StatePanel({
 								</div>
 							</>
 						)}
-						{trace && (
-							<div>
-								<dt>{copy.roundTrip}</dt>
-								<dd className="data">{trace.ms} ms</dd>
-							</div>
-						)}
+						{trace && <TraceFigures content={content} trace={trace} />}
 					</dl>
 					{result && result.candidates.length > 0 && (
 						<Candidates content={content} result={result} />

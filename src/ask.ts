@@ -34,6 +34,7 @@ import type {
 	Provider,
 	ProviderAnswer,
 	Question,
+	Usage,
 } from "./provider.ts";
 import {
 	type Candidate,
@@ -76,17 +77,22 @@ export type AskError =
 	| { kind: "provider"; message: string; cause: unknown }
 	| { kind: "timeout"; message: string; timeoutMs: number };
 
-export type AskResult<T> = {
+/**
+ * Each result carries what the provider call used, when the provider reports
+ * it: left out when there was no call, when the call failed or timed out, or
+ * when the adapter cannot know (ADR 0006).
+ */
+export type AskResult<T> = Usage & {
 	search: SearchResult<T>;
 	error?: AskError;
 };
 
-export type AskFilterResult<F extends Fields> = {
+export type AskFilterResult<F extends Fields> = Usage & {
 	filter: FilterResult<F>;
 	error?: AskError;
 };
 
-export type AskCardResult<F extends CardFields> = {
+export type AskCardResult<F extends CardFields> = Usage & {
 	card: CardResult<F>;
 	error?: AskError;
 };
@@ -146,7 +152,9 @@ async function askSearch<T>({
 		{ request, facts, questions },
 		timeoutMs,
 	);
-	if ("error" in outcome) return { search: held, error: outcome.error };
+	if ("error" in outcome) {
+		return { search: held, ...outcome.usage, error: outcome.error };
+	}
 
 	const probabilities = outcome.answer[SEARCH] ?? {};
 	const { pick, filled } = gateSearch(probabilities, search.gate);
@@ -158,6 +166,7 @@ async function askSearch<T>({
 			pick,
 			probabilities,
 		},
+		...outcome.usage,
 	};
 }
 
@@ -221,7 +230,9 @@ async function askFilter<F extends Fields>({
 		{ request, facts, questions },
 		timeoutMs,
 	);
-	if ("error" in outcome) return { filter: held(), error: outcome.error };
+	if ("error" in outcome) {
+		return { filter: held(), ...outcome.usage, error: outcome.error };
+	}
 
 	const value: Record<string, unknown> = {};
 	const fields: Record<string, unknown> = {};
@@ -235,7 +246,7 @@ async function askFilter<F extends Fields>({
 		fields[name] = read.result;
 		if ("value" in read) value[name] = read.value;
 	}
-	return { filter: { value, fields } as FilterResult<F> };
+	return { filter: { value, fields } as FilterResult<F>, ...outcome.usage };
 }
 
 /**
@@ -312,7 +323,9 @@ async function askCard<F extends CardFields>({
 		{ request, facts, questions },
 		timeoutMs,
 	);
-	if ("error" in outcome) return { card: held(), error: outcome.error };
+	if ("error" in outcome) {
+		return { card: held(), ...outcome.usage, error: outcome.error };
+	}
 
 	const intent = readIntent(outcome.answer[INTENT] ?? {}, card.gate);
 	const value: Record<string, unknown> = {};
@@ -329,6 +342,7 @@ async function askCard<F extends CardFields>({
 	}
 	return {
 		card: { intent: intent.result, value, fields } as CardResult<F>,
+		...outcome.usage,
 	};
 }
 
@@ -376,7 +390,9 @@ async function answer(
 	provider: Provider,
 	input: { request: string; facts: Facts; questions: Question[] },
 	timeoutMs: number,
-): Promise<{ answer: ProviderAnswer } | { error: AskError }> {
+): Promise<
+	{ answer: ProviderAnswer; usage: Usage } | { error: AskError; usage?: Usage }
+> {
 	const controller = new AbortController();
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	const timeout = new Promise<{ error: AskError }>((resolve) => {
@@ -395,11 +411,16 @@ async function answer(
 	const call = Promise.resolve()
 		.then(() => provider.answer({ ...input, signal: controller.signal }))
 		.then(
-			({ answers }) => {
+			({ answers, costUsd, inputTokens }) => {
+				// A call that broke the contract was still made, and still cost.
+				const usage: Usage = {
+					...(costUsd !== undefined && { costUsd }),
+					...(inputTokens !== undefined && { inputTokens }),
+				};
 				const breach = contractBreach(input.questions, answers);
 				return breach
-					? { error: providerError(new Error(breach)) }
-					: { answer: answers };
+					? { error: providerError(new Error(breach)), usage }
+					: { answer: answers, usage };
 			},
 			(cause: unknown) => ({ error: providerError(cause) }),
 		);

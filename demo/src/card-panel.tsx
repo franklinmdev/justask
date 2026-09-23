@@ -9,7 +9,7 @@ import type {
 } from "./content/types.ts";
 import { answersOf, MISSING, Question, type Readout } from "./filter-panel.tsx";
 import { formats } from "./format.ts";
-import { failureOf } from "./parts.tsx";
+import { failureOf, TraceFigures } from "./parts.tsx";
 import type { Trace } from "./trace.ts";
 
 type Format = ReturnType<typeof formats>;
@@ -251,12 +251,7 @@ export function CardPanel({
 								<dd className="data">{questionsOf(result)}</dd>
 							</div>
 						)}
-						{trace && (
-							<div>
-								<dt>{copy.roundTrip}</dt>
-								<dd className="data">{trace.ms} ms</dd>
-							</div>
-						)}
+						{trace && <TraceFigures content={content} trace={trace} />}
 					</dl>
 					{result && (
 						<IntentReadout

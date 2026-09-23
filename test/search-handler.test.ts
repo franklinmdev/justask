@@ -8,6 +8,7 @@ import {
 	failingProvider,
 	fakeProvider,
 	hangingProvider,
+	rawProvider,
 } from "./fake-provider.ts";
 
 type Vendor = { id: number; name: string };
@@ -74,6 +75,39 @@ describe("createSearchHandler", () => {
 				gate: 0.5,
 			},
 		});
+	});
+
+	it("reports the call's cost in US dollars and its input tokens when the provider does", async () => {
+		const response = await handler({
+			provider: fakeProvider(picksAcme, {
+				costUsd: 0.000005,
+				inputTokens: 120,
+			}),
+		})(post(asked));
+
+		const body = await response.json();
+		expect(body.costUsd).toBe(0.000005);
+		expect(body.inputTokens).toBe(120);
+	});
+
+	it("keeps the cost of a call whose answer broke the contract, since it was still made", async () => {
+		const response = await handler({
+			provider: rawProvider({}, { costUsd: 0.000005, inputTokens: 120 }),
+		})(post(asked));
+
+		const body = await response.json();
+		expect(body.search.item).toBeNull();
+		expect(body.error.kind).toBe("provider");
+		expect(body.costUsd).toBe(0.000005);
+		expect(body.inputTokens).toBe(120);
+	});
+
+	it("leaves cost and tokens out, never zero, when the provider reports neither", async () => {
+		const body = await (await handler()(post(asked))).json();
+
+		expect(body.search).toBeDefined();
+		expect(body).not.toHaveProperty("costUsd");
+		expect(body).not.toHaveProperty("inputTokens");
 	});
 
 	it("writes today in the browser's time zone and the configured facts, in one provider call", async () => {

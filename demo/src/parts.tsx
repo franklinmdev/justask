@@ -1,5 +1,7 @@
 import type { SearchError } from "justask/react";
-import type { HeldReason } from "./content/types.ts";
+import type { Content, HeldReason } from "./content/types.ts";
+import { formats } from "./format.ts";
+import type { Trace } from "./trace.ts";
 
 /**
  * Not measured yet: the demo is where the pause gets measured, so the round
@@ -61,5 +63,40 @@ export function Bar({ value, gate }: { value: number; gate?: number }) {
 				<span className="bar-gate" style={{ left: `${gate * 100}%` }} />
 			)}
 		</span>
+	);
+}
+
+/**
+ * The last call's round trip, then its input tokens and cost when the
+ * provider reported them: an unknown figure is left out, never shown as zero.
+ */
+export function TraceFigures({
+	content,
+	trace,
+}: {
+	content: Content;
+	trace: Trace;
+}) {
+	const { copy } = content;
+	const format = formats(content.locale);
+	return (
+		<>
+			<div>
+				<dt>{copy.roundTrip}</dt>
+				<dd className="data">{trace.ms} ms</dd>
+			</div>
+			{trace.inputTokens !== undefined && (
+				<div>
+					<dt>{copy.inputTokens}</dt>
+					<dd className="data">{format.count(trace.inputTokens)}</dd>
+				</div>
+			)}
+			{trace.costUsd !== undefined && (
+				<div>
+					<dt>{copy.cost}</dt>
+					<dd className="data">{format.cost(trace.costUsd)}</dd>
+				</div>
+			)}
+		</>
 	);
 }

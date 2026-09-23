@@ -27,10 +27,16 @@ export type Probabilities = Record<string, number>;
 /** Per question id, a probability for every label (ADR 0001). */
 export type ProviderAnswer = Record<string, Probabilities>;
 
-/** One call's answer, and what the call cost when the adapter knows (ADR 0006). */
-export type ProviderResult = {
-	answers: ProviderAnswer;
+/** What one call used, each figure only when the adapter knows it (ADR 0006). */
+export type Usage = {
+	/** The call's cost in US dollars. */
 	costUsd?: number;
+	inputTokens?: number;
+};
+
+/** One call's answer, and what the call used when the adapter knows (ADR 0006). */
+export type ProviderResult = Usage & {
+	answers: ProviderAnswer;
 };
 
 /** The model service that answers questions. It picks; it never writes a value (ADR 0002). */
