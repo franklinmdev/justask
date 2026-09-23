@@ -68,9 +68,14 @@ export function App({ fetch }: { fetch?: typeof globalThis.fetch }) {
 		return () => removeEventListener("popstate", sync);
 	}, []);
 
-	function show(next: View) {
+	/**
+	 * A click adds a history entry; an arrow step replaces it, so Back goes to
+	 * the case before the keys, not through every tab they passed.
+	 */
+	function show(next: View, step = false) {
 		if (next.language === language && next.case === shownCase) return;
-		history.pushState(null, "", hrefOf(next));
+		if (step) history.replaceState(null, "", hrefOf(next));
+		else history.pushState(null, "", hrefOf(next));
 		setView(next);
 	}
 
@@ -87,7 +92,7 @@ export function App({ fetch }: { fetch?: typeof globalThis.fetch }) {
 		const next = nextTab(event, cases, shownCase);
 		if (next === null) return;
 		event.preventDefault();
-		show({ language, case: next });
+		show({ language, case: next }, true);
 		document.getElementById(`case-tab-${next}`)?.focus();
 	}
 

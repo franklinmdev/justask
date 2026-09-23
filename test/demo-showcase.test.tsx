@@ -151,6 +151,18 @@ describe("the demo's showcase page", () => {
 		expect(location.search).toBe("");
 	});
 
+	it("leaves one history entry however many cases the arrow keys pass", async () => {
+		const { user } = renderDemo();
+		const entries = history.length;
+
+		tab("Table").focus();
+		await user.keyboard("{ArrowRight}{ArrowRight}{ArrowRight}{End}");
+
+		expect(tab("Search").getAttribute("aria-selected")).toBe("true");
+		expect(location.search).toBe("?case=search");
+		expect(history.length).toBe(entries);
+	});
+
 	it("shows the hood beside the app on desktop, open, and the toggle hides and shows it", async () => {
 		const { container, user } = renderDemo();
 
