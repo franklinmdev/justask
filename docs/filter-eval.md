@@ -112,7 +112,7 @@ Misses:
 
 | Row | Request | Field | Expected | Got | Pick |
 |---|---|---|---|---|---|
-| es-a-30 | facturas de Nubalia o de Cuentia de julio | vendor | held | Nubalia | nubalia 0.61 (next not_available 0.24, Cuentia 0.11) |
+| es-a-30 | facturas de Nubalia o de Cuentia de julio | vendor | held | Nubalia | nubalia 0.61 (next not_available 0.24, cuentia 0.11) |
 | en-f-11 | Glasswell's paid invoices between August 1 and August 15 | vendor | Glasswell | held | glasswell 0.50 |
 | en-f-15 | tallyrut invoices | vendor | Tallyroot | held | not_mentioned 0.66 |
 | en-f-16 | invoices still within their payment terms | status | open | held | open 0.94 |

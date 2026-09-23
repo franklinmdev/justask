@@ -5,10 +5,13 @@ import {
 	type FilterEvalKind,
 	type FilterEvalRow,
 	parseFilterEvalSet,
+	readFilterRun,
+	scoreFilterRun,
 } from "justask/eval";
 import { describe, expect, it } from "vitest";
+import { fixGate, poolFields } from "../demo/eval/filter-gates.ts";
 import { FILTER_KILL_LINES } from "../demo/eval/kill-lines.ts";
-import { demoFilter, FACTS } from "../demo/server/handler.ts";
+import { demoFilter, FACTS, FILTER_GATES } from "../demo/server/handler.ts";
 import { english } from "../demo/src/content/en.ts";
 import { spanish } from "../demo/src/content/es.ts";
 import type { FieldName } from "../demo/src/content/types.ts";
@@ -112,6 +115,16 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 			open: 2,
 			overdue: 2,
 		});
+		expect(tally(filterable, "amount")).toEqual({
+			min: 2,
+			max: 2,
+			exact: 1,
+			range: 1,
+		});
+		const vendors = filterable
+			.map((row) => row.expected.vendor)
+			.filter(Boolean);
+		expect(new Set(vendors).size).toBe(vendors.length);
 	});
 
 	it("never repeat a request of any other set in demo/eval, of each other, or a suggestion", () => {
@@ -207,5 +220,31 @@ describe("the frozen filter eval", () => {
 			p95Ms: 800,
 			errors: 0,
 		});
+	});
+});
+
+/**
+ * The demo serves the gates the rule gives on dev run 1 of both languages,
+ * read from the committed logs with no call (docs/filter-eval.md).
+ */
+describe("the filter's gates", () => {
+	it("are the approved rule applied to dev run 1", async () => {
+		const reports = await Promise.all(
+			["en", "es"].map(async (language) =>
+				scoreFilterRun(
+					await readFilterRun(
+						evalFile(`runs/filter-${language}-dev-1.jsonl`).pathname,
+					),
+				),
+			),
+		);
+		const fixed = Object.fromEntries(
+			Object.entries(poolFields(reports)).map(([name, picks]) => [
+				name,
+				fixGate(picks),
+			]),
+		);
+
+		expect(fixed).toEqual(FILTER_GATES);
 	});
 });
