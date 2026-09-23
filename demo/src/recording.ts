@@ -1,13 +1,21 @@
 import type {
+	CardHandlerResponse,
 	FilterHandlerResponse,
 	SearchHandlerResponse,
 	Usage,
 } from "justask";
+import formEn from "../recordings/form-en.json" with { type: "json" };
+import formEs from "../recordings/form-es.json" with { type: "json" };
 import searchEn from "../recordings/search-en.json" with { type: "json" };
 import searchEs from "../recordings/search-es.json" with { type: "json" };
 import tableEn from "../recordings/table-en.json" with { type: "json" };
 import tableEs from "../recordings/table-es.json" with { type: "json" };
-import type { Language, TransactionFields, Vendor } from "./content/types.ts";
+import type {
+	ExpenseFields,
+	Language,
+	TransactionFields,
+	Vendor,
+} from "./content/types.ts";
 import type { Trace } from "./trace.ts";
 
 /**
@@ -32,11 +40,13 @@ export type TableRecording = Recording<
 	FilterHandlerResponse<TransactionFields>
 >;
 export type SearchRecording = Recording<SearchHandlerResponse<Vendor>>;
+export type FormRecording = Recording<CardHandlerResponse<ExpenseFields>>;
 
 /** The recorded run each case opens on, per language. */
 export type Recordings = {
 	table: Record<Language, TableRecording>;
 	search: Record<Language, SearchRecording>;
+	form: Record<Language, FormRecording>;
 };
 
 export const recordings: Recordings = {
@@ -47,6 +57,10 @@ export const recordings: Recordings = {
 	search: {
 		en: searchEn as SearchRecording,
 		es: searchEs as SearchRecording,
+	},
+	form: {
+		en: formEn as FormRecording,
+		es: formEs as FormRecording,
 	},
 };
 

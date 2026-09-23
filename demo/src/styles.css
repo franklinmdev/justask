@@ -891,10 +891,12 @@ h2 {
 }
 
 /*
- * The signature motion: each control Apply set settles in after the one
- * before it, in field order. Held until its turn, so it never shows early.
+ * The signature motion: each control Apply set, and each card field the
+ * answer filled, settles in after the one before it, in field order. Held
+ * until its turn, so it never shows early.
  */
-.table-filter[data-settle] > :is(.control, .range) {
+.table-filter[data-settle] > :is(.control, .range),
+.entry[data-settle] {
 	animation: settle 150ms var(--ease-out) backwards;
 	animation-delay: calc(var(--settle-at) * 120ms);
 }
@@ -937,11 +939,6 @@ h2 {
 /* The tags take the card's full width: four checkboxes in one row. */
 .entry:has(.tags) {
 	grid-column: 1 / -1;
-}
-
-/* The signature motion: a field the answer filled settling in. */
-.entry[data-filled-by="answer"] {
-	animation: settle 150ms var(--ease-out);
 }
 
 .entry-head {

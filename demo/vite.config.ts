@@ -24,21 +24,36 @@ function justaskHandler(): Plugin {
 	return {
 		name: "justask-handler",
 		configureServer(server) {
-			if (!process.env.TYPESAFE_API_KEY) {
+			const dev = () => {
+				const ssr = server.environments.ssr;
+				if (!isRunnableDevEnvironment(ssr)) {
+					throw new Error("The ssr environment cannot run modules");
+				}
+				return ssr.runner.import<typeof import("./server/dev.ts")>(
+					"/server/dev.ts",
+				);
+			};
+			if (process.env.TYPESAFE_API_KEY) {
+				// One discarded call once the server listens, so a visitor's first request is not the cold start.
+				server.httpServer?.once("listening", async () => {
+					const started = performance.now();
+					try {
+						await (await dev()).warm();
+						server.config.logger.info(
+							`justask: provider warmed up in ${Math.round(performance.now() - started)} ms`,
+						);
+					} catch (error) {
+						server.config.logger.warn(`justask: warm-up failed: ${error}`);
+					}
+				});
+			} else {
 				server.config.logger.warn(
 					"justask: TYPESAFE_API_KEY is not set. Copy .env.example to .env in the main checkout and add your key; until then every search fails and is held.",
 				);
 			}
 			server.middlewares.use("/api", async (req, res, next) => {
 				try {
-					const ssr = server.environments.ssr;
-					if (!isRunnableDevEnvironment(ssr)) {
-						throw new Error("The ssr environment cannot run modules");
-					}
-					const { handle } =
-						await ssr.runner.import<typeof import("./server/dev.ts")>(
-							"/server/dev.ts",
-						);
+					const { handle } = await dev();
 					const response = await handle(
 						new Request(`http://${req.headers.host}${req.originalUrl}`, {
 							method: req.method ?? "GET",

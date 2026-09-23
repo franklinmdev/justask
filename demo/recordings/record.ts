@@ -1,37 +1,78 @@
 // The showcase's recorded runs, by hand with the key in .env, never in CI:
 // every recording is a real Jev call through the demo's handler.
 //
-//   node --conditions=source demo/recordings/record.ts
+//   node --conditions=source demo/recordings/record.ts [table|search|form ...]
 //
-// Writes demo/recordings/<case>-<language>.json for the Table and Search
-// cases in English and Spanish, each case's sentence taken from a frozen eval
-// row. A call whose result is not the row's expected one writes nothing, and
-// neither do the others, so every recording shows the gates passing its row.
-// Nothing in a recording is edited by hand: after a change to the gates, run
-// this again.
+// Writes demo/recordings/<case>-<language>.json for the named cases, every
+// case when none is named, in English and Spanish, each case's sentence taken
+// from a frozen eval row. The eval runners' warm-up goes first, discarded,
+// so a cold start never falls on a recorded call. A call whose result is not
+// the row's expected one writes nothing, and neither do the others, so every
+// recording shows the gates passing its row. Nothing in a recording is
+// edited by hand: after a change to the gates, run this again for the cases
+// they serve.
 
 import { execFileSync } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
 import type { AmountRange, DateRange, FieldValue } from "justask";
-import { parseEvalSet, parseFilterEvalSet } from "justask/eval";
+import {
+	parseCardEvalSet,
+	parseEvalSet,
+	parseFilterEvalSet,
+} from "justask/eval";
 import { jevProvider } from "justask/jev";
 import { loadKeyEnv } from "../../scripts/load-env.ts";
 import { createDemoHandler } from "../server/handler.ts";
-import { filterEndpoint, searchEndpoint } from "../src/api.ts";
-import type { Language, TransactionFields } from "../src/content/types.ts";
-import type { SearchRecording, TableRecording } from "../src/recording.ts";
+import { warmUp } from "../server/warm-up.ts";
+import { cardEndpoint, filterEndpoint, searchEndpoint } from "../src/api.ts";
+import type {
+	ExpenseName,
+	Language,
+	TransactionFields,
+} from "../src/content/types.ts";
+import type {
+	FormRecording,
+	SearchRecording,
+	TableRecording,
+} from "../src/recording.ts";
 
-/** Each case's row per language: the same sentence in both, and every field the table has but one. */
+/**
+ * Each case's row per language: the same sentence in both. The table's sets
+ * every field but one. The form's names no vendor and no day, so both stay
+ * empty, and no relative day, so a rerun on another day expects the same
+ * card; both round 4 runs filled its fields at least 0.1 above their gates in
+ * both languages (#53).
+ */
 const ROWS = {
-	table: { set: "filter", en: "en-f-26", es: "es-f-26" },
+	table: { set: "filter", suffix: "", en: "en-f-26", es: "es-f-26" },
 	search: { set: "search", suffix: ".round3", en: "en-r3-01", es: "es-r3-01" },
+	form: { set: "card", suffix: ".round4", en: "en-r4-20", es: "es-r4-20" },
 } as const;
+type Case = keyof typeof ROWS;
+
+const named = process.argv.slice(2);
+for (const name of named) {
+	if (!Object.hasOwn(ROWS, name)) {
+		console.error(
+			"Usage: node --conditions=source demo/recordings/record.ts [table|search|form ...]",
+		);
+		process.exit(1);
+	}
+}
+const cases = (named.length > 0 ? named : Object.keys(ROWS)) as Case[];
 
 const here = (path: string) => new URL(path, import.meta.url).pathname;
-const evalSet = (file: string) => here(`../eval/${file}`);
+
+/** The case's eval set file in a language, and its text. */
+async function evalSet(name: Case, language: Language) {
+	const { set, suffix } = ROWS[name];
+	const file = `${set}-${language}${suffix}.jsonl`;
+	return { file, text: await readFile(here(`../eval/${file}`), "utf8") };
+}
 
 loadKeyEnv(process.cwd());
-const handler = createDemoHandler(jevProvider(), {
+const provider = jevProvider();
+const handler = createDemoHandler(provider, {
 	onError(error) {
 		console.error(`justask: ${error.message}`);
 	},
@@ -78,20 +119,21 @@ function sameRange(
 	);
 }
 
-const problems: string[] = [];
-const written: { file: string; recording: TableRecording | SearchRecording }[] =
-	[];
+type Recorded = TableRecording | SearchRecording | FormRecording;
 
-for (const language of ["en", "es"] as Language[]) {
-	const tableFile = `${ROWS.table.set}-${language}.jsonl`;
-	const tableRow = parseFilterEvalSet(
-		await readFile(evalSet(tableFile), "utf8"),
-	).find(({ id }) => id === ROWS.table[language]);
-	if (!tableRow) throw new Error(`No row ${ROWS.table[language]}`);
-	const table = await call(filterEndpoint(language), tableRow.request);
+const problems: string[] = [];
+const written: { file: string; recording: Recorded }[] = [];
+
+async function recordTable(language: Language) {
+	const { file, text } = await evalSet("table", language);
+	const row = parseFilterEvalSet(text).find(
+		({ id }) => id === ROWS.table[language],
+	);
+	if (!row) throw new Error(`No row ${ROWS.table[language]}`);
+	const table = await call(filterEndpoint(language), row.request);
 	const recording: TableRecording = {
-		set: tableFile,
-		row: tableRow.id,
+		set: file,
+		row: row.id,
 		recordedAt: table.recordedAt,
 		timeZone: table.timeZone,
 		request: table.request,
@@ -99,8 +141,8 @@ for (const language of ["en", "es"] as Language[]) {
 		response: table.body,
 	};
 	const { filter, error } = recording.response;
-	if (error) problems.push(`${tableRow.id}: ${error.message}`);
-	const expected = tableRow.expected as Record<string, unknown>;
+	if (error) problems.push(`${row.id}: ${error.message}`);
+	const expected = row.expected as Record<string, unknown>;
 	for (const name of Object.keys(
 		filter.fields,
 	) as (keyof TransactionFields)[]) {
@@ -116,37 +158,85 @@ for (const language of ["en", "es"] as Language[]) {
 					);
 		if (!same) {
 			problems.push(
-				`${tableRow.id} ${name}: expected ${JSON.stringify(expected[name])}, got ${JSON.stringify(value)}`,
+				`${row.id} ${name}: expected ${JSON.stringify(expected[name])}, got ${JSON.stringify(value)}`,
 			);
 		}
 	}
 	written.push({ file: `table-${language}.json`, recording });
+}
 
-	const searchFile = `${ROWS.search.set}-${language}${ROWS.search.suffix}.jsonl`;
-	const searchRow = parseEvalSet(
-		await readFile(evalSet(searchFile), "utf8"),
-	).find(({ id }) => id === ROWS.search[language]);
-	if (!searchRow) throw new Error(`No row ${ROWS.search[language]}`);
-	const search = await call(searchEndpoint(language), searchRow.request);
-	const searched: SearchRecording = {
-		set: searchFile,
-		row: searchRow.id,
+async function recordSearch(language: Language) {
+	const { file, text } = await evalSet("search", language);
+	const row = parseEvalSet(text).find(({ id }) => id === ROWS.search[language]);
+	if (!row) throw new Error(`No row ${ROWS.search[language]}`);
+	const search = await call(searchEndpoint(language), row.request);
+	const recording: SearchRecording = {
+		set: file,
+		row: row.id,
 		recordedAt: search.recordedAt,
 		timeZone: search.timeZone,
 		request: search.request,
 		latencyMs: search.latencyMs,
 		response: search.body,
 	};
-	const item = searched.response.search.item?.id ?? null;
-	if (searched.response.error) {
-		problems.push(`${searchRow.id}: ${searched.response.error.message}`);
+	const item = recording.response.search.item?.id ?? null;
+	if (recording.response.error) {
+		problems.push(`${row.id}: ${recording.response.error.message}`);
 	}
-	if (item !== searchRow.expected) {
-		problems.push(
-			`${searchRow.id}: expected ${searchRow.expected}, got ${item}`,
-		);
+	if (item !== row.expected) {
+		problems.push(`${row.id}: expected ${row.expected}, got ${item}`);
 	}
-	written.push({ file: `search-${language}.json`, recording: searched });
+	written.push({ file: `search-${language}.json`, recording });
+}
+
+async function recordForm(language: Language) {
+	const { file, text } = await evalSet("form", language);
+	const row = parseCardEvalSet(text).find(
+		({ id }) => id === ROWS.form[language],
+	);
+	if (!row) throw new Error(`No row ${ROWS.form[language]}`);
+	const form = await call(cardEndpoint(language), row.request);
+	const recording: FormRecording = {
+		set: file,
+		row: row.id,
+		recordedAt: form.recordedAt,
+		timeZone: form.timeZone,
+		request: form.request,
+		latencyMs: form.latencyMs,
+		response: form.body,
+	};
+	const { card, error } = recording.response;
+	if (error) problems.push(`${row.id}: ${error.message}`);
+	// Each field as the eval set writes it: a catalog field by its ids, a held
+	// or unmentioned one as nothing.
+	const { vendor, tags, spent_on, total } = card.value;
+	const got: Record<ExpenseName, unknown> = {
+		vendor: vendor?.id,
+		tags: tags && [...tags].sort(),
+		spent_on,
+		total: total && { value: total.value, currency: total.currency },
+	};
+	for (const name of Object.keys(got) as ExpenseName[]) {
+		const value = row.expected[name];
+		const want =
+			value === undefined || value === "held"
+				? undefined
+				: Array.isArray(value)
+					? [...value].sort()
+					: value;
+		if (JSON.stringify(got[name]) !== JSON.stringify(want)) {
+			problems.push(
+				`${row.id} ${name}: expected ${JSON.stringify(value)}, got ${JSON.stringify(got[name])}`,
+			);
+		}
+	}
+	written.push({ file: `form-${language}.json`, recording });
+}
+
+const record = { table: recordTable, search: recordSearch, form: recordForm };
+await warmUp(provider);
+for (const language of ["en", "es"] as Language[]) {
+	for (const name of cases) await record[name](language);
 }
 
 if (problems.length > 0) {
