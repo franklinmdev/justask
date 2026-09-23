@@ -5,14 +5,16 @@
 //   node --conditions=source demo/eval/card.ts compare <en|es> <eval|round2|round3|round4> <first n> <second n>
 //   node --conditions=source demo/eval/card.ts gates <dev n>
 //
-// `run` writes demo/eval/runs/card-<language>[-round2|-round3|-round4|-dev|-diag|-pair]-<n>.jsonl,
-// which it never overwrites, and prints its report. `eval` is round 1's set,
-// `round2`, `round3` and `round4` the fresh sets of rounds 2 to 4, `diag` the probes
-// of #57: commands on a recorded expense, and records with the command
-// words in them, and `pair` the probes of #63: two vendors named with "and"
-// or "or", as a pair or beside the vendor paid. A dev, diag or pair run gets
-// no verdict: it tunes, it never decides. `compare` reads two saved eval runs and prints the second one's
-// measures and flips, with no call. `gates` reads dev run <n> of both
+// `run` writes
+// demo/eval/runs/card-<language>[-round2|-round3|-round4|-dev|-diag|-pair]-<n>.jsonl,
+// which it never overwrites, and prints its report. `eval` is round 1's
+// set, `round2`, `round3` and `round4` the fresh sets of rounds 2 to 4,
+// `diag` the probes of #57: commands on a recorded expense, and records with
+// the command words in them, and `pair` the probes of #63: two vendors named
+// with "and" or "or", as a pair or beside the vendor paid. A dev, diag or
+// pair run gets no verdict: it tunes, it never decides. `compare` reads two
+// saved eval runs and prints the second one's measures and flips, with no
+// call. `gates` reads dev run <n> of both
 // languages and prints the intent's and each field's gate by the rule in
 // gates.ts, with no call.
 

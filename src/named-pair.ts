@@ -92,13 +92,13 @@ function namings(candidates: Candidate<unknown>[]): Naming[] {
 	]);
 }
 
-function reads(naming: Naming, run: Word[]): boolean {
-	const said = run.map(({ folded }) => folded).join(" ");
+function namesItem(naming: Naming, run: Word[]): boolean {
+	const written = run.map(({ folded }) => folded).join(" ");
 	const name = naming.words.join(" ");
-	if (said === name) return true;
+	if (written === name) return true;
 	return (
 		naming.typos &&
-		withinDistance(said, name, typoAllowance(name.replace(/ /g, "").length))
+		withinDistance(written, name, typoAllowance(name.replace(/ /g, "").length))
 	);
 }
 
@@ -114,7 +114,7 @@ function mentions(text: Word[], candidates: Candidate<unknown>[]): Mention[] {
 		const naming = all.find(
 			(naming) =>
 				i + naming.words.length <= text.length &&
-				reads(naming, text.slice(i, i + naming.words.length)),
+				namesItem(naming, text.slice(i, i + naming.words.length)),
 		);
 		if (!naming) continue;
 		found.push({ id: naming.id, first: i, last: i + naming.words.length - 1 });
@@ -168,7 +168,7 @@ export function findPair(
 /** Refuses a blank joiner, or one of several words, which the pair hold would never read. */
 export function checkJoiners(joiners: Joiners | undefined): void {
 	for (const joiner of [...(joiners?.or ?? []), ...(joiners?.and ?? [])]) {
-		if (joiner.trim().split(/\s+/).length !== 1 || !joiner.trim()) {
+		if (!/^\S+$/.test(joiner.trim())) {
 			throw new TypeError(
 				`justask: the card's joiner "${joiner}" is not one word`,
 			);

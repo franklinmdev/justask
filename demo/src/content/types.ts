@@ -285,8 +285,10 @@ export type Content = {
 	cardJoiners: Joiners;
 };
 
-/** A catalog row: the provider reads the description, never the value. */
-/** A vendor of the catalog; its brand is the word or two a request names it by (ADR 0010). */
+/**
+ * A catalog row: the provider reads the description, never the value. Its
+ * brand is the word or two a request names it by (ADR 0010).
+ */
 export function vendor(
 	id: string,
 	name: string,

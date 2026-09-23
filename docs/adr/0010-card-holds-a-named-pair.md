@@ -25,6 +25,17 @@ The owner chose the rule above from these numbers: both joiners, "and" only on a
 - **Search and filter do not adopt it yet.** Every frozen search and filter set's pair rows are ambiguous rows the rule holds (`Cloudberth or Tallyroot invoices in July`, `la factura de Pieveloz o de Lindero`), and none of their records, so the evidence points the same way; each adopts it with its own fresh round, as a follow-up.
 - Every gate is refixed from dev runs with both changes in place, before any round 4 call.
 
+## Known limits
+
+Found in review after round 4, and left as they are: round 4 judged this rule, and a change is a new round's.
+
+- **A choice of three is not held.** "Tallyroot, Cloudberth or Paydale" names a third item, and a comma is not a joiner; the provider decides it as before.
+- **A self-correction is held.** "Tallyroot, or rather Cloudberth" and "Cazuela Azul o mejor dicho Nubalia" name one vendor, but the two other words the rule allows cover "rather" and "mejor dicho".
+- **A brand that is an ordinary word reads as the vendor.** `Serena` (calm) and `Relucir` (to shine) are words: "una tarde serena y Lindero" is held, and such a word can count as a third item and cancel a real pair.
+- **A hyphen or slash joins the names into one word**, so "Tallyroot/Cloudberth" and "Cazuela-Azul o Nubalia" are not held.
+- **The matcher is not the search's.** The fuzzy shortlist scores a request against descriptions; the pair hold reads ids and `names` with its own typo rule, so a name the shortlist matches by a prefix or an initial is not a mention here.
+- **A saved log keeps the pairs it was run with.** The scorer rebuilds a held field from the logged `pairs`, never by running the matcher again, so a rule change never reaches an old log.
+
 ## Considered Options
 
 - A `several` label on the vendor question: the vendor question already has `not_available` for "names one that no candidate expresses", and it leaked at up to 0.77. Not taken; a label has not held it in four verdicts.

@@ -48,8 +48,8 @@ function intentReasonOf(
 
 /**
  * Why a card field is held, read the way the code holds it: no candidates,
- * a request that asks for no new expense, a named pair, no answer, a tie, a missing label,
- * then a picked reading the code refuses (two ways to read it, a currency
+ * a request that asks for no new expense, a named pair, no answer, a tie, a
+ * missing label, then a picked reading the code refuses (two ways to read it, a currency
  * that is not the local one, a period), and last a pick below the gate.
  */
 function heldReasonOf(
