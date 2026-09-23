@@ -117,8 +117,6 @@ export const english: Content = {
 			removeLabel: (field) => `Remove the ${field.toLowerCase()} filter`,
 			removed: (field) => `Removed: ${field.toLowerCase()}`,
 			confirm: "Apply filters",
-			heldHint:
-				"A held field stays out of the filters. A real app fills it with its own table controls.",
 			empty: "Nothing in that request filters the transactions.",
 			applied: "Applied",
 			clear: "Clear filters",
@@ -126,6 +124,24 @@ export const english: Content = {
 				count === total
 					? `All ${total} transactions`
 					: `${count} of ${total} transactions`,
+			controls: {
+				allVendors: "All vendors",
+				allStatuses: "All statuses",
+				from: "Start date",
+				to: "End date",
+				fromEmpty: "Start",
+				toEmpty: "End",
+				min: "Minimum amount",
+				max: "Maximum amount",
+				minEmpty: "Min",
+				maxEmpty: "Max",
+				calendar: {
+					label: "Choose the day",
+					previous: "Previous month",
+					next: "Next month",
+					clear: "Clear",
+				},
+			},
 			none: "No transaction matches the applied filters.",
 			vendorColumn: "Vendor",
 			fills: "Fills the filters",

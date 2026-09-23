@@ -16,6 +16,18 @@ export function formats(locale: string) {
 		dateStyle: "medium",
 		timeZone: "UTC",
 	});
+	// A range's days in a narrow control: the year only when it is not this one.
+	const day = new Intl.DateTimeFormat(locale, {
+		month: "short",
+		day: "numeric",
+		timeZone: "UTC",
+	});
+	const dayInYear = new Intl.DateTimeFormat(locale, {
+		month: "short",
+		day: "numeric",
+		year: "numeric",
+		timeZone: "UTC",
+	});
 	// A call costs millionths of a dollar, so two significant digits, not cents.
 	const cost = new Intl.NumberFormat(locale, {
 		style: "currency",
@@ -33,5 +45,24 @@ export function formats(locale: string) {
 				? `${value} ${currency}`
 				: amount.format(value),
 		date: (iso: string) => date.format(new Date(`${iso}T00:00:00Z`)),
+		day: (iso: string) =>
+			(Number(iso.slice(0, 4)) === new Date().getFullYear()
+				? day
+				: dayInYear
+			).format(new Date(`${iso}T00:00:00Z`)),
 	};
+}
+
+/**
+ * The number the person typed: a comma before one or two final digits is a
+ * decimal comma, any other comma groups thousands.
+ */
+export function parseAmount(text: string): number | undefined {
+	const plain = text.trim();
+	if (plain === "") return undefined;
+	const decimal = /^[^.]*,\d{1,2}$/.test(plain)
+		? plain.replace(",", ".")
+		: plain.replace(/,/g, "");
+	const number = Number(decimal);
+	return Number.isFinite(number) ? number : undefined;
 }
