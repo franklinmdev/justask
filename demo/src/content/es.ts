@@ -35,14 +35,18 @@ export const spanish: Content = {
 		filled: "Completado",
 		held: "Retenido",
 		failed: "Falló",
-		filledBecause: (name, none, gate) =>
-			`Ganó ${name}, y none (${none}) quedó por debajo del umbral (${gate}).`,
+		filledBecause: (name, none, several, gate) =>
+			`Ganó ${name}, y none (${none}) y several (${several}) quedaron por debajo del umbral (${gate}).`,
 		heldBecause: (reason) => {
 			switch (reason.kind) {
 				case "none-reached-gate":
 					return `none (${reason.none}) alcanzó el umbral (${reason.gate}), así que no se muestra nada.`;
+				case "several-reached-gate":
+					return `several (${reason.several}) alcanzó el umbral (${reason.gate}), así que no se muestra nada.`;
 				case "none-picked":
 					return `El modelo eligió none (${reason.none}), así que no se muestra nada.`;
+				case "several-picked":
+					return `El modelo eligió several (${reason.several}), así que no se muestra nada.`;
 				case "tie":
 					return "Dos candidatos empataron en el primer lugar, así que no se muestra nada.";
 				case "no-candidates":
@@ -59,7 +63,7 @@ export const spanish: Content = {
 		candidate: "Candidato",
 		probability: "Probabilidad",
 		pick: "elegido",
-		gate: "Umbral sobre none",
+		gate: "Umbral sobre none y several",
 		shortlistLabel: "Lista corta",
 		shortlist: (count, catalog) => `${count} de ${catalog} proveedores`,
 		roundTrip: "Ida y vuelta",

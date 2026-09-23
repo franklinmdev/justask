@@ -31,7 +31,7 @@ import {
 	type Candidate,
 	checkShortlist,
 	gateSearch,
-	NONE,
+	SEARCH_LABELS,
 	type Search,
 	searchQuestion,
 } from "./search.ts";
@@ -95,8 +95,8 @@ export function ask(
 }
 
 /**
- * The item fills when a candidate wins outright and none stays below the gate
- * (ADR 0005).
+ * The item fills when a candidate wins outright and none and several stay
+ * below the gate (ADR 0005, 0007).
  */
 async function askSearch<T>({
 	request,
@@ -107,7 +107,7 @@ async function askSearch<T>({
 }: AskInput<T>): Promise<AskResult<T>> {
 	checkGate(search.gate, "the search's gate");
 	const candidates = await search.shortlist(request);
-	checkShortlist(candidates, [NONE]);
+	checkShortlist(candidates, SEARCH_LABELS);
 	const held: SearchResult<T> = {
 		item: null,
 		candidates,

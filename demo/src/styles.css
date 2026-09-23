@@ -647,8 +647,9 @@ h2 {
 	text-align: right;
 }
 
-.candidates .none-row th,
-.candidates .none-row td {
+/* The question's own labels, none and several, below the candidates. */
+.candidates .label-rows tr:first-child th,
+.candidates .label-rows tr:first-child td {
 	border-top: 1px solid var(--border-strong);
 }
 
@@ -685,7 +686,7 @@ h2 {
 	background: var(--primary);
 }
 
-.none-row .bar-fill {
+.label-rows .bar-fill {
 	background: var(--bar-none);
 }
 

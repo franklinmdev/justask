@@ -128,7 +128,9 @@ describe("jevProvider", () => {
 
 	it("resolves a search through ask", async () => {
 		const client = fakeJevClient(async () =>
-			jevResult({ search: { acme: 0.9, northwind: 0.08, none: 0.02 } }),
+			jevResult({
+				search: { acme: 0.9, northwind: 0.08, none: 0.02, several: 0 },
+			}),
 		);
 
 		const result = await ask({

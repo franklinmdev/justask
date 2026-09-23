@@ -29,7 +29,7 @@ What the provider is told about the world alongside a request: today in the pers
 _Avoid_: Context, settings, metadata
 
 **Question**:
-One decision put to the provider as a single choice among labelled candidates, always including `not_mentioned` and `not_available` (or a `none` label where there is one target).
+One decision put to the provider as a single choice among labelled candidates, always including `not_mentioned` and `not_available` (or `none` and `several` labels where there is one target).
 _Avoid_: Prompt, field question
 
 **Pick**:
@@ -49,7 +49,7 @@ Where a field's candidates come from: date, time, amount (from parsers), catalog
 _Avoid_: Type, field type
 
 **Gate**:
-The minimum probability a pick needs before its field is filled. A search reads it the other way, on its `none` label: the item is held once `none` reaches the gate (ADR 0005). Every field declares its own, a number strictly between 0 and 1; there is no default. Fixed before any run and measured on an eval set. Spanish UI copy calls it "umbral".
+The minimum probability a pick needs before its field is filled. A search reads it the other way, on its `none` and `several` labels: the item is held once either reaches the gate (ADR 0005, 0007). Every field declares its own, a number strictly between 0 and 1; there is no default. Fixed before any run and measured on an eval set. Spanish UI copy calls it "umbral".
 _Avoid_: Threshold, confidence cutoff (in English)
 
 **Eval set**:

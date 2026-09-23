@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { type EvalRow, parseEvalSet } from "justask/eval";
+import { type EvalRow, parseEvalSet, readRun, scoreRun } from "justask/eval";
 import { describe, expect, it } from "vitest";
 import { KILL_LINES } from "../demo/eval/kill-lines.ts";
 import { demoSearch } from "../demo/server/handler.ts";
@@ -132,5 +132,26 @@ describe("the frozen search eval", () => {
 			p95Ms: 800,
 			errors: 0,
 		});
+	});
+});
+
+/**
+ * The recorded rounds were run before the search asked for several (ADR 0007).
+ * Their logs have no several, so they must rescore exactly as
+ * docs/search-eval.md records them.
+ */
+describe("the recorded search rounds", () => {
+	it.each([
+		["search-en-1.jsonl", 28, 28, 5, true],
+		["search-es-1.jsonl", 28, 27, 4, false],
+		["search-en-round2-1.jsonl", 28, 26, 5, true],
+		["search-es-round2-1.jsonl", 28, 24, 4, false],
+	])("rescore %s as recorded", async (log, items, covered, held, pass) => {
+		const report = scoreRun(await readRun(evalFile(`runs/${log}`).pathname));
+
+		expect(report.counts).toMatchObject({ items, covered, right: covered });
+		expect(report.counts.held).toBe(held);
+		expect(report.measures.invented).toBe(0);
+		expect(report.verdict?.pass).toBe(pass);
 	});
 });

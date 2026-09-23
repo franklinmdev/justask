@@ -1,5 +1,5 @@
 import { checkGate } from "../gate.ts";
-import { gateSearch, NONE } from "../search.ts";
+import { gateSearch, NONE, SEVERAL } from "../search.ts";
 import { type KillLines, MEASURES, type Measure } from "./kill-lines.ts";
 import type { Run, RunRow } from "./run.ts";
 import type { EvalKind } from "./set.ts";
@@ -17,6 +17,8 @@ export type Miss = {
 	item: string | null;
 	/** The `none` label's probability, which the gate reads. */
 	none: number | null;
+	/** The `several` label's probability, which the gate also reads; null in a log saved before ADR 0007. */
+	several: number | null;
 	/**
 	 * `shortlist` when the expected candidate never reached the provider, so
 	 * no pick could have been right; `provider` otherwise.
@@ -97,13 +99,14 @@ export function scoreRun(run: Run, { gate = run.gate } = {}): Report {
 	const misses = read
 		.filter(({ row, item }) => item !== row.expected)
 		.map(
-			({ row, item, none }): Miss => ({
+			({ row, item, none, several }): Miss => ({
 				id: row.id,
 				request: row.request,
 				kind: row.kind,
 				expected: row.expected,
 				item,
 				none,
+				several,
 				blame:
 					row.expected !== null &&
 					!row.candidates.some(({ id }) => id === row.expected)
@@ -150,6 +153,7 @@ export type Flip = {
 export type Side = {
 	item: string | null;
 	none: number | null;
+	several: number | null;
 	filled: boolean;
 };
 
@@ -179,18 +183,19 @@ export function compareRuns(
 }
 
 function side(row: RunRow, gate: number): Side {
-	const { item, none } = readRow(row, gate);
-	return { item, none, filled: item !== null };
+	const { item, none, several } = readRow(row, gate);
+	return { item, none, several, filled: item !== null };
 }
 
 /** The candidate id the item fills with at this gate, as `ask` reads it. */
 function readRow(
 	row: RunRow,
 	gate: number,
-): { item: string | null; none: number | null } {
+): { item: string | null; none: number | null; several: number | null } {
 	return {
 		item: gateSearch(row.probabilities, gate).filled,
 		none: row.probabilities[NONE] ?? null,
+		several: row.probabilities[SEVERAL] ?? null,
 	};
 }
 

@@ -25,7 +25,9 @@ export type Transaction = {
 /** Why a search holds its item, as the state panel explains it. */
 export type HeldReason =
 	| { kind: "none-reached-gate"; none: string; gate: string }
+	| { kind: "several-reached-gate"; several: string; gate: string }
 	| { kind: "none-picked"; none: string }
+	| { kind: "several-picked"; several: string }
 	| { kind: "tie" }
 	| { kind: "no-candidates" }
 	| { kind: "provider" }
@@ -57,7 +59,12 @@ export type Copy = {
 	filled: string;
 	held: string;
 	failed: string;
-	filledBecause: (name: string, none: string, gate: string) => string;
+	filledBecause: (
+		name: string,
+		none: string,
+		several: string,
+		gate: string,
+	) => string;
 	heldBecause: (reason: HeldReason) => string;
 	request: string;
 	candidate: string;

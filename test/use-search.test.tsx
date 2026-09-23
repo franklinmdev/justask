@@ -32,8 +32,12 @@ const northwind: Candidate<Vendor> = {
 	value: { id: 2, name: "Northwind Traders" },
 };
 
-const picksAcme = { search: { acme: 0.93, northwind: 0.05, none: 0.02 } };
-const picksNone = { search: { acme: 0.1, northwind: 0.05, none: 0.85 } };
+const picksAcme = {
+	search: { acme: 0.93, northwind: 0.05, none: 0.02, several: 0 },
+};
+const picksNone = {
+	search: { acme: 0.1, northwind: 0.05, none: 0.85, several: 0 },
+};
 
 const typing: SearchTiming = { on: "type", debounceMs: 30 };
 
@@ -203,7 +207,7 @@ describe("useSearch and its pieces", () => {
 			item: acme.value,
 			candidates: [acme, northwind],
 			pick: { label: "acme", probability: 0.93 },
-			probabilities: { acme: 0.93, northwind: 0.05, none: 0.02 },
+			probabilities: { acme: 0.93, northwind: 0.05, none: 0.02, several: 0 },
 			gate: 0.5,
 		});
 		expect(seen.search?.error).toBeNull();

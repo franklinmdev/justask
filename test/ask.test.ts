@@ -42,7 +42,7 @@ const base = {
 describe("ask: search", () => {
 	it("fills the item when the provider picks a candidate and none stays below the gate, in one call", async () => {
 		const fake = fakeProvider({
-			search: { acme: 0.93, northwind: 0.05, none: 0.02 },
+			search: { acme: 0.93, northwind: 0.05, none: 0.02, several: 0 },
 		});
 
 		const result = await ask({
@@ -59,14 +59,14 @@ describe("ask: search", () => {
 			item: { id: 1, name: "Acme Supplies" },
 			candidates: [acme, northwind],
 			pick: { label: "acme", probability: 0.93 },
-			probabilities: { acme: 0.93, northwind: 0.05, none: 0.02 },
+			probabilities: { acme: 0.93, northwind: 0.05, none: 0.02, several: 0 },
 			gate: 0.5,
 		});
 	});
 
 	it("fills the item when near-duplicates split the vote, as long as none stays below the gate", async () => {
 		const fake = fakeProvider({
-			search: { acme: 0.45, northwind: 0.35, none: 0.2 },
+			search: { acme: 0.45, northwind: 0.35, none: 0.2, several: 0 },
 		});
 
 		const result = await ask({
@@ -81,7 +81,7 @@ describe("ask: search", () => {
 
 	it("holds the item when the provider picks none, whatever its probability", async () => {
 		const fake = fakeProvider({
-			search: { acme: 0.3, northwind: 0.3, none: 0.4 },
+			search: { acme: 0.3, northwind: 0.3, none: 0.4, several: 0 },
 		});
 
 		const result = await ask({
@@ -97,7 +97,7 @@ describe("ask: search", () => {
 
 	it("holds the item when none reaches the gate, even though a candidate wins, and still exposes the pick", async () => {
 		const fake = fakeProvider({
-			search: { acme: 0.5, northwind: 0.1, none: 0.4 },
+			search: { acme: 0.5, northwind: 0.1, none: 0.4, several: 0 },
 		});
 
 		const result = await ask({
@@ -111,9 +111,39 @@ describe("ask: search", () => {
 		expect(result.search.gate).toBe(0.4);
 	});
 
+	it("holds the item when several reaches the gate, even though a candidate wins and none stays below it", async () => {
+		const fake = fakeProvider({
+			search: { acme: 0.5, northwind: 0.1, none: 0.05, several: 0.35 },
+		});
+
+		const result = await ask({
+			...base,
+			provider: fake,
+			search: vendorSearch(0.3),
+		});
+
+		expect(result.search.item).toBeNull();
+		expect(result.search.pick).toEqual({ label: "acme", probability: 0.5 });
+	});
+
+	it("holds the item when the provider picks several, whatever its probability", async () => {
+		const fake = fakeProvider({
+			search: { acme: 0.3, northwind: 0.28, none: 0.02, several: 0.4 },
+		});
+
+		const result = await ask({
+			...base,
+			provider: fake,
+			search: vendorSearch(0.5),
+		});
+
+		expect(result.search.item).toBeNull();
+		expect(result.search.pick).toEqual({ label: "several", probability: 0.4 });
+	});
+
 	it("fills the item when none sits just below the gate", async () => {
 		const fake = fakeProvider({
-			search: { acme: 0.6, northwind: 0.01, none: 0.39 },
+			search: { acme: 0.6, northwind: 0.01, none: 0.39, several: 0 },
 		});
 
 		const result = await ask({
@@ -127,8 +157,8 @@ describe("ask: search", () => {
 
 	it("holds the item on a tie for first place, whatever order the provider used", async () => {
 		const tied = [
-			{ acme: 0.45, northwind: 0.45, none: 0.1 },
-			{ none: 0.1, northwind: 0.45, acme: 0.45 },
+			{ acme: 0.45, northwind: 0.45, none: 0.1, several: 0 },
+			{ none: 0.1, several: 0, northwind: 0.45, acme: 0.45 },
 		];
 		for (const probabilities of tied) {
 			const result = await ask({
@@ -197,14 +227,22 @@ describe("ask: search", () => {
 
 	it.each<[string, ProviderAnswer]>([
 		["leaves the question out", {}],
-		["leaves a label out", { search: { acme: 0.9, none: 0.1 } }],
+		["leaves a label out", { search: { acme: 0.9, none: 0.1, several: 0 } }],
 		[
 			"adds a label nobody asked for",
-			{ search: { acme: 0.9, northwind: 0.05, none: 0.02, zeta: 0.03 } },
+			{
+				search: {
+					acme: 0.9,
+					northwind: 0.05,
+					none: 0.02,
+					several: 0,
+					zeta: 0.03,
+				},
+			},
 		],
 		[
 			"returns something that is not a probability",
-			{ search: { acme: 1.5, northwind: 0, none: Number.NaN } },
+			{ search: { acme: 1.5, northwind: 0, none: Number.NaN, several: 0 } },
 		],
 	])("treats an answer that %s as a provider error", async (_, answer) => {
 		const result = await ask({
@@ -237,7 +275,7 @@ describe("ask: search", () => {
 		const seen: string[] = [];
 		await ask({
 			...base,
-			provider: fakeProvider({ search: { acme: 1, none: 0 } }),
+			provider: fakeProvider({ search: { acme: 1, none: 0, several: 0 } }),
 			search: {
 				...vendorSearch(),
 				shortlist: (request) => {
@@ -280,6 +318,7 @@ describe("ask: search", () => {
 
 	it.each([
 		["a candidate id is none", [{ ...acme, id: "none" }]],
+		["a candidate id is several", [{ ...acme, id: "several" }]],
 		["two candidates share an id", [acme, { ...northwind, id: "acme" }]],
 	])("rejects a shortlist where %s", async (_, candidates) => {
 		await expect(
@@ -308,6 +347,7 @@ describe("ask: fuzzyShortlist", () => {
 				search: Object.fromEntries([
 					...catalog.map(({ id }) => [id, 0]),
 					["none", 1],
+					["several", 0],
 				]),
 			}),
 			search: {

@@ -61,7 +61,7 @@ It answers:
 
 The handler sends data to two places:
 
-- **To the provider**, in one call: the request text, the facts (today plus every fact you configure), one question built from the search's `description` (a fixed instruction around it, and a `none` label beside the candidates), and the `id` and `description` of every shortlist candidate. The provider adapter adds what its service needs to authenticate, such as the key. A candidate's `value` is never sent to the provider, so write each `description` knowing a third party reads it.
+- **To the provider**, in one call: the request text, the facts (today plus every fact you configure), one question built from the search's `description` (a fixed instruction around it, and `none` and `several` labels beside the candidates), and the `id` and `description` of every shortlist candidate. The provider adapter adds what its service needs to authenticate, such as the key. A candidate's `value` is never sent to the provider, so write each `description` knowing a third party reads it.
 - **To the browser**, in the response: every shortlist candidate in full (`id`, `description` and `value`, not only the picked one), the pick, every label's probability and the gate. Candidate values travel as JSON, so keep them plain data, and leave out of `value` anything the person may not see.
 
 The provider's key, the provider's own error messages and the error's cause never reach the browser.
@@ -178,7 +178,7 @@ Keep a separate dev set for tuning descriptions and shortlists, and never let it
 
 ## Demo
 
-A local demo searches the vendors of a fictional invoicing app, in English or Spanish, beside a state panel that shows what happened: the shortlist, every label's probability, the pick, the gate on `none`, and why the item filled or was held. Its suggested requests include ones that could mean two vendors and ones with nothing to find.
+A local demo searches the vendors of a fictional invoicing app, in English or Spanish, beside a state panel that shows what happened: the shortlist, every label's probability, the pick, the gate on `none` and `several`, and why the item filled or was held. Its suggested requests include ones that could mean two vendors and ones with nothing to find.
 
 ```sh
 cp .env.example .env   # then set TYPESAFE_API_KEY
