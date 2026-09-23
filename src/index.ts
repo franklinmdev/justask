@@ -1,4 +1,6 @@
 export {
+	type AskCardInput,
+	type AskCardResult,
 	type AskError,
 	type AskFilterInput,
 	type AskFilterResult,
@@ -8,6 +10,20 @@ export {
 	type Pick,
 	type SearchResult,
 } from "./ask.ts";
+export type {
+	Amount,
+	Card,
+	CardDateField,
+	CardField,
+	CardFieldResult,
+	CardFields,
+	CardFieldValue,
+	CardResult,
+	CardValue,
+	IntentResult,
+	SeveralCatalogField,
+	TimeField,
+} from "./card.ts";
 export type {
 	AmountField,
 	AmountRange,
@@ -44,6 +60,8 @@ export {
 	type Parser,
 	type ParserInput,
 	type Readings,
+	type Reads,
+	type TimeReading,
 } from "./parse.ts";
 export type {
 	Facts,

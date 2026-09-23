@@ -89,5 +89,5 @@ A request resolved to one item among candidates, or to none.
 A request resolved to the exact filter object a table in the host app already understands. Declared with its fields and a description of what one row of that table is; every field's question reads that description.
 
 **Card**:
-A request resolved to a filled record, such as an appointment, gated first by an intent question.
+A request resolved to a filled record, such as an expense or an appointment, gated first by an intent question.
 _Avoid_: Form fill, record card

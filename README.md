@@ -164,7 +164,39 @@ The pieces never edit a field. A held field is left out of the proposal, and the
 
 The proposed filters sit in a polite live region that reads only what is added, so a new proposal is announced. A removal is announced on its own, in the words `removedLabel` gives; pass `announcementProps` to hide that region visually. With nothing to confirm, `FilterConfirm` stays focusable and sets `aria-disabled`. After Confirm the request and its answer stay, so an inspector still reads `filter.result`, and the proposal is spent until the person types again.
 
-The built-in parser reads English and general Spanish; no regional formats ship. A host app adds its own in `filter.parsers`: each is a function from the request and `{ today, facts }` to `{ dates?, amounts? }`, runs before the built-in one, and wins where their text overlaps.
+The built-in parser reads English and general Spanish; no regional formats ship. A host app adds its own in `filter.parsers`: each is a function from the request and `{ today, reads, facts }` to `{ dates?, times?, amounts? }`, runs before the built-in one, and wins where their text overlaps. `reads` is `"past"` or `"future"`: which way a date that does not say its year or week should read.
+
+A reading the request itself leaves open is marked `ambiguous` by the parser, and a field whose pick lands on one is held whatever its probability: "next Friday" and "last Friday" (the nearest one, or the one a week further), "a las 2 y pico". The same request always holds the same field.
+
+## Card
+
+A card is a new record filled from a request, such as an expense. An intent question comes first: does the request ask for a new record of this kind? Below the card's `gate`, every field is held, so a question, a change or a cancellation fills nothing. The fields' picks stay in the result for an inspector.
+
+```ts
+const { card } = await ask({
+  request: "log a $42 client lunch with Northwind yesterday at 1pm",
+  facts: { today: "2026-09-22", local_currency: "USD" },
+  provider,
+  timeoutMs: 2_000,
+  card: {
+    description: "expense the person paid",
+    gate: 0.9,
+    fields: {
+      vendor: { kind: "catalog", description: "the vendor who was paid", gate: 0.8, shortlist },
+      tags: { kind: "catalog", several: true, description: "the expense's tags", gate: 0.8, shortlist: tagShortlist },
+      spent_on: { kind: "date", reads: "past", description: "the day the money was spent", gate: 0.8 },
+      at: { kind: "time", description: "the time the money was spent", gate: 0.8 },
+      total: { kind: "amount", description: "the amount paid", gate: 0.8 },
+    },
+  },
+});
+// card.value: { vendor, tags: ["meals", "client"], spent_on: "2026-09-21", at: "13:00", total: { value: 42, currency: "USD" } }
+```
+
+- **date** fields fill with one day, `YYYY-MM-DD`, and declare which way they read: `"past"` for the day an expense was spent, `"future"` for a due date. A picked period ("next week") is held.
+- **time** fields fill with `HH:MM`. A bare hour offers its morning and evening readings, and the provider picks from the words around it.
+- **amount** fields fill with `{ value, currency? }`, one question over every number found.
+- **catalog** fields with `several: true` ask one yes-or-no question per shortlisted item, so combinations are never enumerated, and fill with the items asked for. The field is held when any item's pick is below the gate, or says a word could be this item or another.
 
 ## Measuring a gate
 

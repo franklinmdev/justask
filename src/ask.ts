@@ -1,9 +1,22 @@
 import {
+	type CandidateReadings,
+	type Card,
+	type CardFields,
+	type CardResult,
+	cardPlan,
+	cardQuestionIds,
+	INTENT,
+	intentQuestion,
+	NO_READINGS,
+	readIntent,
+} from "./card.ts";
+import {
 	amountPlan,
 	catalogPlan,
 	datePlan,
 	describeAmount,
 	describeDate,
+	describeTime,
 	type Field,
 	type FieldPlan,
 	type Fields,
@@ -13,12 +26,7 @@ import {
 	questionIds,
 } from "./filter.ts";
 import { checkGate } from "./gate.ts";
-import {
-	type AmountReading,
-	type DateReading,
-	type Parser,
-	parseRequest,
-} from "./parse.ts";
+import { type Parser, parseRequest, type Reads } from "./parse.ts";
 import type { Pick } from "./pick.ts";
 import type {
 	Facts,
@@ -50,6 +58,8 @@ export type AskInput<T> = AskBase & { search: Search<T> };
 
 export type AskFilterInput<F extends Fields> = AskBase & { filter: Filter<F> };
 
+export type AskCardInput<F extends CardFields> = AskBase & { card: Card<F> };
+
 export type SearchResult<T> = {
 	/** The picked candidate's value, or null when held. */
 	item: T | null;
@@ -76,21 +86,34 @@ export type AskFilterResult<F extends Fields> = {
 	error?: AskError;
 };
 
+export type AskCardResult<F extends CardFields> = {
+	card: CardResult<F>;
+	error?: AskError;
+};
+
 const SEARCH = "search";
 
 /**
  * Resolves a request through the host app's own state: code finds the
  * candidates, the provider picks in one call, code builds the result (ADR
  * 0002). A search resolves to one item or none; a filter to the filter object
- * its table understands. A failed or late provider holds everything; no retries.
+ * its table understands; a card to a new record, or to nothing when the
+ * request asks for none. A failed or late provider holds everything; no retries.
  */
 export function ask<T>(input: AskInput<T>): Promise<AskResult<T>>;
+// The filter's overload stays last: a call that matches none reports against it.
+export function ask<F extends CardFields>(
+	input: AskCardInput<F>,
+): Promise<AskCardResult<F>>;
 export function ask<F extends Fields>(
 	input: AskFilterInput<F>,
 ): Promise<AskFilterResult<F>>;
 export function ask(
-	input: AskInput<unknown> | AskFilterInput<Fields>,
-): Promise<AskResult<unknown> | AskFilterResult<Fields>> {
+	input: AskInput<unknown> | AskFilterInput<Fields> | AskCardInput<CardFields>,
+): Promise<
+	AskResult<unknown> | AskFilterResult<Fields> | AskCardResult<CardFields>
+> {
+	if ("card" in input) return askCard(input);
 	return "filter" in input ? askFilter(input) : askSearch(input);
 }
 
@@ -163,8 +186,8 @@ async function askFilter<F extends Fields>({
 		}
 	}
 	const parsed = names.some((name) => field(name).kind !== "catalog")
-		? readCandidates(request, facts, filter.parsers ?? [])
-		: { dates: [], amounts: [] };
+		? readCandidates(request, facts, filter.parsers ?? [], "past")
+		: NO_READINGS;
 
 	const plans: Record<string, FieldPlan> = {};
 	await Promise.all(
@@ -216,28 +239,129 @@ async function askFilter<F extends Fields>({
 }
 
 /**
- * The parsers' readings as candidates: dates d0, d1..., amounts a0, a1..., in
- * the order they appear in the request.
+ * The intent question and all fields' questions in one call. A field's
+ * candidates come as a filter's do; a date field reads its own way, so each
+ * way any field reads is parsed once. Below the intent gate, every field is
+ * held, though its picks are still reported.
+ */
+async function askCard<F extends CardFields>({
+	request,
+	facts,
+	provider,
+	timeoutMs,
+	card,
+}: AskCardInput<F>): Promise<AskCardResult<F>> {
+	checkGate(card.gate, "the card's gate");
+	const names = Object.keys(card.fields);
+	const field = (name: string) => card.fields[name] as CardFields[string];
+	for (const name of names) {
+		checkGate(field(name).gate, `the gate of field "${name}"`);
+		const ids = cardQuestionIds(name, field(name));
+		const clash = [INTENT, ...names.filter((other) => other !== name)].find(
+			(other) => ids.test(other),
+		);
+		if (clash) {
+			throw new TypeError(
+				`justask: "${clash}" takes the id of one of field "${name}"'s questions; rename the field`,
+			);
+		}
+	}
+	const parsed = new Map<Reads, CandidateReadings>();
+	const readingsFor = (reads: Reads) => {
+		let readings = parsed.get(reads);
+		if (!readings) {
+			readings = readCandidates(request, facts, card.parsers ?? [], reads);
+			parsed.set(reads, readings);
+		}
+		return readings;
+	};
+
+	const plans: Record<string, FieldPlan> = {};
+	await Promise.all(
+		names.map(async (name) => {
+			const declared = field(name);
+			if (declared.kind === "catalog") {
+				const candidates = await declared.shortlist(request);
+				checkShortlist(candidates, MISSING);
+				plans[name] = cardPlan(name, card, declared, candidates, NO_READINGS);
+			} else {
+				const readings = readingsFor(
+					declared.kind === "date" ? declared.reads : "past",
+				);
+				plans[name] = cardPlan(name, card, declared, [], readings);
+			}
+		}),
+	);
+	const planOf = (name: string) => plans[name] as FieldPlan;
+	const intentHeld = { pick: null, probabilities: {}, gate: card.gate };
+	const held = () =>
+		({
+			intent: intentHeld,
+			value: {},
+			fields: Object.fromEntries(
+				names.map((name) => [name, planOf(name).held]),
+			),
+		}) as CardResult<F>;
+
+	const questions = [
+		intentQuestion(card),
+		...names.flatMap((name) => planOf(name).questions),
+	];
+	const outcome = await answer(
+		provider,
+		{ request, facts, questions },
+		timeoutMs,
+	);
+	if ("error" in outcome) return { card: held(), error: outcome.error };
+
+	const intent = readIntent(outcome.answer[INTENT] ?? {}, card.gate);
+	const value: Record<string, unknown> = {};
+	const fields: Record<string, unknown> = {};
+	for (const name of names) {
+		const plan = planOf(name);
+		if (plan.questions.length === 0) {
+			fields[name] = plan.held;
+			continue;
+		}
+		const read = plan.read(outcome.answer);
+		fields[name] = read.result;
+		if (intent.passes && "value" in read) value[name] = read.value;
+	}
+	return {
+		card: { intent: intent.result, value, fields } as CardResult<F>,
+	};
+}
+
+/**
+ * The parsers' readings as candidates: dates d0, d1..., times t0, t1...,
+ * amounts a0, a1..., in the order they appear in the request.
  */
 function readCandidates(
 	request: string,
 	facts: Facts,
 	parsers: readonly Parser[],
-): {
-	dates: Candidate<DateReading>[];
-	amounts: Candidate<AmountReading>[];
-} {
+	reads: Reads,
+): CandidateReadings {
 	const today = /\d{4}-\d{2}-\d{2}/.exec(facts.today ?? "")?.[0];
 	if (!today) {
 		throw new TypeError(
 			'justask: a date or amount field needs the "today" fact, with today\'s date as YYYY-MM-DD',
 		);
 	}
-	const { dates, amounts } = parseRequest(request, { today, facts }, parsers);
+	const { dates, times, amounts } = parseRequest(
+		request,
+		{ today, reads, facts },
+		parsers,
+	);
 	return {
 		dates: dates.map((value, i) => ({
 			id: `d${i}`,
 			description: describeDate(value),
+			value,
+		})),
+		times: times.map((value, i) => ({
+			id: `t${i}`,
+			description: describeTime(value),
 			value,
 		})),
 		amounts: amounts.map((value, i) => ({
