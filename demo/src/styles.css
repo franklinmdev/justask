@@ -137,6 +137,16 @@ dd {
 	line-height: 1.2;
 }
 
+.visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
 .skip {
 	position: absolute;
 	left: 16px;
@@ -166,7 +176,8 @@ dd {
 
 .brand {
 	display: flex;
-	align-items: baseline;
+	align-items: center;
+	align-self: stretch;
 	gap: 8px;
 	min-width: 0;
 }
@@ -176,14 +187,33 @@ dd {
 	white-space: nowrap;
 }
 
-.divider {
-	color: var(--muted);
+/* The pages: one link per flow, the current one marked with the accent. */
+.pages {
+	display: flex;
+	align-self: stretch;
+	gap: 4px;
+	margin-left: 16px;
 }
 
-.brand h1 {
-	font-size: 0.9375rem;
-	font-weight: 400;
+.pages a {
+	display: inline-flex;
+	align-items: center;
+	padding: 0 8px;
+	border-bottom: 1px solid transparent;
 	color: var(--muted);
+	text-decoration: none;
+	transition: color 120ms ease-out;
+}
+
+.pages a[aria-current="page"] {
+	border-bottom-color: var(--primary);
+	color: var(--text);
+}
+
+@media (hover: hover) {
+	.pages a:not([aria-current="page"]):hover {
+		color: var(--text);
+	}
 }
 
 .languages,
@@ -351,13 +381,14 @@ h2 {
 }
 
 @media (prefers-reduced-motion: reduce) {
-	/* settle becomes a fade, and nothing moves. */
+	/* settle becomes a fade, and nothing moves: the item, the proposed filters, Confirm. */
 	@keyframes settle {
 		from {
 			opacity: 0;
 		}
 	}
-	.item:active {
+	.item:active,
+	.confirm:active:not([aria-disabled="true"]) {
 		transform: none;
 	}
 }
@@ -421,6 +452,147 @@ h2 {
 
 .transactions [data-status="paid"] {
 	color: var(--muted);
+}
+
+/* The proposed filters, Confirm and the applied filters */
+
+/*
+ * With nothing proposed, the list's region is empty and the removal region is
+ * visually hidden, but both stay in the page so a screen reader keeps hearing
+ * them. The negative margin takes back the app column's gap.
+ */
+.proposed:not(:has(li)) {
+	margin-top: -12px;
+}
+
+.proposed ul,
+.applied-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	padding: 0;
+	list-style: none;
+}
+
+.filter {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 32px;
+	padding: 0 4px 0 10px;
+	border: 1px solid var(--border-strong);
+	border-radius: 0.125rem;
+	background: var(--bg);
+	font-size: 0.875rem;
+}
+
+.proposed .filter {
+	/* The signature motion: a filled field settling in. */
+	animation: settle 150ms var(--ease-out);
+}
+
+.applied-list .filter {
+	padding-right: 10px;
+	background: var(--surface);
+	border-color: var(--border);
+}
+
+/* The piece wraps what the page renders in a span: the name and the value. */
+.filter > span:first-child {
+	display: inline-flex;
+	align-items: baseline;
+	gap: 6px;
+}
+
+.filter-name {
+	color: var(--muted);
+	font-size: 0.75rem;
+	font-weight: 500;
+	letter-spacing: 0.04em;
+}
+
+.filter-remove,
+.clear {
+	min-height: 24px;
+	padding: 0 6px;
+	border: 0;
+	border-radius: 0.125rem;
+	background: transparent;
+	color: var(--muted);
+	font: inherit;
+	font-size: 0.75rem;
+	font-weight: 500;
+	letter-spacing: 0.04em;
+	cursor: pointer;
+	transition:
+		background-color 120ms ease-out,
+		color 120ms ease-out;
+}
+
+@media (hover: hover) {
+	.filter-remove:hover,
+	.clear:hover {
+		background: var(--surface-strong);
+		color: var(--text);
+	}
+}
+
+.confirm {
+	height: 36px;
+	padding: 0 14px;
+	border: 0;
+	border-radius: 0.125rem;
+	background: var(--primary);
+	color: var(--on-primary);
+	font: inherit;
+	font-size: 0.8125rem;
+	font-weight: 500;
+	letter-spacing: 0.04em;
+	cursor: pointer;
+	transition:
+		background-color 120ms ease-out,
+		color 120ms ease-out;
+}
+
+.confirm:active:not([aria-disabled="true"]) {
+	transform: scale(0.97);
+}
+
+/* Nothing to apply: it stays focusable, and reads as off. */
+.confirm[aria-disabled="true"] {
+	background: var(--surface-strong);
+	color: var(--muted);
+	cursor: default;
+}
+
+.table-section {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	margin-top: 24px;
+	padding-top: 24px;
+	border-top: 1px solid var(--border);
+}
+
+.applied {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 12px;
+}
+
+.applied h3 {
+	margin: 0;
+}
+
+.applied-count {
+	color: var(--muted);
+}
+
+.transactions .vendor {
+	max-width: 22ch;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 /* Suggested requests */
@@ -705,6 +877,69 @@ h2 {
 	}
 }
 
+/* The filter's fields in the state panel */
+
+.field {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding-top: 12px;
+	border-top: 1px solid var(--border);
+}
+
+.field-head {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.field-head h3 {
+	font-size: 0.9375rem;
+	font-weight: 600;
+	margin-right: auto;
+}
+
+.field-gate {
+	color: var(--muted);
+	font-size: 0.75rem;
+	font-weight: 500;
+	letter-spacing: 0.04em;
+}
+
+.field-gate .data {
+	color: var(--text);
+	font-weight: 400;
+	letter-spacing: 0;
+}
+
+.field-reason {
+	color: var(--muted);
+	font-size: 0.875rem;
+	max-width: 68ch;
+}
+
+.candidates caption {
+	padding-bottom: 4px;
+	color: var(--muted);
+	font-size: 0.75rem;
+	font-weight: 500;
+	letter-spacing: 0.04em;
+	text-align: left;
+}
+
+.candidate-detail {
+	display: block;
+	color: var(--muted);
+	font-size: 0.75rem;
+}
+
+.candidates .more {
+	height: 28px;
+	color: var(--muted);
+	font-size: 0.75rem;
+	border-bottom: 1px solid var(--border);
+}
+
 /* Mobile: the app, then the panel under it */
 
 @media (max-width: 899px) {
@@ -735,6 +970,10 @@ h2 {
 	.candidates tbody td {
 		width: 50%;
 	}
+
+	.confirm {
+		height: 44px;
+	}
 }
 
 @media (pointer: coarse) {
@@ -747,10 +986,84 @@ h2 {
 		height: 44px;
 		padding: 0 14px;
 	}
+
+	.filter-remove,
+	.clear,
+	.pages a {
+		min-height: 44px;
+		padding: 0 12px;
+	}
 }
 
 /* Phone: the brand keeps the first row, the theme and language toggles take the second. */
 @media (max-width: 560px) {
+	.pages {
+		margin-left: 4px;
+	}
+
+	.pages a {
+		min-height: 44px;
+	}
+
+	/*
+	 * The five-column transactions become a card list: vendor and amount on
+	 * the first line, date and status on the second, the invoice last.
+	 */
+	.transactions.all thead {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+	}
+
+	.transactions.all tr {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		grid-template-areas:
+			"vendor amount"
+			"date status"
+			"invoice invoice";
+		gap: 2px 12px;
+		padding: 10px 0;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.transactions.all td {
+		height: auto;
+		padding: 0;
+		border: 0;
+	}
+
+	.transactions.all tr > :last-child {
+		padding-left: 0;
+	}
+
+	.transactions.all td:nth-child(1) {
+		grid-area: invoice;
+		color: var(--muted);
+	}
+
+	.transactions.all td:nth-child(2) {
+		grid-area: vendor;
+		max-width: none;
+		font-weight: 500;
+	}
+
+	.transactions.all td:nth-child(3) {
+		grid-area: date;
+	}
+
+	.transactions.all td:nth-child(4) {
+		grid-area: amount;
+	}
+
+	.transactions.all td:nth-child(5) {
+		grid-area: status;
+		text-align: right;
+		font-size: 0.8125rem;
+	}
+
 	.header {
 		flex-wrap: wrap;
 		height: auto;

@@ -276,6 +276,61 @@ describe("ask: filter with amount fields", () => {
 		});
 	});
 
+	it("holds the whole amount when the request names a currency that does not resolve, without asking", async () => {
+		const fake = fakeProvider({});
+
+		const result = await ask({
+			...base,
+			facts: { ...facts, local_currency: "USD" },
+			request: "facturas de más de 500 pesos",
+			provider: fake,
+			filter: invoiceFilter(),
+		});
+
+		expect(fake.calls).toHaveLength(0);
+		expect(result.filter.value).toEqual({});
+		expect(result.filter.fields.total).toEqual({
+			candidates: [
+				{
+					id: "a0",
+					description: expect.any(String),
+					value: {
+						text: "500 pesos",
+						value: 500,
+						currency: null,
+						unresolved: "pesos",
+					},
+				},
+			],
+			answers: {},
+			gate: 0.8,
+		});
+	});
+
+	it("holds the whole amount when one of its numbers names an unresolved currency, and still fills the other fields", async () => {
+		const dates = ["d0", ...MISSING];
+		const fake = fakeProvider({
+			issued_from: answer(dates, "d0"),
+			issued_to: answer(dates, "d0"),
+		});
+
+		const result = await ask({
+			...base,
+			facts: { ...facts, local_currency: "USD" },
+			request: "invoices between $200 and 500 pesos from last month",
+			provider: fake,
+			filter: invoiceFilter(),
+		});
+
+		expect(fake.calls[0]?.questions.map(({ id }) => id)).toEqual([
+			"issued_from",
+			"issued_to",
+		]);
+		expect(result.filter.value).toEqual({
+			issued: { from: "2026-08-01", to: "2026-08-31" },
+		});
+	});
+
 	it("leaves the currency out when the request does not say which", async () => {
 		const result = await ask({
 			...base,

@@ -334,6 +334,28 @@ describe("amounts", () => {
 			]);
 		});
 
+		it("keeps the currency a request names when it does not resolve against the local one", () => {
+			expect(
+				parse("más de 300 pesos", { local_currency: "USD" }).amounts,
+			).toEqual([
+				{ text: "300 pesos", value: 300, currency: null, unresolved: "pesos" },
+			]);
+			expect(parse("over $300", { local_currency: "EUR" }).amounts).toEqual([
+				{ text: "$300", value: 300, currency: null, unresolved: "$" },
+			]);
+			// Nothing to resolve against: the currency is only left out.
+			expect(parse("over $300").amounts).toEqual([
+				{ text: "$300", value: 300, currency: null },
+			]);
+			// No mark at all, and one that resolves, are never unresolved.
+			expect(parse("over 300", { local_currency: "USD" }).amounts).toEqual([
+				{ text: "300", value: 300, currency: null },
+			]);
+			expect(parse("over $300", { local_currency: "USD" }).amounts).toEqual([
+				{ text: "$300", value: 300, currency: "USD" },
+			]);
+		});
+
 		it("lets the currency word after a number decide over a bare $ before it", () => {
 			expect(amounts("más de $500 pesos", { local_currency: "USD" })).toEqual([
 				["$500 pesos", 500, null],
