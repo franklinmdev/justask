@@ -37,10 +37,15 @@ const answers: Record<string, FakeAnswers> = {
 	}),
 	"the cleaners": answer({ brightmop: 0.21, glasswell: 0.15, none: 0.61 }),
 	"los del catering": answer({ cazuela: 0.92, none: 0.02 }),
+	// None wins, below the demo's gate of 0.2, spread over the catalog.
 	"the plumber who fixed the leak": answer({
-		none: 0.45,
-		brightmop: 0.3,
-		glasswell: 0.25,
+		none: 0.16,
+		brightmop: 0.14,
+		glasswell: 0.14,
+		fixbright: 0.14,
+		papergrove: 0.14,
+		cloudberth: 0.14,
+		swiftlane: 0.14,
 	}),
 };
 
@@ -105,15 +110,15 @@ describe("the demo's search page", () => {
 		expect(state.getByText("Filled")).toBeDefined();
 		expect(
 			state.getByText(
-				"Larkspur Catering won, and none (0.01) stayed below the gate (0.50).",
+				"Larkspur Catering won, and none (0.01) stayed below the gate (0.20).",
 			),
 		).toBeDefined();
 		const row = state.getByRole("row", { name: /Larkspur Catering/ });
 		expect(within(row).getByText("0.94")).toBeDefined();
 		expect(within(row).getByText("pick")).toBeDefined();
 		expect(state.getByRole("row", { name: /none/ })).toBeDefined();
-		// The shortlist, not the whole catalog, reaches the provider.
-		expect(state.getAllByRole("row")).toHaveLength(1 + 10 + 1);
+		// The shortlist is the whole catalog of 14, plus none.
+		expect(state.getAllByRole("row")).toHaveLength(1 + 14 + 1);
 		await expectNoAxeViolations(container);
 	});
 
@@ -129,7 +134,7 @@ describe("the demo's search page", () => {
 		expect(state.getByText("Held")).toBeDefined();
 		expect(
 			state.getByText(
-				"none (0.61) reached the gate (0.50), so nothing is shown.",
+				"none (0.61) reached the gate (0.20), so nothing is shown.",
 			),
 		).toBeDefined();
 		expect(
@@ -151,7 +156,7 @@ describe("the demo's search page", () => {
 		const state = panel();
 		expect(state.getByText("Held")).toBeDefined();
 		expect(
-			state.getByText("The provider picked none (0.45), so nothing is shown."),
+			state.getByText("The provider picked none (0.16), so nothing is shown."),
 		).toBeDefined();
 	});
 
@@ -248,7 +253,7 @@ describe("the demo's search page", () => {
 			),
 		).toBeDefined();
 		// No answer came back, so no candidate shows a probability, not even zero.
-		expect(state.getAllByRole("row")).toHaveLength(1 + 10 + 1);
+		expect(state.getAllByRole("row")).toHaveLength(1 + 14 + 1);
 		expect(state.queryByText("0.00")).toBeNull();
 		await waitFor(() =>
 			expect(screen.getByText("No vendor fits that request.")).toBeDefined(),

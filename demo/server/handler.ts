@@ -12,11 +12,12 @@ import { spanish } from "../src/content/es.ts";
 import type { Content, Language, Vendor } from "../src/content/types.ts";
 
 /**
- * Not measured on the demo's data yet; its search eval set will fix it. Until
- * then it sits in the gap the lab measured (ADR 0005): none at 0.00 to 0.03
- * on every request with an answer, and 0.58 or more on every one without.
+ * Fixed from the dev runs before the scored run, by the rule in
+ * docs/search-eval.md: the midpoint between the highest none on a dev item
+ * that filled right (0.17) and the lowest on a dev row with no single vendor
+ * (0.23).
  */
-export const GATE = 0.5;
+export const GATE = 0.2;
 
 /** The lab's search p95 was under 650 ms; this leaves room for a slow call. */
 export const TIMEOUT_MS = 2_000;
