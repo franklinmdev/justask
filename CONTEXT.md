@@ -69,8 +69,12 @@ The raw answers of one eval run, saved with the gate and kill lines it ran under
 _Avoid_: Results, output, trace
 
 **Provider probe**:
-A fixed request an eval run sends straight to the provider before its rows and after, so the run log holds the provider's latency apart from the flow's. Not the diagnostic probe sets, which are eval rows.
-_Avoid_: Ping, health check, warm-up
+A fixed request an eval run sends straight to the provider before its rows and after, so the run log holds the provider's latency apart from the flow's. Not the diagnostic probe sets, which are eval rows, nor the warm-up.
+_Avoid_: Ping, health check
+
+**Warm-up**:
+Calls of the provider probe's request that an eval run sends first and discards, before the measured probes and before any row, so a cold start after idle falls on them. Logged, never counted in the probe median or the p95.
+_Avoid_: Priming, preflight
 
 **Slow window**:
 An eval run whose provider probes' median is more than twice the baseline declared before it. Its quality lines still decide, and so does a p95 that passes its line; a p95 that fails is measured again on the same rows in a normal window.
