@@ -52,7 +52,7 @@ Checked with no call: in 5 of the 16 dev item rows the expected vendor never rea
 By hand with the key in `.env`, never in CI; every row is a paid call.
 
 1. Dev runs, as many as tuning needs: `node --conditions=source demo/eval/search.ts run <en|es> dev <n>`. They print no verdict.
-2. Fix the gate by the rule above and write it into the demo. The eval sets and kill lines are already frozen: `test/demo-eval.test.ts` checks their checksums, so an edit fails CI.
+2. Fix the gate by the rule above and write it into the demo. The eval sets and kill lines are already frozen: `test/demo-eval.test.ts` checks the sets' checksums and the kill lines' values, so an edit fails CI.
 3. Run 1 per language gives the verdict: `node --conditions=source demo/eval/search.ts run <en|es> eval 1`.
 4. Run 2 per language reports flips only: `run <en|es> eval 2`, then `compare <en|es> 1 2`.
 5. Record here the verdict, the numbers, the misses and the run logs' paths (`demo/eval/runs/`, committed so anyone can rescore them with no call).
