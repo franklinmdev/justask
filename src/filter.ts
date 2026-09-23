@@ -228,6 +228,8 @@ const ROLES = ["min", "max", "exact"] as const;
  * field fills when every pick clears its gate and none is `not_available`,
  * each part is played by one number at most, an exact amount comes alone, the
  * minimum is not above the maximum, and the numbers name one currency at most.
+ * A number whose currency does not resolve against the local one holds the
+ * whole field before any question, so the number never fills alone.
  */
 export function amountPlan(
 	name: string,
@@ -236,6 +238,9 @@ export function amountPlan(
 	candidates: Candidate<AmountReading>[],
 ): FieldPlan {
 	const held = { candidates, answers: {}, gate: field.gate };
+	if (candidates.some(({ value }) => value.unresolved !== undefined)) {
+		return { questions: [], held, read: () => ({ result: held }) };
+	}
 	return {
 		questions: candidates.map((candidate) =>
 			amountQuestion(`${name}_${candidate.id}`, filter, field, candidate),

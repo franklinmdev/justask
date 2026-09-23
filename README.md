@@ -21,7 +21,7 @@ Private and unpublished. `package.json` sets `"private": true`, so npm refuses t
 
 `createSearchHandler` returns a function from a standard `Request` to a standard `Response`, so it mounts as is in any fetch-style server (Next.js route handlers, Hono, Remix, Bun, Deno, Cloudflare Workers). It runs on the server with the provider built there, so the provider's key never reaches the browser.
 
-There is one handler per flow, each at its own route: the browser never chooses the flow, and each route owns its facts and limits. Filter and card get their own handlers.
+There is one handler per flow, each at its own route: the browser never chooses the flow, and each route owns its facts and limits. `createFilterHandler` serves a filter the same way (see [Filter](#filter)), and card gets its own.
 
 ```ts
 import { createSearchHandler, fuzzyShortlist } from "justask";
@@ -133,7 +133,36 @@ const { filter } = await ask({
 
 - **catalog** fields take their candidates from the host app's `shortlist`, one question each.
 - **date** fields take theirs from the parsers, read backward as a filter looks at what already happened, and fill as `{ from?, to? }` in days. Two questions: where the period starts and where it ends.
-- **amount** fields take theirs from the parsers and fill as `{ min?, max?, exact?, currency? }`, one question per number found. The `local_currency` fact, an ISO 4217 code, decides what a bare "$" and "pesos" mean; without it, or when it does not fit, the currency is left out.
+- **amount** fields take theirs from the parsers and fill as `{ min?, max?, exact?, currency? }`, one question per number found. The `local_currency` fact, an ISO 4217 code, decides what a bare "$" and "pesos" mean. Without it, the currency is left out. When the request names a currency that does not resolve against it, such as "500 pesos" with `local_currency: "USD"`, the whole amount field is held without a question, so the number never fills alone.
+
+### Over HTTP and in React
+
+`createFilterHandler` takes the same `provider`, `timeoutMs`, `facts` and `onError` as the search handler, plus the `filter` declaration, and answers `200` with `{ filter, error? }`: the filter object in `filter.value` and every field's candidates, picks, probabilities and gate in `filter.fields`. The browser posts the same body, and the handler writes today in the browser's time zone, so a date field reads "last month" as the person means it.
+
+`useFilter` from `justask/react` drives it from the host app's markup. Its unstyled pieces are `FilterBox` (the request box), `FilterFields` (one list item per proposed filter, each with a remove button, in a polite live region), `FilterEmpty` (shown when the answer fills no field, or failed) and `FilterConfirm`. Nothing reaches the app before Confirm: `onConfirm` receives the filter object, without the filters the person removed.
+
+```tsx
+const filter = useFilter<typeof invoices.fields>({
+  endpoint: "/api/filter",
+  timing: { on: "type", debounceMs: 300 }, // no default: measure it
+  onConfirm: setTableFilter,
+});
+
+<FilterBox filter={filter} label="Filter the invoices" />
+<FilterFields
+  filter={filter}
+  label="Filters to apply"
+  render={{ vendor: (v) => v.name, issued: formatRange, total: formatAmount }}
+  removeLabel={(name) => `Remove the ${name} filter`}
+  removedLabel={(name) => `Removed: ${name}`}
+/>
+<FilterEmpty filter={filter}>Nothing in that request filters the invoices.</FilterEmpty>
+<FilterConfirm filter={filter}>Apply filters</FilterConfirm>
+```
+
+The pieces never edit a field. A held field is left out of the proposal, and the person fills it afterwards with the host table's own filter controls, which already know every value it can take.
+
+The proposed filters sit in a polite live region that reads only what is added, so a new proposal is announced. A removal is announced on its own, in the words `removedLabel` gives; pass `announcementProps` to hide that region visually. With nothing to confirm, `FilterConfirm` stays focusable and sets `aria-disabled`. After Confirm the request and its answer stay, so an inspector still reads `filter.result`, and the proposal is spent until the person types again.
 
 The built-in parser reads English and general Spanish; no regional formats ship. A host app adds its own in `filter.parsers`: each is a function from the request and `{ today, facts }` to `{ dates?, amounts? }`, runs before the built-in one, and wins where their text overlaps.
 
@@ -178,16 +207,16 @@ Keep a separate dev set for tuning descriptions and shortlists, and never let it
 
 ## Demo
 
-A local demo searches the vendors of a fictional invoicing app, in English or Spanish, beside a state panel that shows what happened: the shortlist, every label's probability, the pick, the gate on `none` and `several`, and why the item filled or was held. Its suggested requests include ones that could mean two vendors and ones with nothing to find.
+A local demo shows a fictional invoicing app, in English or Spanish, one page per flow, each beside a state panel that shows what happened. The search page finds a vendor: the shortlist, every label's probability, the pick, the gate on `none` and `several`, and why the item filled or was held. The filter page turns a request into the transactions table's filters (vendor, status, date and amount), applied only when the person confirms; its panel shows each field's questions, picks and gate, and why it filled or was held. Each page's suggested requests include ones that hold and ones with nothing to do.
 
 ```sh
 cp .env.example .env   # then set TYPESAFE_API_KEY
 pnpm demo              # http://localhost:5173
 ```
 
-Vite serves the page and mounts the search handler as dev middleware, one route per language (`/api/search/en` and `/api/search/es`), each with its own catalog. The key is read from `.env` on the server side and never reaches the browser bundle. Every search is one real, paid Jev call. Without a key the page still runs, and every search fails and is held.
+Vite serves the page and mounts the handlers as dev middleware, one route per flow and language (`/api/search/en`, `/api/filter/es` and so on), each with its own catalog. Both languages' local currency is USD. The key is read from `.env` on the server side and never reaches the browser bundle. Every search or filter request is one real, paid Jev call. Without a key the page still runs, and every request fails and is held.
 
-The demo's gate (0.15) was fixed by the owner before round 2 and measured on that round's fresh search eval sets. It failed there, as round 1's gate did, on Spanish requests that could mean two vendors; both rounds' verdicts and misses are in `docs/search-eval.md`. Its timeout (2 s) and typing pause (300 ms) are not measured yet. `node --conditions=source demo/eval/search.ts` runs those sets by hand with the key in `.env`, never in CI.
+The demo's gate (0.15) was fixed by the owner before round 2 and measured on that round's fresh search eval sets. It failed there, as round 1's gate did, on Spanish requests that could mean two vendors; both rounds' verdicts and misses are in `docs/search-eval.md`. Its timeout (2 s) and typing pause (300 ms) are not measured yet. `node --conditions=source demo/eval/search.ts` runs those sets by hand with the key in `.env`, never in CI. The filter's fields all take the lab's filter gate, 0.9, until the filter eval set measures one per field.
 
 ## Development
 

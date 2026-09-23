@@ -1,4 +1,4 @@
-import { type Content, transaction as t, vendor } from "./types.ts";
+import { type Content, status, transaction as t, vendor } from "./types.ts";
 
 // Fictional vendors with invented names, made up to be no real business. In
 // the Spanish UI the provider is "el modelo", since "proveedor" is a vendor.
@@ -6,9 +6,10 @@ export const spanish: Content = {
 	language: "es",
 	locale: "es",
 	copy: {
-		skip: "Ir a la búsqueda",
+		skip: "Ir al contenido",
 		product: "justask demo",
-		page: "Búsqueda",
+		pagesLabel: "Páginas",
+		pages: { search: "Búsqueda", filter: "Filtro" },
 		languageLabel: "Idioma",
 		themeLabel: "Tema",
 		themes: { system: "Auto", light: "Claro", dark: "Oscuro" },
@@ -67,6 +68,90 @@ export const spanish: Content = {
 		shortlistLabel: "Lista corta",
 		shortlist: (count, catalog) => `${count} de ${catalog} proveedores`,
 		roundTrip: "Ida y vuelta",
+		filter: {
+			transactions: "Transacciones",
+			boxLabel: "Filtrar las transacciones",
+			placeholder: "Describa las transacciones que quiere ver",
+			proposed: "Filtros por aplicar",
+			fields: {
+				vendor: "Proveedor",
+				status: "Estado",
+				date: "Fecha",
+				amount: "Monto",
+			},
+			remove: "Quitar",
+			removeLabel: (field) => `Quitar el filtro de ${field.toLowerCase()}`,
+			removed: (field) => `Se quitó: ${field.toLowerCase()}`,
+			confirm: "Aplicar filtros",
+			heldHint:
+				"Un campo retenido queda fuera de los filtros. Una aplicación real lo completa con los controles de su propia tabla.",
+			empty: "Nada en esa solicitud filtra las transacciones.",
+			applied: "Aplicados",
+			clear: "Quitar filtros",
+			showing: (count, total) =>
+				count === total
+					? `Las ${total} transacciones`
+					: `${count} de ${total} transacciones`,
+			none: "Ninguna transacción cumple los filtros aplicados.",
+			vendorColumn: "Proveedor",
+			fills: "Completa los filtros",
+			holds: "Deja uno vacío",
+			nothing: "Nada que filtrar",
+			dateRange: ({ from, to }, date) => {
+				if (from && to) {
+					return from === to
+						? `el ${date(from)}`
+						: `del ${date(from)} al ${date(to)}`;
+				}
+				return from ? `desde el ${date(from)}` : `hasta el ${date(to ?? "")}`;
+			},
+			amountRange: ({ min, max, exact, currency }, amount) => {
+				const money = (value: number) =>
+					currency && currency !== "USD"
+						? `${value} ${currency}`
+						: amount(value);
+				if (exact !== undefined) return `exactamente ${money(exact)}`;
+				if (min !== undefined && max !== undefined) {
+					return `de ${money(min)} a ${money(max)}`;
+				}
+				return min !== undefined
+					? `${money(min)} o más`
+					: `${money(max ?? 0)} o menos`;
+			},
+			summary: (filled, total) =>
+				filled === 0
+					? `Ningún campo completado, los ${total} retenidos.`
+					: `${filled} de ${total} campos completados, el resto retenido.`,
+			filledBecause: (probability, gate) =>
+				`Cada elección superó el umbral: la más baja fue ${probability}, el umbral ${gate}.`,
+			heldBecause: (reason) => {
+				switch (reason.kind) {
+					case "no-candidates":
+						return "El código no encontró candidatos, así que no se consultó al modelo.";
+					case "unresolved-currency":
+						return `La solicitud nombra “${reason.mark}”, que no es la moneda local, así que el código retuvo el campo sin consultar al modelo.`;
+					case "failed":
+						return "No llegó respuesta, así que el campo queda retenido.";
+					case "tie":
+						return "Dos etiquetas empataron en el primer lugar, así que el campo queda retenido.";
+					case "not-mentioned":
+						return "El modelo dice que la solicitud no lo menciona.";
+					case "not-available":
+						return "El modelo dice que la solicitud pide algo que ningún candidato expresa.";
+					case "below-gate":
+						return `Una elección (${reason.probability}) quedó por debajo del umbral (${reason.gate}), así que el campo queda retenido.`;
+					case "conflict":
+						return "Las elecciones no forman un solo filtro, así que el código retuvo el campo.";
+				}
+			},
+			start: "Dónde empieza",
+			end: "Dónde termina",
+			number: (text) => `Qué hace “${text}”`,
+			roles: { min: "el mínimo", max: "el máximo", exact: "el monto exacto" },
+			more: (count) => `${count} candidatos más, sin mostrar`,
+			gate: "Umbral",
+			questions: "Preguntas en una llamada",
+		},
 	},
 	vendors: [
 		vendor(
@@ -147,6 +232,30 @@ export const spanish: Content = {
 		t("serena", "FAC-2036", "2026-09-06", 820.0, "paid"),
 		t("coberplena", "FAC-1899", "2026-07-01", 2940.0, "paid"),
 	],
+	statuses: [
+		status("paid", "facturas pagadas en su totalidad"),
+		status("open", "facturas pendientes, sin pagar y aún sin vencer"),
+		status(
+			"overdue",
+			"facturas vencidas, sin pagar después de su fecha límite",
+		),
+	],
+	filterSuggestions: {
+		fills: [
+			"facturas de Cazuela Azul de más de $1,000",
+			"facturas vencidas",
+			"lo que pagamos en agosto",
+			"facturas entre 200 y 1,000 dólares de la semana pasada",
+		],
+		holds: [
+			"las facturas de limpieza del mes pasado",
+			"facturas de alrededor de 500 dólares",
+		],
+		nothing: [
+			"¿cuánto debemos en total?",
+			"¿quién es nuestro mejor proveedor?",
+		],
+	},
 	suggestions: {
 		oneVendor: [
 			"los del catering",

@@ -19,6 +19,13 @@ export type AmountReading = {
 	value: number;
 	/** An ISO 4217 code, or null when the request does not say which currency. */
 	currency: string | null;
+	/**
+	 * The currency the request names, as typed, when it does not resolve
+	 * against the `local_currency` fact: "pesos" when the local currency is
+	 * USD. A field with such a reading is held, never filled with the number
+	 * alone.
+	 */
+	unresolved?: string;
 };
 
 export type Readings = {
@@ -859,12 +866,17 @@ function readSpans(
 	const claim = (s: number, t: number, value: number, mark: string | null) => {
 		if (!free(s, t) || !Number.isFinite(value)) return;
 		hard.fill(true, s, t);
+		const currency = currencyOf(mark, local);
 		amounts.push({
 			at: [s, t],
 			reading: {
 				text: text.slice(s, t),
 				value: Math.round(value * 100) / 100,
-				currency: currencyOf(mark, local),
+				currency,
+				// Without a local currency, a bare mark just leaves the currency out.
+				...(mark !== null &&
+					currency === null &&
+					local && { unresolved: mark }),
 			},
 		});
 	};

@@ -4,3 +4,7 @@ import type { Language } from "./content/types.ts";
 export function searchEndpoint(language: Language): string {
 	return `/api/search/${language}`;
 }
+
+export function filterEndpoint(language: Language): string {
+	return `/api/filter/${language}`;
+}

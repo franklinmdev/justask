@@ -1,48 +1,17 @@
-import type { ComponentPropsWithoutRef, KeyboardEvent, ReactNode } from "react";
+import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import { RequestBox, type RequestBoxProps } from "./request-box.tsx";
 import type { UseSearch } from "./use-search.ts";
 
-export type SearchBoxProps = Omit<
-	ComponentPropsWithoutRef<"input">,
-	"type" | "value" | "defaultValue" | "onChange" | "children" | "aria-label"
-> & {
+export type SearchBoxProps = RequestBoxProps & {
 	search: UseSearch<unknown>;
-	/** The box's accessible name, such as "Find a vendor". */
-	label: string;
 };
 
 /**
  * The request box: a search input the person types into. Enter calls the
  * handler at once, and never submits a surrounding form.
  */
-export function SearchBox({
-	search,
-	label,
-	onKeyDown,
-	...props
-}: SearchBoxProps) {
-	function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-		onKeyDown?.(event);
-		if (
-			event.defaultPrevented ||
-			event.key !== "Enter" ||
-			event.nativeEvent.isComposing
-		) {
-			return;
-		}
-		event.preventDefault();
-		search.submit();
-	}
-
-	return (
-		<input
-			aria-label={label}
-			{...props}
-			type="search"
-			value={search.request}
-			onChange={(event) => search.setRequest(event.target.value)}
-			onKeyDown={handleKeyDown}
-		/>
-	);
+export function SearchBox({ search, ...props }: SearchBoxProps) {
+	return <RequestBox flow={search} {...props} />;
 }
 
 export type SearchItemProps<T> = Omit<

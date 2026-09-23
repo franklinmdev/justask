@@ -2,9 +2,8 @@ import type { SearchResult } from "justask";
 import type { UseSearch } from "justask/react";
 import type { Content, HeldReason, Vendor } from "./content/types.ts";
 import { formats } from "./format.ts";
-
-/** The last call as the page timed it: what it asked and how long it took. */
-export type Trace = { request: string; ms: number };
+import { Bar, failureOf } from "./parts.tsx";
+import type { Trace } from "./trace.ts";
 
 type Verdict =
 	| { kind: "idle" }
@@ -22,22 +21,7 @@ function verdictOf(
 	format: ReturnType<typeof formats>,
 ): Verdict {
 	const { result, error } = search;
-	if (error) {
-		switch (error.kind) {
-			case "provider":
-				return { kind: "failed", reason: { kind: "provider" } };
-			case "timeout":
-				return {
-					kind: "failed",
-					reason: { kind: "timeout", timeoutMs: error.timeoutMs },
-				};
-			default:
-				return {
-					kind: "failed",
-					reason: { kind: "unreachable", message: error.message },
-				};
-		}
-	}
+	if (error) return { kind: "failed", reason: failureOf(error) };
 	if (!result) return { kind: "idle" };
 	if (result.candidates.length === 0) {
 		return { kind: "held", reason: { kind: "no-candidates" } };
@@ -220,7 +204,7 @@ function Candidates({
 					);
 				})}
 			</tbody>
-			<tbody className="label-rows">
+			<tbody className="none-row">
 				{["none", "several"].map((label) => {
 					const picked = result.pick?.label === label;
 					return (
@@ -240,17 +224,5 @@ function Candidates({
 				})}
 			</tbody>
 		</table>
-	);
-}
-
-/** A probability as a bar, with the gate marked on none's and several's. Decorative: the figure beside it is the text. */
-function Bar({ value, gate }: { value: number; gate?: number }) {
-	return (
-		<span className="bar" aria-hidden="true">
-			<span className="bar-fill" style={{ transform: `scaleX(${value})` }} />
-			{gate !== undefined && (
-				<span className="bar-gate" style={{ left: `${gate * 100}%` }} />
-			)}
-		</span>
 	);
 }
