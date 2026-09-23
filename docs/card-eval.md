@@ -630,7 +630,7 @@ Each rescores with `scoreCardRun(await readCardRun(path), { gates })` and no cal
 
 ## Round 5: the same card, under the latency rule
 
-Carried by [#73](https://github.com/franklinmdev/justask/issues/73). Rounds 1 to 4 above stand as recorded. Round 4 failed on Spanish p95 alone, in a slow provider window, and cannot be rescored under #65's rule (Latency, above), so the card gets a fresh round with nothing changed: the code of ADR 0009 and ADR 0010, the labels, and round 4's gates as `demo/server/handler.ts` serves them (intent 0.45, vendor 0.7, tags 0.4, spent_on 0.8, total 0.9, from dev run 5). No dev run is made.
+Carried by [#73](https://github.com/franklinmdev/justask/issues/73). Rounds 1 to 4 above stand as recorded. Round 4 failed on Spanish p95 alone, in a slow provider window, and cannot be rescored under #65's rule (Latency, above), so the card gets a fresh round with nothing changed: the code of ADR 0009 and ADR 0010, the labels, and round 4's gates as `demo/server/handler.ts` serves them (intent 0.45, vendor 0.7, tags 0.4, spent_on 0.8, total 0.9, from dev run 5). #73 lists vendor 0.5 and tags 0.35, round 3's gates; it also says "as written in `demo/server/handler.ts`", which serves round 4's, so round 5 runs at those and nothing changes. No dev run is made.
 
 ### Round 5 sets
 
@@ -665,7 +665,7 @@ Files in `demo/eval/`, drafted against every set in `demo/eval/` (probes include
 | cost per call | | $0.0000873 | $0.0000924 |
 | probes, median against 235 ms | | 259 ms, normal | 375 ms, normal |
 
-Per field, filled of expected: vendor 21 and 20 of 27; tags 23 of 34 English (one wrong), 15 of 34 Spanish (one wrong); day 21 of 30 in both; amount 31 and 30 of 33. The intent passed 33 English and 32 Spanish cards, and no nothing row in either language.
+Per field, filled of expected: vendor 21 and 20 of 27; tags 23 of 34 English (one wrong), 15 of 34 Spanish (one wrong, and one more on an ambiguous row that must hold its tags); day 21 of 30 in both; amount 31 and 30 of 33. The intent passed 33 English and 32 Spanish cards, and no nothing row in either language.
 
 ### Filled and wrong
 
