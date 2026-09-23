@@ -4,10 +4,10 @@ import type { AmountReading, DateReading } from "../parse.ts";
 import type { Facts, Provider, ProviderAnswer } from "../provider.ts";
 import {
 	type FilterEvalRow,
-	HELD,
 	isAmountRange,
 	isDateRange,
 } from "./filter-set.ts";
+import { HELD } from "./held.ts";
 import { checkKillLines, type KillLines } from "./kill-lines.ts";
 import { readRunLog, writeRunLog } from "./log.ts";
 

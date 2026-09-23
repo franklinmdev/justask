@@ -1,5 +1,5 @@
 import type { Amount } from "../card.ts";
-import { HELD } from "./filter-set.ts";
+import { HELD } from "./held.ts";
 
 /**
  * What a card row expects: `record` asks for a new record and names a value

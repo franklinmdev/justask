@@ -391,10 +391,19 @@ export const spanish: Content = {
 		nothing: ["el plomero que arregló la fuga", "¿cuánto debemos en total?"],
 	},
 	tags: [
-		tag("meals", "comidas: almuerzo, cena, café, catering"),
-		tag("travel", "viajes: vuelos, hoteles, taxis"),
-		tag("office", "oficina: artículos, equipos, software y servicios"),
-		tag("client", "facturable a un cliente, o gastado con un cliente"),
+		tag(
+			"meals",
+			"comidas: comida y bebida, como almuerzo, cena, café, meriendas y catering",
+		),
+		tag("travel", "viajes: vuelos, hoteles, taxis y trenes"),
+		tag(
+			"office",
+			"oficina: lo que mantiene el negocio en marcha, como artículos, equipos, software, hosting, reparaciones, limpieza y ventanas, imprenta, mensajería, nómina y recursos humanos, asesoría legal y seguros",
+		),
+		tag(
+			"client",
+			"facturable a un cliente, o gastado con un cliente, cuando la solicitud lo dice con certeza, no cuando dice quizás",
+		),
 	],
 	cardSuggestions: {
 		fills: [

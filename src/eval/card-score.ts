@@ -16,8 +16,13 @@ import {
 	type CardExpectedValue,
 	isAmount,
 } from "./card-set.ts";
-import type { FieldStats } from "./filter-score.ts";
-import { HELD } from "./filter-set.ts";
+import {
+	emptyStats,
+	type FieldStats,
+	notePick,
+	weakestPick,
+} from "./field-stats.ts";
+import { HELD } from "./held.ts";
 import {
 	costPerCall,
 	judge,
@@ -146,11 +151,7 @@ function readField(row: CardRunRow, name: string, gate: number): FieldReading {
 					({ pick }) => pick,
 				)
 			: [result.pick];
-	const weakest = picks.every((pick) => pick !== null)
-		? picks.reduce((a, b) =>
-				(b?.probability ?? 1) < (a?.probability ?? 1) ? b : a,
-			)
-		: null;
+	const weakest = weakestPick(picks);
 	return {
 		value: (value as CardExpectedValue | undefined) ?? null,
 		probability: weakest?.probability ?? null,
@@ -376,15 +377,7 @@ type Read = {
 };
 
 function intentStats(gate: number, read: Read[]): FieldStats {
-	const stats: FieldStats = {
-		gate,
-		expected: 0,
-		filled: 0,
-		right: 0,
-		wrong: 0,
-		lowestRight: null,
-		highestWrong: null,
-	};
+	const stats = emptyStats(gate);
 	for (const { row, intent } of read) {
 		const wantsRecord = row.kind !== "nothing";
 		if (wantsRecord) {
@@ -398,17 +391,7 @@ function intentStats(gate: number, read: Read[]): FieldStats {
 		}
 		const pick = readPick(row.answers[INTENT] ?? {});
 		if (pick?.label !== NEW_RECORD) continue;
-		if (wantsRecord) {
-			stats.lowestRight = Math.min(
-				stats.lowestRight ?? pick.probability,
-				pick.probability,
-			);
-		} else {
-			stats.highestWrong = Math.max(
-				stats.highestWrong ?? pick.probability,
-				pick.probability,
-			);
-		}
+		notePick(stats, wantsRecord, pick.probability);
 	}
 	return stats;
 }
@@ -419,15 +402,7 @@ function intentStats(gate: number, read: Read[]): FieldStats {
  * the intent, not the field, keeps the card empty.
  */
 function fieldStats(name: string, gate: number, read: Read[]): FieldStats {
-	const stats: FieldStats = {
-		gate,
-		expected: 0,
-		filled: 0,
-		right: 0,
-		wrong: 0,
-		lowestRight: null,
-		highestWrong: null,
-	};
+	const stats = emptyStats(gate);
 	for (const { row, at } of read) {
 		const expected = expectedValue(row, name);
 		const got = at[name]?.value ?? null;
@@ -440,17 +415,7 @@ function fieldStats(name: string, gate: number, read: Read[]): FieldStats {
 		if (row.kind === "nothing") continue;
 		const bare = readField(row, name, NO_GATE);
 		if (bare.value === null || bare.probability === null) continue;
-		if (sameCardValue(bare.value, expected)) {
-			stats.lowestRight = Math.min(
-				stats.lowestRight ?? bare.probability,
-				bare.probability,
-			);
-		} else {
-			stats.highestWrong = Math.max(
-				stats.highestWrong ?? bare.probability,
-				bare.probability,
-			);
-		}
+		notePick(stats, sameCardValue(bare.value, expected), bare.probability);
 	}
 	return stats;
 }

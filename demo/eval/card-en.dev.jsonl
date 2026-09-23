@@ -18,3 +18,11 @@
 {"id": "en-d-18", "request": "undo the last expense", "kind": "nothing"}
 {"id": "en-d-19", "request": "good morning", "kind": "nothing"}
 {"id": "en-d-20", "request": "move the taxi expense to Friday", "kind": "nothing"}
+{"id": "en-d-21", "request": "did the Larkspur lunch on Monday come to $96?", "kind": "nothing"}
+{"id": "en-d-22", "request": "change the Cloudberth expense from August 1 to $329", "kind": "nothing"}
+{"id": "en-d-23", "request": "delete the $64 train ticket from Friday", "kind": "nothing"}
+{"id": "en-d-24", "request": "thanks, the Swiftlane delivery looks right", "kind": "nothing"}
+{"id": "en-d-25", "request": "add the client tag to yesterday's lunch", "kind": "nothing"}
+{"id": "en-d-26", "request": "split the Farwander flights between two clients", "kind": "nothing"}
+{"id": "en-d-27", "request": "what's the total for Papergrove this year?", "kind": "nothing"}
+{"id": "en-d-28", "request": "was the Brightmop cleaning on Monday already recorded?", "kind": "nothing"}

@@ -1,4 +1,5 @@
 import type { AmountRange, DateRange } from "../filter.ts";
+import { HELD } from "./held.ts";
 
 /**
  * What a filter row expects: `filterable` names a value for each field it
@@ -6,9 +7,6 @@ import type { AmountRange, DateRange } from "../filter.ts";
  * more than one value, and `nothing` has no field to fill at all.
  */
 export type FilterEvalKind = "filterable" | "ambiguous" | "nothing";
-
-/** Marks a field an ambiguous row must leave empty. Never a catalog id. */
-export const HELD = "held";
 
 /** A catalog field's candidate id, a date field's range, or an amount field's bounds. */
 export type ExpectedValue = string | DateRange | AmountRange;

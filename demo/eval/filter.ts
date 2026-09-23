@@ -9,7 +9,7 @@
 // never overwrites, and prints its report. A dev run gets no verdict: it
 // tunes, it never decides. `compare` reads two saved eval runs and prints the
 // second one's measures and flips, with no call. `gates` reads dev run <n> of
-// both languages and prints each field's gate by the rule in filter-gates.ts,
+// both languages and prints each field's gate by the rule in gates.ts,
 // with no call.
 
 import { readFile } from "node:fs/promises";
@@ -24,7 +24,7 @@ import {
 import { jevProvider } from "justask/jev";
 import { contents, demoFilter, FACTS, TIMEOUT_MS } from "../server/handler.ts";
 import type { Language } from "../src/content/types.ts";
-import { fixGate, poolFields } from "./filter-gates.ts";
+import { fixGate, poolFields } from "./gates.ts";
 import { FILTER_KILL_LINES } from "./kill-lines.ts";
 
 /** Fixed, so every run reads the same day. */
