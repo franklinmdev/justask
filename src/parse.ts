@@ -52,14 +52,16 @@ export type Readings = {
 	amounts?: AmountReading[];
 };
 
+/**
+ * Which way a date that does not say its year or week reads: back for a
+ * filter and an expense's day, forward for a due date or an appointment.
+ */
+export type Reads = "past" | "future";
+
 export type ParserInput = {
 	/** Today in the person's time zone, YYYY-MM-DD. */
 	today: string;
-	/**
-	 * Which way a date that does not say its year or week reads: back for a
-	 * filter and an expense's day, forward for a due date or an appointment.
-	 */
-	reads: "past" | "future";
+	reads: Reads;
 	facts: Facts;
 };
 
@@ -342,8 +344,6 @@ function resolveYear(raw: string | undefined, today: string): number | null {
 
 type Hit = { from: string; to: string; note?: string; ambiguous?: boolean };
 
-type Reads = ParserInput["reads"];
-
 type DateRule = {
 	re: RegExp;
 	/** Returns the readings of one match, or null to reject it. */
@@ -471,20 +471,25 @@ function dayMonth(
 }
 
 /**
- * Two readings of one weekday that nothing in the request chooses between,
- * both marked ambiguous; one plain reading when they fall on the same day.
+ * "next Friday" and "last Friday": the nearest one that way, or the one a
+ * week further. Nothing in the words chooses, so both readings are ambiguous.
  */
-function eitherDay(
-	first: string,
-	firstNote: string,
-	second: string,
-	secondNote: string,
-	sameNote: string,
-): Hit[] {
-	if (first === second) return [{ from: first, to: first, note: sameNote }];
+function eitherWeek(nearest: string, step: 7 | -7, word: string): Hit[] {
+	const further = addDays(nearest, step);
+	const way = step > 0 ? "after" : "before";
 	return [
-		{ from: first, to: first, note: firstNote, ambiguous: true },
-		{ from: second, to: second, note: secondNote, ambiguous: true },
+		{
+			from: nearest,
+			to: nearest,
+			note: `reading '${word}' as the first one ${way} today`,
+			ambiguous: true,
+		},
+		{
+			from: further,
+			to: further,
+			note: `reading '${word}' as the one a week ${step > 0 ? "later" : "earlier"}`,
+			ambiguous: true,
+		},
 	];
 }
 
@@ -720,37 +725,27 @@ const DATE_RULES: DateRule[] = [
 		},
 	},
 	{
-		// "next Friday", "el próximo viernes", "el viernes que viene": the first one after today, or the one in the week after this one.
+		// "next Friday", "el próximo viernes", "el viernes que viene".
 		re: new RegExp(
 			`${b}(?:(?:next|proxim[oa])\\s+${WEEKDAY_ANY}|${WEEKDAY_ANY}\\s+(?:que\\s+viene|proxim[oa]))${e}`,
 			"g",
 		),
 		read: (m, today) => {
 			const w = WEEKDAYS[m[1] ?? m[2] ?? ""] ?? 0;
-			return eitherDay(
-				addDays(today, (w - weekday(today) + 7) % 7 || 7),
-				"reading 'next' as the first one after today",
-				addDays(today, 7 - weekday(today) + w),
-				"reading 'next' as the one in the week after this one",
-				"the first one after today",
-			);
+			const ahead = (w - weekday(today) + 7) % 7 || 7;
+			return eitherWeek(addDays(today, ahead), 7, "next");
 		},
 	},
 	{
-		// "last Friday", "el viernes pasado": the most recent one before today, or the one in the week before this one.
+		// "last Friday", "el viernes pasado".
 		re: new RegExp(
 			`${b}(?:(?:last|past)\\s+${WEEKDAY_ANY}|${WEEKDAY_ANY}\\s+pasad[oa])${e}`,
 			"g",
 		),
 		read: (m, today) => {
 			const w = WEEKDAYS[m[1] ?? m[2] ?? ""] ?? 0;
-			return eitherDay(
-				addDays(today, -((weekday(today) - w + 7) % 7 || 7)),
-				"reading 'last' as the most recent one before today",
-				addDays(today, -weekday(today) - 7 + w),
-				"reading 'last' as the one in the week before this one",
-				"the most recent one before today",
-			);
+			const back = (weekday(today) - w + 7) % 7 || 7;
+			return eitherWeek(addDays(today, -back), -7, "last");
 		},
 	},
 	{

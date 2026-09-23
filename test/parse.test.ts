@@ -113,8 +113,8 @@ describe("relative dates", () => {
 		expect(dates("since Wednesday")).toEqual([
 			["Wednesday", "2026-09-16", "2026-09-16"],
 		]);
-		expect(dates("el sábado pasado")).toEqual([
-			["sábado pasado", "2026-09-19", "2026-09-19"],
+		expect(dates("el sábado")).toEqual([
+			["sábado", "2026-09-19", "2026-09-19"],
 		]);
 	});
 });
@@ -209,23 +209,31 @@ describe("next and last weekdays", () => {
 		},
 	);
 
-	it("reads 'next Monday' on a Monday one way: a week from today", () => {
-		expect(readings("el próximo lunes", "future")).toEqual([
-			["2026-09-28", false],
-		]);
-	});
+	it.each([
+		["next Tuesday", "2026-09-24", "2026-09-29", "2026-10-06"],
+		["next Monday", "2026-09-27", "2026-09-28", "2026-10-05"],
+		["el próximo lunes", "2026-09-21", "2026-09-28", "2026-10-05"],
+	])(
+		"marks '%s' said on %s ambiguous too: the first one after today, or the one a week later",
+		(text, today, first, later) => {
+			expect(readings(text, "future", today)).toEqual([
+				[first, true],
+				[later, true],
+			]);
+		},
+	);
 
-	it("marks both readings of 'last Tuesday' ambiguous on a Thursday, when they are two weeks", () => {
+	it("marks both readings of 'last Tuesday' ambiguous: the most recent one before today, or the one a week earlier", () => {
 		const both = [
 			["2026-09-22", true],
 			["2026-09-15", true],
 		];
 		expect(readings("last Tuesday", "past", "2026-09-24")).toEqual(both);
 		expect(readings("el martes pasado", "past", "2026-09-24")).toEqual(both);
-	});
-
-	it("reads 'last Friday' on a Monday one way, since both readings are the same day", () => {
-		expect(readings("last Friday", "past")).toEqual([["2026-09-18", false]]);
+		expect(readings("last Friday", "past")).toEqual([
+			["2026-09-18", true],
+			["2026-09-11", true],
+		]);
 	});
 });
 

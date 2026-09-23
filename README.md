@@ -166,11 +166,11 @@ The proposed filters sit in a polite live region that reads only what is added, 
 
 The built-in parser reads English and general Spanish; no regional formats ship. A host app adds its own in `filter.parsers`: each is a function from the request and `{ today, reads, facts }` to `{ dates?, times?, amounts? }`, runs before the built-in one, and wins where their text overlaps. `reads` is `"past"` or `"future"`: which way a date that does not say its year or week should read.
 
-A reading the request itself leaves open is marked `ambiguous` by the parser, and a field whose pick lands on one is held whatever its probability: "next Friday" (this week's or next week's), "last Monday" when it can mean two weeks, "a las 2 y pico". The same request always holds the same field.
+A reading the request itself leaves open is marked `ambiguous` by the parser, and a field whose pick lands on one is held whatever its probability: "next Friday" and "last Friday" (the nearest one, or the one a week further), "a las 2 y pico". The same request always holds the same field.
 
 ## Card
 
-A card is a new record filled from a request, such as an expense. An intent question comes first: does the request ask for a new record of this kind? Below the card's `gate`, every field is held, so a question, a change or a cancellation fills nothing. The fields' answers stay in the result for an inspector.
+A card is a new record filled from a request, such as an expense. An intent question comes first: does the request ask for a new record of this kind? Below the card's `gate`, every field is held, so a question, a change or a cancellation fills nothing. The fields' picks stay in the result for an inspector.
 
 ```ts
 const { card } = await ask({

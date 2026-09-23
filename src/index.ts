@@ -60,6 +60,7 @@ export {
 	type Parser,
 	type ParserInput,
 	type Readings,
+	type Reads,
 	type TimeReading,
 } from "./parse.ts";
 export type {

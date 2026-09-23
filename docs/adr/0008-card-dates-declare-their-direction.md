@@ -7,7 +7,7 @@ The demo's card is an expense, not an appointment. "Lunch with Northwind on Frid
 ## Consequences
 
 - The parser gets `reads` in its input, host parsers included. Every rule matches the same text in both directions and only the resolution differs, so a card with a past and a future field parses once per direction and both parses find the same times and amounts.
-- "next Friday" reads two ways (the first Friday after today, or the Friday of next week) whichever way the field reads, and both readings are marked `ambiguous`. So does "last Monday" (the most recent, or last week's) when the two fall on different days. A pick that lands on an ambiguous reading holds the field whatever its probability, on a card and on a filter. This is the lab's open fix: its "next X" picks sat at 0.86 to 0.91, right on a 0.9 gate.
+- "next Friday" reads two ways (the first Friday after today, or the one a week later) whichever way the field reads, and both readings are marked `ambiguous`, on every day of the week. So does "last Friday" (the most recent one, or the one a week earlier). A pick that lands on an ambiguous reading holds the field whatever its probability, on a card and on a filter. This is the lab's open fix: its "next X" picks sat at 0.86 to 0.91, right on a 0.9 gate.
 - A card date field fills with one day. A picked period ("next week") is held.
 
 ## Considered Options

@@ -13,6 +13,7 @@ import type {
 	AmountReading,
 	DateReading,
 	Parser,
+	Reads,
 	TimeReading,
 } from "./parse.ts";
 import { type Pick, readPick } from "./pick.ts";
@@ -48,7 +49,7 @@ export type CardDateField = {
 	 * Which way a date that does not say its year or week reads: "Friday" is
 	 * the last one for an expense's day, the coming one for a due date.
 	 */
-	reads: "past" | "future";
+	reads: Reads;
 	/** What the field means in the host app, used in its question. */
 	description: string;
 	/** The probability the pick needs before the field fills. No default (ADR 0003). */
@@ -113,7 +114,10 @@ export type CardValue<F extends CardFields> = {
 	[K in keyof F]?: CardFieldValue<F[K]>;
 };
 
-/** A several-item catalog field's result: one answer per item, keyed by the item's candidate id. */
+/**
+ * A card field's candidates, picks and gate. A several-item catalog field
+ * reports one pick per item, keyed by the item's candidate id.
+ */
 export type CardFieldResult<F extends CardField> =
 	F extends SeveralCatalogField<infer T>
 		? ParsedFieldResult<T>
@@ -157,6 +161,7 @@ export function readIntent(probabilities: Probabilities, gate: number) {
 	};
 }
 
+/** Whether the request asks for a new record at all, asked before every field. */
 export function intentQuestion(card: Card<CardFields>): Question {
 	return {
 		id: INTENT,
@@ -179,10 +184,17 @@ export function intentQuestion(card: Card<CardFields>): Question {
 	};
 }
 
-type Readings = {
+/** The parsers' readings of one request, as candidates. */
+export type CandidateReadings = {
 	dates: Candidate<DateReading>[];
 	times: Candidate<TimeReading>[];
 	amounts: Candidate<AmountReading>[];
+};
+
+export const NO_READINGS: CandidateReadings = {
+	dates: [],
+	times: [],
+	amounts: [],
 };
 
 /**
@@ -217,12 +229,13 @@ function choicePlan<T>(
 	};
 }
 
+/** A card field's questions, and how to build its value from the provider's picks. */
 export function cardPlan(
 	name: string,
 	card: Card<CardFields>,
 	field: CardField,
 	catalog: Candidate<unknown>[],
-	readings: Readings,
+	readings: CandidateReadings,
 ): FieldPlan {
 	if (field.kind === "catalog" && "several" in field) {
 		return severalPlan(name, card, field, catalog);

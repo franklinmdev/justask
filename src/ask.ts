@@ -1,4 +1,5 @@
 import {
+	type CandidateReadings,
 	type Card,
 	type CardFields,
 	type CardResult,
@@ -6,6 +7,7 @@ import {
 	cardQuestionIds,
 	INTENT,
 	intentQuestion,
+	NO_READINGS,
 	readIntent,
 } from "./card.ts";
 import {
@@ -24,13 +26,7 @@ import {
 	questionIds,
 } from "./filter.ts";
 import { checkGate } from "./gate.ts";
-import {
-	type AmountReading,
-	type DateReading,
-	type Parser,
-	parseRequest,
-	type TimeReading,
-} from "./parse.ts";
+import { type Parser, parseRequest, type Reads } from "./parse.ts";
 import type { Pick } from "./pick.ts";
 import type {
 	Facts,
@@ -191,7 +187,7 @@ async function askFilter<F extends Fields>({
 	}
 	const parsed = names.some((name) => field(name).kind !== "catalog")
 		? readCandidates(request, facts, filter.parsers ?? [], "past")
-		: { dates: [], times: [], amounts: [] };
+		: NO_READINGS;
 
 	const plans: Record<string, FieldPlan> = {};
 	await Promise.all(
@@ -246,7 +242,7 @@ async function askFilter<F extends Fields>({
  * The intent question and all fields' questions in one call. A field's
  * candidates come as a filter's do; a date field reads its own way, so each
  * way any field reads is parsed once. Below the intent gate, every field is
- * held, though its answers are still reported.
+ * held, though its picks are still reported.
  */
 async function askCard<F extends CardFields>({
 	request,
@@ -270,11 +266,8 @@ async function askCard<F extends CardFields>({
 			);
 		}
 	}
-	const parsed = new Map<
-		"past" | "future",
-		ReturnType<typeof readCandidates>
-	>();
-	const readingsFor = (reads: "past" | "future") => {
+	const parsed = new Map<Reads, CandidateReadings>();
+	const readingsFor = (reads: Reads) => {
 		let readings = parsed.get(reads);
 		if (!readings) {
 			readings = readCandidates(request, facts, card.parsers ?? [], reads);
@@ -290,11 +283,7 @@ async function askCard<F extends CardFields>({
 			if (declared.kind === "catalog") {
 				const candidates = await declared.shortlist(request);
 				checkShortlist(candidates, MISSING);
-				plans[name] = cardPlan(name, card, declared, candidates, {
-					dates: [],
-					times: [],
-					amounts: [],
-				});
+				plans[name] = cardPlan(name, card, declared, candidates, NO_READINGS);
 			} else {
 				const readings = readingsFor(
 					declared.kind === "date" ? declared.reads : "past",
@@ -351,12 +340,8 @@ function readCandidates(
 	request: string,
 	facts: Facts,
 	parsers: readonly Parser[],
-	reads: "past" | "future",
-): {
-	dates: Candidate<DateReading>[];
-	times: Candidate<TimeReading>[];
-	amounts: Candidate<AmountReading>[];
-} {
+	reads: Reads,
+): CandidateReadings {
 	const today = /\d{4}-\d{2}-\d{2}/.exec(facts.today ?? "")?.[0];
 	if (!today) {
 		throw new TypeError(
