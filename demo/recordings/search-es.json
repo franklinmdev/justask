@@ -1,10 +1,10 @@
 {
 	"set": "search-es.round3.jsonl",
 	"row": "es-r3-01",
-	"recordedAt": "2026-09-23T18:24:46.978Z",
+	"recordedAt": "2026-09-23T19:18:15.767Z",
 	"timeZone": "America/La_Paz",
 	"request": "una caja de sobres y una grapadora",
-	"latencyMs": 203,
+	"latencyMs": 241,
 	"response": {
 		"search": {
 			"item": {
@@ -20,7 +20,8 @@
 						"id": "tintaverde",
 						"name": "Papelería Tintaverde",
 						"supplies": "papel, tóner y artículos de oficina"
-					}
+					},
+					"names": ["Tintaverde"]
 				},
 				{
 					"id": "cazuela",
@@ -29,7 +30,8 @@
 						"id": "cazuela",
 						"name": "Banquetes Cazuela Azul",
 						"supplies": "catering y almuerzos para la oficina"
-					}
+					},
+					"names": ["Cazuela Azul"]
 				},
 				{
 					"id": "nubalia",
@@ -38,7 +40,8 @@
 						"id": "nubalia",
 						"name": "Nubalia Hosting",
 						"supplies": "alojamiento de páginas web y servidores en la nube"
-					}
+					},
+					"names": ["Nubalia"]
 				},
 				{
 					"id": "brisamar",
@@ -47,7 +50,8 @@
 						"id": "brisamar",
 						"name": "Limpiezas Brisamar",
 						"supplies": "limpieza nocturna de oficinas"
-					}
+					},
+					"names": ["Brisamar"]
 				},
 				{
 					"id": "relucir",
@@ -56,7 +60,8 @@
 						"id": "relucir",
 						"name": "Relucir Servicios de Limpieza",
 						"supplies": "limpieza de oficinas y de ventanas"
-					}
+					},
+					"names": ["Relucir"]
 				},
 				{
 					"id": "letranueva",
@@ -65,7 +70,8 @@
 						"id": "letranueva",
 						"name": "Imprenta Letranueva",
 						"supplies": "tarjetas de presentación, volantes y letreros"
-					}
+					},
+					"names": ["Letranueva"]
 				},
 				{
 					"id": "rumboclaro",
@@ -74,7 +80,8 @@
 						"id": "rumboclaro",
 						"name": "Viajes Rumbo Claro",
 						"supplies": "vuelos y hoteles para viajes de trabajo"
-					}
+					},
+					"names": ["Rumbo Claro"]
 				},
 				{
 					"id": "cuentia",
@@ -83,7 +90,8 @@
 						"id": "cuentia",
 						"name": "Cuentia Software",
 						"supplies": "licencias de software contable"
-					}
+					},
+					"names": ["Cuentia"]
 				},
 				{
 					"id": "cafetal",
@@ -92,7 +100,8 @@
 						"id": "cafetal",
 						"name": "Café del Cafetal Alto",
 						"supplies": "café en grano y alquiler de cafeteras"
-					}
+					},
+					"names": ["Cafetal"]
 				},
 				{
 					"id": "pieveloz",
@@ -101,7 +110,8 @@
 						"id": "pieveloz",
 						"name": "Mensajería Pieveloz",
 						"supplies": "mensajería el mismo día"
-					}
+					},
+					"names": ["Pieveloz"]
 				},
 				{
 					"id": "lindero",
@@ -110,7 +120,8 @@
 						"id": "lindero",
 						"name": "Bufete Lindero",
 						"supplies": "revisión de contratos y asesoría legal"
-					}
+					},
+					"names": ["Lindero"]
 				},
 				{
 					"id": "tecnoria",
@@ -119,7 +130,8 @@
 						"id": "tecnoria",
 						"name": "Tecnoria Soporte",
 						"supplies": "reparación de computadoras y soporte técnico"
-					}
+					},
+					"names": ["Tecnoria"]
 				},
 				{
 					"id": "serena",
@@ -128,7 +140,8 @@
 						"id": "serena",
 						"name": "Nómina Serena",
 						"supplies": "nómina y recursos humanos"
-					}
+					},
+					"names": ["Serena"]
 				},
 				{
 					"id": "coberplena",
@@ -137,30 +150,31 @@
 						"id": "coberplena",
 						"name": "Seguros Cobertura Plena",
 						"supplies": "seguros para empresas"
-					}
+					},
+					"names": ["Cobertura Plena"]
 				}
 			],
 			"pick": {
 				"label": "tintaverde",
-				"probability": 0.94
+				"probability": 0.93
 			},
 			"probabilities": {
-				"none": 0.04,
-				"relucir": 0,
-				"brisamar": 0,
-				"coberplena": 0,
-				"nubalia": 0,
-				"cuentia": 0,
-				"tintaverde": 0.94,
+				"rumboclaro": 0,
+				"cafetal": 0,
 				"tecnoria": 0,
-				"lindero": 0,
 				"letranueva": 0,
 				"several": 0.02,
+				"brisamar": 0,
+				"coberplena": 0,
+				"lindero": 0,
 				"serena": 0,
+				"cuentia": 0,
+				"nubalia": 0,
+				"tintaverde": 0.93,
+				"relucir": 0,
 				"pieveloz": 0,
-				"rumboclaro": 0,
 				"cazuela": 0,
-				"cafetal": 0
+				"none": 0.05
 			},
 			"gate": 0.15
 		},

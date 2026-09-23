@@ -10,6 +10,7 @@
 // Nothing in a recording is edited by hand: after a change to the gates, run
 // this again.
 
+import { execFileSync } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
 import type { AmountRange, DateRange, FieldValue } from "justask";
 import { parseEvalSet, parseFilterEvalSet } from "justask/eval";
@@ -159,3 +160,16 @@ for (const { file, recording } of written) {
 		`${file}: ${recording.row}, ${recording.latencyMs} ms, ${recording.response.inputTokens ?? "?"} input tokens, $${cost ?? "?"}`,
 	);
 }
+// The repo's formatter lays the JSON out as the lint check expects, so a
+// fresh recording needs no hand at all.
+execFileSync(
+	"pnpm",
+	[
+		"exec",
+		"biome",
+		"format",
+		"--write",
+		...written.map(({ file }) => here(file)),
+	],
+	{ stdio: "inherit" },
+);

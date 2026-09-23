@@ -1,10 +1,10 @@
 {
 	"set": "filter-es.jsonl",
 	"row": "es-f-26",
-	"recordedAt": "2026-09-23T18:24:46.749Z",
+	"recordedAt": "2026-09-23T19:18:15.399Z",
 	"timeZone": "America/La_Paz",
 	"request": "reparaciones de Tecnoria entre $200 y $600 desde el 1 de julio",
-	"latencyMs": 228,
+	"latencyMs": 367,
 	"response": {
 		"filter": {
 			"value": {
@@ -32,7 +32,8 @@
 								"id": "tintaverde",
 								"name": "Papelería Tintaverde",
 								"supplies": "papel, tóner y artículos de oficina"
-							}
+							},
+							"names": ["Tintaverde"]
 						},
 						{
 							"id": "cazuela",
@@ -41,7 +42,8 @@
 								"id": "cazuela",
 								"name": "Banquetes Cazuela Azul",
 								"supplies": "catering y almuerzos para la oficina"
-							}
+							},
+							"names": ["Cazuela Azul"]
 						},
 						{
 							"id": "nubalia",
@@ -50,7 +52,8 @@
 								"id": "nubalia",
 								"name": "Nubalia Hosting",
 								"supplies": "alojamiento de páginas web y servidores en la nube"
-							}
+							},
+							"names": ["Nubalia"]
 						},
 						{
 							"id": "brisamar",
@@ -59,7 +62,8 @@
 								"id": "brisamar",
 								"name": "Limpiezas Brisamar",
 								"supplies": "limpieza nocturna de oficinas"
-							}
+							},
+							"names": ["Brisamar"]
 						},
 						{
 							"id": "relucir",
@@ -68,7 +72,8 @@
 								"id": "relucir",
 								"name": "Relucir Servicios de Limpieza",
 								"supplies": "limpieza de oficinas y de ventanas"
-							}
+							},
+							"names": ["Relucir"]
 						},
 						{
 							"id": "letranueva",
@@ -77,7 +82,8 @@
 								"id": "letranueva",
 								"name": "Imprenta Letranueva",
 								"supplies": "tarjetas de presentación, volantes y letreros"
-							}
+							},
+							"names": ["Letranueva"]
 						},
 						{
 							"id": "rumboclaro",
@@ -86,7 +92,8 @@
 								"id": "rumboclaro",
 								"name": "Viajes Rumbo Claro",
 								"supplies": "vuelos y hoteles para viajes de trabajo"
-							}
+							},
+							"names": ["Rumbo Claro"]
 						},
 						{
 							"id": "cuentia",
@@ -95,7 +102,8 @@
 								"id": "cuentia",
 								"name": "Cuentia Software",
 								"supplies": "licencias de software contable"
-							}
+							},
+							"names": ["Cuentia"]
 						},
 						{
 							"id": "cafetal",
@@ -104,7 +112,8 @@
 								"id": "cafetal",
 								"name": "Café del Cafetal Alto",
 								"supplies": "café en grano y alquiler de cafeteras"
-							}
+							},
+							"names": ["Cafetal"]
 						},
 						{
 							"id": "pieveloz",
@@ -113,7 +122,8 @@
 								"id": "pieveloz",
 								"name": "Mensajería Pieveloz",
 								"supplies": "mensajería el mismo día"
-							}
+							},
+							"names": ["Pieveloz"]
 						},
 						{
 							"id": "lindero",
@@ -122,7 +132,8 @@
 								"id": "lindero",
 								"name": "Bufete Lindero",
 								"supplies": "revisión de contratos y asesoría legal"
-							}
+							},
+							"names": ["Lindero"]
 						},
 						{
 							"id": "tecnoria",
@@ -131,7 +142,8 @@
 								"id": "tecnoria",
 								"name": "Tecnoria Soporte",
 								"supplies": "reparación de computadoras y soporte técnico"
-							}
+							},
+							"names": ["Tecnoria"]
 						},
 						{
 							"id": "serena",
@@ -140,7 +152,8 @@
 								"id": "serena",
 								"name": "Nómina Serena",
 								"supplies": "nómina y recursos humanos"
-							}
+							},
+							"names": ["Serena"]
 						},
 						{
 							"id": "coberplena",
@@ -149,30 +162,31 @@
 								"id": "coberplena",
 								"name": "Seguros Cobertura Plena",
 								"supplies": "seguros para empresas"
-							}
+							},
+							"names": ["Cobertura Plena"]
 						}
 					],
 					"pick": {
 						"label": "tecnoria",
-						"probability": 0.98
+						"probability": 0.99
 					},
 					"probabilities": {
-						"pieveloz": 0,
-						"not_mentioned": 0.02,
-						"tintaverde": 0,
-						"relucir": 0,
-						"rumboclaro": 0,
-						"not_available": 0,
-						"tecnoria": 0.98,
-						"cazuela": 0,
 						"letranueva": 0,
 						"brisamar": 0,
+						"relucir": 0,
 						"serena": 0,
+						"pieveloz": 0,
 						"cuentia": 0,
+						"rumboclaro": 0,
+						"cazuela": 0,
+						"coberplena": 0,
 						"nubalia": 0,
-						"lindero": 0,
+						"not_mentioned": 0.01,
+						"tecnoria": 0.99,
+						"not_available": 0,
 						"cafetal": 0,
-						"coberplena": 0
+						"tintaverde": 0,
+						"lindero": 0
 					},
 					"gate": 0.6
 				},
@@ -196,14 +210,14 @@
 					],
 					"pick": {
 						"label": "not_mentioned",
-						"probability": 0.99
+						"probability": 1
 					},
 					"probabilities": {
-						"paid": 0,
-						"overdue": 0,
 						"open": 0,
-						"not_mentioned": 0.99,
-						"not_available": 0.01
+						"not_mentioned": 1,
+						"overdue": 0,
+						"not_available": 0,
+						"paid": 0
 					},
 					"gate": 0.95
 				},
@@ -226,9 +240,9 @@
 								"probability": 0.99
 							},
 							"probabilities": {
-								"d0": 0.99,
+								"not_available": 0.01,
 								"not_mentioned": 0,
-								"not_available": 0.01
+								"d0": 0.99
 							}
 						},
 						"to": {
@@ -237,9 +251,9 @@
 								"probability": 0.99
 							},
 							"probabilities": {
-								"d0": 0.01,
+								"not_available": 0,
 								"not_mentioned": 0.99,
-								"not_available": 0
+								"d0": 0.01
 							}
 						}
 					},
@@ -275,22 +289,22 @@
 							"probabilities": {
 								"not_available": 0,
 								"not_mentioned": 0,
+								"exact": 0,
 								"max": 0,
-								"min": 1,
-								"exact": 0
+								"min": 1
 							}
 						},
 						"a1": {
 							"pick": {
 								"label": "max",
-								"probability": 1
+								"probability": 0.99
 							},
 							"probabilities": {
-								"max": 1,
+								"not_available": 0,
 								"not_mentioned": 0,
 								"exact": 0,
-								"min": 0,
-								"not_available": 0
+								"max": 0.99,
+								"min": 0.01
 							}
 						}
 					},
