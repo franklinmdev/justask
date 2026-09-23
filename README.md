@@ -146,6 +146,19 @@ The saved log is enough for everything else, with no provider call:
 
 Keep a separate dev set for tuning descriptions and shortlists, and never let it decide a verdict.
 
+## Demo
+
+A local demo searches the vendors of a fictional invoicing app, in English or Spanish, beside a state panel that shows what happened: the shortlist, every label's probability, the pick, the gate on `none`, and why the item filled or was held. Its suggested requests include ones that could mean two vendors and ones with nothing to find.
+
+```sh
+cp .env.example .env   # then set TYPESAFE_API_KEY
+pnpm demo              # http://localhost:5173
+```
+
+Vite serves the page and mounts the search handler as dev middleware, one route per language (`/api/search/en` and `/api/search/es`), each with its own catalog. The key is read from `.env` on the server side and never reaches the browser bundle. Every search is one real, paid Jev call. Without a key the page still runs, and every search fails and is held.
+
+The demo's gate (0.5), timeout (2 s) and typing pause (300 ms) are not measured on its data yet: the gate sits in the gap the lab measured (ADR 0005) until the demo's search eval set fixes it.
+
 ## Development
 
 Requires Node 24 and pnpm 12 (the version is pinned in `package.json`; `corepack enable` picks it up).
