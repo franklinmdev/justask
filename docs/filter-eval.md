@@ -1,6 +1,6 @@
 # Filter eval: sets, kill lines and verdict
 
-**Status: sets, kill lines and gate rule approved and frozen by the owner on 2026-09-22 (#17), before any provider call. No dev run yet: it waits for #39, which changes how the filter reads "last Friday", to merge into main.**
+**Status: sets, kill lines and gate rule approved and frozen by the owner on 2026-09-22 (#17), before any provider call. Dev runs done after #39 merged into main; the gates below were fixed from them by the rule and written into the demo before run 1.**
 
 **Hypothesis:** on the demo's fictional transactions, the filter turns a request into the exact filter object a person means (vendor, status, date, amount), or leaves a field empty when it cannot tell, in English and in Spanish, as the person types.
 
@@ -50,6 +50,31 @@ Each field gets its own gate, fixed from the dev runs by a rule the owner approv
 - No right pick, or no gate strictly between 0 and 1 that fits: the owner decides.
 
 The gates are written into `demo/server/handler.ts` before run 1, so the demo serves the gates the verdict was measured at. A rescore of run 1 at other gates is reported apart and changes neither the verdict nor the demo.
+
+### Dev run 1
+
+Runs of 2026-09-22 with `jev-1.13.0`, every field at the lab's 0.9 (the gates are not fixed yet), today fixed at Tuesday 2026-09-22, after #39 merged. The frozen sets' checksums were checked unchanged and every test passed before the first call. Dev runs print no verdict.
+
+| Dev run 1, all gates 0.9 | exact | coverage | invented | held ambiguous | p95 | cost per call |
+|---|---|---|---|---|---|---|
+| English | 9 of 9 | 9 of 12 | 0 | 4 of 4 | 353 ms | $0.0000569 |
+| Spanish | 10 of 10 | 10 of 12 | 0 | 4 of 4 | 339 ms | $0.0000593 |
+
+Each field's picks, read with no gate, both languages pooled:
+
+| Field | Lowest right | Highest wrong | Rule | Gate |
+|---|---|---|---|---|
+| vendor | 0.67 (`the catering invoices`) | 0.49 (`facturas del abogado o de la nómina de julio`, Lindero) | midpoint 0.58, rounded 0.6 | **0.6** |
+| status | 0.97 | 0.88 (`facturas pendientes de pago`, open) | midpoint 0.925, rounded 0.95 | **0.95** |
+| date | 0.83 (`this year's invoices`) | 0.8 (`facturas de Cuentia de finales de agosto`, all of August) | midpoint 0.815 rounds to 0.80, onto the wrong pick; the first 0.05 above it | **0.85** |
+| amount | 0.96 | none | lowest right rounded down, at most 0.9 | **0.9** |
+
+- **Date: the rule held a right pick to keep out a wrong one.** At 0.85, `this year's invoices` (0.83) would have held too; the rule puts every tie on held, since a wrong filter shown as right is worse than an empty field.
+- **Status sits close to its right picks.** The Spanish `pendientes de pago`, which could mean open or overdue, picked open at 0.88; the right picks were 0.97 and above. The gate is 0.95.
+- **One vendor miss no gate reaches.** `Cloudberth's paid invoices under $300 between July 1 and August 31` picked `not_mentioned` at 0.50 over Cloudberth at 0.45, with the vendor named in the request. Every other dev miss was a right value under 0.9.
+- The wrong picks on the other English ambiguous rows (`outstanding invoices` open at 0.48, `Tallyroot invoices from late August` all of August at 0.63) sit below every gate.
+
+Run logs: `demo/eval/runs/filter-en-dev-1.jsonl`, `demo/eval/runs/filter-es-dev-1.jsonl`. `demo/eval/filter.ts gates 1` prints the table's gates with no call.
 
 ## Procedure
 
