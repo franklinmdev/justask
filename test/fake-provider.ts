@@ -11,6 +11,7 @@ import type {
 	ProviderAnswer,
 	ProviderInput,
 	ProviderResult,
+	Usage,
 } from "justask";
 import type { JevClient } from "justask/jev";
 
@@ -79,9 +80,17 @@ function recording(answer: Provider["answer"]): RecordingProvider {
 	};
 }
 
-/** Returns `answer` as is, unchecked, for answers that break the contract or tie. */
-export function rawProvider(answer: ProviderAnswer): RecordingProvider {
-	return recording(async (): Promise<ProviderResult> => ({ answers: answer }));
+/**
+ * Returns `answer` as is, unchecked, for answers that break the contract or
+ * tie, with `usage` reported beside it when given.
+ */
+export function rawProvider(
+	answer: ProviderAnswer,
+	usage: Usage = {},
+): RecordingProvider {
+	return recording(
+		async (): Promise<ProviderResult> => ({ answers: answer, ...usage }),
+	);
 }
 
 /** Rejects with `cause`, or throws it before returning a promise when `synchronous`. */

@@ -81,9 +81,12 @@ export function createSearchHandler<T>(
 ): (httpRequest: Request) => Promise<Response> {
 	const { search } = config;
 	return serve(config, async (input) => {
-		const { error, ...result } = await ask({ ...input, search });
-		const response: SearchHandlerResponse<T> = result;
-		return { response, error };
+		const result = await ask({ ...input, search });
+		const response: SearchHandlerResponse<T> = {
+			search: result.search,
+			...usageOf(result),
+		};
+		return { response, error: result.error };
 	});
 }
 
@@ -97,9 +100,12 @@ export function createFilterHandler<F extends Fields>(
 ): (httpRequest: Request) => Promise<Response> {
 	const { filter } = config;
 	return serve(config, async (input) => {
-		const { error, ...result } = await ask({ ...input, filter });
-		const response: FilterHandlerResponse<F> = result;
-		return { response, error };
+		const result = await ask({ ...input, filter });
+		const response: FilterHandlerResponse<F> = {
+			filter: result.filter,
+			...usageOf(result),
+		};
+		return { response, error: result.error };
 	});
 }
 
@@ -113,10 +119,24 @@ export function createCardHandler<F extends CardFields>(
 ): (httpRequest: Request) => Promise<Response> {
 	const { card } = config;
 	return serve(config, async (input) => {
-		const { error, ...result } = await ask({ ...input, card });
-		const response: CardHandlerResponse<F> = result;
-		return { response, error };
+		const result = await ask({ ...input, card });
+		const response: CardHandlerResponse<F> = {
+			card: result.card,
+			...usageOf(result),
+		};
+		return { response, error: result.error };
 	});
+}
+
+/**
+ * Each figure `ask` reported, picked by name like the result, so a field
+ * added to `ask`'s results never reaches the browser unseen.
+ */
+function usageOf({ costUsd, inputTokens }: Usage): Usage {
+	return {
+		...(costUsd !== undefined && { costUsd }),
+		...(inputTokens !== undefined && { inputTokens }),
+	};
 }
 
 type AskBase = Omit<AskInput<unknown>, "search">;
