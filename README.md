@@ -107,6 +107,36 @@ app.post("/api/justask", (req, res, next) => {
 });
 ```
 
+## Filter
+
+A filter is declared field by field, and `ask` returns the filter object the host app's table understands. A held field's key is left out, as if the request never mentioned it.
+
+```ts
+import { ask } from "justask";
+
+const { filter } = await ask({
+  request: "invoices from Acme over 500 pesos last month",
+  facts: { today: "2026-09-22", local_currency: "MXN" },
+  provider,
+  timeoutMs: 2_000,
+  filter: {
+    description: "invoices, one row per invoice",
+    fields: {
+      vendor: { kind: "catalog", description: "the vendor", gate: 0.8, shortlist },
+      issued: { kind: "date", description: "the day it was issued", gate: 0.8 },
+      total: { kind: "amount", description: "the invoice's total", gate: 0.8 },
+    },
+  },
+});
+// filter.value: { vendor, issued: { from: "2026-08-01", to: "2026-08-31" }, total: { min: 500, currency: "MXN" } }
+```
+
+- **catalog** fields take their candidates from the host app's `shortlist`, one question each.
+- **date** fields take theirs from the parsers, read backward as a filter looks at what already happened, and fill as `{ from?, to? }` in days. Two questions: where the period starts and where it ends.
+- **amount** fields take theirs from the parsers and fill as `{ min?, max?, exact?, currency? }`, one question per number found. The `local_currency` fact, an ISO 4217 code, decides what a bare "$" and "pesos" mean; without it, or when it does not fit, the currency is left out.
+
+The built-in parser reads English and general Spanish; no regional formats ship. A host app adds its own in `filter.parsers`: each is a function from the request and `{ today, facts }` to `{ dates?, amounts? }`, runs before the built-in one, and wins where their text overlaps.
+
 ## Measuring a gate
 
 Every gate is declared with no default, so it has to come from measurement. `justask/eval` runs an eval set through the real pipeline, with the real provider, and scores it the way the lab did. It runs by hand, never in CI, because every row is a paid call.
