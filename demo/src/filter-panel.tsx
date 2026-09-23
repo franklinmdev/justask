@@ -1,4 +1,5 @@
 import type {
+	AmountRange,
 	CatalogFieldResult,
 	FieldAnswer,
 	FilterResult,
@@ -19,6 +20,12 @@ import type { Trace } from "./trace.ts";
 type Format = ReturnType<typeof formats>;
 
 const MISSING = ["not_mentioned", "not_available"];
+
+/** What a number can do in an amount, in the panel's order: the bounds, then the exact amount. */
+const ROLES = ["min", "max", "exact"] as const satisfies readonly Exclude<
+	keyof AmountRange,
+	"currency"
+>[];
 
 /** How many of a catalog's candidates the panel lists, the likeliest first. */
 const SHOWN = 3;
@@ -144,10 +151,10 @@ function readoutsOf(
 		id,
 		title: copy.filter.number(value.text),
 		rows: [
-			...Object.entries(copy.filter.roles).map(([role, detail]) => ({
+			...ROLES.map((role) => ({
 				label: role,
 				name: role,
-				detail,
+				detail: copy.filter.roles[role],
 			})),
 			...missing,
 		],

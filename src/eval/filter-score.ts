@@ -222,7 +222,7 @@ export function scoreFilterRun(
 	);
 
 	const measures = measuresOf(run.rows, {
-		right: exact.length,
+		exact: exact.length,
 		covered: covered.length,
 		expected: filterable.length,
 		invented: invented.length,

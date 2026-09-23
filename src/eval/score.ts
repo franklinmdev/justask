@@ -85,7 +85,7 @@ export function scoreRun(run: Run, { gate = run.gate } = {}): Report {
 	const leaked = ambiguous.filter(({ item }) => item !== null);
 
 	const measures = measuresOf(run.rows, {
-		right: right.length,
+		exact: right.length,
 		covered: covered.length,
 		expected: items.length,
 		invented: invented.length,
@@ -204,7 +204,7 @@ function readRow(
 export function measuresOf(
 	rows: Pick<RunRow, "latencyMs" | "error">[],
 	counts: {
-		right: number;
+		exact: number;
 		covered: number;
 		expected: number;
 		invented: number;
@@ -214,7 +214,7 @@ export function measuresOf(
 ): Measures {
 	const answered = rows.filter((row) => !row.error);
 	return {
-		exact: ratio(counts.right, counts.covered),
+		exact: ratio(counts.exact, counts.covered),
 		coverage: ratio(counts.covered, counts.expected),
 		invented: counts.invented,
 		heldAmbiguous: ratio(counts.held, counts.ambiguous),
