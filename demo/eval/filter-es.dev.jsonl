@@ -1,0 +1,20 @@
+{"id":"es-dev-01","request":"las facturas del catering","kind":"filterable","expected":{"vendor":"cazuela"}}
+{"id":"es-dev-02","request":"facturas saldadas","kind":"filterable","expected":{"status":"paid"}}
+{"id":"es-dev-03","request":"las facturas de este año","kind":"filterable","expected":{"date":{"from":"2026-01-01","to":"2026-12-31"}}}
+{"id":"es-dev-04","request":"facturas de menos de $500","kind":"filterable","expected":{"amount":{"max":500,"currency":"USD"}}}
+{"id":"es-dev-05","request":"facturas vencidas de Brisamar","kind":"filterable","expected":{"vendor":"brisamar","status":"overdue"}}
+{"id":"es-dev-06","request":"facturas de Tintaverde de agosto","kind":"filterable","expected":{"vendor":"tintaverde","date":{"from":"2026-08-01","to":"2026-08-31"}}}
+{"id":"es-dev-07","request":"facturas de Rumbo Claro de más de $2,000","kind":"filterable","expected":{"vendor":"rumboclaro","amount":{"min":2000,"currency":"USD"}}}
+{"id":"es-dev-08","request":"facturas sin pagar que aún no vencen, con fecha de esta semana","kind":"filterable","expected":{"status":"open","date":{"from":"2026-09-21","to":"2026-09-27"}}}
+{"id":"es-dev-09","request":"facturas sin pagar entre $250 y $700 que aún no vencen","kind":"filterable","expected":{"status":"open","amount":{"min":250,"max":700,"currency":"USD"}}}
+{"id":"es-dev-10","request":"facturas de exactamente $1,800 desde el 1 de agosto","kind":"filterable","expected":{"date":{"from":"2026-08-01"},"amount":{"exact":1800,"currency":"USD"}}}
+{"id":"es-dev-11","request":"facturas pagadas de Nubalia de menos de $300 entre el 1 de julio y el 31 de agosto","kind":"filterable","expected":{"vendor":"nubalia","status":"paid","date":{"from":"2026-07-01","to":"2026-08-31"},"amount":{"max":300,"currency":"USD"}}}
+{"id":"es-dev-12","request":"facturas vencidas de Pieveloz de más de 50 dólares del mes pasado","kind":"filterable","expected":{"vendor":"pieveloz","status":"overdue","date":{"from":"2026-08-01","to":"2026-08-31"},"amount":{"min":50,"currency":"USD"}}}
+{"id":"es-dev-13","request":"facturas del abogado o de la nómina de julio","kind":"ambiguous","expected":{"vendor":"held","date":{"from":"2026-07-01","to":"2026-07-31"}}}
+{"id":"es-dev-14","request":"facturas pendientes de pago","kind":"ambiguous","expected":{"status":"held"}}
+{"id":"es-dev-15","request":"facturas de Cuentia de finales de agosto","kind":"ambiguous","expected":{"vendor":"cuentia","date":"held"}}
+{"id":"es-dev-16","request":"facturas de cerca de $1,000","kind":"ambiguous","expected":{"amount":"held"}}
+{"id":"es-dev-17","request":"facturas de la compañía de agua","kind":"nothing"}
+{"id":"es-dev-18","request":"¿qué significa vencida?","kind":"nothing"}
+{"id":"es-dev-19","request":"¿qué tengo en la agenda el viernes?","kind":"nothing"}
+{"id":"es-dev-20","request":"ve a la página 3","kind":"nothing"}

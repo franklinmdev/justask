@@ -200,7 +200,7 @@ describe("the demo's filter page", () => {
 		expect(vendor.getByText("Held")).toBeDefined();
 		expect(
 			vendor.getByText(
-				"A pick (0.52) fell below the gate (0.90), so the field is held.",
+				"A pick (0.52) fell below the gate (0.60), so the field is held.",
 			),
 		).toBeDefined();
 		const pick = vendor.getByRole("row", { name: /Brightmop Cleaning/ });
