@@ -1,6 +1,6 @@
 # Filter eval: sets, kill lines and verdict
 
-**Status: sets, kill lines and gate rule approved and frozen by the owner on 2026-09-22 (#17), before any provider call. Dev runs done after #39 merged into main; the gates below were fixed from them by the rule and written into the demo before run 1.**
+**Status: run, verdict PASS in both languages (run 1), with no wrong value shown and nothing invented. Sets, kill lines and gate rule approved and frozen by the owner on 2026-09-22 (#17), before any provider call; the gates were fixed from the dev runs by that rule and written into the demo before run 1.**
 
 **Hypothesis:** on the demo's fictional transactions, the filter turns a request into the exact filter object a person means (vendor, status, date, amount), or leaves a field empty when it cannot tell, in English and in Spanish, as the person types.
 
@@ -87,3 +87,56 @@ By hand with the key in `.env`, never in CI; every row is a paid call.
 5. Record here the verdict, the numbers, the misses and the run logs' paths (`demo/eval/runs/`, committed so anyone can rescore them with no call).
 
 A row found wrong after a run is the owner's call, logged here; it never silently changes the set.
+
+## Result
+
+**Verdict: PASS.** Both languages clear every kill line in run 1. Whether it closes delivery 2 is the owner's call.
+
+Runs of 2026-09-22 with `jev-1.13.0`, gates vendor 0.6, status 0.95, date 0.85, amount 0.9 (from dev run 1, above), the frozen sets and kill lines, today fixed at Tuesday 2026-09-22.
+
+### Run 1: the verdict
+
+| Measure | Kill line | English | Spanish |
+|---|---|---|---|
+| exact | at least 0.9 | 1 (24 of 24) | 1 (25 of 25) |
+| coverage | at least 0.7 | 0.857 (24 of 28) | 0.893 (25 of 28) |
+| invented | at most 0 | 0 | 0 |
+| held ambiguous | at least 0.75 | 1 (8 of 8) | 0.875 (7 of 8) |
+| p95 | at most 800 ms | 551 ms | 374 ms |
+| errors | at most 0 | 0 | 0 |
+| cost per call | | $0.0000580 | $0.0000604 |
+
+Every filter object that filled was the one meant, in both languages: no field ever showed a wrong value on a filterable row, and no nothing row filled a field.
+
+Misses:
+
+| Row | Request | Field | Expected | Got | Pick |
+|---|---|---|---|---|---|
+| es-a-30 | facturas de Nubalia o de Cuentia de julio | vendor | held | Nubalia | nubalia 0.61 (next not_available 0.24, Cuentia 0.11) |
+| en-f-11 | Glasswell's paid invoices between August 1 and August 15 | vendor | Glasswell | held | glasswell 0.50 |
+| en-f-15 | tallyrut invoices | vendor | Tallyroot | held | not_mentioned 0.66 |
+| en-f-16 | invoices still within their payment terms | status | open | held | open 0.94 |
+| en-f-25 | Paydale's unpaid, not yet due invoices for September | vendor | Paydale | held | paydale 0.52 |
+| es-f-02 | las facturas que ya se vencieron | status | overdue | held | overdue 0.89 |
+| es-f-24 | facturas de menos de $80 con fecha del 8 de septiembre | date | Sep 8 | held | d0 0.78 |
+| es-f-27 | facturas sin pagar y todavía sin vencer entre $1,000 y $2,500 de las últimas dos semanas | amount | 1000 to 2500 USD | held | min 0.88 |
+
+### Run 2: flips only
+
+English: two flips, both held in run 1 and filled right in run 2, both on a gate: `Glasswell's paid invoices between August 1 and August 15` (vendor 0.50, then 0.67) and `invoices still within their payment terms` (status 0.94, then 0.95). Coverage 0.929. Spanish: no flip; `es-a-30` filled Nubalia at 0.61 again.
+
+### What the misses say
+
+- **The one leak is a named pair, one hundredth above the vendor gate, and stable.** `facturas de Nubalia o de Cuentia de julio` picked Nubalia at 0.61 in both runs, against a gate of 0.6; the English pair (`Cloudberth or Tallyroot invoices in July`) held. The filter's vendor field takes one vendor and has no `several` label; `not_available` took 0.24. Rescored with no call, and so with no verdict: at a vendor gate of 0.65, run 1 holds all 8 ambiguous rows in both languages with the same coverage. The rule fixed 0.6 before run 1, so the verdict stays as recorded; moving the gate now would tune it on the rows that judge it.
+- **A named vendor with a date range beside it reads as less sure.** `Glasswell's ... between August 1 and August 15` (0.50) and `Paydale's unpaid, not yet due invoices for September` (0.52), like the dev row `Cloudberth's paid invoices ... between July 1 and August 31` (`not_mentioned` 0.50): the vendor's name is in the request, yet `not_mentioned` takes up to half. The vendor gate's midpoint sits low for this reason.
+- **The typo `tallyrut` read as no vendor** (`not_mentioned` 0.66), as the search's `tallyrot` held in round 3.
+- **Status and date held right values just under high gates.** `open` at 0.94 against 0.95, `overdue` at 0.89, a single day at 0.78 against 0.85. The rule put these gates high to keep out the dev set's wrong picks (`pendientes de pago` open at 0.88, `finales de agosto` all of August at 0.80); no wrong status or date filled in either run.
+- **Against the lab's single gate.** Rescored at 0.9 on every field, run 1 covers 0.786 in both languages, with every ambiguous row held. The per-field gates bought 2 to 3 rows of coverage per language and cost the one leak above.
+
+### Run logs
+
+- Dev: `demo/eval/runs/filter-en-dev-1.jsonl`, `demo/eval/runs/filter-es-dev-1.jsonl`
+- Run 1: `demo/eval/runs/filter-en-1.jsonl`, `demo/eval/runs/filter-es-1.jsonl`
+- Run 2: `demo/eval/runs/filter-en-2.jsonl`, `demo/eval/runs/filter-es-2.jsonl`
+
+Each rescores with `scoreFilterRun(await readFilterRun(path), { gates })` and no call.
