@@ -47,7 +47,8 @@
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
 		"lint": "biome check",
-		"format": "biome check --write"
+		"format": "biome check --write",
+		"demo": "vite --config demo/vite.config.ts"
 	},
 	"peerDependencies": {
 		"@typesafe-ai/sdk": "^0.6.0",
@@ -63,6 +64,8 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.14",
+		"@fontsource-variable/ibm-plex-sans": "5.3.0",
+		"@fontsource-variable/jetbrains-mono": "5.3.0",
 		"@testing-library/dom": "10.4.2",
 		"@testing-library/react": "16.3.3",
 		"@testing-library/user-event": "14.6.7",
@@ -70,11 +73,13 @@
 		"@types/react": "19.3.0",
 		"@types/react-dom": "19.3.0",
 		"@typesafe-ai/sdk": "0.6.0",
+		"@vitejs/plugin-react": "6.1.1",
 		"axe-core": "4.13.0",
 		"jsdom": "30.0.1",
 		"react": "19.3.0",
 		"react-dom": "19.3.0",
 		"typescript": "7.0.2",
+		"vite": "8.3.0",
 		"vitest": "5.0.1"
 	}
 }
