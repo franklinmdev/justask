@@ -1,0 +1,40 @@
+{"id": "es-r4-01", "request": "resmas para la fotocopiadora", "kind": "item", "expected": "tintaverde"}
+{"id": "es-r4-02", "request": "la factura de Tintaverd", "kind": "item", "expected": "tintaverde"}
+{"id": "es-r4-03", "request": "el bufé del taller con el cliente", "kind": "item", "expected": "cazuela"}
+{"id": "es-r4-04", "request": "la factura de junio de Cazuela Azul", "kind": "item", "expected": "cazuela"}
+{"id": "es-r4-05", "request": "donde vive nuestra página web", "kind": "item", "expected": "nubalia"}
+{"id": "es-r4-06", "request": "la renovación de Nubalia", "kind": "item", "expected": "nubalia"}
+{"id": "es-r4-07", "request": "el equipo que limpia cuando cerramos", "kind": "item", "expected": "brisamar"}
+{"id": "es-r4-08", "request": "brizamar", "kind": "item", "expected": "brisamar"}
+{"id": "es-r4-09", "request": "los que limpian el vidrio de la vitrina", "kind": "item", "expected": "relucir"}
+{"id": "es-r4-10", "request": "la última factura de Relucir", "kind": "item", "expected": "relucir"}
+{"id": "es-r4-11", "request": "las pancartas para el stand de la feria", "kind": "item", "expected": "letranueva"}
+{"id": "es-r4-12", "request": "letranuva", "kind": "item", "expected": "letranueva"}
+{"id": "es-r4-13", "request": "los boletos de avión para el congreso en Bogotá", "kind": "item", "expected": "rumboclaro"}
+{"id": "es-r4-14", "request": "el cargo de reserva de Rumbo Claro", "kind": "item", "expected": "rumboclaro"}
+{"id": "es-r4-15", "request": "la licencia anual del programa de contabilidad", "kind": "item", "expected": "cuentia"}
+{"id": "es-r4-16", "request": "el plan anual de Cuentia", "kind": "item", "expected": "cuentia"}
+{"id": "es-r4-17", "request": "the coffee maker we rent", "kind": "item", "expected": "cafetal"}
+{"id": "es-r4-18", "request": "cafetall", "kind": "item", "expected": "cafetal"}
+{"id": "es-r4-19", "request": "el envío de Pieveloz a Lindero o a Serena", "kind": "item", "expected": "pieveloz"}
+{"id": "es-r4-20", "request": "el mensajero en bicicleta que llevó los contratos al otro lado de la ciudad", "kind": "item", "expected": "pieveloz"}
+{"id": "es-r4-21", "request": "la iguala de nuestros abogados", "kind": "item", "expected": "lindero"}
+{"id": "es-r4-22", "request": "la cuenta de Bufete Lindero", "kind": "item", "expected": "lindero"}
+{"id": "es-r4-23", "request": "quien arregló el wifi de la oficina", "kind": "item", "expected": "tecnoria"}
+{"id": "es-r4-24", "request": "tecnorria", "kind": "item", "expected": "tecnoria"}
+{"id": "es-r4-25", "request": "el servicio que procesa los pagos de los empleados", "kind": "item", "expected": "serena"}
+{"id": "es-r4-26", "request": "Serena", "kind": "item", "expected": "serena"}
+{"id": "es-r4-27", "request": "la empresa que nos cubre si hay un incendio", "kind": "item", "expected": "coberplena"}
+{"id": "es-r4-28", "request": "Covertura Plena", "kind": "item", "expected": "coberplena"}
+{"id": "es-r4-29", "request": "el pase mensual del parqueo", "kind": "nothing"}
+{"id": "es-r4-30", "request": "el electricista que arregló los enchufes de la cocina", "kind": "nothing"}
+{"id": "es-r4-31", "request": "nuestro plan de celulares", "kind": "nothing"}
+{"id": "es-r4-32", "request": "las membresías del gimnasio para el personal", "kind": "nothing"}
+{"id": "es-r4-33", "request": "póngame un recordatorio para el viernes", "kind": "nothing"}
+{"id": "es-r4-34", "request": "buenas tardes", "kind": "nothing"}
+{"id": "es-r4-35", "request": "el recibo de Relucir o de Cafetal", "kind": "ambiguous"}
+{"id": "es-r4-36", "request": "las facturas de Tecnoria y de Nubalia", "kind": "ambiguous"}
+{"id": "es-r4-37", "request": "la factura de los limpiadores de la oficina", "kind": "ambiguous"}
+{"id": "es-r4-38", "request": "el equipo de limpieza que pagamos cada mes", "kind": "ambiguous"}
+{"id": "es-r4-39", "request": "almuerzo y café para el retiro del equipo", "kind": "ambiguous"}
+{"id": "es-r4-40", "request": "nuestros gastos de informática", "kind": "ambiguous"}
