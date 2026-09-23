@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { type EvalRow, parseEvalSet } from "justask/eval";
 import { describe, expect, it } from "vitest";
@@ -61,4 +62,23 @@ describe.each([english, spanish])("the search sets in $language", (content) => {
 			for (const { id } of shortlist) expect(catalog).toContain(id);
 		}
 	});
+});
+
+/**
+ * Frozen on the owner's approval, 2026-09-22 (#13), before any scored run. A
+ * failure here means a verdict's inputs changed after the fact: revert the
+ * edit, or log the owner's call in docs/search-eval.md with a new checksum.
+ */
+const FROZEN: Record<string, string> = {
+	"search-en.jsonl":
+		"28808a234da4d9fc80a0633e082d0fa5255f70a86e94c61d4c9ed8190f643da0",
+	"search-es.jsonl":
+		"ca6a654c7eec78bb3bfa9bf1176850a828a80e7ea73741f62ebb401e96fc8815",
+	"kill-lines.ts":
+		"a02d5c47ca2f998eb3c17edbd18aac631c1dbd841d5c2dc0c9153fc19059c982",
+};
+
+it.each(Object.entries(FROZEN))("keeps %s frozen", (name, sha256) => {
+	const bytes = readFileSync(new URL(`../demo/eval/${name}`, import.meta.url));
+	expect(createHash("sha256").update(bytes).digest("hex")).toBe(sha256);
 });

@@ -1,6 +1,6 @@
 # Search eval: sets, kill lines and verdict
 
-**Status: draft, waiting for the owner's approval (#13).** Nothing below has been run against the provider. Once approved, the sets, the kill lines and the gate rule are frozen before the first scored run, and this file gains the result.
+**Status: approved by the owner on 2026-09-22 (#13), with the shortlist raised to 14.** The eval sets, the kill lines and the gate rule were frozen then, before any provider call.
 
 **Hypothesis:** on the demo's fictional invoicing data, the search shows the vendor a request means, or nothing, in English and in Spanish, as the person types.
 
@@ -43,16 +43,16 @@ errors <= 0
 
 The scored run needs a gate before it starts, and choosing it from the eval rows would tune on the rows that judge it. So it comes from the dev runs by a rule fixed now: the midpoint between the highest `none` on a dev item row that filled with its vendor and the lowest `none` on a dev nothing or ambiguous row, rounded to 0.05. If the two overlap, the gate stays 0.5, the middle of the lab's gap (ADR 0005). The chosen gate is written into `demo/server/handler.ts` as `GATE` before run 1, so the demo serves the gate the verdict was measured at. A rescore of run 1 at another gate is reported apart and changes neither the verdict nor the demo.
 
-## Dev-set change proposed before the scored run
+## Dev-set change, made before any call
 
-Checked with no call: in 5 of the 16 dev item rows the expected vendor never reaches the provider (`the attorneys`, `salary processing`, `liability coverage`, `quien revisó el acuerdo de confidencialidad`, `el pago de salarios`). The demo's shortlist keeps 10 of 14 vendors, text matches first and the catalog's first ones after, so the last four vendors are reachable only by a shared word. This is the lab's finding 3 again (`~/jev-lab/experiments/search/RESULT.md`). Proposed: raise `SHORTLIST_LIMIT` to 14, the whole catalog, before any call. It costs four more candidates per call.
+Checked with no call: in 5 of the 16 dev item rows the expected vendor never reaches the provider (`the attorneys`, `salary processing`, `liability coverage`, `quien revisó el acuerdo de confidencialidad`, `el pago de salarios`). The demo's shortlist keeps 10 of 14 vendors, text matches first and the catalog's first ones after, so the last four vendors are reachable only by a shared word. This is the lab's finding 3 again (`~/jev-lab/experiments/search/RESULT.md`). Approved and made: `SHORTLIST_LIMIT` is 14, the whole catalog. It costs four more candidates per call.
 
 ## Procedure
 
 By hand with the key in `.env`, never in CI; every row is a paid call.
 
 1. Dev runs, as many as tuning needs: `node --conditions=source demo/eval/search.ts run <en|es> dev <n>`. They print no verdict.
-2. Fix the gate by the rule above and write it into the demo. Freeze: the sets and kill lines get a checksum test, so an edit after this point fails CI.
+2. Fix the gate by the rule above and write it into the demo. The eval sets and kill lines are already frozen: `test/demo-eval.test.ts` checks their checksums, so an edit fails CI.
 3. Run 1 per language gives the verdict: `node --conditions=source demo/eval/search.ts run <en|es> eval 1`.
 4. Run 2 per language reports flips only: `run <en|es> eval 2`, then `compare <en|es> 1 2`.
 5. Record here the verdict, the numbers, the misses and the run logs' paths (`demo/eval/runs/`, committed so anyone can rescore them with no call).

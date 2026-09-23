@@ -24,8 +24,12 @@ export const TIMEOUT_MS = 2_000;
 /** Written beside today, which the handler adds from the browser's time zone. */
 export const FACTS: Facts = { local_currency: "USD" };
 
-/** How many vendors the provider reads per request, out of the 14. */
-const SHORTLIST_LIMIT = 10;
+/**
+ * The whole catalog. At 10 of 14 the fill came from the catalog's first
+ * vendors, so the last four were reachable only by a shared word: 5 of the 16
+ * dev item rows never reached the provider (docs/search-eval.md).
+ */
+const SHORTLIST_LIMIT = 14;
 
 const contents: Record<Language, Content> = { en: english, es: spanish };
 
