@@ -269,7 +269,7 @@ export const english: Content = {
 					case "not-a-record":
 						return "The request asks for no new expense, so the field is held with the rest.";
 					case "pair":
-						return `The request names “${reason.text}”, a choice of two, so the code held the field whatever the pick.`;
+						return `The request names two candidates (“${reason.text}”), so the code held the field whatever the pick.`;
 					case "foreign-currency":
 						return `The pick names “${reason.mark}”, which is not the local currency, so the code held the field.`;
 					case "ambiguous":

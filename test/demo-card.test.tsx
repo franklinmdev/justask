@@ -424,7 +424,7 @@ describe("the demo's card page", () => {
 		expect(amount().value).toBe("75.00");
 		expect(
 			within(panel().getByRole("region", { name: "Vendor" })).getByText(
-				"The request names “Tallyroot or Cloudberth”, a choice of two, so the code held the field whatever the pick.",
+				"The request names two candidates (“Tallyroot or Cloudberth”), so the code held the field whatever the pick.",
 			),
 		).toBeDefined();
 		await expectNoAxeViolations(container);

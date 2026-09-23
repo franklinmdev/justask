@@ -267,7 +267,7 @@ export const spanish: Content = {
 					case "not-a-record":
 						return "La solicitud no pide un gasto nuevo, así que el campo queda retenido con los demás.";
 					case "pair":
-						return `La solicitud nombra “${reason.text}”, dos opciones, así que el código retuvo el campo sin importar la elección.`;
+						return `La solicitud nombra dos candidatos (“${reason.text}”), así que el código retuvo el campo sin importar la elección.`;
 					case "foreign-currency":
 						return `La elección nombra “${reason.mark}”, que no es la moneda local, así que el código retuvo el campo.`;
 					case "ambiguous":
