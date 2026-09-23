@@ -157,7 +157,7 @@ pnpm demo              # http://localhost:5173
 
 Vite serves the page and mounts the search handler as dev middleware, one route per language (`/api/search/en` and `/api/search/es`), each with its own catalog. The key is read from `.env` on the server side and never reaches the browser bundle. Every search is one real, paid Jev call. Without a key the page still runs, and every search fails and is held.
 
-The demo's gate (0.2) was fixed from its dev sets and measured on its search eval sets, with the verdict and misses in `docs/search-eval.md`. Its timeout (2 s) and typing pause (300 ms) are not measured yet. `node --conditions=source demo/eval/search.ts` runs those sets by hand with the key in `.env`, never in CI.
+The demo's gate (0.15) was fixed by the owner before round 2 and measured on that round's fresh search eval sets, with both rounds' verdicts and misses in `docs/search-eval.md`. Its timeout (2 s) and typing pause (300 ms) are not measured yet. `node --conditions=source demo/eval/search.ts` runs those sets by hand with the key in `.env`, never in CI.
 
 ## Development
 
