@@ -127,6 +127,8 @@ export function FilterPage({
 	return (
 		<CaseLayout
 			content={content}
+			shownCase="table"
+			call={{ trace, result: filter.result, loading: filter.loading }}
 			labelledBy="transactions-title"
 			hood={<FilterPanel content={content} filter={filter} trace={trace} />}
 		>

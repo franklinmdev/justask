@@ -81,6 +81,8 @@ export function CardPage({
 	return (
 		<CaseLayout
 			content={content}
+			shownCase="form"
+			call={{ trace, result: card.result, loading: card.loading }}
 			labelledBy="card-title"
 			hood={<CardPanel content={content} card={card} trace={trace} />}
 		>

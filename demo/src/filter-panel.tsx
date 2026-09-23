@@ -14,7 +14,7 @@ import type {
 	TransactionFields,
 } from "./content/types.ts";
 import { formats } from "./format.ts";
-import { Bar, failureOf, TraceFigures } from "./parts.tsx";
+import { Bar, failureOf } from "./parts.tsx";
 import type { Trace } from "./trace.ts";
 
 type Format = ReturnType<typeof formats>;
@@ -233,7 +233,6 @@ export function FilterPanel({
 								<dd className="data">{questionsOf(result)}</dd>
 							</div>
 						)}
-						{trace && <TraceFigures content={content} trace={trace} />}
 					</dl>
 					{result &&
 						names.map((name) => (

@@ -3,8 +3,16 @@ import { act, cleanup, render, screen, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
-import { createDemoHandler } from "../demo/server/handler.ts";
+import {
+	createDemoHandler,
+	demoCard,
+	demoFilter,
+	demoSearch,
+	SHORTLIST_LIMIT,
+} from "../demo/server/handler.ts";
 import { App } from "../demo/src/app.tsx";
+import { english } from "../demo/src/content/en.ts";
+import { spanish } from "../demo/src/content/es.ts";
 import { failingProvider } from "./fake-provider.ts";
 
 /** The width the page reads: desktop unless a test narrows it to a phone. */
@@ -246,4 +254,157 @@ describe("the demo's showcase page", () => {
 		const trace = within(under.getByRole("tabpanel", { name: "Trace" }));
 		expect(trace.getByRole("region", { name: "What happened" })).toBeDefined();
 	});
+
+	it("moves between the hood's Trace, JSON and Code tabs by keyboard, one tab stop for all three", async () => {
+		const { container, user } = renderDemo();
+		const under = within(hood());
+		const view = (name: string) => under.getByRole("tab", { name });
+
+		expect(
+			within(under.getByRole("tablist", { name: "Views" }))
+				.getAllByRole("tab")
+				.map((option) => option.textContent),
+		).toEqual(["Trace", "JSON", "Code"]);
+		expect(view("Trace").tabIndex).toBe(0);
+		expect(view("JSON").tabIndex).toBe(-1);
+		expect(view("Code").tabIndex).toBe(-1);
+
+		view("Trace").focus();
+		await user.keyboard("{ArrowRight}");
+		expect(document.activeElement).toBe(view("JSON"));
+		expect(view("JSON").getAttribute("aria-selected")).toBe("true");
+		expect(under.getByRole("tabpanel", { name: "JSON" })).toBeDefined();
+		expect(under.queryByRole("tabpanel", { name: "Trace" })).toBeNull();
+
+		await user.keyboard("{End}");
+		expect(document.activeElement).toBe(view("Code"));
+		await user.keyboard("{ArrowRight}");
+		expect(document.activeElement).toBe(view("Trace"));
+		await user.keyboard("{ArrowLeft}{Home}{ArrowRight}{ArrowRight}");
+		expect(view("Code").getAttribute("aria-selected")).toBe("true");
+		expect(view("Code").tabIndex).toBe(0);
+		await expectNoAxeViolations(container);
+	});
+
+	it("keeps the hood's tab across the cases", async () => {
+		const { user } = renderDemo();
+
+		await user.click(within(hood()).getByRole("tab", { name: "Code" }));
+		await user.click(tab("Form"));
+
+		expect(
+			within(hood())
+				.getByRole("tab", { name: "Code" })
+				.getAttribute("aria-selected"),
+		).toBe("true");
+	});
+
+	it("says in the strip, before any call, what it will show", () => {
+		renderDemo();
+
+		const strip = within(screen.getByRole("region", { name: "This call" }));
+		expect(
+			strip.getByText("Latency, tokens and cost show after the first call."),
+		).toBeDefined();
+	});
+
+	/** The Code tab's two files, as the page shows them. */
+	async function snippet(url: string, files: [string, string]) {
+		const { container, user } = renderDemo({ url });
+		await user.click(
+			within(hood()).getByRole("tab", { name: /^(Code|Código)$/ }),
+		);
+		const [server, client] = files.map(
+			(name) =>
+				screen.getByRole("figure", { name }).querySelector("pre")
+					?.textContent ?? "",
+		);
+		return { container, server: server ?? "", client: client ?? "" };
+	}
+
+	/** Each declared field as the snippet must write it. */
+	function expectFields(
+		code: string,
+		fields: Record<string, { kind: string; description: string; gate: number }>,
+	) {
+		for (const [name, field] of Object.entries(fields)) {
+			expect(code).toContain(`${name}: {`);
+			expect(code).toContain(`kind: "${field.kind}"`);
+			expect(code).toContain(
+				`description: ${JSON.stringify(field.description)}`,
+			);
+			expect(code).toContain(`gate: ${field.gate}`);
+		}
+	}
+
+	it.each([
+		["en", english],
+		["es", spanish],
+	] as const)(
+		"writes the Table case's code from the demo's own filter, in %s",
+		async (language, content) => {
+			const { container, server, client } = await snippet(
+				`/?lang=${language}`,
+				["handler.ts", "Transactions.tsx"],
+			);
+			const declared = demoFilter(content);
+
+			expect(server).toContain("createFilterHandler(");
+			expect(server).toContain(JSON.stringify(declared.description));
+			expectFields(server, declared.fields);
+			expect(server).toContain("shortlist: () => vendors");
+			expect(server).toContain("shortlist: () => statuses");
+			expect(client).toContain("useFilter<TransactionFields>(");
+			expect(client).toContain(`endpoint: "/api/filter/${language}"`);
+			expect(client).toContain('timing: { on: "type", debounceMs: 300 }');
+			expect(client).toContain(JSON.stringify(content.copy.filter.boxLabel));
+			await expectNoAxeViolations(container);
+		},
+	);
+
+	it.each([
+		["en", english],
+		["es", spanish],
+	] as const)(
+		"writes the Form case's code from the demo's own card, in %s",
+		async (language, content) => {
+			const { server, client } = await snippet(`/?case=form&lang=${language}`, [
+				"handler.ts",
+				"NewExpense.tsx",
+			]);
+			const declared = demoCard(content);
+
+			expect(server).toContain("createCardHandler(");
+			expect(server).toContain(`gate: ${declared.gate}`);
+			expectFields(server, declared.fields);
+			expect(server).toContain("several: true");
+			expect(server).toContain('reads: "past"');
+			expect(server).toContain("shortlist: () => tags");
+			expect(client).toContain("useCard<ExpenseFields>(");
+			expect(client).toContain(`endpoint: "/api/card/${language}"`);
+		},
+	);
+
+	it.each([
+		["en", english],
+		["es", spanish],
+	] as const)(
+		"writes the Search case's code from the demo's own search, in %s",
+		async (language, content) => {
+			const { server, client } = await snippet(
+				`/?case=search&lang=${language}`,
+				["handler.ts", "VendorSearch.tsx"],
+			);
+			const declared = demoSearch(content);
+
+			expect(server).toContain("createSearchHandler(");
+			expect(server).toContain(JSON.stringify(declared.description));
+			expect(server).toContain(`gate: ${declared.gate}`);
+			expect(server).toContain(
+				`shortlist: fuzzyShortlist(vendors, { limit: ${SHORTLIST_LIMIT} })`,
+			);
+			expect(client).toContain("useSearch<Vendor>(");
+			expect(client).toContain(`endpoint: "/api/search/${language}"`);
+		},
+	);
 });

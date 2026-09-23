@@ -10,7 +10,7 @@ import { spanish } from "./content/es.ts";
 import type { Case, Language } from "./content/types.ts";
 import { FilterPage } from "./filter-page.tsx";
 import { SearchPage } from "./search-page.tsx";
-import { HoodPlaceContext, nextTab } from "./showcase.tsx";
+import { HoodPlaceContext, type HoodView, nextTab } from "./showcase.tsx";
 import { ThemeToggle } from "./theme.tsx";
 
 const contents = { en: english, es: spanish };
@@ -53,6 +53,7 @@ export function App({ fetch }: { fetch?: typeof globalThis.fetch }) {
 	const [view, setView] = useState(viewFromUrl);
 	const [open, setOpen] = useState(true);
 	const [shown, setShown] = useState<"app" | "hood">("app");
+	const [hoodView, setHoodView] = useState<HoodView>("trace");
 	const { language, case: shownCase } = view;
 	const content = contents[language];
 	const { copy } = content;
@@ -98,7 +99,16 @@ export function App({ fetch }: { fetch?: typeof globalThis.fetch }) {
 
 	const shared = { content, ...(fetch && { fetch }) };
 	return (
-		<HoodPlaceContext value={{ open, setOpen, shown, setShown }}>
+		<HoodPlaceContext
+			value={{
+				open,
+				setOpen,
+				shown,
+				setShown,
+				view: hoodView,
+				setView: setHoodView,
+			}}
+		>
 			<a className="skip" href="#main">
 				{copy.skip}
 			</a>
