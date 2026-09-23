@@ -327,9 +327,9 @@ describe("the Form case's recorded run", () => {
 	const checkbox = (name: string) =>
 		screen.getByRole("checkbox", { name }) as HTMLInputElement;
 	const replayFilled = () =>
-		waitFor(() => expect(control("Vendor").value).toBe("inkhollow"), REPLAY);
+		waitFor(() => expect(textbox("Amount").value).toBe("156.00"), REPLAY);
 
-	it("replays with no call and no click: the sentence, then the fields fill in order and the held day stays empty, the hood saying why", async () => {
+	it("replays with no call and no click: the sentence, then the fields fill in order and the held vendor and day stay empty, the hood saying why", async () => {
 		const { container, provider } = renderDemo({ url: "/?case=form" });
 
 		expect(screen.getByText(label("en", form))).toBeDefined();
@@ -339,12 +339,12 @@ describe("the Form case's recorded run", () => {
 			`Replaying a recorded run from ${day("en", form)}: “${form.request}”`,
 		);
 		expect(announced()).toContain(
-			"Filled: vendor, tags, and amount. For you to fill: day.",
+			"Filled: tags and amount. For you to fill: vendor and day.",
 		);
-		expect(checkbox("Office").checked).toBe(true);
-		expect(checkbox("Meals").checked).toBe(false);
-		expect(textbox("Amount").value).toBe("130.00");
-		// The held day stays empty, for the person to pick.
+		expect(checkbox("Travel").checked).toBe(true);
+		expect(checkbox("Office").checked).toBe(false);
+		// The held vendor and day stay empty, for the person to choose.
+		expect(control("Vendor").value).toBe("");
 		expect(
 			screen.getByRole("button", { name: "Day Pick a day" }),
 		).toBeDefined();
@@ -357,18 +357,21 @@ describe("the Form case's recorded run", () => {
 				],
 			),
 		).toEqual([
-			["Vendor", "0"],
-			["Tags", "1"],
-			["Amount", "2"],
+			["Tags", "0"],
+			["Amount", "1"],
 		]);
 
 		const hood = within(screen.getByRole("region", { name: "What happened" }));
-		const held = within(hood.getByRole("region", { name: "Day" }));
-		expect(held.getByText("Held")).toBeDefined();
-		const period = form.response.card.fields.spent_on.candidates[0]?.value;
+		const vendor = within(hood.getByRole("region", { name: "Vendor" }));
+		expect(vendor.getByText("Held")).toBeDefined();
 		expect(
-			held.getByText(
-				`“${period?.text}” is a period, not one day, so the code held the field.`,
+			vendor.getByText("The provider says the request does not mention it."),
+		).toBeDefined();
+		const spentOn = within(hood.getByRole("region", { name: "Day" }));
+		expect(spentOn.getByText("Held")).toBeDefined();
+		expect(
+			spentOn.getByText(
+				"The code found no candidates, so the provider was not asked.",
 			),
 		).toBeDefined();
 		expect(figure("Latency")).toBe(`${form.latencyMs} ms`);
@@ -385,10 +388,9 @@ describe("the Form case's recorded run", () => {
 		const { provider } = renderDemo({ url: "/?case=form&lang=es" });
 
 		expect(screen.getByText(label("es", formEs))).toBeDefined();
-		await waitFor(
-			() => expect(control("Proveedor").value).toBe("letranueva"),
-			REPLAY,
-		);
+		await waitFor(() => expect(textbox("Monto").value).toBe("156.00"), REPLAY);
+		expect(checkbox("Viajes").checked).toBe(true);
+		expect(control("Proveedor").value).toBe("");
 		expect(searchbox("Describa el gasto").value).toBe(formEs.request);
 		expect(announced()).toContain(
 			`Reproduciendo una ejecución grabada del ${day("es", formEs)}: “${formEs.request}”`,
@@ -466,7 +468,7 @@ describe("the Form case's recorded run", () => {
 
 		expect(box().value).toBe("x");
 		expect(screen.queryByText(label("en", form))).toBeNull();
-		expect(control("Vendor").value).toBe("");
+		expect(textbox("Amount").value).toBe("");
 		expect(provider.calls).toHaveLength(0);
 	}, 6_000);
 });

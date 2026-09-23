@@ -5,9 +5,10 @@
 //
 // Writes demo/recordings/<case>-<language>.json for the named cases, every
 // case when none is named, in English and Spanish, each case's sentence taken
-// from a frozen eval row. A call whose result is not the row's expected one
-// writes nothing, and neither do the others, so every recording shows the
-// gates passing its row. Nothing in a recording is edited by hand: after a
+// from a frozen eval row. The eval runners' warm-up goes first, discarded,
+// so a cold start never falls on a recorded call. A call whose result is not
+// the row's expected one writes nothing, and neither do the others, so every
+// recording shows the gates passing its row. Nothing in a recording is edited by hand: after a
 // change to the gates, run this again for the cases they serve.
 
 import { execFileSync } from "node:child_process";
@@ -21,6 +22,7 @@ import {
 import { jevProvider } from "justask/jev";
 import { loadKeyEnv } from "../../scripts/load-env.ts";
 import { createDemoHandler } from "../server/handler.ts";
+import { warmUp } from "../server/warm-up.ts";
 import { cardEndpoint, filterEndpoint, searchEndpoint } from "../src/api.ts";
 import type {
 	ExpenseName,
@@ -35,14 +37,15 @@ import type {
 
 /**
  * Each case's row per language: the same sentence in both. The table's sets
- * every field but one; the form's holds its day, since "in August" names no
- * single day, and names no relative day, so a rerun on another day expects
- * the same card.
+ * every field but one. The form's names no vendor and no day, so both stay
+ * empty, and no relative day, so a rerun on another day expects the same
+ * card; both round 4 runs filled its fields at least 0.1 above their gates in
+ * both languages (#53).
  */
 const ROWS = {
 	table: { set: "filter", suffix: "", en: "en-f-26", es: "es-f-26" },
 	search: { set: "search", suffix: ".round3", en: "en-r3-01", es: "es-r3-01" },
-	form: { set: "card", suffix: ".round4", en: "en-r4-34", es: "es-r4-34" },
+	form: { set: "card", suffix: ".round4", en: "en-r4-20", es: "es-r4-20" },
 } as const;
 type Case = keyof typeof ROWS;
 
@@ -67,7 +70,8 @@ async function evalSet(name: Case, language: Language) {
 }
 
 loadKeyEnv(process.cwd());
-const handler = createDemoHandler(jevProvider(), {
+const provider = jevProvider();
+const handler = createDemoHandler(provider, {
 	onError(error) {
 		console.error(`justask: ${error.message}`);
 	},
@@ -229,6 +233,7 @@ async function recordForm(language: Language) {
 }
 
 const record = { table: recordTable, search: recordSearch, form: recordForm };
+await warmUp(provider);
 for (const language of ["en", "es"] as Language[]) {
 	for (const name of cases) await record[name](language);
 }

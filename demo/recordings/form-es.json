@@ -1,33 +1,28 @@
 {
 	"set": "card-es.round4.jsonl",
-	"row": "es-r4-34",
-	"recordedAt": "2026-09-23T20:18:34.432Z",
+	"row": "es-r4-20",
+	"recordedAt": "2026-09-23T21:37:29.165Z",
 	"timeZone": "America/La_Paz",
-	"request": "tarjetas de presentación de Letranueva en agosto, $130",
-	"latencyMs": 607,
+	"request": "posada en Savannah para la visita al proveedor, $156",
+	"latencyMs": 210,
 	"response": {
 		"card": {
 			"intent": {
 				"pick": {
 					"label": "new_record",
-					"probability": 0.84
+					"probability": 0.9
 				},
 				"probabilities": {
-					"not_mentioned": 0.09,
-					"not_available": 0.07,
-					"new_record": 0.84
+					"not_available": 0.02,
+					"new_record": 0.9,
+					"not_mentioned": 0.08
 				},
 				"gate": 0.45
 			},
 			"value": {
-				"vendor": {
-					"id": "letranueva",
-					"name": "Imprenta Letranueva",
-					"supplies": "tarjetas de presentación, volantes y letreros"
-				},
-				"tags": ["office"],
+				"tags": ["travel"],
 				"total": {
-					"value": 130,
+					"value": 156,
 					"currency": "USD"
 				}
 			},
@@ -176,26 +171,26 @@
 						}
 					],
 					"pick": {
-						"label": "letranueva",
-						"probability": 0.99
+						"label": "not_mentioned",
+						"probability": 0.61
 					},
 					"probabilities": {
-						"relucir": 0,
+						"rumboclaro": 0.36,
+						"not_mentioned": 0.61,
+						"not_available": 0.03,
+						"tecnoria": 0,
 						"cafetal": 0,
+						"serena": 0,
+						"brisamar": 0,
+						"tintaverde": 0,
+						"lindero": 0,
+						"relucir": 0,
+						"cuentia": 0,
+						"pieveloz": 0,
 						"nubalia": 0,
 						"coberplena": 0,
-						"tecnoria": 0,
-						"not_mentioned": 0.01,
-						"not_available": 0,
-						"brisamar": 0,
-						"pieveloz": 0,
-						"cuentia": 0,
-						"tintaverde": 0,
-						"letranueva": 0.99,
-						"rumboclaro": 0,
-						"serena": 0,
 						"cazuela": 0,
-						"lindero": 0
+						"letranueva": 0
 					},
 					"gate": 0.7
 				},
@@ -226,81 +221,64 @@
 						"meals": {
 							"pick": {
 								"label": "not_mentioned",
-								"probability": 1
+								"probability": 0.99
 							},
 							"probabilities": {
-								"not_mentioned": 1,
-								"not_available": 0,
-								"yes": 0
+								"yes": 0,
+								"not_available": 0.01,
+								"not_mentioned": 0.99
 							}
 						},
 						"travel": {
+							"pick": {
+								"label": "yes",
+								"probability": 0.67
+							},
+							"probabilities": {
+								"yes": 0.67,
+								"not_available": 0.24,
+								"not_mentioned": 0.09
+							}
+						},
+						"office": {
 							"pick": {
 								"label": "not_mentioned",
 								"probability": 1
 							},
 							"probabilities": {
-								"not_mentioned": 1,
+								"yes": 0,
 								"not_available": 0,
-								"yes": 0
-							}
-						},
-						"office": {
-							"pick": {
-								"label": "yes",
-								"probability": 0.4
-							},
-							"probabilities": {
-								"not_mentioned": 0.32,
-								"not_available": 0.28,
-								"yes": 0.4
+								"not_mentioned": 1
 							}
 						},
 						"client": {
 							"pick": {
 								"label": "not_mentioned",
-								"probability": 0.95
+								"probability": 0.93
 							},
 							"probabilities": {
-								"not_mentioned": 0.95,
+								"yes": 0.03,
 								"not_available": 0.04,
-								"yes": 0.01
+								"not_mentioned": 0.93
 							}
 						}
 					},
 					"gate": 0.4
 				},
 				"spent_on": {
-					"candidates": [
-						{
-							"id": "d0",
-							"description": "\"agosto\": Sat 2026-08-01 to Mon 2026-08-31, both included",
-							"value": {
-								"text": "agosto",
-								"from": "2026-08-01",
-								"to": "2026-08-31"
-							}
-						}
-					],
-					"pick": {
-						"label": "d0",
-						"probability": 0.97
-					},
-					"probabilities": {
-						"d0": 0.97,
-						"not_mentioned": 0.03,
-						"not_available": 0
-					},
+					"candidates": [],
+					"pick": null,
+					"probabilities": {},
 					"gate": 0.8
 				},
 				"total": {
 					"candidates": [
 						{
 							"id": "a0",
-							"description": "\"$130\": 130 USD (US Dollar)",
+							"description": "\"$156\": 156 USD (US Dollar)",
 							"value": {
-								"text": "$130",
-								"value": 130,
+								"text": "$156",
+								"value": 156,
 								"currency": "USD"
 							}
 						}
@@ -310,15 +288,15 @@
 						"probability": 1
 					},
 					"probabilities": {
-						"not_mentioned": 0,
+						"not_available": 0,
 						"a0": 1,
-						"not_available": 0
+						"not_mentioned": 0
 					},
 					"gate": 0.9
 				}
 			}
 		},
-		"costUsd": 0.00009487800000000001,
-		"inputTokens": 2259
+		"costUsd": 0.00008622600000000001,
+		"inputTokens": 2053
 	}
 }
