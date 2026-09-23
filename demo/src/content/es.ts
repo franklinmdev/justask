@@ -110,6 +110,9 @@ export const spanish: Content = {
 		latency: "Latencia",
 		inputTokens: "Tokens de entrada",
 		cost: "Costo",
+		recorded: (date) => `Ejecución grabada · ${date}`,
+		replaying: (date, request) =>
+			`Reproduciendo una ejecución grabada del ${date}: “${request}”`,
 		filter: {
 			transactions: "Transacciones",
 			boxLabel: "Filtrar las transacciones",
@@ -127,6 +130,15 @@ export const spanish: Content = {
 			confirm: "Aplicar filtros",
 			empty: "Nada en esa solicitud filtra las transacciones.",
 			applied: "Aplicados",
+			appliedFields: (set, held) =>
+				[
+					set.length > 0 &&
+						`Aplicados: ${set.map(([field, value]) => `${field}, ${value}`).join("; ")}.`,
+					held.length > 0 &&
+						`${held.length === 1 ? "Campo retenido" : "Campos retenidos"}: ${held.join(", ")}.`,
+				]
+					.filter(Boolean)
+					.join(" "),
 			clear: "Quitar filtros",
 			showing: (count, total) =>
 				count === total

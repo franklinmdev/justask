@@ -7,7 +7,7 @@ The package's React pieces ship unstyled, so these slots bind the demo and any s
 - Accent hue: oklch(0.55 0.17 255) cobalt, with --primary-text at oklch(0.50 0.17 255) for 4.5:1 on the light housing. Reason: chosen by the owner on 2026-09-22; a precise instrument blue that stays clear of the success green and destructive red.
 - Type pairing: IBM Plex Sans + JetBrains Mono. Reason: no brand evidence exists, and the demo shows candidates, probabilities and gates as data, which the mono ration covers.
 - Neutral temperature: achromatic. Reason: the demo is a fictional invoicing tool, and nothing in PRODUCT.md asks for a tint.
-- Signature motion: the pick settling in, translateY(4px) to 0 with opacity over 150ms; placements: the search item, a filled field, the confirm bar. Reason: the core action is the model picking among real candidates and the person confirming it.
+- Signature motion: the pick settling in, translateY(4px) to 0 with opacity over 150ms, a fade under reduced motion; placements: the filter control, the form field and the chosen search result. The table's controls that Apply set settle in field order, 120ms apart. Reason: the core action is the model picking among real candidates and the person confirming it, and the showcase shows the app's own controls taking the picks.
 
 ## Overrides
 - Stack notes (Tailwind, shadcn, an icon set): the demo uses plain CSS on class names and no icons. Reason: it shows the package's unstyled pieces styled the way any host app would style them, and one page needs no component library.

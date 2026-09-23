@@ -104,6 +104,7 @@ function renderDemo({
 			fetch={(input, init) =>
 				handler(new Request(new URL(String(input), location.href), init))
 			}
+			recordings={null}
 		/>,
 	);
 	return { container, user: userEvent.setup() };
@@ -247,7 +248,12 @@ describe("the demo's search page", () => {
 
 	it("keeps the latency of a call that never reached the handler, with no tokens or cost", async () => {
 		history.replaceState(null, "", "/?case=search");
-		render(<App fetch={() => Promise.reject(new TypeError("offline"))} />);
+		render(
+			<App
+				fetch={() => Promise.reject(new TypeError("offline"))}
+				recordings={null}
+			/>,
+		);
 		const user = userEvent.setup();
 
 		await user.click(

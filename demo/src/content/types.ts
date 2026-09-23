@@ -147,6 +147,11 @@ export type FilterCopy = {
 	confirm: string;
 	empty: string;
 	applied: string;
+	/** What a screen reader hears once Apply sets the controls: each field set, with its value, then each field held. */
+	appliedFields: (
+		set: [field: string, value: string][],
+		held: string[],
+	) => string;
 	clear: string;
 	showing: (count: number, total: number) => string;
 	/** The table's own filter controls, which Apply sets and the person can change. */
@@ -254,6 +259,10 @@ export type Copy = {
 	latency: string;
 	inputTokens: string;
 	cost: string;
+	/** The label on a case's recorded run, with the day it ran. */
+	recorded: (date: string) => string;
+	/** What a screen reader hears as the recorded run starts. */
+	replaying: (date: string, request: string) => string;
 	filter: FilterCopy;
 	card: CardCopy;
 };

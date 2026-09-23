@@ -1,0 +1,170 @@
+{
+	"set": "search-es.round3.jsonl",
+	"row": "es-r3-01",
+	"recordedAt": "2026-09-23T18:24:46.978Z",
+	"timeZone": "America/La_Paz",
+	"request": "una caja de sobres y una grapadora",
+	"latencyMs": 203,
+	"response": {
+		"search": {
+			"item": {
+				"id": "tintaverde",
+				"name": "Papelería Tintaverde",
+				"supplies": "papel, tóner y artículos de oficina"
+			},
+			"candidates": [
+				{
+					"id": "tintaverde",
+					"description": "Papelería Tintaverde, papel, tóner y artículos de oficina",
+					"value": {
+						"id": "tintaverde",
+						"name": "Papelería Tintaverde",
+						"supplies": "papel, tóner y artículos de oficina"
+					}
+				},
+				{
+					"id": "cazuela",
+					"description": "Banquetes Cazuela Azul, catering y almuerzos para la oficina",
+					"value": {
+						"id": "cazuela",
+						"name": "Banquetes Cazuela Azul",
+						"supplies": "catering y almuerzos para la oficina"
+					}
+				},
+				{
+					"id": "nubalia",
+					"description": "Nubalia Hosting, alojamiento de páginas web y servidores en la nube",
+					"value": {
+						"id": "nubalia",
+						"name": "Nubalia Hosting",
+						"supplies": "alojamiento de páginas web y servidores en la nube"
+					}
+				},
+				{
+					"id": "brisamar",
+					"description": "Limpiezas Brisamar, limpieza nocturna de oficinas",
+					"value": {
+						"id": "brisamar",
+						"name": "Limpiezas Brisamar",
+						"supplies": "limpieza nocturna de oficinas"
+					}
+				},
+				{
+					"id": "relucir",
+					"description": "Relucir Servicios de Limpieza, limpieza de oficinas y de ventanas",
+					"value": {
+						"id": "relucir",
+						"name": "Relucir Servicios de Limpieza",
+						"supplies": "limpieza de oficinas y de ventanas"
+					}
+				},
+				{
+					"id": "letranueva",
+					"description": "Imprenta Letranueva, tarjetas de presentación, volantes y letreros",
+					"value": {
+						"id": "letranueva",
+						"name": "Imprenta Letranueva",
+						"supplies": "tarjetas de presentación, volantes y letreros"
+					}
+				},
+				{
+					"id": "rumboclaro",
+					"description": "Viajes Rumbo Claro, vuelos y hoteles para viajes de trabajo",
+					"value": {
+						"id": "rumboclaro",
+						"name": "Viajes Rumbo Claro",
+						"supplies": "vuelos y hoteles para viajes de trabajo"
+					}
+				},
+				{
+					"id": "cuentia",
+					"description": "Cuentia Software, licencias de software contable",
+					"value": {
+						"id": "cuentia",
+						"name": "Cuentia Software",
+						"supplies": "licencias de software contable"
+					}
+				},
+				{
+					"id": "cafetal",
+					"description": "Café del Cafetal Alto, café en grano y alquiler de cafeteras",
+					"value": {
+						"id": "cafetal",
+						"name": "Café del Cafetal Alto",
+						"supplies": "café en grano y alquiler de cafeteras"
+					}
+				},
+				{
+					"id": "pieveloz",
+					"description": "Mensajería Pieveloz, mensajería el mismo día",
+					"value": {
+						"id": "pieveloz",
+						"name": "Mensajería Pieveloz",
+						"supplies": "mensajería el mismo día"
+					}
+				},
+				{
+					"id": "lindero",
+					"description": "Bufete Lindero, revisión de contratos y asesoría legal",
+					"value": {
+						"id": "lindero",
+						"name": "Bufete Lindero",
+						"supplies": "revisión de contratos y asesoría legal"
+					}
+				},
+				{
+					"id": "tecnoria",
+					"description": "Tecnoria Soporte, reparación de computadoras y soporte técnico",
+					"value": {
+						"id": "tecnoria",
+						"name": "Tecnoria Soporte",
+						"supplies": "reparación de computadoras y soporte técnico"
+					}
+				},
+				{
+					"id": "serena",
+					"description": "Nómina Serena, nómina y recursos humanos",
+					"value": {
+						"id": "serena",
+						"name": "Nómina Serena",
+						"supplies": "nómina y recursos humanos"
+					}
+				},
+				{
+					"id": "coberplena",
+					"description": "Seguros Cobertura Plena, seguros para empresas",
+					"value": {
+						"id": "coberplena",
+						"name": "Seguros Cobertura Plena",
+						"supplies": "seguros para empresas"
+					}
+				}
+			],
+			"pick": {
+				"label": "tintaverde",
+				"probability": 0.94
+			},
+			"probabilities": {
+				"none": 0.04,
+				"relucir": 0,
+				"brisamar": 0,
+				"coberplena": 0,
+				"nubalia": 0,
+				"cuentia": 0,
+				"tintaverde": 0.94,
+				"tecnoria": 0,
+				"lindero": 0,
+				"letranueva": 0,
+				"several": 0.02,
+				"serena": 0,
+				"pieveloz": 0,
+				"rumboclaro": 0,
+				"cazuela": 0,
+				"cafetal": 0
+			},
+			"gate": 0.15
+		},
+		"costUsd": 0.00003385200000000001,
+		"inputTokens": 806
+	}
+}

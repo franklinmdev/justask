@@ -1,0 +1,170 @@
+{
+	"set": "search-en.round3.jsonl",
+	"row": "en-r3-01",
+	"recordedAt": "2026-09-23T18:24:46.569Z",
+	"timeZone": "America/La_Paz",
+	"request": "a box of envelopes and a stapler",
+	"latencyMs": 180,
+	"response": {
+		"search": {
+			"item": {
+				"id": "papergrove",
+				"name": "Papergrove Supplies",
+				"supplies": "office paper, toner and stationery"
+			},
+			"candidates": [
+				{
+					"id": "papergrove",
+					"description": "Papergrove Supplies, office paper, toner and stationery",
+					"value": {
+						"id": "papergrove",
+						"name": "Papergrove Supplies",
+						"supplies": "office paper, toner and stationery"
+					}
+				},
+				{
+					"id": "larkspur",
+					"description": "Larkspur Catering, catering and office lunches",
+					"value": {
+						"id": "larkspur",
+						"name": "Larkspur Catering",
+						"supplies": "catering and office lunches"
+					}
+				},
+				{
+					"id": "cloudberth",
+					"description": "Cloudberth Hosting, website hosting and cloud servers",
+					"value": {
+						"id": "cloudberth",
+						"name": "Cloudberth Hosting",
+						"supplies": "website hosting and cloud servers"
+					}
+				},
+				{
+					"id": "brightmop",
+					"description": "Brightmop Cleaning, nightly office cleaning",
+					"value": {
+						"id": "brightmop",
+						"name": "Brightmop Cleaning",
+						"supplies": "nightly office cleaning"
+					}
+				},
+				{
+					"id": "glasswell",
+					"description": "Glasswell Janitorial, office cleaning and window washing",
+					"value": {
+						"id": "glasswell",
+						"name": "Glasswell Janitorial",
+						"supplies": "office cleaning and window washing"
+					}
+				},
+				{
+					"id": "inkhollow",
+					"description": "Inkhollow Print, business cards, flyers and signs",
+					"value": {
+						"id": "inkhollow",
+						"name": "Inkhollow Print",
+						"supplies": "business cards, flyers and signs"
+					}
+				},
+				{
+					"id": "farwander",
+					"description": "Farwander Travel, flights and hotels for staff trips",
+					"value": {
+						"id": "farwander",
+						"name": "Farwander Travel",
+						"supplies": "flights and hotels for staff trips"
+					}
+				},
+				{
+					"id": "tallyroot",
+					"description": "Tallyroot Software, accounting software licenses",
+					"value": {
+						"id": "tallyroot",
+						"name": "Tallyroot Software",
+						"supplies": "accounting software licenses"
+					}
+				},
+				{
+					"id": "beanhaven",
+					"description": "Beanhaven Coffee, coffee beans and coffee machine rental",
+					"value": {
+						"id": "beanhaven",
+						"name": "Beanhaven Coffee",
+						"supplies": "coffee beans and coffee machine rental"
+					}
+				},
+				{
+					"id": "swiftlane",
+					"description": "Swiftlane Couriers, same-day courier deliveries",
+					"value": {
+						"id": "swiftlane",
+						"name": "Swiftlane Couriers",
+						"supplies": "same-day courier deliveries"
+					}
+				},
+				{
+					"id": "clausewood",
+					"description": "Clausewood Legal, contract review and legal advice",
+					"value": {
+						"id": "clausewood",
+						"name": "Clausewood Legal",
+						"supplies": "contract review and legal advice"
+					}
+				},
+				{
+					"id": "fixbright",
+					"description": "Fixbright IT, laptop repair and IT support",
+					"value": {
+						"id": "fixbright",
+						"name": "Fixbright IT",
+						"supplies": "laptop repair and IT support"
+					}
+				},
+				{
+					"id": "paydale",
+					"description": "Paydale Payroll, payroll and HR services",
+					"value": {
+						"id": "paydale",
+						"name": "Paydale Payroll",
+						"supplies": "payroll and HR services"
+					}
+				},
+				{
+					"id": "sureharbor",
+					"description": "Sureharbor Insurance, business insurance",
+					"value": {
+						"id": "sureharbor",
+						"name": "Sureharbor Insurance",
+						"supplies": "business insurance"
+					}
+				}
+			],
+			"pick": {
+				"label": "papergrove",
+				"probability": 0.93
+			},
+			"probabilities": {
+				"tallyroot": 0,
+				"paydale": 0,
+				"glasswell": 0,
+				"cloudberth": 0,
+				"beanhaven": 0,
+				"larkspur": 0,
+				"farwander": 0,
+				"sureharbor": 0,
+				"swiftlane": 0,
+				"several": 0.02,
+				"inkhollow": 0,
+				"fixbright": 0,
+				"papergrove": 0.93,
+				"none": 0.04,
+				"brightmop": 0,
+				"clausewood": 0
+			},
+			"gate": 0.15
+		},
+		"costUsd": 0.000031710000000000006,
+		"inputTokens": 755
+	}
+}

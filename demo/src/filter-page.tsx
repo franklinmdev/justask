@@ -6,7 +6,7 @@ import {
 	FilterFields,
 	useFilter,
 } from "justask/react";
-import { useState } from "react";
+import { type CSSProperties, useState } from "react";
 import { filterEndpoint } from "./api.ts";
 import type {
 	Content,
@@ -17,11 +17,19 @@ import type {
 import { DayPicker } from "./day-picker.tsx";
 import { FilterPanel } from "./filter-panel.tsx";
 import { formats, LOCAL_CURRENCY, parseAmount } from "./format.ts";
-import { DEBOUNCE_MS, Suggestions } from "./parts.tsx";
+import { DEBOUNCE_MS, RecordedLabel, Suggestions } from "./parts.tsx";
+import { dayOf, type TableRecording } from "./recording.ts";
+import { useReplay } from "./replay.ts";
 import { CaseLayout } from "./showcase.tsx";
-import { type Trace, timed, useSuggest } from "./trace.ts";
+import { useSuggest } from "./trace.ts";
 
 type Applied = FilterValue<TransactionFields>;
+
+/** The table's controls in the order they show, which Apply sets them in. */
+const fieldOrder: FieldName[] = ["vendor", "status", "date", "amount"];
+
+/** The controls one Apply set, in field order; the round restarts their motion. */
+type Settling = { round: number; names: FieldName[] };
 
 /** Every row the table's controls keep. The table's amounts are in the local currency, so another one keeps none. */
 function matches(row: Transaction, filter: Applied): boolean {
@@ -80,6 +88,15 @@ function withEnd<R extends DateRange | AmountRange>(
 	return ends.some((name) => next[name] !== undefined) ? next : undefined;
 }
 
+/** A set field's value in the page's own words. */
+function valueWords<K extends FieldName>(
+	words: ReturnType<typeof fieldWords>,
+	name: K,
+	value: Applied,
+): string {
+	return words[name](value[name] as FieldValue<TransactionFields[K]>);
+}
+
 function FieldChip({ name, text }: { name: string; text: string }) {
 	return (
 		<>
@@ -92,13 +109,17 @@ function FieldChip({ name, text }: { name: string; text: string }) {
 /**
  * The fictional invoicing app's transactions table, filtered from a request,
  * beside the state panel. The proposed filters stay in justask until the
- * person applies them; only then does the table change.
+ * person applies them; only then does the table change, its controls
+ * settling in field order. With a recording, the case opens on it replayed:
+ * the sentence, the proposal, then Apply pressed on screen.
  */
 export function FilterPage({
 	content,
+	recording = null,
 	fetch: fetchImpl = fetch,
 }: {
 	content: Content;
+	recording?: TableRecording | null;
 	fetch?: typeof fetch;
 }) {
 	const { copy } = content;
@@ -107,15 +128,45 @@ export function FilterPage({
 	const [applied, setApplied] = useState<Applied>({});
 	// Clear filters renews the controls, so text in a box that set no bound goes too.
 	const [cleared, setCleared] = useState(0);
-	const [trace, setTrace] = useState<Trace | null>(null);
+	const [settling, setSettling] = useState<Settling>({ round: 0, names: [] });
+	// What Apply set and held, for a screen reader.
+	const [appliedWords, setAppliedWords] = useState("");
+	const replay = useReplay({ recording, fetch: fetchImpl });
+	const { trace } = replay;
 
 	const filter = useFilter<TransactionFields>({
 		endpoint: filterEndpoint(content.language),
 		timing: { on: "type", debounceMs: DEBOUNCE_MS },
-		onConfirm: (value) => setApplied((table) => applyTo(table, value)),
-		fetch: timed(fetchImpl, setTrace),
+		onConfirm: (value) => {
+			setApplied((table) => applyTo(table, value));
+			const names = fieldOrder.filter((name) => value[name] !== undefined);
+			setSettling(({ round }) => ({ round: round + 1, names }));
+			const held = fieldOrder.filter(
+				(name) => filter.result?.value[name] === undefined,
+			);
+			setAppliedWords(
+				copy.filter.appliedFields(
+					names.map((name) => [
+						copy.filter.fields[name],
+						valueWords(words, name, value),
+					]),
+					held.map((name) => copy.filter.fields[name]),
+				),
+			);
+		},
+		fetch: replay.fetch,
 	});
-	const suggest = useSuggest(filter);
+	replay.follow(filter, { ready: filter.ready, press: filter.confirm });
+	const box = replay.take(filter);
+	const suggest = useSuggest(box);
+	const announcement =
+		appliedWords ||
+		(recording && replay.started
+			? copy.replaying(
+					formats(content.locale).date(dayOf(recording)),
+					recording.request,
+				)
+			: "");
 
 	const chip =
 		<K extends FieldName>(name: K) =>
@@ -132,9 +183,17 @@ export function FilterPage({
 			labelledBy="transactions-title"
 			hood={<FilterPanel content={content} filter={filter} trace={trace} />}
 		>
-			<h2 id="transactions-title">{copy.filter.transactions}</h2>
+			<div className="case-head">
+				<h2 id="transactions-title">{copy.filter.transactions}</h2>
+				{recording && replay.recorded && (
+					<RecordedLabel content={content} recording={recording} />
+				)}
+			</div>
+			<p className="visually-hidden" role="status">
+				{announcement}
+			</p>
 			<FilterBox
-				filter={filter}
+				filter={box}
 				label={copy.filter.boxLabel}
 				placeholder={copy.filter.placeholder}
 				className="box"
@@ -164,7 +223,11 @@ export function FilterPage({
 				<p className="empty">{copy.filter.empty}</p>
 			</FilterEmpty>
 			<div className="confirm-row">
-				<FilterConfirm filter={filter} className="confirm">
+				<FilterConfirm
+					filter={filter}
+					className="confirm"
+					data-pressed={replay.pressing || undefined}
+				>
 					{copy.filter.confirm}
 				</FilterConfirm>
 			</div>
@@ -217,6 +280,7 @@ export function FilterPage({
 					content={content}
 					value={applied}
 					onChange={setApplied}
+					settling={settling}
 				/>
 				<Transactions content={content} rows={rows} />
 			</section>
@@ -233,10 +297,12 @@ function TableFilters({
 	content,
 	value,
 	onChange,
+	settling,
 }: {
 	content: Content;
 	value: Applied;
 	onChange: (value: Applied) => void;
+	settling: Settling;
 }) {
 	const { copy } = content;
 	const { fields, controls } = copy.filter;
@@ -256,10 +322,21 @@ function TableFilters({
 		set("amount", withEnd(range, end, amount, ["min", "max"]));
 	};
 	const currency = value.amount?.currency;
+	// A control Apply just set remounts, so it settles in again, after the ones before it.
+	const at = (name: FieldName) => settling.names.indexOf(name);
+	const keyOf = (name: FieldName) =>
+		at(name) === -1 ? name : `${name}-${settling.round}`;
+	const settle = (name: FieldName) =>
+		at(name) === -1
+			? {}
+			: {
+					"data-settle": "",
+					style: { "--settle-at": at(name) } as CSSProperties,
+				};
 
 	return (
 		<div className="table-filters">
-			<div className="table-filter">
+			<div key={keyOf("vendor")} className="table-filter" {...settle("vendor")}>
 				<label htmlFor="table-vendor" className="entry-label">
 					{fields.vendor}
 				</label>
@@ -283,7 +360,7 @@ function TableFilters({
 					))}
 				</select>
 			</div>
-			<div className="table-filter">
+			<div key={keyOf("status")} className="table-filter" {...settle("status")}>
 				<label htmlFor="table-status" className="entry-label">
 					{fields.status}
 				</label>
@@ -307,7 +384,11 @@ function TableFilters({
 					))}
 				</select>
 			</div>
-			<fieldset className="table-filter">
+			<fieldset
+				key={keyOf("date")}
+				className="table-filter"
+				{...settle("date")}
+			>
 				<legend className="entry-label">{fields.date}</legend>
 				<div className="range">
 					<span id="table-from" className="visually-hidden">
@@ -334,7 +415,11 @@ function TableFilters({
 					/>
 				</div>
 			</fieldset>
-			<fieldset className="table-filter">
+			<fieldset
+				key={keyOf("amount")}
+				className="table-filter"
+				{...settle("amount")}
+			>
 				<legend className="entry-label">
 					{fields.amount}
 					{/* Another currency keeps no row, so the controls say which one the request named. */}

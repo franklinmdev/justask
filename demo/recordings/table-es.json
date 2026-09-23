@@ -1,0 +1,304 @@
+{
+	"set": "filter-es.jsonl",
+	"row": "es-f-26",
+	"recordedAt": "2026-09-23T18:24:46.749Z",
+	"timeZone": "America/La_Paz",
+	"request": "reparaciones de Tecnoria entre $200 y $600 desde el 1 de julio",
+	"latencyMs": 228,
+	"response": {
+		"filter": {
+			"value": {
+				"vendor": {
+					"id": "tecnoria",
+					"name": "Tecnoria Soporte",
+					"supplies": "reparación de computadoras y soporte técnico"
+				},
+				"date": {
+					"from": "2026-07-01"
+				},
+				"amount": {
+					"min": 200,
+					"max": 600,
+					"currency": "USD"
+				}
+			},
+			"fields": {
+				"vendor": {
+					"candidates": [
+						{
+							"id": "tintaverde",
+							"description": "Papelería Tintaverde, papel, tóner y artículos de oficina",
+							"value": {
+								"id": "tintaverde",
+								"name": "Papelería Tintaverde",
+								"supplies": "papel, tóner y artículos de oficina"
+							}
+						},
+						{
+							"id": "cazuela",
+							"description": "Banquetes Cazuela Azul, catering y almuerzos para la oficina",
+							"value": {
+								"id": "cazuela",
+								"name": "Banquetes Cazuela Azul",
+								"supplies": "catering y almuerzos para la oficina"
+							}
+						},
+						{
+							"id": "nubalia",
+							"description": "Nubalia Hosting, alojamiento de páginas web y servidores en la nube",
+							"value": {
+								"id": "nubalia",
+								"name": "Nubalia Hosting",
+								"supplies": "alojamiento de páginas web y servidores en la nube"
+							}
+						},
+						{
+							"id": "brisamar",
+							"description": "Limpiezas Brisamar, limpieza nocturna de oficinas",
+							"value": {
+								"id": "brisamar",
+								"name": "Limpiezas Brisamar",
+								"supplies": "limpieza nocturna de oficinas"
+							}
+						},
+						{
+							"id": "relucir",
+							"description": "Relucir Servicios de Limpieza, limpieza de oficinas y de ventanas",
+							"value": {
+								"id": "relucir",
+								"name": "Relucir Servicios de Limpieza",
+								"supplies": "limpieza de oficinas y de ventanas"
+							}
+						},
+						{
+							"id": "letranueva",
+							"description": "Imprenta Letranueva, tarjetas de presentación, volantes y letreros",
+							"value": {
+								"id": "letranueva",
+								"name": "Imprenta Letranueva",
+								"supplies": "tarjetas de presentación, volantes y letreros"
+							}
+						},
+						{
+							"id": "rumboclaro",
+							"description": "Viajes Rumbo Claro, vuelos y hoteles para viajes de trabajo",
+							"value": {
+								"id": "rumboclaro",
+								"name": "Viajes Rumbo Claro",
+								"supplies": "vuelos y hoteles para viajes de trabajo"
+							}
+						},
+						{
+							"id": "cuentia",
+							"description": "Cuentia Software, licencias de software contable",
+							"value": {
+								"id": "cuentia",
+								"name": "Cuentia Software",
+								"supplies": "licencias de software contable"
+							}
+						},
+						{
+							"id": "cafetal",
+							"description": "Café del Cafetal Alto, café en grano y alquiler de cafeteras",
+							"value": {
+								"id": "cafetal",
+								"name": "Café del Cafetal Alto",
+								"supplies": "café en grano y alquiler de cafeteras"
+							}
+						},
+						{
+							"id": "pieveloz",
+							"description": "Mensajería Pieveloz, mensajería el mismo día",
+							"value": {
+								"id": "pieveloz",
+								"name": "Mensajería Pieveloz",
+								"supplies": "mensajería el mismo día"
+							}
+						},
+						{
+							"id": "lindero",
+							"description": "Bufete Lindero, revisión de contratos y asesoría legal",
+							"value": {
+								"id": "lindero",
+								"name": "Bufete Lindero",
+								"supplies": "revisión de contratos y asesoría legal"
+							}
+						},
+						{
+							"id": "tecnoria",
+							"description": "Tecnoria Soporte, reparación de computadoras y soporte técnico",
+							"value": {
+								"id": "tecnoria",
+								"name": "Tecnoria Soporte",
+								"supplies": "reparación de computadoras y soporte técnico"
+							}
+						},
+						{
+							"id": "serena",
+							"description": "Nómina Serena, nómina y recursos humanos",
+							"value": {
+								"id": "serena",
+								"name": "Nómina Serena",
+								"supplies": "nómina y recursos humanos"
+							}
+						},
+						{
+							"id": "coberplena",
+							"description": "Seguros Cobertura Plena, seguros para empresas",
+							"value": {
+								"id": "coberplena",
+								"name": "Seguros Cobertura Plena",
+								"supplies": "seguros para empresas"
+							}
+						}
+					],
+					"pick": {
+						"label": "tecnoria",
+						"probability": 0.98
+					},
+					"probabilities": {
+						"pieveloz": 0,
+						"not_mentioned": 0.02,
+						"tintaverde": 0,
+						"relucir": 0,
+						"rumboclaro": 0,
+						"not_available": 0,
+						"tecnoria": 0.98,
+						"cazuela": 0,
+						"letranueva": 0,
+						"brisamar": 0,
+						"serena": 0,
+						"cuentia": 0,
+						"nubalia": 0,
+						"lindero": 0,
+						"cafetal": 0,
+						"coberplena": 0
+					},
+					"gate": 0.6
+				},
+				"status": {
+					"candidates": [
+						{
+							"id": "paid",
+							"description": "facturas pagadas en su totalidad",
+							"value": "paid"
+						},
+						{
+							"id": "open",
+							"description": "facturas pendientes, sin pagar y aún sin vencer",
+							"value": "open"
+						},
+						{
+							"id": "overdue",
+							"description": "facturas vencidas, sin pagar después de su fecha límite",
+							"value": "overdue"
+						}
+					],
+					"pick": {
+						"label": "not_mentioned",
+						"probability": 0.99
+					},
+					"probabilities": {
+						"paid": 0,
+						"overdue": 0,
+						"open": 0,
+						"not_mentioned": 0.99,
+						"not_available": 0.01
+					},
+					"gate": 0.95
+				},
+				"date": {
+					"candidates": [
+						{
+							"id": "d0",
+							"description": "\"1 de julio\": the single day Wed 2026-07-01",
+							"value": {
+								"text": "1 de julio",
+								"from": "2026-07-01",
+								"to": "2026-07-01"
+							}
+						}
+					],
+					"answers": {
+						"from": {
+							"pick": {
+								"label": "d0",
+								"probability": 0.99
+							},
+							"probabilities": {
+								"d0": 0.99,
+								"not_mentioned": 0,
+								"not_available": 0.01
+							}
+						},
+						"to": {
+							"pick": {
+								"label": "not_mentioned",
+								"probability": 0.99
+							},
+							"probabilities": {
+								"d0": 0.01,
+								"not_mentioned": 0.99,
+								"not_available": 0
+							}
+						}
+					},
+					"gate": 0.85
+				},
+				"amount": {
+					"candidates": [
+						{
+							"id": "a0",
+							"description": "\"$200\": 200 USD (US Dollar)",
+							"value": {
+								"text": "$200",
+								"value": 200,
+								"currency": "USD"
+							}
+						},
+						{
+							"id": "a1",
+							"description": "\"$600\": 600 USD (US Dollar)",
+							"value": {
+								"text": "$600",
+								"value": 600,
+								"currency": "USD"
+							}
+						}
+					],
+					"answers": {
+						"a0": {
+							"pick": {
+								"label": "min",
+								"probability": 1
+							},
+							"probabilities": {
+								"not_available": 0,
+								"not_mentioned": 0,
+								"max": 0,
+								"min": 1,
+								"exact": 0
+							}
+						},
+						"a1": {
+							"pick": {
+								"label": "max",
+								"probability": 1
+							},
+							"probabilities": {
+								"max": 1,
+								"not_mentioned": 0,
+								"exact": 0,
+								"min": 0,
+								"not_available": 0
+							}
+						}
+					},
+					"gate": 0.9
+				}
+			}
+		},
+		"costUsd": 0.00009168600000000002,
+		"inputTokens": 2183
+	}
+}

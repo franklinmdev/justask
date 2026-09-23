@@ -9,6 +9,7 @@ import { english } from "./content/en.ts";
 import { spanish } from "./content/es.ts";
 import type { Case, Language } from "./content/types.ts";
 import { FilterPage } from "./filter-page.tsx";
+import { type Recordings, recordings as recorded } from "./recording.ts";
 import { SearchPage } from "./search-page.tsx";
 import { HoodPlaceContext, type HoodView, nextTab } from "./showcase.tsx";
 import { ThemeToggle } from "./theme.tsx";
@@ -47,9 +48,16 @@ function hrefOf(view: View): string {
  * The showcase: a header with the case tabs, the theme and the language
  * toggle, then one case with its hood. The language toggle switches the UI
  * text, the suggested requests and the data, and starts the case over, since
- * the other language is another catalog.
+ * the other language is another catalog. The Table and Search cases open on
+ * their recorded runs; with `recordings` null every case opens idle.
  */
-export function App({ fetch }: { fetch?: typeof globalThis.fetch }) {
+export function App({
+	fetch,
+	recordings = recorded,
+}: {
+	fetch?: typeof globalThis.fetch;
+	recordings?: Recordings | null;
+}) {
 	const [view, setView] = useState(viewFromUrl);
 	const [open, setOpen] = useState(true);
 	const [shown, setShown] = useState<"app" | "hood">("app");
@@ -159,9 +167,21 @@ export function App({ fetch }: { fetch?: typeof globalThis.fetch }) {
 					role="tabpanel"
 					aria-labelledby={`case-tab-${shownCase}`}
 				>
-					{shownCase === "table" && <FilterPage key={language} {...shared} />}
+					{shownCase === "table" && (
+						<FilterPage
+							key={language}
+							recording={recordings?.table[language] ?? null}
+							{...shared}
+						/>
+					)}
 					{shownCase === "form" && <CardPage key={language} {...shared} />}
-					{shownCase === "search" && <SearchPage key={language} {...shared} />}
+					{shownCase === "search" && (
+						<SearchPage
+							key={language}
+							recording={recordings?.search[language] ?? null}
+							{...shared}
+						/>
+					)}
 				</div>
 			</main>
 		</HoodPlaceContext>
