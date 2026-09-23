@@ -116,9 +116,12 @@ const lunch = "lunch with Northwind yesterday, $42";
 function renderCard({
 	provider,
 	timing,
+	unreachable = false,
 }: {
 	provider: Provider;
 	timing?: CardTiming;
+	/** The handler cannot be reached at all, as on a network failure. */
+	unreachable?: boolean;
 }) {
 	vi.setSystemTime(new Date("2026-09-22T15:00:00Z"));
 	const handler = createCardHandler<Fields>({
@@ -137,7 +140,9 @@ function renderCard({
 			...(timing && { timing }),
 			onConfirm,
 			fetch: (input, init) =>
-				handler(new Request(new URL(String(input), location.href), init)),
+				unreachable
+					? Promise.reject(new TypeError("Failed to fetch"))
+					: handler(new Request(new URL(String(input), location.href), init)),
 		});
 		seen.card = card;
 		return (
@@ -148,6 +153,7 @@ function renderCard({
 					announce={({ filled, waiting }) =>
 						`Filled: ${filled.join(", ") || "nothing"}. Waiting for you: ${waiting.join(", ") || "nothing"}.`
 					}
+					unanswered="Filled: nothing. The card could not be filled; fill it by hand."
 				/>
 				<CardEntry card={card} name="vendor">
 					{({ value, set }) => (
@@ -466,6 +472,23 @@ describe("useCard and its pieces", () => {
 			"Filled: nothing. Waiting for you: vendor, tags, spent_on, total.",
 		);
 		await expectNoAxeViolations(container);
+		await user.type(amount(), "42");
+		await user.click(confirmButton());
+		expect(onConfirm).toHaveBeenCalledExactlyOnceWith({ total: { value: 42 } });
+	});
+
+	it("says the card was not filled when the handler cannot be reached, and the person still fills it", async () => {
+		const { onConfirm, seen, user } = renderCard({
+			provider: fakeProvider(fills),
+			unreachable: true,
+		});
+
+		await ask(user);
+
+		expect(seen.card?.error?.kind).toBe("network");
+		expect(announced()).toContain(
+			"Filled: nothing. The card could not be filled; fill it by hand.",
+		);
 		await user.type(amount(), "42");
 		await user.click(confirmButton());
 		expect(onConfirm).toHaveBeenCalledExactlyOnceWith({ total: { value: 42 } });

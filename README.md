@@ -214,6 +214,7 @@ const card = useCard<typeof expense.fields>({
 <CardStatus
   card={card}
   announce={({ filled, waiting }) => `Filled: ${filled.join(", ")}. For you to fill: ${waiting.join(", ")}.`}
+  unanswered="Nothing filled. Fill the card by hand."
 />
 <CardEntry card={card} name="vendor">
   {({ value, set }) => <VendorSelect value={value} onChange={set} />}
@@ -225,7 +226,7 @@ const card = useCard<typeof expense.fields>({
 </CardUndo>
 ```
 
-The pieces are unstyled. `CardEntry` wraps the host's own control for one field and passes it `{ value, set, filledBy }`. It sets `data-empty` on an empty field, held or never mentioned alike, and `data-filled-by="answer"` or `"person"` on a filled one. `CardStatus` is a polite live region that says once per answer which fields were filled and which wait for the person, in the words `announce` gives. Filling the card does not change it. `CardConfirm` stays focusable with `aria-disabled` while there is nothing to confirm or an answer is on its way. `CardUndo` is a polite live region that shows its children from Confirm until the person types or fills a field again. Place them in this order, box, status, entries, Confirm, undo, so Tab follows the card. When the undo control disappears after `restore`, the host moves the focus, for example back to the box.
+The pieces are unstyled. `CardEntry` wraps the host's own control for one field and passes it `{ value, set, filledBy }`. It sets `data-empty` on an empty field, held or never mentioned alike, and `data-filled-by="answer"` or `"person"` on a filled one. `CardStatus` is a polite live region that says once per answer which fields were filled and which wait for the person, in the words `announce` gives, or says `unanswered` when no answer came back at all (the handler could not be reached, or refused the request). Filling the card does not change it. `CardConfirm` stays focusable with `aria-disabled` while there is nothing to confirm or an answer is on its way. `CardUndo` is a polite live region that shows its children from Confirm until the person types or fills a field again. Place them in this order, box, status, entries, Confirm, undo, so Tab follows the card. When the undo control disappears after `restore`, the host moves the focus, for example back to the box.
 
 A failed provider fills nothing, and the card keeps working by hand: `card.error` says why.
 

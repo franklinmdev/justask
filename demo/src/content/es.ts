@@ -194,6 +194,8 @@ export const spanish: Content = {
 					? `Completado: ${list(filled)}. Nada por completar.`
 					: `Completado: ${list(filled)}. Por completar: ${list(waiting)}.`;
 			},
+			unanswered:
+				"Nada completado: no se pudo completar la tarjeta desde la solicitud. Complétela a mano.",
 			pickDay: "Elija un día",
 			calendar: {
 				label: "Elija el día",

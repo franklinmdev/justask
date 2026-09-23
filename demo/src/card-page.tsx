@@ -99,6 +99,7 @@ export function CardPage({
 							waiting.map((name) => copy.card.fields[name]),
 						)
 					}
+					unanswered={copy.card.unanswered}
 				/>
 
 				<div className="card">

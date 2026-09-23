@@ -75,22 +75,32 @@ export type CardStatusProps<F extends CardFields> = Omit<
 		filled: (keyof F & string)[];
 		waiting: (keyof F & string)[];
 	}) => string;
+	/**
+	 * What is announced when no answer came back at all: the handler could not
+	 * be reached, refused the request or failed, so nothing says which fields
+	 * the card has. The person still fills it by hand.
+	 */
+	unanswered: string;
 };
 
 /**
  * A polite live region that says, once per answer, which fields were filled
- * and which wait for the person. The person filling the card does not change
- * it. Empty before an answer, while the box holds another request, and after
- * Confirm; pass a class that hides it visually, or show it as a hint.
+ * and which wait for the person, or `unanswered` when no answer came back.
+ * The person filling the card does not change it. Empty before an answer,
+ * while the box holds another request, and after Confirm; pass a class that
+ * hides it visually, or show it as a hint.
  */
 export function CardStatus<F extends CardFields>({
 	card,
 	announce,
+	unanswered,
 	...props
 }: CardStatusProps<F>) {
 	const { result } = card;
 	let text = "";
-	if (card.answered && result) {
+	if (card.answered && !result) {
+		text = unanswered;
+	} else if (card.answered && result) {
 		const names = Object.keys(result.fields) as (keyof F & string)[];
 		const filled = card.error
 			? []

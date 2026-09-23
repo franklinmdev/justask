@@ -84,20 +84,17 @@ function heldReasonOf(
 	}
 	if (pick.label === "not_mentioned") return { kind: "not-mentioned" };
 	if (pick.label === "not_available") return { kind: "not-available" };
-	const winner = field.candidates.find(({ id }) => id === pick.label)?.value;
-	const reading = winner as
-		| { text?: string; ambiguous?: boolean; unresolved?: string }
-		| { from?: string; to?: string; text?: string }
-		| undefined;
-	const text = reading && "text" in reading ? (reading.text ?? "") : "";
-	if (reading && "ambiguous" in reading && reading.ambiguous) {
-		return { kind: "ambiguous", text };
+	const picked = ({ id }: { id: string }) => id === pick.label;
+	if (name === "spent_on") {
+		const day = result.fields.spent_on.candidates.find(picked)?.value;
+		if (day?.ambiguous) return { kind: "ambiguous", text: day.text };
+		if (day && day.from !== day.to) return { kind: "period", text: day.text };
 	}
-	if (reading && "unresolved" in reading && reading.unresolved) {
-		return { kind: "foreign-currency", mark: reading.unresolved };
-	}
-	if (reading && "from" in reading && reading.from !== reading.to) {
-		return { kind: "period", text };
+	if (name === "total") {
+		const amount = result.fields.total.candidates.find(picked)?.value;
+		if (amount?.unresolved !== undefined) {
+			return { kind: "foreign-currency", mark: amount.unresolved };
+		}
 	}
 	return pick.probability < field.gate
 		? belowGate(pick.probability)
