@@ -1,0 +1,40 @@
+{"id":"es-r3-01","request":"una caja de sobres y una grapadora","kind":"item","expected":"tintaverde"}
+{"id":"es-r3-02","request":"la factura de agosto de Papelería Tintaverde","kind":"item","expected":"tintaverde"}
+{"id":"es-r3-03","request":"los sándwiches para la reunión de la junta","kind":"item","expected":"cazuela"}
+{"id":"es-r3-04","request":"banquetes kazuela","kind":"item","expected":"cazuela"}
+{"id":"es-r3-05","request":"el servidor en la nube que alquilamos","kind":"item","expected":"nubalia"}
+{"id":"es-r3-06","request":"nuvalia","kind":"item","expected":"nubalia"}
+{"id":"es-r3-07","request":"el contrato de limpieza de madrugada","kind":"item","expected":"brisamar"}
+{"id":"es-r3-08","request":"la factura vencida de Brisamar","kind":"item","expected":"brisamar"}
+{"id":"es-r3-09","request":"la empresa que hizo las ventanas del tercer piso","kind":"item","expected":"relucir"}
+{"id":"es-r3-10","request":"the window washing company","kind":"item","expected":"relucir"}
+{"id":"es-r3-11","request":"los afiches para la inauguración","kind":"item","expected":"letranueva"}
+{"id":"es-r3-12","request":"el pedido de Letranueva","kind":"item","expected":"letranueva"}
+{"id":"es-r3-13","request":"el hotel del viaje de ventas a Santiago","kind":"item","expected":"rumboclaro"}
+{"id":"es-r3-14","request":"viajes rumvo claro","kind":"item","expected":"rumboclaro"}
+{"id":"es-r3-15","request":"las licencias de contabilidad para los nuevos empleados","kind":"item","expected":"cuentia"}
+{"id":"es-r3-16","request":"cuentya","kind":"item","expected":"cuentia"}
+{"id":"es-r3-17","request":"la entrega mensual de café para la cocina","kind":"item","expected":"cafetal"}
+{"id":"es-r3-18","request":"the office coffee","kind":"item","expected":"cafetal"}
+{"id":"es-r3-19","request":"la entrega urgente al cliente del centro","kind":"item","expected":"pieveloz"}
+{"id":"es-r3-20","request":"¿lo entregó Pieveloz?","kind":"item","expected":"pieveloz"}
+{"id":"es-r3-21","request":"asesoría por la disputa de la marca","kind":"item","expected":"lindero"}
+{"id":"es-r3-22","request":"bufete lindro","kind":"item","expected":"lindero"}
+{"id":"es-r3-23","request":"el cambio de pantalla de la laptop de María","kind":"item","expected":"tecnoria"}
+{"id":"es-r3-24","request":"la factura de reparación de Tecnoria","kind":"item","expected":"tecnoria"}
+{"id":"es-r3-25","request":"la empresa que les paga a los empleados","kind":"item","expected":"serena"}
+{"id":"es-r3-26","request":"nomina serna","kind":"item","expected":"serena"}
+{"id":"es-r3-27","request":"la prima de nuestra póliza empresarial","kind":"item","expected":"coberplena"}
+{"id":"es-r3-28","request":"Cobertura Plena","kind":"item","expected":"coberplena"}
+{"id":"es-r3-29","request":"los de la fumigación","kind":"nothing"}
+{"id":"es-r3-30","request":"las comisiones del banco por transferencias","kind":"nothing"}
+{"id":"es-r3-31","request":"la agencia que diseñó nuestra página web","kind":"nothing"}
+{"id":"es-r3-32","request":"el alquiler de carro para el viaje","kind":"nothing"}
+{"id":"es-r3-33","request":"el contador que nos hace los impuestos","kind":"nothing"}
+{"id":"es-r3-34","request":"¿qué puedes hacer?","kind":"nothing"}
+{"id":"es-r3-35","request":"la factura de Pieveloz o de Lindero","kind":"ambiguous"}
+{"id":"es-r3-36","request":"la factura del vuelo o la de la nómina","kind":"ambiguous"}
+{"id":"es-r3-37","request":"el proveedor de la cocina","kind":"ambiguous"}
+{"id":"es-r3-38","request":"quien se encarga de nuestros contratos y del personal","kind":"ambiguous"}
+{"id":"es-r3-39","request":"el papel para los volantes","kind":"ambiguous"}
+{"id":"es-r3-40","request":"lo que pagamos cada mes por las computadoras","kind":"ambiguous"}
