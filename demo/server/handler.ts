@@ -53,11 +53,17 @@ export function demoSearch(content: Content): Search<Vendor> {
 }
 
 /**
- * Not measured on the demo's data yet; the filter eval set (#17) will fix one
- * per field. Until then every field takes the lab's filter gate, 0.9, under
- * which it passed 6 of 6 kill lines.
+ * Each filter field's gate, fixed on 2026-09-22 from dev run 1 of both
+ * languages by the rule the owner approved before any call (fixGate in
+ * demo/eval/filter-gates.ts), and judged on the frozen eval sets only
+ * (docs/filter-eval.md).
  */
-export const FILTER_GATE = 0.9;
+export const FILTER_GATES = {
+	vendor: 0.6,
+	status: 0.95,
+	date: 0.85,
+	amount: 0.9,
+} as const;
 
 /**
  * The transactions table's filter in one language. The vendor field reads the
@@ -71,24 +77,24 @@ export function demoFilter(content: Content): Filter<TransactionFields> {
 			vendor: {
 				kind: "catalog",
 				description: "the vendor who sent the invoices",
-				gate: FILTER_GATE,
+				gate: FILTER_GATES.vendor,
 				shortlist: () => content.vendors,
 			},
 			status: {
 				kind: "catalog",
 				description: "the payment status of the invoices",
-				gate: FILTER_GATE,
+				gate: FILTER_GATES.status,
 				shortlist: () => content.statuses,
 			},
 			date: {
 				kind: "date",
 				description: "the invoice date",
-				gate: FILTER_GATE,
+				gate: FILTER_GATES.date,
 			},
 			amount: {
 				kind: "amount",
 				description: "the invoice amount",
-				gate: FILTER_GATE,
+				gate: FILTER_GATES.amount,
 			},
 		},
 	};

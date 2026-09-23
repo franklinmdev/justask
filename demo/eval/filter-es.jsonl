@@ -1,0 +1,42 @@
+{"id":"es-f-01","request":"todas las facturas de Tintaverde","kind":"filterable","expected":{"vendor":"tintaverde"}}
+{"id":"es-f-02","request":"las facturas que ya se vencieron","kind":"filterable","expected":{"status":"overdue"}}
+{"id":"es-f-03","request":"facturas con fecha de julio","kind":"filterable","expected":{"date":{"from":"2026-07-01","to":"2026-07-31"}}}
+{"id":"es-f-04","request":"facturas de más de $2,000","kind":"filterable","expected":{"amount":{"min":2000,"currency":"USD"}}}
+{"id":"es-f-05","request":"facturas de Cazuela Azul que ya pagamos","kind":"filterable","expected":{"vendor":"cazuela","status":"paid"}}
+{"id":"es-f-06","request":"facturas de Nubalia hasta el 31 de julio","kind":"filterable","expected":{"vendor":"nubalia","date":{"to":"2026-07-31"}}}
+{"id":"es-f-07","request":"facturas de Brisamar de menos de $1,500","kind":"filterable","expected":{"vendor":"brisamar","amount":{"max":1500,"currency":"USD"}}}
+{"id":"es-f-08","request":"facturas sin pagar de la semana pasada que todavía no vencen","kind":"filterable","expected":{"status":"open","date":{"from":"2026-09-14","to":"2026-09-20"}}}
+{"id":"es-f-09","request":"facturas pagadas de exactamente $640","kind":"filterable","expected":{"status":"paid","amount":{"exact":640,"currency":"USD"}}}
+{"id":"es-f-10","request":"facturas entre $100 y $500 de este mes","kind":"filterable","expected":{"date":{"from":"2026-09-01","to":"2026-09-30"},"amount":{"min":100,"max":500,"currency":"USD"}}}
+{"id":"es-f-11","request":"facturas pagadas de Relucir entre el 1 y el 15 de agosto","kind":"filterable","expected":{"vendor":"relucir","status":"paid","date":{"from":"2026-08-01","to":"2026-08-15"}}}
+{"id":"es-f-12","request":"facturas de Rumbo Claro de más de 1000 en los últimos 90 días","kind":"filterable","expected":{"vendor":"rumboclaro","date":{"from":"2026-06-25","to":"2026-09-22"},"amount":{"min":1000}}}
+{"id":"es-f-13","request":"facturas vencidas de menos de $100 desde el 1 de septiembre","kind":"filterable","expected":{"status":"overdue","date":{"from":"2026-09-01"},"amount":{"max":100,"currency":"USD"}}}
+{"id":"es-f-14","request":"facturas de Letranueva de más de 150 dólares, sin pagar pero aún sin vencer","kind":"filterable","expected":{"vendor":"letranueva","status":"open","amount":{"min":150,"currency":"USD"}}}
+{"id":"es-f-15","request":"facturas de cuntia","kind":"filterable","expected":{"vendor":"cuentia"}}
+{"id":"es-f-16","request":"facturas que siguen dentro del plazo de pago","kind":"filterable","expected":{"status":"open"}}
+{"id":"es-f-17","request":"las facturas de ayer","kind":"filterable","expected":{"date":{"from":"2026-09-21","to":"2026-09-21"}}}
+{"id":"es-f-18","request":"facturas de exactamente $299","kind":"filterable","expected":{"amount":{"exact":299,"currency":"USD"}}}
+{"id":"es-f-19","request":"facturas vencidas de la mensajería","kind":"filterable","expected":{"vendor":"pieveloz","status":"overdue"}}
+{"id":"es-f-20","request":"facturas del proveedor de café de los últimos 30 días","kind":"filterable","expected":{"vendor":"cafetal","date":{"from":"2026-08-24","to":"2026-09-22"}}}
+{"id":"es-f-21","request":"la factura del bufete de exactamente $3,400","kind":"filterable","expected":{"vendor":"lindero","amount":{"exact":3400,"currency":"USD"}}}
+{"id":"es-f-22","request":"facturas pagadas emitidas en el segundo trimestre","kind":"filterable","expected":{"status":"paid","date":{"from":"2026-04-01","to":"2026-06-30"}}}
+{"id":"es-f-23","request":"facturas vencidas de al menos 1,000","kind":"filterable","expected":{"status":"overdue","amount":{"min":1000}}}
+{"id":"es-f-24","request":"facturas de menos de $80 con fecha del 8 de septiembre","kind":"filterable","expected":{"date":{"from":"2026-09-08","to":"2026-09-08"},"amount":{"max":80,"currency":"USD"}}}
+{"id":"es-f-25","request":"facturas de Nómina Serena sin pagar y aún sin vencer, de septiembre","kind":"filterable","expected":{"vendor":"serena","status":"open","date":{"from":"2026-09-01","to":"2026-09-30"}}}
+{"id":"es-f-26","request":"reparaciones de Tecnoria entre $200 y $600 desde el 1 de julio","kind":"filterable","expected":{"vendor":"tecnoria","date":{"from":"2026-07-01"},"amount":{"min":200,"max":600,"currency":"USD"}}}
+{"id":"es-f-27","request":"facturas sin pagar y todavía sin vencer entre $1,000 y $2,500 de las últimas dos semanas","kind":"filterable","expected":{"status":"open","date":{"from":"2026-09-09","to":"2026-09-22"},"amount":{"min":1000,"max":2500,"currency":"USD"}}}
+{"id":"es-f-28","request":"facturas pagadas de Cobertura Plena de menos de $3,000","kind":"filterable","expected":{"vendor":"coberplena","status":"paid","amount":{"max":3000,"currency":"USD"}}}
+{"id":"es-a-29","request":"facturas de la limpieza de la oficina por debajo de $1,000","kind":"ambiguous","expected":{"vendor":"held","amount":{"max":1000,"currency":"USD"}}}
+{"id":"es-a-30","request":"facturas de Nubalia o de Cuentia de julio","kind":"ambiguous","expected":{"vendor":"held","date":{"from":"2026-07-01","to":"2026-07-31"}}}
+{"id":"es-a-31","request":"facturas sin pagar de Cazuela Azul","kind":"ambiguous","expected":{"vendor":"cazuela","status":"held"}}
+{"id":"es-a-32","request":"facturas de agosto que todavía debemos","kind":"ambiguous","expected":{"status":"held","date":{"from":"2026-08-01","to":"2026-08-31"}}}
+{"id":"es-a-33","request":"facturas de Lindero de principios de septiembre","kind":"ambiguous","expected":{"vendor":"lindero","date":"held"}}
+{"id":"es-a-34","request":"facturas vencidas de junio o de agosto","kind":"ambiguous","expected":{"status":"overdue","date":"held"}}
+{"id":"es-a-35","request":"facturas del Cafetal de más o menos $100","kind":"ambiguous","expected":{"vendor":"cafetal","amount":"held"}}
+{"id":"es-a-36","request":"facturas pagadas de menos de $100 o de más de $2,000","kind":"ambiguous","expected":{"status":"paid","amount":"held"}}
+{"id":"es-n-37","request":"facturas de la empresa eléctrica","kind":"nothing"}
+{"id":"es-n-38","request":"¿cómo marco una factura como pagada?","kind":"nothing"}
+{"id":"es-n-39","request":"recuérdame mañana pagar el alquiler","kind":"nothing"}
+{"id":"es-n-40","request":"muestra 25 facturas por página","kind":"nothing"}
+{"id":"es-n-41","request":"ordénalas por fecha, las más nuevas primero","kind":"nothing"}
+{"id":"es-n-42","request":"gracias, eso es todo","kind":"nothing"}

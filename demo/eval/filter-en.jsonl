@@ -1,0 +1,42 @@
+{"id":"en-f-01","request":"all invoices from Papergrove","kind":"filterable","expected":{"vendor":"papergrove"}}
+{"id":"en-f-02","request":"invoices that are past due","kind":"filterable","expected":{"status":"overdue"}}
+{"id":"en-f-03","request":"invoices dated in July","kind":"filterable","expected":{"date":{"from":"2026-07-01","to":"2026-07-31"}}}
+{"id":"en-f-04","request":"invoices over $2,000","kind":"filterable","expected":{"amount":{"min":2000,"currency":"USD"}}}
+{"id":"en-f-05","request":"Larkspur invoices we already paid","kind":"filterable","expected":{"vendor":"larkspur","status":"paid"}}
+{"id":"en-f-06","request":"Cloudberth bills until July 31","kind":"filterable","expected":{"vendor":"cloudberth","date":{"to":"2026-07-31"}}}
+{"id":"en-f-07","request":"Brightmop invoices under $1,500","kind":"filterable","expected":{"vendor":"brightmop","amount":{"max":1500,"currency":"USD"}}}
+{"id":"en-f-08","request":"last week's unpaid invoices that aren't due yet","kind":"filterable","expected":{"status":"open","date":{"from":"2026-09-14","to":"2026-09-20"}}}
+{"id":"en-f-09","request":"paid invoices of exactly $640","kind":"filterable","expected":{"status":"paid","amount":{"exact":640,"currency":"USD"}}}
+{"id":"en-f-10","request":"invoices between $100 and $500 this month","kind":"filterable","expected":{"date":{"from":"2026-09-01","to":"2026-09-30"},"amount":{"min":100,"max":500,"currency":"USD"}}}
+{"id":"en-f-11","request":"Glasswell's paid invoices between August 1 and August 15","kind":"filterable","expected":{"vendor":"glasswell","status":"paid","date":{"from":"2026-08-01","to":"2026-08-15"}}}
+{"id":"en-f-12","request":"Farwander invoices over 1000 in the last 90 days","kind":"filterable","expected":{"vendor":"farwander","date":{"from":"2026-06-25","to":"2026-09-22"},"amount":{"min":1000}}}
+{"id":"en-f-13","request":"overdue invoices under $100 since September 1","kind":"filterable","expected":{"status":"overdue","date":{"from":"2026-09-01"},"amount":{"max":100,"currency":"USD"}}}
+{"id":"en-f-14","request":"Inkhollow invoices over 150 dollars, unpaid but not yet due","kind":"filterable","expected":{"vendor":"inkhollow","status":"open","amount":{"min":150,"currency":"USD"}}}
+{"id":"en-f-15","request":"tallyrut invoices","kind":"filterable","expected":{"vendor":"tallyroot"}}
+{"id":"en-f-16","request":"invoices still within their payment terms","kind":"filterable","expected":{"status":"open"}}
+{"id":"en-f-17","request":"yesterday's invoices","kind":"filterable","expected":{"date":{"from":"2026-09-21","to":"2026-09-21"}}}
+{"id":"en-f-18","request":"invoices for exactly $299","kind":"filterable","expected":{"amount":{"exact":299,"currency":"USD"}}}
+{"id":"en-f-19","request":"overdue invoices from the courier","kind":"filterable","expected":{"vendor":"swiftlane","status":"overdue"}}
+{"id":"en-f-20","request":"the coffee supplier's invoices from the last 30 days","kind":"filterable","expected":{"vendor":"beanhaven","date":{"from":"2026-08-24","to":"2026-09-22"}}}
+{"id":"en-f-21","request":"the law firm's invoice for exactly $3,400","kind":"filterable","expected":{"vendor":"clausewood","amount":{"exact":3400,"currency":"USD"}}}
+{"id":"en-f-22","request":"paid invoices issued in the second quarter","kind":"filterable","expected":{"status":"paid","date":{"from":"2026-04-01","to":"2026-06-30"}}}
+{"id":"en-f-23","request":"overdue invoices of at least 1,000","kind":"filterable","expected":{"status":"overdue","amount":{"min":1000}}}
+{"id":"en-f-24","request":"invoices under $80 dated September 8","kind":"filterable","expected":{"date":{"from":"2026-09-08","to":"2026-09-08"},"amount":{"max":80,"currency":"USD"}}}
+{"id":"en-f-25","request":"Paydale's unpaid, not yet due invoices for September","kind":"filterable","expected":{"vendor":"paydale","status":"open","date":{"from":"2026-09-01","to":"2026-09-30"}}}
+{"id":"en-f-26","request":"Fixbright repairs between $200 and $600 since July 1","kind":"filterable","expected":{"vendor":"fixbright","date":{"from":"2026-07-01"},"amount":{"min":200,"max":600,"currency":"USD"}}}
+{"id":"en-f-27","request":"unpaid, not yet due invoices between $1,000 and $2,500 in the last two weeks","kind":"filterable","expected":{"status":"open","date":{"from":"2026-09-09","to":"2026-09-22"},"amount":{"min":1000,"max":2500,"currency":"USD"}}}
+{"id":"en-f-28","request":"paid Sureharbor invoices under $3,000","kind":"filterable","expected":{"vendor":"sureharbor","status":"paid","amount":{"max":3000,"currency":"USD"}}}
+{"id":"en-a-29","request":"office cleaning invoices under $1,000","kind":"ambiguous","expected":{"vendor":"held","amount":{"max":1000,"currency":"USD"}}}
+{"id":"en-a-30","request":"Cloudberth or Tallyroot invoices in July","kind":"ambiguous","expected":{"vendor":"held","date":{"from":"2026-07-01","to":"2026-07-31"}}}
+{"id":"en-a-31","request":"unpaid Larkspur invoices","kind":"ambiguous","expected":{"vendor":"larkspur","status":"held"}}
+{"id":"en-a-32","request":"invoices in August that we still owe","kind":"ambiguous","expected":{"status":"held","date":{"from":"2026-08-01","to":"2026-08-31"}}}
+{"id":"en-a-33","request":"Clausewood invoices from early September","kind":"ambiguous","expected":{"vendor":"clausewood","date":"held"}}
+{"id":"en-a-34","request":"overdue invoices from June or August","kind":"ambiguous","expected":{"status":"overdue","date":"held"}}
+{"id":"en-a-35","request":"Beanhaven invoices of roughly $100","kind":"ambiguous","expected":{"vendor":"beanhaven","amount":"held"}}
+{"id":"en-a-36","request":"paid invoices under $100 or over $2,000","kind":"ambiguous","expected":{"status":"paid","amount":"held"}}
+{"id":"en-n-37","request":"invoices from the power company","kind":"nothing"}
+{"id":"en-n-38","request":"how do I mark an invoice as paid?","kind":"nothing"}
+{"id":"en-n-39","request":"remind me tomorrow to pay the rent","kind":"nothing"}
+{"id":"en-n-40","request":"show 25 invoices per page","kind":"nothing"}
+{"id":"en-n-41","request":"sort them by date, newest first","kind":"nothing"}
+{"id":"en-n-42","request":"thanks, that's all","kind":"nothing"}

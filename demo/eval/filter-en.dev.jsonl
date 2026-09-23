@@ -1,0 +1,20 @@
+{"id":"en-dev-01","request":"the catering invoices","kind":"filterable","expected":{"vendor":"larkspur"}}
+{"id":"en-dev-02","request":"settled invoices","kind":"filterable","expected":{"status":"paid"}}
+{"id":"en-dev-03","request":"this year's invoices","kind":"filterable","expected":{"date":{"from":"2026-01-01","to":"2026-12-31"}}}
+{"id":"en-dev-04","request":"invoices under $500","kind":"filterable","expected":{"amount":{"max":500,"currency":"USD"}}}
+{"id":"en-dev-05","request":"overdue Brightmop invoices","kind":"filterable","expected":{"vendor":"brightmop","status":"overdue"}}
+{"id":"en-dev-06","request":"Papergrove invoices in August","kind":"filterable","expected":{"vendor":"papergrove","date":{"from":"2026-08-01","to":"2026-08-31"}}}
+{"id":"en-dev-07","request":"Farwander invoices over $2,000","kind":"filterable","expected":{"vendor":"farwander","amount":{"min":2000,"currency":"USD"}}}
+{"id":"en-dev-08","request":"unpaid invoices dated this week that aren't due yet","kind":"filterable","expected":{"status":"open","date":{"from":"2026-09-21","to":"2026-09-27"}}}
+{"id":"en-dev-09","request":"unpaid invoices between $250 and $700 that aren't due yet","kind":"filterable","expected":{"status":"open","amount":{"min":250,"max":700,"currency":"USD"}}}
+{"id":"en-dev-10","request":"invoices for exactly $1,800 since August 1","kind":"filterable","expected":{"date":{"from":"2026-08-01"},"amount":{"exact":1800,"currency":"USD"}}}
+{"id":"en-dev-11","request":"Cloudberth's paid invoices under $300 between July 1 and August 31","kind":"filterable","expected":{"vendor":"cloudberth","status":"paid","date":{"from":"2026-07-01","to":"2026-08-31"},"amount":{"max":300,"currency":"USD"}}}
+{"id":"en-dev-12","request":"overdue Swiftlane invoices over 50 dollars last month","kind":"filterable","expected":{"vendor":"swiftlane","status":"overdue","date":{"from":"2026-08-01","to":"2026-08-31"},"amount":{"min":50,"currency":"USD"}}}
+{"id":"en-dev-13","request":"lawyer or payroll invoices in July","kind":"ambiguous","expected":{"vendor":"held","date":{"from":"2026-07-01","to":"2026-07-31"}}}
+{"id":"en-dev-14","request":"outstanding invoices","kind":"ambiguous","expected":{"status":"held"}}
+{"id":"en-dev-15","request":"Tallyroot invoices from late August","kind":"ambiguous","expected":{"vendor":"tallyroot","date":"held"}}
+{"id":"en-dev-16","request":"invoices close to $1,000","kind":"ambiguous","expected":{"amount":"held"}}
+{"id":"en-dev-17","request":"invoices from the water utility","kind":"nothing"}
+{"id":"en-dev-18","request":"what does overdue mean?","kind":"nothing"}
+{"id":"en-dev-19","request":"what's on my calendar for Friday?","kind":"nothing"}
+{"id":"en-dev-20","request":"go to page 3","kind":"nothing"}

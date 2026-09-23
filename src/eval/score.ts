@@ -199,7 +199,7 @@ function readRow(
 	};
 }
 
-function judge(killLines: KillLines, measures: Measures): Verdict {
+export function judge(killLines: KillLines, measures: Measures): Verdict {
 	const lines = MEASURES.map(({ measure, atLeast }): VerdictLine => {
 		const line = killLines[measure];
 		const actual = measures[measure];
@@ -216,7 +216,9 @@ function judge(killLines: KillLines, measures: Measures): Verdict {
  * broke the contract was still paid for. A timeout's cost is never known, so
  * it is left out. Null when an answered call did not report its cost.
  */
-function costPerCall(rows: RunRow[]): number | null {
+export function costPerCall(
+	rows: Pick<RunRow, "called" | "error" | "costUsd">[],
+): number | null {
 	const calls = rows.filter(
 		({ called, error, costUsd }) => called && (!error || costUsd !== undefined),
 	);
@@ -229,12 +231,12 @@ function costPerCall(rows: RunRow[]): number | null {
 	return total / calls.length;
 }
 
-function ratio(part: number, whole: number): number | null {
+export function ratio(part: number, whole: number): number | null {
 	return whole === 0 ? null : part / whole;
 }
 
 /** Nearest rank, as in the lab. */
-function percentile(values: number[], p: number): number | null {
+export function percentile(values: number[], p: number): number | null {
 	if (values.length === 0) return null;
 	const sorted = [...values].sort((a, b) => a - b);
 	const rank = Math.ceil((p / 100) * sorted.length) - 1;
