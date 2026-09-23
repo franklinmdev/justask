@@ -14,8 +14,14 @@ const vendors: Candidate<Vendor>[] = [
 		id: "northwind",
 		description: "Northwind Catering",
 		value: { name: "Northwind" },
+		names: ["Northwind"],
 	},
-	{ id: "acme", description: "Acme Office Supply", value: { name: "Acme" } },
+	{
+		id: "acme",
+		description: "Acme Office Supply",
+		value: { name: "Acme" },
+		names: ["Acme", "Blue Heron"],
+	},
 ];
 type Tag = "meals" | "travel" | "client";
 const tags: Candidate<Tag>[] = [
@@ -215,7 +221,7 @@ describe("ask: card", () => {
 		]);
 	});
 
-	it("offers sending and forwarding a record as not adding one", async () => {
+	it("offers sending, forwarding and setting a record to a new value as not adding one", async () => {
 		const fake = fakeProvider({ intent: answer(INTENT, "not_available") });
 
 		await ask({
@@ -230,7 +236,7 @@ describe("ask: card", () => {
 			intent?.labels.find(({ label }) => label === "not_available")
 				?.description,
 		).toBe(
-			"It is about a expense the person paid but does not add a new one: it changes, cancels, deletes, sends or forwards one, or asks a question",
+			"It is about a expense the person paid but does not add a new one: it changes, cancels, deletes, sends or forwards one, sets one to a new value, or asks a question",
 		);
 	});
 
@@ -381,6 +387,177 @@ describe("ask: card", () => {
 
 			expect(result.card.intent.command).toBeUndefined();
 			expect(result.card.value).not.toEqual({});
+		});
+	});
+
+	describe("a named pair (ADR 0010)", () => {
+		const joiners = { or: ["or", "o", "u"], and: ["and", "y"] };
+		const fill = (
+			request: string,
+			declared: { or: string[]; and: string[] } | null = joiners,
+		) =>
+			ask({
+				...base,
+				request,
+				provider: fakeProvider({
+					intent: answer(INTENT, "new_record", 0.99),
+					...confident,
+				}),
+				card: { ...expenseCard(), ...(declared && { joiners: declared }) },
+			});
+
+		it("holds the field when two of its items are joined by a joiner, whatever its pick, and names them as written", async () => {
+			const { card } = await fill("Northwind or Acme, $42 yesterday");
+
+			expect("vendor" in card.value).toBe(false);
+			expect(card.fields.vendor.pair).toEqual({
+				ids: ["northwind", "acme"],
+				text: "Northwind or Acme",
+			});
+			// Still asked, so every pick is reported.
+			expect(card.fields.vendor.pick).toEqual({
+				label: "northwind",
+				probability: 0.99,
+			});
+			// Only that field: the rest of the card fills.
+			expect(card.value).toEqual({
+				tags: ["meals"],
+				spent_on: "2026-09-21",
+				total: { value: 42, currency: "USD" },
+			});
+			expect(card.fields.spent_on).not.toHaveProperty("pair");
+		});
+
+		it.each([
+			["by a name of several words", "Northwind or Blue Heron, $42"],
+			["by a clear typo of a name", "Nortwind or Acme, $42"],
+			["by a typo of two letters in a long name", "Nortwnd o Acme, $42"],
+			["across a preposition, as Spanish repeats it", "de Acme o de Northwind"],
+			["across up to two words", "Northwind lunch or yesterday's Acme, $42"],
+			["on a joiner in capitals", "Northwind OR Acme, $42"],
+			["on a possessive", "Northwind's or Acme's invoice, $42"],
+			[
+				'with "and", on a field that takes one item',
+				"Northwind lunch and Acme pens, $42",
+			],
+			['with "y"', "almuerzo de Northwind y bolígrafos de Acme, $42"],
+		])("holds on a pair named %s", async (_, request) => {
+			const { card } = await fill(request);
+
+			expect(card.fields.vendor.pair?.ids).toHaveLength(2);
+			expect("vendor" in card.value).toBe(false);
+		});
+
+		it('holds a field where several items may apply on two of its ids joined by "or", never by "and"', async () => {
+			const choice = await fill("meals or travel? Northwind, $42");
+			const both = await fill("meals and travel, Northwind, $42");
+
+			expect(choice.card.fields.tags.pair).toEqual({
+				ids: ["meals", "travel"],
+				text: "meals or travel",
+			});
+			expect("tags" in choice.card.value).toBe(false);
+			expect(choice.card.value.vendor).toEqual({ name: "Northwind" });
+			expect(both.card.fields.tags).not.toHaveProperty("pair");
+			expect(both.card.value.tags).toEqual(["meals"]);
+		});
+
+		it("fills when the request names a third item of the field beside the pair, the one it is most likely about", async () => {
+			const globex = {
+				id: "globex",
+				description: "Globex Couriers",
+				value: { name: "Globex" },
+				names: ["Globex"],
+			};
+			const card = expenseCard();
+			const { card: result } = await ask({
+				...base,
+				request: "Globex courier to Northwind or Acme, $42",
+				provider: fakeProvider({
+					intent: answer(INTENT, "new_record", 0.99),
+					...confident,
+					vendor: answer(
+						["northwind", "acme", "globex", ...MISSING],
+						"globex",
+						0.99,
+					),
+					...tagAnswers(["client"], 0.99),
+				}),
+				card: {
+					...card,
+					joiners,
+					fields: {
+						...card.fields,
+						vendor: {
+							...card.fields.vendor,
+							shortlist: () => [...vendors, globex],
+						},
+					},
+				},
+			});
+
+			expect(result.fields.vendor).not.toHaveProperty("pair");
+			expect(result.value.vendor).toEqual({ name: "Globex" });
+			// Tags: "client" is a third tag beside "meals or travel".
+			const tags = await fill("meals or travel for a client, Northwind, $42");
+			expect(tags.card.fields.tags).not.toHaveProperty("pair");
+		});
+
+		it.each([
+			["one item named twice", "Acme or Blue Heron? Northwind, $42"],
+			["one word of a longer name", "Northwind or blue pens, $42"],
+			["a word no list holds", "Northwind with Acme, $42"],
+			[
+				"more than two words between them",
+				"Northwind lunch, or maybe that Acme, $42",
+			],
+			["a short name with a typo, read exactly", "Northwind or Acne, $42"],
+			["a typo of an id, which is read exactly", "Northwind or meels, $42"],
+			["a joiner inside another word", "Northwind ordered Acme paper, $42"],
+			["a joiner in a hyphenated word", "Northwind either-or Acme, $42"],
+		])("fills on %s", async (_, request) => {
+			const { card } = await fill(request);
+
+			expect(card.fields.vendor).not.toHaveProperty("pair");
+			expect(card.value.vendor).toEqual({ name: "Northwind" });
+		});
+
+		it("reads a joiner written with spaces around it", async () => {
+			const { card } = await fill("Northwind or Acme, $42", {
+				or: [" or "],
+				and: [],
+			});
+
+			expect(card.fields.vendor.pair?.ids).toEqual(["northwind", "acme"]);
+		});
+
+		it("fills as before when the card declares no joiners", async () => {
+			const { card } = await fill("Northwind or Acme, $42", null);
+
+			expect(card.fields.vendor).not.toHaveProperty("pair");
+			expect(card.value.vendor).toEqual({ name: "Northwind" });
+		});
+
+		it("names the pair on a field held when the provider fails, since the code found it", async () => {
+			const result = await ask({
+				...base,
+				request: "Northwind or Acme, $42",
+				provider: failingProvider(new Error("down")),
+				card: { ...expenseCard(), joiners },
+			});
+
+			expect(result.card.fields.vendor.pair?.ids).toEqual([
+				"northwind",
+				"acme",
+			]);
+		});
+
+		it.each([
+			[{ or: ["or", ""], and: [] }],
+			[{ or: ["or"], and: ["  "] }],
+			[{ or: ["or else"], and: [] }],
+		])("refuses %j: a joiner is one word", async (declared) => {
+			await expect(fill("a lunch", declared)).rejects.toThrow(/joiner/);
 		});
 	});
 

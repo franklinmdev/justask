@@ -69,7 +69,7 @@ The raw answers of one eval run, saved with the gate and kill lines it ran under
 _Avoid_: Results, output, trace
 
 **Held field**:
-A field left empty because its pick did not clear the gate, because the provider picked `not_mentioned` or `not_available`, because a parser marked its candidates ambiguous (such as "next Friday"), or, on a card, because the request is a command on an existing record. Empty looks the same whatever the reason.
+A field left empty because its pick did not clear the gate, because the provider picked `not_mentioned` or `not_available`, because a parser marked its candidates ambiguous (such as "next Friday"), or, on a card, because the request is a command on an existing record or names a pair of the field's items. Empty looks the same whatever the reason.
 _Avoid_: Abstained field, unknown, null field
 
 **Confirm**:
@@ -95,3 +95,7 @@ _Avoid_: Form fill, record card
 **Command**:
 A request that acts on a record that already exists ("quite el gasto de $75", "send the invoice to accounting"): a verb and a reference from the card's per-language lists. The card holds every field before the intent's gate, whatever the pick (ADR 0009).
 _Avoid_: Edit request, action
+
+**Named pair**:
+Two items of one catalog field that a request names with a joiner between them, and no third item of that field: "Tallyroot or Cloudberth", "Lindero y Serena". An "or" word holds any catalog field, an "and" word only a field that takes one item. The card holds that field before its gate, whatever the pick (ADR 0010).
+_Avoid_: Choice, either-or

@@ -278,6 +278,8 @@ export const spanish: Content = {
 				switch (reason.kind) {
 					case "not-a-record":
 						return "La solicitud no pide un gasto nuevo, así que el campo queda retenido con los demás.";
+					case "pair":
+						return `La solicitud nombra dos candidatos (“${reason.text}”), así que el código retuvo el campo sin importar la elección.`;
 					case "foreign-currency":
 						return `La elección nombra “${reason.mark}”, que no es la moneda local, así que el código retuvo el campo.`;
 					case "ambiguous":
@@ -299,52 +301,81 @@ export const spanish: Content = {
 			"tintaverde",
 			"Papelería Tintaverde",
 			"papel, tóner y artículos de oficina",
+			"Tintaverde",
 		),
 		vendor(
 			"cazuela",
 			"Banquetes Cazuela Azul",
 			"catering y almuerzos para la oficina",
+			"Cazuela Azul",
 		),
 		vendor(
 			"nubalia",
 			"Nubalia Hosting",
 			"alojamiento de páginas web y servidores en la nube",
+			"Nubalia",
 		),
-		vendor("brisamar", "Limpiezas Brisamar", "limpieza nocturna de oficinas"),
+		vendor(
+			"brisamar",
+			"Limpiezas Brisamar",
+			"limpieza nocturna de oficinas",
+			"Brisamar",
+		),
 		vendor(
 			"relucir",
 			"Relucir Servicios de Limpieza",
 			"limpieza de oficinas y de ventanas",
+			"Relucir",
 		),
 		vendor(
 			"letranueva",
 			"Imprenta Letranueva",
 			"tarjetas de presentación, volantes y letreros",
+			"Letranueva",
 		),
 		vendor(
 			"rumboclaro",
 			"Viajes Rumbo Claro",
 			"vuelos y hoteles para viajes de trabajo",
+			"Rumbo Claro",
 		),
-		vendor("cuentia", "Cuentia Software", "licencias de software contable"),
+		vendor(
+			"cuentia",
+			"Cuentia Software",
+			"licencias de software contable",
+			"Cuentia",
+		),
 		vendor(
 			"cafetal",
 			"Café del Cafetal Alto",
 			"café en grano y alquiler de cafeteras",
+			"Cafetal",
 		),
-		vendor("pieveloz", "Mensajería Pieveloz", "mensajería el mismo día"),
+		vendor(
+			"pieveloz",
+			"Mensajería Pieveloz",
+			"mensajería el mismo día",
+			"Pieveloz",
+		),
 		vendor(
 			"lindero",
 			"Bufete Lindero",
 			"revisión de contratos y asesoría legal",
+			"Lindero",
 		),
 		vendor(
 			"tecnoria",
 			"Tecnoria Soporte",
 			"reparación de computadoras y soporte técnico",
+			"Tecnoria",
 		),
-		vendor("serena", "Nómina Serena", "nómina y recursos humanos"),
-		vendor("coberplena", "Seguros Cobertura Plena", "seguros para empresas"),
+		vendor("serena", "Nómina Serena", "nómina y recursos humanos", "Serena"),
+		vendor(
+			"coberplena",
+			"Seguros Cobertura Plena",
+			"seguros para empresas",
+			"Cobertura Plena",
+		),
 	],
 	transactions: [
 		t("tintaverde", "FAC-2041", "2026-09-14", 412.5, "open"),
@@ -475,6 +506,8 @@ export const spanish: Content = {
 			"las facturas",
 		],
 	},
+	cardJoiners: { or: ["o", "u"], and: ["y", "e"] },
+
 	cardSuggestions: {
 		fills: [
 			"almuerzo con Cazuela Azul ayer, $86.40",

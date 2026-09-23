@@ -279,6 +279,8 @@ export const english: Content = {
 				switch (reason.kind) {
 					case "not-a-record":
 						return "The request asks for no new expense, so the field is held with the rest.";
+					case "pair":
+						return `The request names two candidates (“${reason.text}”), so the code held the field whatever the pick.`;
 					case "foreign-currency":
 						return `The pick names “${reason.mark}”, which is not the local currency, so the code held the field.`;
 					case "ambiguous":
@@ -300,40 +302,81 @@ export const english: Content = {
 			"papergrove",
 			"Papergrove Supplies",
 			"office paper, toner and stationery",
+			"Papergrove",
 		),
-		vendor("larkspur", "Larkspur Catering", "catering and office lunches"),
+		vendor(
+			"larkspur",
+			"Larkspur Catering",
+			"catering and office lunches",
+			"Larkspur",
+		),
 		vendor(
 			"cloudberth",
 			"Cloudberth Hosting",
 			"website hosting and cloud servers",
+			"Cloudberth",
 		),
-		vendor("brightmop", "Brightmop Cleaning", "nightly office cleaning"),
+		vendor(
+			"brightmop",
+			"Brightmop Cleaning",
+			"nightly office cleaning",
+			"Brightmop",
+		),
 		vendor(
 			"glasswell",
 			"Glasswell Janitorial",
 			"office cleaning and window washing",
+			"Glasswell",
 		),
-		vendor("inkhollow", "Inkhollow Print", "business cards, flyers and signs"),
+		vendor(
+			"inkhollow",
+			"Inkhollow Print",
+			"business cards, flyers and signs",
+			"Inkhollow",
+		),
 		vendor(
 			"farwander",
 			"Farwander Travel",
 			"flights and hotels for staff trips",
+			"Farwander",
 		),
-		vendor("tallyroot", "Tallyroot Software", "accounting software licenses"),
+		vendor(
+			"tallyroot",
+			"Tallyroot Software",
+			"accounting software licenses",
+			"Tallyroot",
+		),
 		vendor(
 			"beanhaven",
 			"Beanhaven Coffee",
 			"coffee beans and coffee machine rental",
+			"Beanhaven",
 		),
-		vendor("swiftlane", "Swiftlane Couriers", "same-day courier deliveries"),
+		vendor(
+			"swiftlane",
+			"Swiftlane Couriers",
+			"same-day courier deliveries",
+			"Swiftlane",
+		),
 		vendor(
 			"clausewood",
 			"Clausewood Legal",
 			"contract review and legal advice",
+			"Clausewood",
 		),
-		vendor("fixbright", "Fixbright IT", "laptop repair and IT support"),
-		vendor("paydale", "Paydale Payroll", "payroll and HR services"),
-		vendor("sureharbor", "Sureharbor Insurance", "business insurance"),
+		vendor(
+			"fixbright",
+			"Fixbright IT",
+			"laptop repair and IT support",
+			"Fixbright",
+		),
+		vendor("paydale", "Paydale Payroll", "payroll and HR services", "Paydale"),
+		vendor(
+			"sureharbor",
+			"Sureharbor Insurance",
+			"business insurance",
+			"Sureharbor",
+		),
 	],
 	transactions: [
 		t("papergrove", "INV-2041", "2026-09-14", 412.5, "open"),
@@ -434,6 +477,8 @@ export const english: Content = {
 			"the invoices",
 		],
 	},
+	cardJoiners: { or: ["or"], and: ["and"] },
+
 	cardSuggestions: {
 		fills: [
 			"lunch with Larkspur yesterday, $86.40",

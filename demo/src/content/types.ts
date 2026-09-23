@@ -7,6 +7,7 @@ import type {
 	CatalogField,
 	DateField,
 	DateRange,
+	Joiners,
 	SeveralCatalogField,
 } from "justask";
 
@@ -75,7 +76,8 @@ export type CardHeldReason =
 	| { kind: "not-a-record" }
 	| { kind: "foreign-currency"; mark: string }
 	| { kind: "ambiguous"; text: string }
-	| { kind: "period"; text: string };
+	| { kind: "period"; text: string }
+	| { kind: "pair"; text: string };
 
 /** Why the intent question let the fields fill, or held them all. */
 export type IntentReason =
@@ -288,18 +290,25 @@ export type Content = {
 	 * "quite" is a Spanish command and an English word.
 	 */
 	cardCommands: CardCommands;
+	/** The words that join two vendors or tags into a pair the card holds (ADR 0010). */
+	cardJoiners: Joiners;
 };
 
-/** A catalog row: the provider reads the description, never the value. */
+/**
+ * A catalog row: the provider reads the description, never the value. Its
+ * brand is the word or two a request names it by (ADR 0010).
+ */
 export function vendor(
 	id: string,
 	name: string,
 	supplies: string,
+	brand: string,
 ): Candidate<Vendor> {
 	return {
 		id,
 		description: `${name}, ${supplies}`,
 		value: { id, name, supplies },
+		names: [brand],
 	};
 }
 
