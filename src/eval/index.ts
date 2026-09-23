@@ -53,12 +53,12 @@ export {
 	type Probes,
 	type ProbeWindow,
 	probeMedian,
+	readProbes,
 } from "./probe.ts";
 export {
 	type Run,
 	type RunEvalInput,
 	type RunRow,
-	readProbes,
 	readRun,
 	runEval,
 } from "./run.ts";

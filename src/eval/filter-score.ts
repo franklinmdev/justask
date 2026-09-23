@@ -246,6 +246,7 @@ export function scoreFilterRun(
 	);
 
 	const retuned = names.some((name) => gates[name] !== run.gates[name]);
+	const window = probeWindow(run.probes);
 	return {
 		gates,
 		retuned,
@@ -264,8 +265,8 @@ export function scoreFilterRun(
 		fields,
 		costPerCallUsd: costPerCall(run.rows),
 		misses,
-		window: probeWindow(run.probes),
-		verdict: retuned ? null : judge(run.killLines, measures, run.probes),
+		window,
+		verdict: retuned ? null : judge(run.killLines, measures, window),
 	};
 }
 

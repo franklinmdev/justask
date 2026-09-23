@@ -19,10 +19,9 @@ const probability = (none: number | null, several: number | null) =>
  * pass waits on its latency line, measured again in a normal window.
  */
 function verdictLines(verdict: Verdict): string[] {
-	const failed = verdict.lines.some(({ pass, pending }) => !pass && !pending);
 	const outcome = verdict.pass
 		? "PASS"
-		: failed
+		: !verdict.latencyPending
 			? "FAIL"
 			: "LATENCY PENDING (slow window: the latency line is measured again in a normal one)";
 	return [
@@ -42,7 +41,11 @@ function verdictLines(verdict: Verdict): string[] {
 function windowLines(window: ProbeWindow | null): string[] {
 	if (!window) return [];
 	const { medianMs, baselineMs, slow } = window;
-	if (medianMs === null) return ["- Probes: every probe failed"];
+	if (medianMs === null) {
+		return [
+			`- Probes: every probe failed${baselineMs === null ? "" : " · slow window"}`,
+		];
+	}
 	const median = `- Probes: median ${number(medianMs)} ms`;
 	return [
 		baselineMs === null

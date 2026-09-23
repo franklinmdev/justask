@@ -38,7 +38,7 @@ export async function writeRunLog<H extends object, In, Out>(
 			rows.push(answered);
 			await file.write(`${JSON.stringify(answered)}\n`);
 		}
-		if (!probes || !before) return { ...started, rows };
+		if (!before) return { ...started, rows };
 		const after = await probes.send();
 		await file.write(`${JSON.stringify({ [PROBES_AFTER]: after })}\n`);
 		return {

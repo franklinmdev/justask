@@ -40,10 +40,12 @@ export type VerdictLine = {
 /**
  * Passes only when every line does. In a slow window the latency line is
  * pending, so the run cannot pass; its quality lines still decide a fail.
+ * `latencyPending` is true when they all pass: the verdict waits on the
+ * latency line, measured again in a normal window.
  */
 export type Verdict = {
 	pass: boolean;
-	slowWindow: boolean;
+	latencyPending: boolean;
 	lines: VerdictLine[];
 };
 
@@ -131,6 +133,7 @@ export function scoreRun(run: Run, { gate = run.gate } = {}): Report {
 		);
 
 	const retuned = gate !== run.gate;
+	const window = probeWindow(run.probes);
 	return {
 		gate,
 		retuned,
@@ -147,9 +150,9 @@ export function scoreRun(run: Run, { gate = run.gate } = {}): Report {
 		invented: invented.map(({ row }) => row.id),
 		leaked: leaked.map(({ row }) => row.id),
 		costPerCallUsd: costPerCall(run.rows),
-		window: probeWindow(run.probes),
+		window,
 		misses,
-		verdict: retuned ? null : judge(run.killLines, measures, run.probes),
+		verdict: retuned ? null : judge(run.killLines, measures, window),
 	};
 }
 
@@ -243,9 +246,9 @@ export function measuresOf(
 export function judge(
 	killLines: KillLines,
 	measures: Measures,
-	probes?: Run["probes"],
+	window: ProbeWindow | null = null,
 ): Verdict {
-	const slowWindow = probeWindow(probes)?.slow ?? false;
+	const slowWindow = window?.slow ?? false;
 	const lines = MEASURES.map(({ measure, atLeast }): VerdictLine => {
 		const line = killLines[measure];
 		const actual = measures[measure];
@@ -257,7 +260,12 @@ export function judge(
 		const pass = actual !== null && (atLeast ? actual >= line : actual <= line);
 		return { measure, line, atLeast, actual, pass };
 	});
-	return { pass: lines.every(({ pass }) => pass), slowWindow, lines };
+	return {
+		pass: lines.every(({ pass }) => pass),
+		latencyPending:
+			slowWindow && lines.every(({ pass, pending }) => pass || pending),
+		lines,
+	};
 }
 
 /**

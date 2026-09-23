@@ -24,7 +24,7 @@ export type RunRow = EvalRow & {
 /** A saved run: the gate and kill lines it was run under, and its raw rows. */
 export type Run = {
 	startedAt: string;
-	/** The provider\'s latency around the run (#65); absent from logs written before it. */
+	/** The provider's latency around the run (#65); absent from logs written before it. */
 	probes?: Probes;
 	gate: number;
 	killLines: KillLines;
@@ -112,12 +112,6 @@ async function runRow<T>(
 		...(costUsd !== undefined && { costUsd }),
 		...(error && { error: { kind: error.kind, message: error.message } }),
 	};
-}
-
-/** Reads the probes of a run log written by any flow's run; null for one saved before probes. */
-export async function readProbes(log: string): Promise<Probes | null> {
-	const { header } = await readRunLog(log);
-	return (header?.probes as Probes | undefined) ?? null;
 }
 
 /** Reads a run log written by `runEval`, to rescore or compare it with no provider call. */

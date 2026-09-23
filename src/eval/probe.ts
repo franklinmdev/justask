@@ -1,5 +1,6 @@
 import { answer } from "../ask.ts";
 import type { Provider, ProviderInput } from "../provider.ts";
+import { readRunLog } from "./log.ts";
 
 /**
  * A fixed request sent straight to the provider, a few times before a run's
@@ -121,6 +122,14 @@ export function probeWindow(probes: Probes | undefined): ProbeWindow | null {
 	return {
 		medianMs,
 		baselineMs,
-		slow: baselineMs !== null && medianMs !== null && medianMs > 2 * baselineMs,
+		// Every probe failing is no normal window either: the latency is measured again.
+		slow:
+			baselineMs !== null && (medianMs === null || medianMs > 2 * baselineMs),
 	};
+}
+
+/** Reads the probes of a run log written by any flow's run; null for one saved before probes. */
+export async function readProbes(log: string): Promise<Probes | null> {
+	const { header } = await readRunLog(log);
+	return (header?.probes as Probes | undefined) ?? null;
 }

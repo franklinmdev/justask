@@ -52,7 +52,7 @@ export type FilterRunRow = FilterEvalRow & {
 /** A saved filter run: each field's gate and the kill lines it ran under, and its raw rows. */
 export type FilterRun = {
 	startedAt: string;
-	/** The provider\'s latency around the run (#65); absent from logs written before it. */
+	/** The provider's latency around the run (#65); absent from logs written before it. */
 	probes?: Probes;
 	gates: Record<string, number>;
 	killLines: KillLines;

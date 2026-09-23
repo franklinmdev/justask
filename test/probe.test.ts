@@ -321,7 +321,7 @@ describe("a slow window", () => {
 		);
 		const normal = scoreRun(probedRun([200, 250, 300]));
 
-		expect(slow.verdict).toMatchObject({ pass: false, slowWindow: true });
+		expect(slow.verdict).toMatchObject({ pass: false, latencyPending: true });
 		expect(
 			slow.verdict?.lines.find(({ measure }) => measure === "p95Ms"),
 		).toMatchObject({
@@ -337,7 +337,11 @@ describe("a slow window", () => {
 		);
 
 		expect(formatReport(slowAndInvented)).toContain("## Verdict: FAIL");
-		expect(normal.verdict).toMatchObject({ pass: false, slowWindow: false });
+		expect(slowAndInvented.verdict?.latencyPending).toBe(false);
+		expect(normal.verdict).toMatchObject({
+			pass: false,
+			latencyPending: false,
+		});
 		expect(formatReport(normal)).toContain("## Verdict: FAIL");
 	});
 
@@ -350,9 +354,9 @@ describe("a slow window", () => {
 			baselineMs: null,
 			slow: false,
 		});
-		expect(unjudged.verdict?.slowWindow).toBe(false);
+		expect(unjudged.verdict?.latencyPending).toBe(false);
 		expect(scoreRun(old).window).toBeNull();
-		expect(scoreRun(old).verdict?.slowWindow).toBe(false);
+		expect(scoreRun(old).verdict?.latencyPending).toBe(false);
 	});
 
 	it("reads a timed out probe at its wait, and leaves a failed one out", () => {
@@ -367,6 +371,24 @@ describe("a slow window", () => {
 		};
 
 		expect(scoreRun(run).window?.medianMs).toBe(2_000);
+	});
+
+	it("is a run whose every probe failed, since no window was shown normal", () => {
+		const run = probedRun([200]);
+		run.probes = {
+			baselineMs: 250,
+			before: [{ latencyMs: 3, error: "provider" }],
+			after: [{ latencyMs: 4, error: "provider" }],
+		};
+
+		expect(scoreRun(run).window).toEqual({
+			medianMs: null,
+			baselineMs: 250,
+			slow: true,
+		});
+		expect(formatReport(scoreRun(run))).toContain(
+			"- Probes: every probe failed",
+		);
 	});
 
 	it("prints the window in the measures", () => {

@@ -54,7 +54,7 @@ export type CardRunRow = CardEvalRow & {
  */
 export type CardRun = {
 	startedAt: string;
-	/** The provider\'s latency around the run (#65); absent from logs written before it. */
+	/** The provider's latency around the run (#65); absent from logs written before it. */
 	probes?: Probes;
 	gates: Record<string, number>;
 	killLines: KillLines;
