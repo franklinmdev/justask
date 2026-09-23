@@ -303,6 +303,42 @@ describe("ask: card", () => {
 			expect(card.value).not.toEqual({});
 		});
 
+		it("never reads the verb from inside the reference it pairs with", async () => {
+			const commands = {
+				verbs: ["email"],
+				references: ["the invoice"],
+			};
+			const result = await ask({
+				...base,
+				request: "paid the email hosting invoice from Northwind, $12",
+				provider: fakeProvider({
+					intent: answer(INTENT, "new_record", 0.99),
+					...confident,
+				}),
+				card: { ...expenseCard(), commands },
+			});
+
+			expect(result.card.intent.command).toBeUndefined();
+			expect(result.card.value).not.toEqual({});
+		});
+
+		it("refuses a blank verb or reference, which would match anywhere", async () => {
+			const call = (commands: { verbs: string[]; references: string[] }) =>
+				ask({
+					...base,
+					request: "a lunch",
+					provider: fakeProvider({}),
+					card: { ...expenseCard(), commands },
+				});
+
+			await expect(
+				call({ verbs: ["", "delete"], references: ["the expense"] }),
+			).rejects.toThrow(/blank/);
+			await expect(
+				call({ verbs: ["delete"], references: ["  "] }),
+			).rejects.toThrow(/blank/);
+		});
+
 		it("fills as before when the card declares no commands", async () => {
 			const result = await ask({
 				...base,

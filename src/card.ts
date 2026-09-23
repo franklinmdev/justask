@@ -194,32 +194,54 @@ export function findCommand(
 	commands: CardCommands | undefined,
 ): CardCommand | undefined {
 	if (!commands) return undefined;
-	const verb = firstWords(request, commands.verbs);
-	const reference = firstWords(request, commands.references);
-	return verb && reference ? { verb, reference } : undefined;
+	const text = request.normalize("NFC");
+	const reference = findPhrase(text, commands.references);
+	if (!reference) return undefined;
+	// The verb never comes from inside the reference: "the email hosting
+	// invoice" is a reference, not "email" and "the invoice".
+	const outside =
+		text.slice(0, reference.index) +
+		" ".repeat(reference.text.length) +
+		text.slice(reference.index + reference.text.length);
+	const verb = findPhrase(outside, commands.verbs);
+	return verb ? { verb: verb.text, reference: reference.text } : undefined;
+}
+
+/** Refuses a blank verb or reference, which would match between any two words. */
+export function checkCommands(commands: CardCommands | undefined): void {
+	if (!commands) return;
+	for (const phrase of [...commands.verbs, ...commands.references]) {
+		if (!phrase.trim()) {
+			throw new TypeError(
+				"justask: the card's commands hold a blank verb or reference",
+			);
+		}
+	}
 }
 
 /**
- * The first of the phrases in the text as whole words, ignoring case and
- * spacing, never accents. Up to two words may sit between a phrase's first
- * word and the rest: "the $58 Beanhaven expense" is "the expense".
+ * The first of the phrases, in the phrases' order, found in the text as
+ * whole words, ignoring case and spacing, never accents; with where it
+ * starts. Up to two words may sit between a phrase's first word and the
+ * rest: "the $58 Beanhaven expense" is "the expense".
  */
-function firstWords(text: string, phrases: string[]): string | undefined {
-	const normal = text.normalize("NFC");
+function findPhrase(
+	text: string,
+	phrases: string[],
+): { text: string; index: number } | undefined {
 	for (const phrase of phrases) {
-		const words = phrase
+		const [first, ...rest] = phrase
 			.normalize("NFC")
 			.trim()
 			.split(/\s+/)
 			.map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-		const [first, ...rest] = words;
 		const tail =
 			rest.length > 0 ? `(?:\\s+\\S+){0,2}?\\s+${rest.join("\\s+")}` : "";
 		const found = new RegExp(
 			`(?<![\\p{L}\\p{N}-])${first}${tail}(?![\\p{L}\\p{N}-])`,
 			"iu",
-		).exec(normal);
-		if (found) return found[0];
+		).exec(text);
+		if (found) return { text: found[0], index: found.index };
 	}
 	return undefined;
 }

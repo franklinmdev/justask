@@ -5,6 +5,7 @@ import {
 	type CardResult,
 	cardPlan,
 	cardQuestionIds,
+	checkCommands,
 	findCommand,
 	INTENT,
 	intentQuestion,
@@ -264,6 +265,7 @@ async function askCard<F extends CardFields>({
 	card,
 }: AskCardInput<F>): Promise<AskCardResult<F>> {
 	checkGate(card.gate, "the card's gate");
+	checkCommands(card.commands);
 	const names = Object.keys(card.fields);
 	const field = (name: string) => card.fields[name] as CardFields[string];
 	for (const name of names) {
