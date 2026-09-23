@@ -9,14 +9,17 @@ const probability = (none: number | null) =>
 /**
  * A report as Markdown: the verdict first when there is one, then the
  * measures, the misses and, given a second run, the flips against the first.
+ * A second run's report has no verdict: the first run gives it.
  */
 export function formatReport(report: Report, flips?: Flip[]): string {
 	const { counts, measures } = report;
-	const lines = [
-		`# Eval report at gate ${report.gate}${report.retuned ? " (retuned after the run: no verdict)" : ""}`,
-		"",
-	];
-	if (report.verdict) {
+	const note = flips
+		? " (second run, no verdict: the first run keeps it)"
+		: report.retuned
+			? " (retuned after the run: no verdict)"
+			: "";
+	const lines = [`# Eval report at gate ${report.gate}${note}`, ""];
+	if (report.verdict && !flips) {
 		lines.push(
 			`## Verdict: ${report.verdict.pass ? "PASS" : "FAIL"}`,
 			"",

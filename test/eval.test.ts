@@ -552,4 +552,16 @@ describe("compareRuns", () => {
 			"| crossed | request crossed | acme, none 0.45 | held, none 0.55 |",
 		);
 	});
+
+	it("gives a second run no verdict of its own, since the first run keeps it", () => {
+		const second = savedRun([
+			row({ id: "crossed", kind: "item", expected: "acme", none: 0.55 }),
+		]);
+
+		const text = formatReport(scoreRun(second), compareRuns(first, second));
+
+		expect(text).not.toContain("Verdict:");
+		expect(text).not.toContain("| FAIL |");
+		expect(text).toContain("no verdict: the first run keeps it");
+	});
 });

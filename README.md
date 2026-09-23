@@ -142,7 +142,7 @@ The report gives exact (filled items that are the expected one), coverage (item 
 The saved log is enough for everything else, with no provider call:
 
 - `scoreRun(await readRun(log), { gate: 0.3 })` rescores at another gate. A gate chosen after seeing the run gives no verdict, because it would be judged on the rows it was tuned on.
-- `compareRuns(first, second)` lists only the rows whose item flipped in a second run of the same set. The verdict stays with the first run; `formatReport(scoreRun(second), flips)` prints both.
+- `compareRuns(first, second)` lists only the rows whose item flipped in a second run of the same set. The verdict stays with the first run; `formatReport(scoreRun(second), flips)` prints the second run's measures and its flips, with no verdict of its own.
 
 Keep a separate dev set for tuning descriptions and shortlists, and never let it decide a verdict.
 
