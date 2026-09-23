@@ -250,6 +250,34 @@ describe("ask: search", () => {
 		expect(seen).toEqual(["invoices from Acme"]);
 	});
 
+	it.each([0, 1, 2, Number.NaN])(
+		"rejects a search gate of %s before any shortlist or provider call",
+		async (gate) => {
+			const provider = fakeProvider({});
+			let shortlisted = false;
+
+			await expect(
+				ask({
+					...base,
+					provider,
+					search: {
+						...vendorSearch(gate),
+						shortlist: () => {
+							shortlisted = true;
+							return [acme];
+						},
+					},
+				}),
+			).rejects.toThrow(
+				new TypeError(
+					`justask: the search's gate must be a number strictly between 0 and 1, not ${gate}`,
+				),
+			);
+			expect(shortlisted).toBe(false);
+			expect(provider.calls).toHaveLength(0);
+		},
+	);
+
 	it.each([
 		["a candidate id is none", [{ ...acme, id: "none" }]],
 		["two candidates share an id", [acme, { ...northwind, id: "acme" }]],

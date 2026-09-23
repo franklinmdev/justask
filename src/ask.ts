@@ -1,3 +1,13 @@
+import {
+	catalogQuestion,
+	type FieldResult,
+	type Fields,
+	type Filter,
+	type FilterResult,
+	gateField,
+	MISSING,
+} from "./filter.ts";
+import { checkGate } from "./gate.ts";
 import type { Pick } from "./pick.ts";
 import type {
 	Facts,
@@ -10,20 +20,24 @@ import {
 	type Candidate,
 	checkShortlist,
 	gateSearch,
+	NONE,
 	type Search,
 	searchQuestion,
 } from "./search.ts";
 
 export type { Pick } from "./pick.ts";
 
-export type AskInput<T> = {
+type AskBase = {
 	request: string;
 	facts: Facts;
 	provider: Provider;
 	/** How long the provider call may take before everything is held. No default. */
 	timeoutMs: number;
-	search: Search<T>;
 };
+
+export type AskInput<T> = AskBase & { search: Search<T> };
+
+export type AskFilterInput<F extends Fields> = AskBase & { filter: Filter<F> };
 
 export type SearchResult<T> = {
 	/** The picked candidate's value, or null when held. */
@@ -46,23 +60,43 @@ export type AskResult<T> = {
 	error?: AskError;
 };
 
+export type AskFilterResult<F extends Fields> = {
+	filter: FilterResult<F>;
+	error?: AskError;
+};
+
 const SEARCH = "search";
 
 /**
- * Resolves a request to one item of the host app's catalog, or to none: code
- * shortlists the candidates, the provider picks in one call, code builds the
- * result (ADR 0002). The item fills when a candidate wins outright and none
- * stays below the gate. A failed or late provider holds everything; no retries.
+ * Resolves a request through the host app's own state: code finds the
+ * candidates, the provider picks in one call, code builds the result (ADR
+ * 0002). A search resolves to one item or none; a filter to the filter object
+ * its table understands. A failed or late provider holds everything; no retries.
  */
-export async function ask<T>({
+export function ask<T>(input: AskInput<T>): Promise<AskResult<T>>;
+export function ask<F extends Fields>(
+	input: AskFilterInput<F>,
+): Promise<AskFilterResult<F>>;
+export function ask(
+	input: AskInput<unknown> | AskFilterInput<Fields>,
+): Promise<AskResult<unknown> | AskFilterResult<Fields>> {
+	return "filter" in input ? askFilter(input) : askSearch(input);
+}
+
+/**
+ * The item fills when a candidate wins outright and none stays below the gate
+ * (ADR 0005).
+ */
+async function askSearch<T>({
 	request,
 	facts,
 	provider,
 	timeoutMs,
 	search,
 }: AskInput<T>): Promise<AskResult<T>> {
+	checkGate(search.gate, "the search's gate");
 	const candidates = await search.shortlist(request);
-	checkShortlist(candidates);
+	checkShortlist(candidates, [NONE]);
 	const held: SearchResult<T> = {
 		item: null,
 		candidates,
@@ -91,6 +125,69 @@ export async function ask<T>({
 			probabilities,
 		},
 	};
+}
+
+/**
+ * One question per field, all in one call. A field fills when its pick is a
+ * candidate that clears the field's own gate; a field with no candidates is
+ * held without a question, and none at all means no call.
+ */
+async function askFilter<F extends Fields>({
+	request,
+	facts,
+	provider,
+	timeoutMs,
+	filter,
+}: AskFilterInput<F>): Promise<AskFilterResult<F>> {
+	const names = Object.keys(filter.fields);
+	for (const name of names) {
+		const { gate } = filter.fields[name] as Fields[string];
+		checkGate(gate, `the gate of field "${name}"`);
+	}
+	const fields: Record<string, FieldResult<unknown>> = {};
+	await Promise.all(
+		names.map(async (name) => {
+			const field = filter.fields[name] as Fields[string];
+			const candidates = await field.shortlist(request);
+			checkShortlist(candidates, MISSING);
+			fields[name] = {
+				candidates,
+				pick: null,
+				probabilities: {},
+				gate: field.gate,
+			};
+		}),
+	);
+	const held = () => ({ value: {}, fields }) as FilterResult<F>;
+
+	const questions = names.flatMap((name) => {
+		const { candidates = [] } = fields[name] ?? {};
+		const field = filter.fields[name] as Fields[string];
+		return candidates.length > 0
+			? [catalogQuestion(name, filter, field, candidates)]
+			: [];
+	});
+	if (questions.length === 0) return { filter: held() };
+
+	const outcome = await answer(
+		provider,
+		{ request, facts, questions },
+		timeoutMs,
+	);
+	if ("error" in outcome) return { filter: held(), error: outcome.error };
+
+	const value: Record<string, unknown> = {};
+	for (const { id } of questions) {
+		const result = fields[id] as FieldResult<unknown>;
+		const probabilities = outcome.answer[id] ?? {};
+		const { pick, filled } = gateField(probabilities, result.gate);
+		const winner = result.candidates.find(
+			(candidate) => candidate.id === filled,
+		);
+		fields[id] = { ...result, pick, probabilities };
+		if (winner) value[id] = winner.value;
+	}
+	return { filter: { value, fields } as FilterResult<F> };
 }
 
 async function answer(

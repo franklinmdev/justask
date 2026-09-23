@@ -1,11 +1,23 @@
 export {
 	type AskError,
+	type AskFilterInput,
+	type AskFilterResult,
 	type AskInput,
 	type AskResult,
 	ask,
 	type Pick,
 	type SearchResult,
 } from "./ask.ts";
+export type {
+	CatalogField,
+	Field,
+	FieldResult,
+	Fields,
+	FieldValue,
+	Filter,
+	FilterResult,
+	FilterValue,
+} from "./filter.ts";
 export { fuzzyShortlist } from "./fuzzy-shortlist.ts";
 export {
 	createSearchHandler,
