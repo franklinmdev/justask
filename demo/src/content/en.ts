@@ -35,14 +35,18 @@ export const english: Content = {
 		filled: "Filled",
 		held: "Held",
 		failed: "Failed",
-		filledBecause: (name, none, gate) =>
-			`${name} won, and none (${none}) stayed below the gate (${gate}).`,
+		filledBecause: (name, none, several, gate) =>
+			`${name} won, and none (${none}) and several (${several}) stayed below the gate (${gate}).`,
 		heldBecause: (reason) => {
 			switch (reason.kind) {
 				case "none-reached-gate":
 					return `none (${reason.none}) reached the gate (${reason.gate}), so nothing is shown.`;
+				case "several-reached-gate":
+					return `several (${reason.several}) reached the gate (${reason.gate}), so nothing is shown.`;
 				case "none-picked":
 					return `The provider picked none (${reason.none}), so nothing is shown.`;
+				case "several-picked":
+					return `The provider picked several (${reason.several}), so nothing is shown.`;
 				case "tie":
 					return "Two candidates tied for first place, so nothing is shown.";
 				case "no-candidates":
@@ -59,7 +63,7 @@ export const english: Content = {
 		candidate: "Candidate",
 		probability: "Probability",
 		pick: "pick",
-		gate: "Gate on none",
+		gate: "Gate on none and several",
 		shortlistLabel: "Shortlist",
 		shortlist: (count, catalog) => `${count} of ${catalog} vendors`,
 		roundTrip: "Round trip",

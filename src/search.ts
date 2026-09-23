@@ -19,14 +19,19 @@ export type Search<T> = {
 	/** What the searched item means in the host app, used in the question. */
 	description: string;
 	/**
-	 * The probability of `none` at which the item is held (ADR 0005). The item
-	 * fills only while `none` stays below it. No default (ADR 0003).
+	 * The probability of `none` or `several` at which the item is held (ADR
+	 * 0005, 0007). The item fills only while both stay below it. No default
+	 * (ADR 0003).
 	 */
 	gate: number;
 	shortlist: Shortlist<T>;
 };
 
 export const NONE = "none";
+export const SEVERAL = "several";
+
+/** The search question's own labels, which no candidate may use as its id. */
+export const SEARCH_LABELS = [NONE, SEVERAL] as const;
 
 /** Throws on a candidate id that repeats or takes one of the question's own labels. */
 export function checkShortlist(
@@ -51,9 +56,10 @@ export function checkShortlist(
 
 /**
  * Reads a search's answer through its gate: the id of the candidate that
- * fills the item, or null when the item is held. The gate reads none, not the
- * winner (ADR 0005): near-duplicate candidates split the winner's probability,
- * while none stays low whenever one fits. A none pick or a tie still holds.
+ * fills the item, or null when the item is held. The gate reads none and
+ * several, not the winner (ADR 0005, 0007): near-duplicate candidates split the
+ * winner's probability, while none stays low whenever one fits and several
+ * rises when more than one does. A none or several pick, or a tie, still holds.
  */
 export function gateSearch(
 	probabilities: Probabilities,
@@ -61,7 +67,15 @@ export function gateSearch(
 ): { pick: Pick | null; filled: string | null } {
 	const pick = readPick(probabilities);
 	const none = probabilities[NONE] ?? 1;
-	const filled = pick && pick.label !== NONE && none < gate ? pick.label : null;
+	// A run log saved before ADR 0007 has no several; it reads as never raised.
+	const several = probabilities[SEVERAL] ?? 0;
+	const filled =
+		pick &&
+		!(SEARCH_LABELS as readonly string[]).includes(pick.label) &&
+		none < gate &&
+		several < gate
+			? pick.label
+			: null;
 	return { pick, filled };
 }
 
@@ -72,13 +86,17 @@ export function searchQuestion(
 ): Question {
 	return {
 		id,
-		instruction: `The request points at one item: ${search.description}. Which candidate is it? Pick "${NONE}" when no candidate fits the request.`,
+		instruction: `The request points at one item: ${search.description}. Which candidate is it? Pick "${NONE}" when no candidate fits the request, and "${SEVERAL}" when more than one candidate fits it.`,
 		labels: [
 			...candidates.map(({ id, description }) => ({
 				label: id,
 				description,
 			})),
 			{ label: NONE, description: "None of these candidates fits the request" },
+			{
+				label: SEVERAL,
+				description: "More than one of these candidates fits the request",
+			},
 		],
 	};
 }

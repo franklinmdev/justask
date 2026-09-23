@@ -3,8 +3,11 @@ import type { Flip, Report, Side } from "./score.ts";
 const number = (value: number | null) =>
 	value === null ? "not measured" : String(Number(value.toFixed(3)));
 const cell = (text: string) => text.replace(/\|/g, "\\|");
-const probability = (none: number | null) =>
-	none === null ? "no answer" : `none ${none.toFixed(2)}`;
+/** A log saved before ADR 0007 has no several, so it is left out. */
+const probability = (none: number | null, several: number | null) =>
+	none === null
+		? "no answer"
+		: `none ${none.toFixed(2)}${several === null ? "" : `, several ${several.toFixed(2)}`}`;
 
 /**
  * A report as Markdown: the verdict first when there is one, then the
@@ -49,18 +52,18 @@ export function formatReport(report: Report, flips?: Flip[]): string {
 			"",
 			"Filled and wrong first, surest first; then held and wrong.",
 			"",
-			"| Row | Request | Expected | Got | none | Whose |",
-			"|---|---|---|---|---|---|",
+			"| Row | Request | Expected | Got | none | several | Whose |",
+			"|---|---|---|---|---|---|---|",
 			...report.misses.map(
 				(miss) =>
-					`| ${miss.id} | ${cell(miss.request)} | ${miss.expected ?? miss.kind} | ${miss.item ?? "held"} | ${number(miss.none)} | ${miss.blame} |`,
+					`| ${miss.id} | ${cell(miss.request)} | ${miss.expected ?? miss.kind} | ${miss.item ?? "held"} | ${number(miss.none)} | ${miss.several === null ? "" : number(miss.several)} | ${miss.blame} |`,
 			),
 			"",
 		);
 	}
 	if (flips) {
-		const side = ({ item, none }: Side) =>
-			`${item ?? "held"}, ${probability(none)}`;
+		const side = ({ item, none, several }: Side) =>
+			`${item ?? "held"}, ${probability(none, several)}`;
 		lines.push(
 			"## Flips",
 			"",

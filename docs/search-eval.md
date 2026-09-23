@@ -179,3 +179,23 @@ No flip in either language. The same rows filled and held; the failure is stable
 
 - Run 1: `demo/eval/runs/search-en-round2-1.jsonl`, `demo/eval/runs/search-es-round2-1.jsonl`
 - Run 2: `demo/eval/runs/search-en-round2-2.jsonl`, `demo/eval/runs/search-es-round2-2.jsonl`
+
+## Several, on the dev sets only
+
+After round 2 the owner added a `several` label beside `none` (ADR 0007): the item holds when either reaches the gate. It was measured on the dev sets only, which never decide a verdict; a fresh, frozen round 3 will. Rounds 1 and 2 above are unchanged, and their logs, which have no `several`, rescore exactly as recorded (`test/demo-eval.test.ts`).
+
+Dev runs of 2026-09-22 with `jev-1.13.0`, gate 0.15, shortlist 14, the same six kill lines and fixed today, logged as dev run 2 beside round 1's dev run 1, which had no `several`:
+
+| Dev set at 0.15 | coverage | exact | invented | held ambiguous | p95 | cost per call |
+|---|---|---|---|---|---|---|
+| English, before (dev run 1, rescored) | 7 of 8 | 1 | 0 | 2 of 2 | | |
+| English, with `several` (dev run 2) | 8 of 8 | 1 | 0 | 2 of 2 | 514 ms | $0.0000315 |
+| Spanish, before (dev run 1, rescored) | 8 of 8 | 1 | 0 | 2 of 2 | | |
+| Spanish, with `several` (dev run 2) | 8 of 8 | 1 | 0 | 2 of 2 | 423 ms | $0.0000337 |
+
+- **`several` rose where more than one vendor fits and stayed flat where one does.** On the four ambiguous dev rows it read 0.84 to 0.98 (`the cleaning bill` 0.85, `the hosting or the software invoice` 0.98, `la factura de la limpieza` 0.84, `el hosting o el programa contable` 0.95); on all 16 item rows, 0.02 or less.
+- **`none` fell where it was carrying the doubt.** On the ambiguous rows it went from 0.23 to 0.73 before to 0.01 to 0.08 with `several`; on the items it stayed low or dropped (`the attorneys` 0.17 to 0.08, which now fills at 0.15).
+- **What the dev sets cannot show.** They hold two ambiguous rows per language, both of the easier shapes (the cleaning near-duplicate, two named vendors). The misses that failed rounds 1 and 2 include confident single picks (`el trabajo de impresión`, Letranueva at 0.96), which no dev row resembles. Only a fresh round can say whether `several` catches those.
+- **Cost:** about 5% more per call than before (one more label to read).
+
+Run logs: `demo/eval/runs/search-en-dev-2.jsonl`, `demo/eval/runs/search-es-dev-2.jsonl`.

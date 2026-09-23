@@ -61,7 +61,7 @@ It answers:
 
 The handler sends data to two places:
 
-- **To the provider**, in one call: the request text, the facts (today plus every fact you configure), one question built from the search's `description` (a fixed instruction around it, and a `none` label beside the candidates), and the `id` and `description` of every shortlist candidate. The provider adapter adds what its service needs to authenticate, such as the key. A candidate's `value` is never sent to the provider, so write each `description` knowing a third party reads it.
+- **To the provider**, in one call: the request text, the facts (today plus every fact you configure), one question built from the search's `description` (a fixed instruction around it, and `none` and `several` labels beside the candidates), and the `id` and `description` of every shortlist candidate. The provider adapter adds what its service needs to authenticate, such as the key. A candidate's `value` is never sent to the provider, so write each `description` knowing a third party reads it.
 - **To the browser**, in the response: every shortlist candidate in full (`id`, `description` and `value`, not only the picked one), the pick, every label's probability and the gate. Candidate values travel as JSON, so keep them plain data, and leave out of `value` anything the person may not see.
 
 The provider's key, the provider's own error messages and the error's cause never reach the browser.
@@ -207,7 +207,7 @@ Keep a separate dev set for tuning descriptions and shortlists, and never let it
 
 ## Demo
 
-A local demo shows a fictional invoicing app, in English or Spanish, one page per flow, each beside a state panel that shows what happened. The search page finds a vendor: the shortlist, every label's probability, the pick, the gate on `none`, and why the item filled or was held. The filter page turns a request into the transactions table's filters (vendor, status, date and amount), applied only when the person confirms; its panel shows each field's questions, picks and gate, and why it filled or was held. Each page's suggested requests include ones that hold and ones with nothing to do.
+A local demo shows a fictional invoicing app, in English or Spanish, one page per flow, each beside a state panel that shows what happened. The search page finds a vendor: the shortlist, every label's probability, the pick, the gate on `none` and `several`, and why the item filled or was held. The filter page turns a request into the transactions table's filters (vendor, status, date and amount), applied only when the person confirms; its panel shows each field's questions, picks and gate, and why it filled or was held. Each page's suggested requests include ones that hold and ones with nothing to do.
 
 ```sh
 cp .env.example .env   # then set TYPESAFE_API_KEY

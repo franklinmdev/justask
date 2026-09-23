@@ -7,13 +7,14 @@ import type { Trace } from "./trace.ts";
 
 type Verdict =
 	| { kind: "idle" }
-	| { kind: "filled"; name: string; none: number }
+	| { kind: "filled"; name: string; none: number; several: number }
 	| { kind: "held"; reason: HeldReason }
 	| { kind: "failed"; reason: HeldReason };
 
 /**
- * Reads the last answer the way the search gate does (ADR 0005): the item
- * fills only when a candidate wins outright and none stays below the gate.
+ * Reads the last answer the way the search gate does (ADR 0005, 0007): the
+ * item fills only when a candidate wins outright and none and several stay
+ * below the gate.
  */
 function verdictOf(
 	search: UseSearch<Vendor>,
@@ -26,7 +27,10 @@ function verdictOf(
 		return { kind: "held", reason: { kind: "no-candidates" } };
 	}
 	const none = result.probabilities.none ?? 1;
-	if (result.item) return { kind: "filled", name: result.item.name, none };
+	const several = result.probabilities.several ?? 0;
+	if (result.item) {
+		return { kind: "filled", name: result.item.name, none, several };
+	}
 	if (!result.pick) return { kind: "held", reason: { kind: "tie" } };
 	if (none >= result.gate) {
 		return {
@@ -38,11 +42,29 @@ function verdictOf(
 			},
 		};
 	}
-	// Below the gate, a none pick still holds, like a tie (ADR 0005).
-	return {
-		kind: "held",
-		reason: { kind: "none-picked", none: format.probability(none) },
-	};
+	if (several >= result.gate) {
+		return {
+			kind: "held",
+			reason: {
+				kind: "several-reached-gate",
+				several: format.probability(several),
+				gate: format.probability(result.gate),
+			},
+		};
+	}
+	// Below the gate, a none or several pick still holds, like a tie (ADR 0005, 0007).
+	return result.pick.label === "several"
+		? {
+				kind: "held",
+				reason: {
+					kind: "several-picked",
+					several: format.probability(several),
+				},
+			}
+		: {
+				kind: "held",
+				reason: { kind: "none-picked", none: format.probability(none) },
+			};
 }
 
 export function StatePanel({
@@ -89,6 +111,7 @@ export function StatePanel({
 							? copy.filledBecause(
 									verdict.name,
 									format.probability(verdict.none),
+									format.probability(verdict.several),
 									format.probability(result?.gate ?? 0),
 								)
 							: copy.heldBecause(verdict.reason)}
@@ -182,20 +205,23 @@ function Candidates({
 				})}
 			</tbody>
 			<tbody className="none-row">
-				<tr data-picked={result.pick?.label === "none" || undefined}>
-					<th scope="row">
-						<span className="data">none</span>
-						{result.pick?.label === "none" && (
-							<span className="pick">{copy.pick}</span>
-						)}
-					</th>
-					<td>
-						<div className="probability">
-							<Bar value={probability("none")} gate={result.gate} />
-							<span className="data">{figure("none")}</span>
-						</div>
-					</td>
-				</tr>
+				{["none", "several"].map((label) => {
+					const picked = result.pick?.label === label;
+					return (
+						<tr key={label} data-picked={picked || undefined}>
+							<th scope="row">
+								<span className="data">{label}</span>
+								{picked && <span className="pick">{copy.pick}</span>}
+							</th>
+							<td>
+								<div className="probability">
+									<Bar value={probability(label)} gate={result.gate} />
+									<span className="data">{figure(label)}</span>
+								</div>
+							</td>
+						</tr>
+					);
+				})}
 			</tbody>
 		</table>
 	);

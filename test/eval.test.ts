@@ -131,9 +131,13 @@ const search = {
 };
 
 const answersByRequest: Record<string, FakeAnswers> = {
-	"invoices from Acme": { search: { acme: 0.9, northwind: 0.08, none: 0.02 } },
-	"catering bills": { search: { acme: 0.1, northwind: 0.5, none: 0.4 } },
-	hola: { search: { acme: 0.05, northwind: 0.05, none: 0.9 } },
+	"invoices from Acme": {
+		search: { acme: 0.9, northwind: 0.08, none: 0.02, several: 0 },
+	},
+	"catering bills": {
+		search: { acme: 0.1, northwind: 0.5, none: 0.4, several: 0 },
+	},
+	hola: { search: { acme: 0.05, northwind: 0.05, none: 0.9, several: 0 } },
 };
 
 describe("runEval", () => {
@@ -216,7 +220,7 @@ describe("runEval", () => {
 				{ id: "acme", description: "Acme Supplies" },
 				{ id: "northwind", description: "Northwind" },
 			],
-			probabilities: { acme: 0.9, northwind: 0.08, none: 0.02 },
+			probabilities: { acme: 0.9, northwind: 0.08, none: 0.02, several: 0 },
 			called: true,
 			costUsd: 0.0001,
 		});
@@ -297,26 +301,33 @@ describe("runEval", () => {
 /**
  * A hand-written row of a saved run, answered unless `error` is given: `pick`
  * wins (the expected item by default) and `none` holds its probability.
+ * `several` is left out unless given, as in a log saved before ADR 0007.
  */
 function row(
 	fields: Pick<EvalRow, "id" | "kind"> &
 		Partial<Omit<RunRow, "id" | "kind">> & {
 			none?: number;
+			several?: number;
 			pick?: string;
 			priced?: boolean;
 		},
 ): RunRow {
-	const { none = 0.02, pick, priced = true, ...rest } = fields;
+	const { none = 0.02, several, pick, priced = true, ...rest } = fields;
 	const winner = pick ?? rest.expected ?? "acme";
+	const share = 1 - none - (several ?? 0) - 0.01;
+	const labels = {
+		none,
+		...(several !== undefined && { several }),
+	};
 	const probabilities =
 		rest.error || rest.called === false
 			? {}
-			: winner === "none"
-				? { acme: 0.05, northwind: 0.05, none }
+			: winner === "none" || winner === "several"
+				? { acme: 0.05, northwind: 0.05, ...labels }
 				: {
-						acme: winner === "acme" ? 1 - none - 0.01 : 0.01,
-						northwind: winner === "northwind" ? 1 - none - 0.01 : 0.01,
-						none,
+						acme: winner === "acme" ? share : 0.01,
+						northwind: winner === "northwind" ? share : 0.01,
+						...labels,
 					};
 	return {
 		request: `request ${fields.id}`,
@@ -526,14 +537,14 @@ describe("compareRuns", () => {
 			{
 				id: "crossed",
 				request: "request crossed",
-				before: { item: "acme", none: 0.45, filled: true },
-				after: { item: null, none: 0.55, filled: false },
+				before: { item: "acme", none: 0.45, several: null, filled: true },
+				after: { item: null, none: 0.55, several: null, filled: false },
 			},
 			{
 				id: "changed",
 				request: "request changed",
-				before: { item: "acme", none: 0.02, filled: true },
-				after: { item: "northwind", none: 0.02, filled: true },
+				before: { item: "acme", none: 0.02, several: null, filled: true },
+				after: { item: "northwind", none: 0.02, several: null, filled: true },
 			},
 		]);
 	});
@@ -565,5 +576,64 @@ describe("compareRuns", () => {
 		expect(text).not.toContain("Verdict:");
 		expect(text).not.toContain("| FAIL |");
 		expect(text).toContain("no verdict: the first run keeps it");
+	});
+});
+
+describe("scoreRun and compareRuns with several (ADR 0007)", () => {
+	const run = savedRun(
+		[
+			row({ id: "amb-several", kind: "ambiguous", none: 0.05, several: 0.4 }),
+			row({ id: "amb-leak", kind: "ambiguous", none: 0.05, several: 0.1 }),
+			row({
+				id: "held-several",
+				kind: "item",
+				expected: "acme",
+				none: 0.05,
+				several: 0.35,
+			}),
+			row({ id: "picked", kind: "nothing", pick: "several", several: 0.8 }),
+		],
+		0.3,
+	);
+	const report = scoreRun(run);
+
+	it("holds a row whose several reaches the gate, as it holds one whose none does", () => {
+		expect(report.leaked).toEqual(["amb-leak"]);
+		expect(report.measures.heldAmbiguous).toBe(0.5);
+		expect(report.counts).toMatchObject({ items: 1, covered: 0 });
+		expect(report.invented).toEqual([]);
+	});
+
+	it("reports several beside none on every miss", () => {
+		expect(
+			report.misses.map(({ id, none, several }) => [id, none, several]),
+		).toEqual([
+			["amb-leak", 0.05, 0.1],
+			["held-several", 0.05, 0.35],
+		]);
+		expect(formatReport(report)).toContain(
+			"| held-several | request held-several | acme | held | 0.05 | 0.35 | provider |",
+		);
+	});
+
+	it("lists a row that several flips across the gate", () => {
+		const second = savedRun(
+			[row({ id: "amb-leak", kind: "ambiguous", none: 0.05, several: 0.5 })],
+			0.3,
+		);
+
+		const flips = compareRuns(run, second);
+
+		expect(flips).toEqual([
+			{
+				id: "amb-leak",
+				request: "request amb-leak",
+				before: { item: "acme", none: 0.05, several: 0.1, filled: true },
+				after: { item: null, none: 0.05, several: 0.5, filled: false },
+			},
+		]);
+		expect(formatReport(scoreRun(second), flips)).toContain(
+			"| amb-leak | request amb-leak | acme, none 0.05, several 0.10 | held, none 0.05, several 0.50 |",
+		);
 	});
 });

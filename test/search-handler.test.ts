@@ -29,7 +29,9 @@ const search = {
 	shortlist: () => [acme, northwind],
 };
 
-const picksAcme = { search: { acme: 0.93, northwind: 0.05, none: 0.02 } };
+const picksAcme = {
+	search: { acme: 0.93, northwind: 0.05, none: 0.02, several: 0 },
+};
 
 function handler(overrides: Partial<SearchHandlerConfig<Vendor>> = {}) {
 	return createSearchHandler<Vendor>({
@@ -68,7 +70,7 @@ describe("createSearchHandler", () => {
 				item: { id: 1, name: "Acme Supplies" },
 				candidates: [acme, northwind],
 				pick: { label: "acme", probability: 0.93 },
-				probabilities: { acme: 0.93, northwind: 0.05, none: 0.02 },
+				probabilities: { acme: 0.93, northwind: 0.05, none: 0.02, several: 0 },
 				gate: 0.5,
 			},
 		});
