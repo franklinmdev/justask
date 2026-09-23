@@ -1,10 +1,9 @@
-import type { FieldValue, FilterValue } from "justask";
+import type { AmountRange, DateRange, FieldValue, FilterValue } from "justask";
 import {
 	FilterBox,
 	FilterConfirm,
 	FilterEmpty,
 	FilterFields,
-	type UseFilter,
 	useFilter,
 } from "justask/react";
 import { useState } from "react";
@@ -15,15 +14,16 @@ import type {
 	Transaction,
 	TransactionFields,
 } from "./content/types.ts";
+import { DayPicker } from "./day-picker.tsx";
 import { FilterPanel } from "./filter-panel.tsx";
-import { formats, LOCAL_CURRENCY } from "./format.ts";
+import { formats, LOCAL_CURRENCY, parseAmount } from "./format.ts";
 import { DEBOUNCE_MS, Suggestions } from "./parts.tsx";
 import { CaseLayout } from "./showcase.tsx";
 import { type Trace, timed, useSuggest } from "./trace.ts";
 
 type Applied = FilterValue<TransactionFields>;
 
-/** Every row the confirmed filter keeps. The table's amounts are in the local currency, so another one keeps none. */
+/** Every row the table's controls keep. The table's amounts are in the local currency, so another one keeps none. */
 function matches(row: Transaction, filter: Applied): boolean {
 	const { vendor, status, date, amount } = filter;
 	if (vendor && row.vendorId !== vendor.id) return false;
@@ -32,7 +32,6 @@ function matches(row: Transaction, filter: Applied): boolean {
 	if (date?.to && row.date > date.to) return false;
 	if (amount) {
 		if (amount.currency && amount.currency !== LOCAL_CURRENCY) return false;
-		if (amount.exact !== undefined && row.amount !== amount.exact) return false;
 		if (amount.min !== undefined && row.amount < amount.min) return false;
 		if (amount.max !== undefined && row.amount > amount.max) return false;
 	}
@@ -54,10 +53,31 @@ function fieldWords(content: Content) {
 	return words;
 }
 
-/** True when the proposal on screen leaves a declared field empty. */
-function held(filter: UseFilter<TransactionFields>): boolean {
-	const declared = Object.keys(filter.result?.fields ?? {});
-	return declared.some((name) => !(name in (filter.result?.value ?? {})));
+/**
+ * The table's controls once Apply is pressed: a filled field replaces its
+ * control's value, a held one leaves it as it was. The amount control is two
+ * bounds, so an exact amount sets both.
+ */
+function applyTo(table: Applied, value: Applied): Applied {
+	const next = { ...table, ...value };
+	if (value.amount?.exact !== undefined) {
+		const { exact, ...rest } = value.amount;
+		next.amount = { ...rest, min: exact, max: exact };
+	}
+	return next;
+}
+
+/** The range with one end changed, or no filter once neither end is left. */
+function withEnd<R extends DateRange | AmountRange>(
+	range: R | undefined,
+	end: keyof R,
+	value: R[keyof R] | undefined,
+	ends: (keyof R)[],
+): R | undefined {
+	const next = { ...range } as R;
+	delete next[end];
+	if (value !== undefined) next[end] = value;
+	return ends.some((name) => next[name] !== undefined) ? next : undefined;
 }
 
 function FieldChip({ name, text }: { name: string; text: string }) {
@@ -83,13 +103,16 @@ export function FilterPage({
 }) {
 	const { copy } = content;
 	const words = fieldWords(content);
+	// What the table's own controls hold: Apply sets them, and so does the person.
 	const [applied, setApplied] = useState<Applied>({});
+	// Clear filters renews the controls, so text in a box that set no bound goes too.
+	const [cleared, setCleared] = useState(0);
 	const [trace, setTrace] = useState<Trace | null>(null);
 
 	const filter = useFilter<TransactionFields>({
 		endpoint: filterEndpoint(content.language),
 		timing: { on: "type", debounceMs: DEBOUNCE_MS },
-		onConfirm: setApplied,
+		onConfirm: (value) => setApplied((table) => applyTo(table, value)),
 		fetch: timed(fetchImpl, setTrace),
 	});
 	const suggest = useSuggest(filter);
@@ -99,10 +122,6 @@ export function FilterPage({
 		(value: FieldValue<TransactionFields[K]>) => (
 			<FieldChip name={copy.filter.fields[name]} text={words[name](value)} />
 		);
-	const appliedNames = (Object.keys(applied) as FieldName[]).flatMap((name) => {
-		const value = applied[name];
-		return value === undefined ? [] : [{ name, value }];
-	});
 	const rows = content.transactions.filter((row) => matches(row, applied));
 
 	return (
@@ -142,9 +161,6 @@ export function FilterPage({
 			<FilterEmpty filter={filter} className="result">
 				<p className="empty">{copy.filter.empty}</p>
 			</FilterEmpty>
-			{filter.value && filter.result && held(filter) && (
-				<p className="hint">{copy.filter.heldHint}</p>
-			)}
 			<div className="confirm-row">
 				<FilterConfirm filter={filter} className="confirm">
 					{copy.filter.confirm}
@@ -181,28 +197,216 @@ export function FilterPage({
 					<p className="applied-count" role="status">
 						{copy.filter.showing(rows.length, content.transactions.length)}
 					</p>
-					{appliedNames.length > 0 && (
-						<>
-							<ul className="applied-list">
-								{appliedNames.map(({ name, value }) => (
-									<li key={name} className="filter">
-										{chip(name)(value)}
-									</li>
-								))}
-							</ul>
-							<button
-								type="button"
-								className="clear"
-								onClick={() => setApplied({})}
-							>
-								{copy.filter.clear}
-							</button>
-						</>
+					{Object.keys(applied).length > 0 && (
+						<button
+							type="button"
+							className="clear"
+							onClick={() => {
+								setApplied({});
+								setCleared((count) => count + 1);
+							}}
+						>
+							{copy.filter.clear}
+						</button>
 					)}
 				</div>
+				<TableFilters
+					key={cleared}
+					content={content}
+					value={applied}
+					onChange={setApplied}
+				/>
 				<Transactions content={content} rows={rows} />
 			</section>
 		</CaseLayout>
+	);
+}
+
+/**
+ * The table's own filter controls: vendor, status, a date range and an
+ * amount range. Apply sets them from the request, and the person fills or
+ * changes any of them here, never through justask's pieces.
+ */
+function TableFilters({
+	content,
+	value,
+	onChange,
+}: {
+	content: Content;
+	value: Applied;
+	onChange: (value: Applied) => void;
+}) {
+	const { copy } = content;
+	const { fields, controls } = copy.filter;
+	const format = formats(content.locale);
+
+	function set<K extends FieldName>(name: K, field: Applied[K] | undefined) {
+		const next = { ...value };
+		delete next[name];
+		if (field !== undefined) next[name] = field;
+		onChange(next);
+	}
+	const day = (end: "from" | "to") => (iso: string | undefined) =>
+		set("date", withEnd(value.date, end, iso, ["from", "to"]));
+	// A bound typed here is in the table's own currency, so one the request named goes.
+	const bound = (end: "min" | "max") => (amount: number | undefined) => {
+		const { currency: _, ...range } = value.amount ?? {};
+		set("amount", withEnd(range, end, amount, ["min", "max"]));
+	};
+	const currency = value.amount?.currency;
+
+	return (
+		<div className="table-filters">
+			<div className="table-filter">
+				<label htmlFor="table-vendor" className="entry-label">
+					{fields.vendor}
+				</label>
+				<select
+					id="table-vendor"
+					className="control"
+					value={value.vendor?.id ?? ""}
+					onChange={(event) =>
+						set(
+							"vendor",
+							content.vendors.find(({ id }) => id === event.target.value)
+								?.value,
+						)
+					}
+				>
+					<option value="">{controls.allVendors}</option>
+					{content.vendors.map(({ id, value: vendor }) => (
+						<option key={id} value={id}>
+							{vendor.name}
+						</option>
+					))}
+				</select>
+			</div>
+			<div className="table-filter">
+				<label htmlFor="table-status" className="entry-label">
+					{fields.status}
+				</label>
+				<select
+					id="table-status"
+					className="control"
+					value={value.status ?? ""}
+					onChange={(event) =>
+						set(
+							"status",
+							content.statuses.find(({ id }) => id === event.target.value)
+								?.value,
+						)
+					}
+				>
+					<option value="">{controls.allStatuses}</option>
+					{content.statuses.map(({ id, value: status }) => (
+						<option key={id} value={id}>
+							{copy.statuses[status]}
+						</option>
+					))}
+				</select>
+			</div>
+			<fieldset className="table-filter">
+				<legend className="entry-label">{fields.date}</legend>
+				<div className="range">
+					<span id="table-from" className="visually-hidden">
+						{controls.from}
+					</span>
+					<DayPicker
+						labelId="table-from"
+						value={value.date?.from}
+						onChange={day("from")}
+						copy={{ pickDay: controls.fromEmpty, calendar: controls.calendar }}
+						locale={content.locale}
+						format={format.day}
+					/>
+					<span id="table-to" className="visually-hidden">
+						{controls.to}
+					</span>
+					<DayPicker
+						labelId="table-to"
+						value={value.date?.to}
+						onChange={day("to")}
+						copy={{ pickDay: controls.toEmpty, calendar: controls.calendar }}
+						locale={content.locale}
+						format={format.day}
+					/>
+				</div>
+			</fieldset>
+			<fieldset className="table-filter">
+				<legend className="entry-label">
+					{fields.amount}
+					{/* Another currency keeps no row, so the controls say which one the request named. */}
+					{currency && currency !== LOCAL_CURRENCY && (
+						<span className="entry-source"> {currency}</span>
+					)}
+				</legend>
+				<div className="range">
+					<label htmlFor="table-min" className="visually-hidden">
+						{controls.min}
+					</label>
+					<BoundInput
+						id="table-min"
+						value={value.amount?.min}
+						onChange={bound("min")}
+						placeholder={controls.minEmpty}
+					/>
+					<label htmlFor="table-max" className="visually-hidden">
+						{controls.max}
+					</label>
+					<BoundInput
+						id="table-max"
+						value={value.amount?.max}
+						onChange={bound("max")}
+						placeholder={controls.maxEmpty}
+					/>
+				</div>
+			</fieldset>
+		</div>
+	);
+}
+
+/**
+ * One bound of the amount range: a text box that keeps what the person
+ * types, so "86." stays on screen while it is typed, and sets the bound to
+ * the number it reads.
+ */
+function BoundInput({
+	id,
+	value,
+	onChange,
+	placeholder,
+}: {
+	id: string;
+	value: number | undefined;
+	onChange: (value: number | undefined) => void;
+	placeholder: string;
+}) {
+	// The text the person typed, kept only while the bound holds what it read.
+	const [typed, setTyped] = useState<{ for: number | undefined; text: string }>(
+		{ for: undefined, text: "" },
+	);
+	const shown =
+		value === undefined
+			? ""
+			: Number.isInteger(value)
+				? String(value)
+				: value.toFixed(2);
+	return (
+		<input
+			id={id}
+			className="control data"
+			inputMode="decimal"
+			autoComplete="off"
+			placeholder={placeholder}
+			value={typed.for === value ? typed.text : shown}
+			onChange={(event) => {
+				// Only a number's characters: digits, separators and spaces.
+				const text = event.target.value.replace(/[^\d.,\s]/g, "");
+				const number = parseAmount(text);
+				setTyped({ for: number, text });
+				onChange(number);
+			}}
+		/>
 	);
 }
 

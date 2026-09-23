@@ -1,5 +1,5 @@
 import { type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
-import type { CardCopy } from "./content/types.ts";
+import type { CalendarCopy } from "./content/types.ts";
 
 // Days are ISO strings, YYYY-MM-DD, and their arithmetic runs in UTC.
 function dateOf(iso: string): Date {
@@ -99,7 +99,7 @@ export function DayPicker({
 	labelId: string;
 	value: string | undefined;
 	onChange: (value: string | undefined) => void;
-	copy: Pick<CardCopy, "pickDay" | "calendar">;
+	copy: { pickDay: string; calendar: CalendarCopy };
 	locale: string;
 	format: (iso: string) => string;
 }) {
