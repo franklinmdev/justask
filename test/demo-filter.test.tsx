@@ -73,6 +73,7 @@ const answers: Record<string, FakeAnswers> = {
 	}),
 	"how much do we owe in total?": answer({}),
 	"overdue invoices": answer({ status: "overdue" }),
+	"invoices over 500 euros": answer({ amounts: ["min"] }),
 	"facturas vencidas": answer({ status: "overdue" }),
 	// The local currency is USD, so "pesos" resolves to none: the amount is never asked.
 	"facturas de más de 500 pesos": answer({}),
@@ -370,6 +371,33 @@ describe("the demo's filter page", () => {
 		expect(
 			screen.getByRole("button", { name: "Start date Start" }),
 		).toBeDefined();
+	});
+
+	it("keeps no row for an amount in another currency, until the person types a bound in the table's own", async () => {
+		const { user } = renderDemo();
+
+		await user.type(
+			screen.getByRole("searchbox", { name: "Filter the transactions" }),
+			"invoices over 500 euros",
+		);
+		await waitForProposal();
+		await user.click(screen.getByRole("button", { name: "Apply filters" }));
+
+		expect(screen.getByText("EUR")).toBeDefined();
+		expect(rows()).toBe(0);
+
+		// The person keeps the minimum and types a maximum: both read in the table's own currency.
+		await user.type(
+			screen.getByRole("textbox", { name: "Maximum amount" }),
+			"1000",
+		);
+
+		expect(screen.queryByText("EUR")).toBeNull();
+		expect(rows()).toBe(
+			english.transactions.filter(
+				({ amount }) => amount >= 500 && amount <= 1000,
+			).length,
+		);
 	});
 
 	it("fills nothing from a request with nothing to filter, and offers nothing to apply", async () => {

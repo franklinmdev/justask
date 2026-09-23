@@ -238,8 +238,11 @@ function TableFilters({
 	}
 	const day = (end: "from" | "to") => (iso: string | undefined) =>
 		set("date", withEnd(value.date, end, iso, ["from", "to"]));
-	const bound = (end: "min" | "max") => (amount: number | undefined) =>
-		set("amount", withEnd(value.amount, end, amount, ["min", "max"]));
+	// A bound typed here is in the table's own currency, so one the request named goes.
+	const bound = (end: "min" | "max") => (amount: number | undefined) => {
+		const { currency: _, ...range } = value.amount ?? {};
+		set("amount", withEnd(range, end, amount, ["min", "max"]));
+	};
 	const currency = value.amount?.currency;
 
 	return (
