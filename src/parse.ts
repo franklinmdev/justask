@@ -10,6 +10,24 @@ export type DateReading = {
 	to: string;
 	/** How the text was read, for the provider: "reading the numbers as day/month". */
 	note?: string;
+	/**
+	 * The request itself does not say which day: "next Friday" reads two ways
+	 * and nothing in the words decides. A field whose pick lands on such a
+	 * reading is held, whatever its probability.
+	 */
+	ambiguous?: boolean;
+};
+
+/** A time of day a parser read from the request. */
+export type TimeReading = {
+	/** The span as the person typed it. */
+	text: string;
+	/** HH:MM, 24-hour clock. */
+	time: string;
+	/** How the text was read, for the provider: "reading the hour as morning". */
+	note?: string;
+	/** The request does not say the exact time: "2 y pico". Held like an ambiguous date. */
+	ambiguous?: boolean;
 };
 
 /** A money amount a parser read from the request. */
@@ -30,12 +48,18 @@ export type AmountReading = {
 
 export type Readings = {
 	dates?: DateReading[];
+	times?: TimeReading[];
 	amounts?: AmountReading[];
 };
 
 export type ParserInput = {
 	/** Today in the person's time zone, YYYY-MM-DD. */
 	today: string;
+	/**
+	 * Which way a date that does not say its year or week reads: back for a
+	 * filter and an expense's day, forward for a due date or an appointment.
+	 */
+	reads: "past" | "future";
 	facts: Facts;
 };
 
@@ -52,9 +76,10 @@ export type Parser = (request: string, input: ParserInput) => Readings;
  * An ambiguous reading is never guessed: "03/04" becomes two readings.
  */
 export const builtInParser: Parser = (request, input) => {
-	const { dates, amounts } = readSpans(request, input, []);
+	const { dates, times, amounts } = readSpans(request, input, []);
 	return {
 		dates: dates.map(({ reading }) => reading),
+		times: times.map(({ reading }) => reading),
 		amounts: amounts.map(({ reading }) => reading),
 	};
 };
@@ -71,14 +96,18 @@ export function parseRequest(
 	request: string,
 	input: ParserInput,
 	parsers: readonly Parser[],
-): { dates: DateReading[]; amounts: AmountReading[] } {
+): { dates: DateReading[]; times: TimeReading[]; amounts: AmountReading[] } {
 	const claimed: Span[] = [];
 	const dates: Placed<DateReading>[] = [];
+	const times: Placed<TimeReading>[] = [];
 	const amounts: Placed<AmountReading>[] = [];
 	for (const parser of parsers) {
 		const readings = parser(request, input);
 		for (const reading of readings.dates ?? []) {
 			dates.push({ at: place(request, reading.text, claimed), reading });
+		}
+		for (const reading of readings.times ?? []) {
+			times.push({ at: place(request, reading.text, claimed), reading });
 		}
 		for (const reading of readings.amounts ?? []) {
 			amounts.push({ at: place(request, reading.text, claimed), reading });
@@ -89,6 +118,7 @@ export function parseRequest(
 		placed.sort((x, y) => x.at[0] - y.at[0]).map(({ reading }) => reading);
 	return {
 		dates: inOrder([...dates, ...own.dates]),
+		times: inOrder([...times, ...own.times]),
 		amounts: inOrder([...amounts, ...own.amounts]),
 	};
 }
@@ -275,6 +305,8 @@ const WEEKDAYS: Record<string, number> = {
 	sunday: 6,
 };
 
+const WEEKDAY_ANY = `(${Object.keys(WEEKDAYS).join("|")})`;
+
 const ORDINAL_QUARTER: Record<string, number> = {
 	primer: 1,
 	primero: 1,
@@ -308,24 +340,58 @@ function resolveYear(raw: string | undefined, today: string): number | null {
 
 // Date rules
 
-type Hit = { from: string; to: string; note?: string };
+type Hit = { from: string; to: string; note?: string; ambiguous?: boolean };
+
+type Reads = ParserInput["reads"];
 
 type DateRule = {
 	re: RegExp;
 	/** Returns the readings of one match, or null to reject it. */
-	read: (m: RegExpExecArray, today: string) => Hit[] | null;
+	read: (m: RegExpExecArray, today: string, reads: Reads) => Hit[] | null;
 	/** Soft spans stay available to the amount rules ("2025" can be a year or a number). */
 	soft?: boolean;
 	/** Offset into the match where the span starts, for a leading word kept out of the span. */
 	lead?: (m: RegExpExecArray) => number;
 };
 
-/** A day with no year: the latest one that is not in the future. A filter looks back. */
-function latestDay(m: number, d: number, today: string): string | null {
+/**
+ * A day with no year: reading the past, the latest one not after today;
+ * reading the future, the first one not before today.
+ */
+function undatedDay(
+	m: number,
+	d: number,
+	today: string,
+	reads: Reads,
+): string | null {
 	const y = yearOf(today);
 	const thisYear = ymd(y, m, d);
-	if (thisYear && thisYear <= today) return thisYear;
-	return ymd(y - 1, m, d);
+	if (reads === "past") {
+		return thisYear && thisYear <= today ? thisYear : ymd(y - 1, m, d);
+	}
+	return thisYear && thisYear >= today ? thisYear : ymd(y + 1, m, d);
+}
+
+/** A day of the month alone, "el día 28": the nearest one that way, today included. */
+function undatedDayOfMonth(
+	d: number,
+	today: string,
+	reads: Reads,
+): string | null {
+	if (d < 1 || d > 31) return null;
+	const step = reads === "past" ? -1 : 1;
+	let y = yearOf(today);
+	let m = monthOf(today);
+	for (let i = 0; i < 12; i++) {
+		const iso = ymd(y, m, d);
+		if (iso && (reads === "past" ? iso <= today : iso >= today)) return iso;
+		m += step;
+		if (m < 1 || m > 12) {
+			m = m < 1 ? 12 : 1;
+			y += step;
+		}
+	}
+	return null;
 }
 
 const monthRange = (y: number, m: number): Hit => ({
@@ -333,9 +399,13 @@ const monthRange = (y: number, m: number): Hit => ({
 	to: monthEnd(y, m),
 });
 
-function latestMonth(m: number, today: string): Hit {
+/** A month with no year: reading the past, the latest one begun; reading the future, the first one not over. */
+function undatedMonth(m: number, today: string, reads: Reads): Hit {
 	const y = yearOf(today);
-	return monthRange(monthStart(y, m) <= today ? y : y - 1, m);
+	if (reads === "past") {
+		return monthRange(monthStart(y, m) <= today ? y : y - 1, m);
+	}
+	return monthRange(monthEnd(y, m) >= today ? y : y + 1, m);
 }
 
 const quarterRange = (y: number, q: number): Hit => ({
@@ -353,9 +423,10 @@ function numericReadings(
 	b: number,
 	y: number | null,
 	today: string,
+	reads: Reads,
 ): Hit[] | null {
-	const dm = y === null ? latestDay(b, a, today) : ymd(y, b, a);
-	const md = y === null ? latestDay(a, b, today) : ymd(y, a, b);
+	const dm = y === null ? undatedDay(b, a, today, reads) : ymd(y, b, a);
+	const md = y === null ? undatedDay(a, b, today, reads) : ymd(y, a, b);
 	if (dm && md && dm !== md) {
 		return [
 			{ from: dm, to: dm, note: "reading the numbers as day/month" },
@@ -371,9 +442,18 @@ function dayRange(
 	m: number,
 	y: number | null,
 	today: string,
+	reads: Reads,
 ): Hit[] | null {
 	const ty = yearOf(today);
-	const year = y ?? ((ymd(ty, m, d1) ?? "") <= today ? ty : ty - 1);
+	const year =
+		y ??
+		(reads === "past"
+			? (ymd(ty, m, d1) ?? "") <= today
+				? ty
+				: ty - 1
+			: (ymd(ty, m, d2) ?? "") >= today
+				? ty
+				: ty + 1);
 	const from = ymd(year, m, d1);
 	const to = ymd(year, m, d2);
 	if (!from || !to || from > to) return null;
@@ -385,8 +465,27 @@ function dayMonth(
 	m: number,
 	y: number | null,
 	today: string,
+	reads: Reads,
 ): Hit[] | null {
-	return point(y === null ? latestDay(m, d, today) : ymd(y, m, d));
+	return point(y === null ? undatedDay(m, d, today, reads) : ymd(y, m, d));
+}
+
+/**
+ * Two readings of one weekday that nothing in the request chooses between,
+ * both marked ambiguous; one plain reading when they fall on the same day.
+ */
+function eitherDay(
+	first: string,
+	firstNote: string,
+	second: string,
+	secondNote: string,
+	sameNote: string,
+): Hit[] {
+	if (first === second) return [{ from: first, to: first, note: sameNote }];
+	return [
+		{ from: first, to: first, note: firstNote, ambiguous: true },
+		{ from: second, to: second, note: secondNote, ambiguous: true },
+	];
 }
 
 const unitIsMonths = (unit: string) => /^(mes|meses|months?)$/.test(unit);
@@ -407,17 +506,17 @@ const DATE_RULES: DateRule[] = [
 			`${b}(\\d{1,2})([/.-])(\\d{1,2})\\2(\\d{4}|\\d{2})${e}`,
 			"g",
 		),
-		read: (m, today) => {
+		read: (m, today, reads) => {
 			const raw = m[4] ?? "";
 			const y = raw.length === 2 ? 2000 + Number(raw) : Number(raw);
-			return numericReadings(Number(m[1]), Number(m[3]), y, today);
+			return numericReadings(Number(m[1]), Number(m[3]), y, today, reads);
 		},
 	},
 	{
 		// Numeric without a year
 		re: new RegExp(`${b}(\\d{1,2})/(\\d{1,2})${e}(?!/)`, "g"),
-		read: (m, today) =>
-			numericReadings(Number(m[1]), Number(m[2]), null, today),
+		read: (m, today, reads) =>
+			numericReadings(Number(m[1]), Number(m[2]), null, today, reads),
 	},
 	{
 		// A day range in one month, Spanish
@@ -425,13 +524,14 @@ const DATE_RULES: DateRule[] = [
 			`${b}(?:del?\\s+|entre\\s+el\\s+)?(\\d{1,2})\\s*(?:al|a|-|y\\s+el|hasta\\s+el)\\s*(\\d{1,2})\\s+de\\s+${MONTH_ANY}${YEAR}${e}`,
 			"g",
 		),
-		read: (m, today) =>
+		read: (m, today, reads) =>
 			dayRange(
 				Number(m[1]),
 				Number(m[2]),
 				month(m[3]),
 				resolveYear(m[4], today),
 				today,
+				reads,
 			),
 	},
 	{
@@ -440,13 +540,14 @@ const DATE_RULES: DateRule[] = [
 			`${b}${MONTH_ANY}\\s+(\\d{1,2})(?:st|nd|rd|th)?\\s*(?:-|to|through|until)\\s*(\\d{1,2})(?:st|nd|rd|th)?${YEAR}${e}`,
 			"g",
 		),
-		read: (m, today) =>
+		read: (m, today, reads) =>
 			dayRange(
 				Number(m[2]),
 				Number(m[3]),
 				month(m[1]),
 				resolveYear(m[4], today),
 				today,
+				reads,
 			),
 	},
 	{
@@ -501,8 +602,14 @@ const DATE_RULES: DateRule[] = [
 	{
 		// Day and month, Spanish
 		re: new RegExp(`${b}(\\d{1,2})\\s+(?:de\\s+)?${MONTH_ANY}${YEAR}${e}`, "g"),
-		read: (m, today) =>
-			dayMonth(Number(m[1]), month(m[2]), resolveYear(m[3], today), today),
+		read: (m, today, reads) =>
+			dayMonth(
+				Number(m[1]),
+				month(m[2]),
+				resolveYear(m[3], today),
+				today,
+				reads,
+			),
 	},
 	{
 		// Day and month, English
@@ -510,8 +617,14 @@ const DATE_RULES: DateRule[] = [
 			`${b}${MONTH_ANY}\\s+(\\d{1,2})(?:st|nd|rd|th)?${YEAR}${e}`,
 			"g",
 		),
-		read: (m, today) =>
-			dayMonth(Number(m[2]), month(m[1]), resolveYear(m[3], today), today),
+		read: (m, today, reads) =>
+			dayMonth(
+				Number(m[2]),
+				month(m[1]),
+				resolveYear(m[3], today),
+				today,
+				reads,
+			),
 	},
 	{
 		// Day of month, English
@@ -519,8 +632,14 @@ const DATE_RULES: DateRule[] = [
 			`${b}(?:the\\s+)?(\\d{1,2})(?:st|nd|rd|th)?\\s+of\\s+${MONTH_ANY}${YEAR}${e}`,
 			"g",
 		),
-		read: (m, today) =>
-			dayMonth(Number(m[1]), month(m[2]), resolveYear(m[3], today), today),
+		read: (m, today, reads) =>
+			dayMonth(
+				Number(m[1]),
+				month(m[2]),
+				resolveYear(m[3], today),
+				today,
+				reads,
+			),
 	},
 	{
 		// A named quarter
@@ -528,12 +647,15 @@ const DATE_RULES: DateRule[] = [
 			`${b}(?:q([1-4])|(${byLength(Object.keys(ORDINAL_QUARTER))})\\s+(?:trimestre|quarter))${YEAR}${e}`,
 			"g",
 		),
-		read: (m, today) => {
+		read: (m, today, reads) => {
 			const q = m[1] ? Number(m[1]) : (ORDINAL_QUARTER[m[2] ?? ""] ?? 1);
 			const y = resolveYear(m[3], today);
 			if (y !== null) return [quarterRange(y, q)];
 			const hit = quarterRange(yearOf(today), q);
-			return [hit.from <= today ? hit : quarterRange(yearOf(today) - 1, q)];
+			if (reads === "past") {
+				return [hit.from <= today ? hit : quarterRange(yearOf(today) - 1, q)];
+			}
+			return [hit.to >= today ? hit : quarterRange(yearOf(today) + 1, q)];
 		},
 	},
 	{
@@ -570,17 +692,66 @@ const DATE_RULES: DateRule[] = [
 			`${b}(?:(en|in|de|del|of|during|since|desde|hasta|until|before|after|through)\\s+)?${MONTH_FULL}${YEAR}${e}`,
 			"g",
 		),
-		read: (m, today) => {
+		read: (m, today, reads) => {
 			// "may" is a month only after a preposition or with a year: "you may see" is not May.
 			if (m[2] === "may" && !m[1] && !m[3]) return null;
 			const y = resolveYear(m[3], today);
 			return [
 				y === null
-					? latestMonth(month(m[2]), today)
+					? undatedMonth(month(m[2]), today, reads)
 					: monthRange(y, month(m[2])),
 			];
 		},
 		lead: (m) => (m[1] ? m[0].indexOf(m[2] ?? "", m[1].length) : 0),
+	},
+	{
+		// A weekday of the week before or after this one: "Friday next week", "el viernes de la semana pasada".
+		re: new RegExp(
+			`${b}${WEEKDAY_ANY}\\s+(?:de\\s+la\\s+|of\\s+)?(semana\\s+que\\s+viene|proxima\\s+semana|semana\\s+proxima|next\\s+week|semana\\s+pasada|last\\s+week)${e}`,
+			"g",
+		),
+		read: (m, today) => {
+			const later = /viene|proxima|next/.test(m[2] ?? "");
+			const monday = addDays(today, -weekday(today) + (later ? 7 : -7));
+			return point(
+				addDays(monday, WEEKDAYS[m[1] ?? ""] ?? 0),
+				`that weekday in the week ${later ? "after" : "before"} this one`,
+			);
+		},
+	},
+	{
+		// "next Friday", "el próximo viernes", "el viernes que viene": the first one after today, or the one in the week after this one.
+		re: new RegExp(
+			`${b}(?:(?:next|proxim[oa])\\s+${WEEKDAY_ANY}|${WEEKDAY_ANY}\\s+(?:que\\s+viene|proxim[oa]))${e}`,
+			"g",
+		),
+		read: (m, today) => {
+			const w = WEEKDAYS[m[1] ?? m[2] ?? ""] ?? 0;
+			return eitherDay(
+				addDays(today, (w - weekday(today) + 7) % 7 || 7),
+				"reading 'next' as the first one after today",
+				addDays(today, 7 - weekday(today) + w),
+				"reading 'next' as the one in the week after this one",
+				"the first one after today",
+			);
+		},
+	},
+	{
+		// "last Friday", "el viernes pasado": the most recent one before today, or the one in the week before this one.
+		re: new RegExp(
+			`${b}(?:(?:last|past)\\s+${WEEKDAY_ANY}|${WEEKDAY_ANY}\\s+pasad[oa])${e}`,
+			"g",
+		),
+		read: (m, today) => {
+			const w = WEEKDAYS[m[1] ?? m[2] ?? ""] ?? 0;
+			return eitherDay(
+				addDays(today, -((weekday(today) - w + 7) % 7 || 7)),
+				"reading 'last' as the most recent one before today",
+				addDays(today, -weekday(today) - 7 + w),
+				"reading 'last' as the one in the week before this one",
+				"the most recent one before today",
+			);
+		},
 	},
 	{
 		// This, last or next week
@@ -664,6 +835,34 @@ const DATE_RULES: DateRule[] = [
 		read: (_m, today) => point(addDays(today, -2)),
 	},
 	{
+		re: new RegExp(
+			`${b}(?:pasado\\s+manana|(?:the\\s+)?day\\s+after\\s+tomorrow)${e}`,
+			"g",
+		),
+		read: (_m, today) => point(addDays(today, 2)),
+	},
+	{
+		// "de la mañana", "esta mañana", "por la mañana" are a time of day, not tomorrow.
+		re: new RegExp(
+			`${b}(?<!(?:la|esta|por|en)\\s+)(?:manana|tomorrow)${e}`,
+			"g",
+		),
+		read: (_m, today) => point(addDays(today, 1)),
+	},
+	{
+		// In N days or weeks
+		re: new RegExp(
+			`${b}(?:(?:en|dentro\\s+de)\\s+${SMALL}\\s+(dias?|semanas?)|in\\s+${SMALL}\\s+(days?|weeks?))${e}`,
+			"g",
+		),
+		read: (m, today) => {
+			const n = small(m[1] ?? m[3]);
+			if (!n) return null;
+			const days = unitIsWeeks(m[2] ?? m[4] ?? "") ? n * 7 : n;
+			return point(addDays(today, days), `today plus ${days} days`);
+		},
+	},
+	{
 		re: new RegExp(`${b}(?:hoy|today)${e}`, "g"),
 		read: (_m, today) => point(today),
 	},
@@ -672,15 +871,29 @@ const DATE_RULES: DateRule[] = [
 		read: (_m, today) => point(addDays(today, -1)),
 	},
 	{
-		// A weekday: the most recent one strictly before today, so on a Monday "el lunes" is a week ago.
+		// A weekday: the nearest one that way, never today, so on a Monday "el lunes" is a week away.
+		re: new RegExp(`${b}${WEEKDAY_ANY}${e}`, "g"),
+		read: (m, today, reads) => {
+			const w = WEEKDAYS[m[1] ?? ""] ?? 0;
+			if (reads === "past") {
+				const back = (weekday(today) - w + 7) % 7 || 7;
+				return point(addDays(today, -back), "the most recent one before today");
+			}
+			const ahead = (w - weekday(today) + 7) % 7 || 7;
+			return point(addDays(today, ahead), "the first one after today");
+		},
+	},
+	{
+		// A day of the month alone: "el día 28", "on the 3rd", "el 28 a las 3". Not "the 3rd largest".
 		re: new RegExp(
-			`${b}(${Object.keys(WEEKDAYS).join("|")})(?:\\s+pasado)?${e}`,
+			`${b}(?:(?:el\\s+)?dia\\s+(\\d{1,2})|(?:el|the|on\\s+the)\\s+(\\d{1,2})(?:st|nd|rd|th)?)${e}(?=\\s*(?:$|[,.;:!?)]|a\\s+las?\\s|at\\s|@))`,
 			"g",
 		),
-		read: (m, today) => {
-			const back = (weekday(today) - (WEEKDAYS[m[1] ?? ""] ?? 0) + 7) % 7 || 7;
-			return point(addDays(today, -back), "the most recent one before today");
-		},
+		read: (m, today, reads) =>
+			point(
+				undatedDayOfMonth(Number(m[1] ?? m[2]), today, reads),
+				`the ${reads === "past" ? "latest such day up to" : "first such day from"} today`,
+			),
 	},
 	{
 		// A year alone
@@ -827,14 +1040,169 @@ function currencyOf(
 	return null;
 }
 
+// Time rules
+
+type TimeHit = { time: string; note: string; ambiguous?: boolean };
+
+type TimeRule = {
+	re: RegExp;
+	/** Returns the readings of one match, or null to reject it. */
+	read: (m: RegExpExecArray) => TimeHit[] | null;
+};
+
+const HOURS: Record<string, number> = {
+	una: 1,
+	dos: 2,
+	tres: 3,
+	cuatro: 4,
+	cinco: 5,
+	seis: 6,
+	siete: 7,
+	ocho: 8,
+	nueve: 9,
+	diez: 10,
+	once: 11,
+	doce: 12,
+	one: 1,
+	two: 2,
+	three: 3,
+	four: 4,
+	five: 5,
+	six: 6,
+	seven: 7,
+	eight: 8,
+	nine: 9,
+	ten: 10,
+	eleven: 11,
+	twelve: 12,
+};
+const HOUR = `(\\d{1,2}|${byLength(Object.keys(HOURS))})`;
+/** ":30", " y media", " y cuarto", " y 15", " menos cuarto", " and a half", " y pico" (no minute said), "h". */
+const MINUTES =
+	"(?::(\\d{2})|\\s+y\\s+(media|cuarto|pico|algo|\\d{1,2})|\\s+(menos\\s+cuarto)|\\s+and\\s+a\\s+half|\\s*(?:h|hrs?)(?![a-z]))?";
+const MERIDIEM =
+	"(?:\\s*(a\\.?\\s?m\\.?|p\\.?\\s?m\\.?)(?![a-z])|\\s+(?:de\\s+la|en\\s+la|por\\s+la|in\\s+the)\\s+(manana|tarde|noche|morning|afternoon|evening|night)|\\s+at\\s+night)?";
+/** Not money, a share, an ordinal or a day of a month: "at 5 dollars", "a las 3 de mayo". */
+const NOT_A_TIME = `(?!\\s*(?:${CURRENCY_WORDS}|usd|eur|us\\$|€|%|k(?![a-z])|mil(?![a-z])|st|nd|rd|th|(?:de\\s+|of\\s+)?${MONTH_ANY}(?![a-z])))`;
+
+const hhmm = (h: number, min: number) =>
+	`${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
+
+/**
+ * An hour with no morning or evening said reads both ways, for the provider
+ * to pick from the words around it. An hour with no minute said ("y pico")
+ * is marked ambiguous: no word in the request decides it.
+ */
+function clock(
+	h: number,
+	min: number,
+	meridiem: "am" | "pm" | null,
+	approximate: boolean,
+): TimeHit[] | null {
+	if (h > 23 || min > 59) return null;
+	const hit = (time: string, note: string): TimeHit =>
+		approximate
+			? {
+					time,
+					note: `${note}, some minutes after it, the exact minute not said`,
+					ambiguous: true,
+				}
+			: { time, note };
+	if (h > 12 || h === 0) return [hit(hhmm(h, min), "24-hour clock")];
+	if (meridiem === "am") return [hit(hhmm(h % 12, min), "morning, as said")];
+	if (meridiem === "pm") {
+		return [hit(hhmm((h % 12) + 12, min), "afternoon or evening, as said")];
+	}
+	if (h === 12) return [hit(hhmm(12, min), "noon")];
+	return [
+		hit(hhmm(h, min), "reading the hour as morning"),
+		hit(hhmm(h + 12, min), "reading the hour as afternoon or evening"),
+	];
+}
+
+/** Groups from `offset`: hour, minutes, words after, "menos cuarto", am/pm, part of the day. */
+function readClock(m: RegExpExecArray, offset: number): TimeHit[] | null {
+	const raw = m[offset] ?? "";
+	let h = /^\d+$/.test(raw) ? Number(raw) : HOURS[raw];
+	if (h === undefined) return null;
+	let min = m[offset + 1] ? Number(m[offset + 1]) : 0;
+	const after = m[offset + 2];
+	const approximate = after === "pico" || after === "algo";
+	if (after === "media" || /and\s+a\s+half/.test(m[0])) min = 30;
+	else if (after === "cuarto") min = 15;
+	else if (after && !approximate) min = Number(after);
+	if (m[offset + 3]) {
+		// "las 5 menos cuarto" is 4:45.
+		h -= 1;
+		min = 45;
+	}
+	const mark = (m[offset + 4] ?? "").replace(/[\s.]/g, "");
+	const part = m[offset + 5] ?? "";
+	const meridiem =
+		mark === "am" || /manana|morning/.test(part)
+			? "am"
+			: mark === "pm" || part || /at\s+night/.test(m[0])
+				? "pm"
+				: null;
+	return clock(h, min, meridiem, approximate);
+}
+
+const TIME_RULES: TimeRule[] = [
+	{
+		// "a las 4", "para las 4:30", "at 4pm", "@ 3", "a la una".
+		re: new RegExp(
+			`${b}(?:a\\s+las?|para\\s+las?|como\\s+a\\s+las?|tipo|at|around|@)\\s*${HOUR}${MINUTES}${MERIDIEM}${e}${NOT_A_TIME}`,
+			"g",
+		),
+		read: (m) => readClock(m, 1),
+	},
+	{
+		// "las 10 de la mañana", "la una y media": after "las" alone only with minutes or a part of the day, so "las 3 facturas" is a count.
+		re: new RegExp(
+			`${b}las?\\s+${HOUR}${MINUTES}${MERIDIEM}${e}${NOT_A_TIME}`,
+			"g",
+		),
+		read: (m) =>
+			m.slice(2).some((group) => group !== undefined) ? readClock(m, 1) : null,
+	},
+	{
+		// "4pm", "9:30 a.m."
+		re: new RegExp(
+			`${b}(\\d{1,2})(?::(\\d{2}))?()()\\s*(a\\.?\\s?m\\.?|p\\.?\\s?m\\.?)(?![a-z])()`,
+			"g",
+		),
+		read: (m) => readClock(m, 1),
+	},
+	{
+		// "17:00", "3:30"
+		re: new RegExp(`${b}(\\d{1,2}):(\\d{2})()()()()${e}${NOT_A_TIME}`, "g"),
+		read: (m) => readClock(m, 1),
+	},
+	{
+		re: new RegExp(`${b}(?:(?:al\\s+|a\\s+)?medio\\s*dia|noon)${e}`, "g"),
+		read: () => [{ time: "12:00", note: "noon" }],
+	},
+	{
+		re: new RegExp(`${b}(?:(?:a\\s+)?media\\s*noche|midnight)${e}`, "g"),
+		read: () => [{ time: "00:00", note: "midnight" }],
+	},
+];
+
 // The parser
 
-/** Reads dates, then amounts, never twice over one span nor over a claimed one. */
+/**
+ * Reads times, then dates, then amounts, never twice over one span nor over a
+ * claimed one. Times go first so "de la mañana" is never read as tomorrow.
+ */
 function readSpans(
 	text: string,
-	{ today, facts }: ParserInput,
+	{ today, reads, facts }: ParserInput,
 	claimed: readonly Span[],
-): { dates: Placed<DateReading>[]; amounts: Placed<AmountReading>[] } {
+): {
+	dates: Placed<DateReading>[];
+	times: Placed<TimeReading>[];
+	amounts: Placed<AmountReading>[];
+} {
 	const local = localCurrency(facts);
 	const folded = fold(text);
 	const hard = new Array<boolean>(text.length).fill(false);
@@ -846,6 +1214,22 @@ function readSpans(
 		return true;
 	};
 
+	const times: Placed<TimeReading>[] = [];
+	for (const rule of TIME_RULES) {
+		rule.re.lastIndex = 0;
+		for (let m = rule.re.exec(folded); m; m = rule.re.exec(folded)) {
+			const s = m.index;
+			const t = m.index + m[0].length;
+			if (!free(s, t, true)) continue;
+			const hits = rule.read(m);
+			if (!hits) continue;
+			hard.fill(true, s, t);
+			for (const hit of hits) {
+				times.push({ at: [s, t], reading: { text: text.slice(s, t), ...hit } });
+			}
+		}
+	}
+
 	const dates: Placed<DateReading>[] = [];
 	for (const rule of DATE_RULES) {
 		rule.re.lastIndex = 0;
@@ -853,7 +1237,7 @@ function readSpans(
 			const s = m.index + (rule.lead?.(m) ?? 0);
 			const t = m.index + m[0].length;
 			if (!free(s, t, true)) continue;
-			const hits = rule.read(m, today);
+			const hits = rule.read(m, today, reads);
 			if (!hits) continue;
 			(rule.soft ? soft : hard).fill(true, s, t);
 			for (const hit of hits) {
@@ -934,5 +1318,9 @@ function readSpans(
 
 	const inOrder = <R>(placed: Placed<R>[]) =>
 		placed.sort((x, y) => x.at[0] - y.at[0]);
-	return { dates: inOrder(dates), amounts: inOrder(amounts) };
+	return {
+		dates: inOrder(dates),
+		times: inOrder(times),
+		amounts: inOrder(amounts),
+	};
 }

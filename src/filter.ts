@@ -1,4 +1,9 @@
-import type { AmountReading, DateReading, Parser } from "./parse.ts";
+import type {
+	AmountReading,
+	DateReading,
+	Parser,
+	TimeReading,
+} from "./parse.ts";
 import { type Pick, readPick } from "./pick.ts";
 import type { Probabilities, ProviderAnswer, Question } from "./provider.ts";
 import type { Candidate, Shortlist } from "./search.ts";
@@ -185,7 +190,8 @@ export function catalogPlan(
 /**
  * Two questions over every date candidate: where the period starts, where it
  * ends. The field fills when both picks clear its gate, at least one is a
- * candidate, neither is `not_available`, and the start is not after the end.
+ * candidate, neither is `not_available` nor a reading the parser marked
+ * ambiguous, and the start is not after the end.
  */
 export function datePlan(
 	name: string,
@@ -212,6 +218,7 @@ export function datePlan(
 			const start = candidates.find(({ id }) => id === from.pick?.label);
 			const end = candidates.find(({ id }) => id === to.pick?.label);
 			if (!start && !end) return { result };
+			if (start?.value.ambiguous || end?.value.ambiguous) return { result };
 			const value: DateRange = {};
 			if (start) value.from = start.value.from;
 			if (end) value.to = end.value.to;
@@ -285,7 +292,7 @@ function answerOf(probabilities: Probabilities = {}): FieldAnswer {
 }
 
 /** Every pick clears the gate, and none says the request asks for what no candidate expresses. */
-function clearsGate(answers: FieldAnswer[], gate: number): boolean {
+export function clearsGate(answers: FieldAnswer[], gate: number): boolean {
 	return answers.every(
 		({ pick }) =>
 			pick !== null && pick.probability >= gate && pick.label !== NOT_AVAILABLE,
@@ -306,6 +313,11 @@ export function describeDate({ text, from, to, note }: DateReading): string {
 			? `the single day ${dayName(from)}`
 			: `${dayName(from)} to ${dayName(to)}, both included`;
 	return `"${text}": ${span}${note ? ` (${note})` : ""}`;
+}
+
+/** What the provider reads about a time candidate. */
+export function describeTime({ text, time, note }: TimeReading): string {
+	return `"${text}": ${time}${note ? ` (${note})` : ""}`;
 }
 
 /** What the provider reads about an amount candidate: its value is already read. */

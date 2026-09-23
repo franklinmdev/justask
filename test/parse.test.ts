@@ -5,9 +5,15 @@ import { describe, expect, it } from "vitest";
 const TODAY = "2026-09-21";
 
 const parse = (text: string, facts: Facts = {}) =>
-	builtInParser(text, { today: TODAY, facts });
+	builtInParser(text, { today: TODAY, reads: "past", facts });
 const dates = (text: string) =>
 	(parse(text).dates ?? []).map((d) => [d.text, d.from, d.to]);
+const ahead = (text: string, today = TODAY) =>
+	(builtInParser(text, { today, reads: "future", facts: {} }).dates ?? []).map(
+		(d) => [d.text, d.from, d.to],
+	);
+const times = (text: string) =>
+	(parse(text).times ?? []).map((t) => [t.text, t.time]);
 const amounts = (text: string, facts: Facts = {}) =>
 	(parse(text, facts).amounts ?? []).map((a) => [a.text, a.value, a.currency]);
 
@@ -110,6 +116,171 @@ describe("relative dates", () => {
 		expect(dates("el sábado pasado")).toEqual([
 			["sábado pasado", "2026-09-19", "2026-09-19"],
 		]);
+	});
+});
+
+describe("reading the future, as a due date does", () => {
+	it.each([
+		["mañana", "2026-09-22"],
+		["tomorrow", "2026-09-22"],
+		["pasado mañana", "2026-09-23"],
+		["the day after tomorrow", "2026-09-23"],
+		["en 3 días", "2026-09-24"],
+		["dentro de dos semanas", "2026-10-05"],
+		["in 2 weeks", "2026-10-05"],
+		["hoy", "2026-09-21"],
+	])("%s", (text, day) => {
+		expect(ahead(text)).toEqual([[text, day, day]]);
+	});
+
+	it("reads a weekday as the first one after today, so on a Monday 'el lunes' is a week away", () => {
+		expect(ahead("el viernes")).toEqual([
+			["viernes", "2026-09-25", "2026-09-25"],
+		]);
+		expect(ahead("el lunes")).toEqual([["lunes", "2026-09-28", "2026-09-28"]]);
+	});
+
+	it.each([
+		["5 de marzo", "2027-03-05"],
+		["March 5", "2027-03-05"],
+		["25 de septiembre", "2026-09-25"],
+		["21 de septiembre", "2026-09-21"],
+		["el día 28", "2026-09-28"],
+		["el día 5", "2026-10-05"],
+		["due on the 3rd", "2026-10-03"],
+		["el 28 a las 3", "2026-09-28"],
+	])("puts a day with no year on or after today: %s", (text, day) => {
+		expect(ahead(text).map(([, from]) => from)).toEqual([day]);
+	});
+
+	it.each([
+		["en octubre", "2026-10-01", "2026-10-31"],
+		["in August", "2027-08-01", "2027-08-31"],
+		["en septiembre", "2026-09-01", "2026-09-30"],
+		["Q1", "2027-01-01", "2027-03-31"],
+		["third quarter", "2026-07-01", "2026-09-30"],
+	])(
+		"puts a month or quarter with no year in the first one not over: %s",
+		(text, from, to) => {
+			expect(ahead(text).map(([, f, t]) => [f, t])).toEqual([[from, to]]);
+		},
+	);
+
+	it("offers both readings of 03/04 in the future", () => {
+		expect(ahead("03/04")).toEqual([
+			["03/04", "2027-04-03", "2027-04-03"],
+			["03/04", "2027-03-04", "2027-03-04"],
+		]);
+	});
+
+	it.each([
+		["friday next week", "2026-10-02"],
+		["el viernes de la semana que viene", "2026-10-02"],
+		["el viernes de la semana pasada", "2026-09-18"],
+	])(
+		"reads a weekday of the week after or before this one one way: %s",
+		(text, day) => {
+			expect(ahead(text).map(([, from]) => from)).toEqual([day]);
+		},
+	);
+
+	it("reads no day from an ordinal that ranks rows", () => {
+		expect(ahead("the 3rd largest invoice")).toEqual([]);
+		expect(dates("the 3 largest invoices")).toEqual([]);
+	});
+});
+
+describe("next and last weekdays", () => {
+	const readings = (text: string, reads: "past" | "future", today = TODAY) =>
+		(builtInParser(text, { today, reads, facts: {} }).dates ?? []).map((d) => [
+			d.from,
+			d.ambiguous ?? false,
+		]);
+
+	it.each(["next Friday", "el próximo viernes", "el viernes que viene"])(
+		"marks both readings of '%s' ambiguous, whichever way the field reads",
+		(text) => {
+			const both = [
+				["2026-09-25", true],
+				["2026-10-02", true],
+			];
+			expect(readings(text, "future")).toEqual(both);
+			expect(readings(text, "past")).toEqual(both);
+		},
+	);
+
+	it("reads 'next Monday' on a Monday one way: a week from today", () => {
+		expect(readings("el próximo lunes", "future")).toEqual([
+			["2026-09-28", false],
+		]);
+	});
+
+	it("marks both readings of 'last Tuesday' ambiguous on a Thursday, when they are two weeks", () => {
+		const both = [
+			["2026-09-22", true],
+			["2026-09-15", true],
+		];
+		expect(readings("last Tuesday", "past", "2026-09-24")).toEqual(both);
+		expect(readings("el martes pasado", "past", "2026-09-24")).toEqual(both);
+	});
+
+	it("reads 'last Friday' on a Monday one way, since both readings are the same day", () => {
+		expect(readings("last Friday", "past")).toEqual([["2026-09-18", false]]);
+	});
+});
+
+describe("times", () => {
+	it.each([
+		["a las 4 de la tarde", "a las 4 de la tarde", "16:00"],
+		["at 4pm", "at 4pm", "16:00"],
+		["lunch at 9 am", "at 9 am", "09:00"],
+		["a las 10 de la mañana", "a las 10 de la mañana", "10:00"],
+		[
+			"las 5 menos cuarto de la tarde",
+			"las 5 menos cuarto de la tarde",
+			"16:45",
+		],
+		["17:00", "17:00", "17:00"],
+		["al mediodía", "al mediodía", "12:00"],
+		["at noon", "noon", "12:00"],
+		["at 12", "at 12", "12:00"],
+	])("%s", (text, span, time) => {
+		expect(times(text)).toEqual([[span, time]]);
+	});
+
+	it("offers the morning and the evening reading of a bare hour, for the provider to pick from the words around it", () => {
+		expect(times("a las 4")).toEqual([
+			["a las 4", "04:00"],
+			["a las 4", "16:00"],
+		]);
+		expect(times("a la una y media")).toEqual([
+			["a la una y media", "01:30"],
+			["a la una y media", "13:30"],
+		]);
+		expect(parse("a las 4").times?.every((t) => !t.ambiguous)).toBe(true);
+	});
+
+	it("marks an hour with no minute said ambiguous: 'a las 2 y pico'", () => {
+		expect(
+			parse("a las 2 y pico").times?.map((t) => [t.time, t.ambiguous]),
+		).toEqual([
+			["02:00", true],
+			["14:00", true],
+		]);
+	});
+
+	it("does not read 'mañana' in 'de la mañana' as tomorrow", () => {
+		expect(ahead("a las 10 de la mañana")).toEqual([]);
+	});
+
+	it("leaves money and counts alone", () => {
+		expect(times("lunch at 5 dollars")).toEqual([]);
+		expect(amounts("lunch at 5 dollars")).toEqual([["5 dollars", 5, "USD"]]);
+		expect(times("las 3 facturas")).toEqual([]);
+	});
+
+	it("does not read the hour of a time as an amount", () => {
+		expect(amounts("a las 4 de la tarde")).toEqual([]);
 	});
 });
 
@@ -421,6 +592,7 @@ describe("nothing to parse", () => {
 	it("returns no candidates for a request with no date or number", () => {
 		expect(parse("ventas contabilizadas de Ana")).toEqual({
 			dates: [],
+			times: [],
 			amounts: [],
 		});
 	});
