@@ -483,7 +483,11 @@ function blame(
 				: "parser";
 		case "amount":
 			return isAmount(expected) &&
-				logged.candidates.some(({ value }) => value.value === expected.value)
+				logged.candidates.some(
+					({ value }) =>
+						value.value === expected.value &&
+						(value.currency ?? undefined) === expected.currency,
+				)
 				? "provider"
 				: "parser";
 	}

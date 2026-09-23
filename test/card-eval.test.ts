@@ -507,6 +507,26 @@ describe("runCardEval", () => {
 		]);
 	});
 
+	it("blames the parser for an amount whose currency no candidate reads", async () => {
+		const run = await runCardEval({
+			...input(join(dir, "run-1.jsonl")),
+			set: set([
+				{
+					id: "euros",
+					request: "acme toner, $18",
+					kind: "record",
+					expected: { total: { value: 18, currency: "EUR" } },
+				},
+			]),
+		});
+
+		const { misses } = scoreCardRun(run);
+
+		expect(
+			misses.map(({ id, field, got, blame }) => [id, field, got, blame]),
+		).toEqual([["euros", "total", { value: 18, currency: "USD" }, "parser"]]);
+	});
+
 	it("names a card held by its intent as the intent's miss alone", async () => {
 		const run = await runCardEval(input(join(dir, "run-1.jsonl")));
 
