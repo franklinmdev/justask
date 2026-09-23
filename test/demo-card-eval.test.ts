@@ -71,12 +71,12 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 		expect(mentioning(records, "total")).toHaveLength(27);
 	});
 
-	it("give the dev set 12 records, 1 ambiguous row per field and 4 with nothing to record", () => {
+	it("give the dev set 12 records, 1 ambiguous row per field and 12 with nothing to record", () => {
 		const records = rows(devSet, "record");
 		const ambiguous = rows(devSet, "ambiguous");
 		expect(records).toHaveLength(12);
 		expect(ambiguous).toHaveLength(4);
-		expect(rows(devSet, "nothing")).toHaveLength(4);
+		expect(rows(devSet, "nothing")).toHaveLength(12);
 		for (const field of FIELDS)
 			expect(heldOn(ambiguous, field)).toHaveLength(1);
 	});
