@@ -1,0 +1,19 @@
+# Demo showcase: shape brief
+
+Confirmed with the owner on 2026-09-23 (#30, with #36 folded in). Visual rules come from `DESIGN.md` and the personal file it inherits; this brief changes the demo's structure, not its world.
+
+- **Job and audience:** a UI-minded developer judging whether justask fits their app, skeptical and quick. The page persuades; inside each case the app works like a real app. Success: in the first viewport, with no click, a sentence sets a real table's filters and the reasons are visible beside it.
+- **Cases:** one fictional invoicing app. Table: invoices with their own filter controls for vendor, status, a date range and an amount range. Form: new expense. Search: the app's search box finding the vendor the person meant, with that vendor's transactions shown at once, no extra click. No new domain and no new eval set.
+- **Direction, one UI driven:** justask sets the controls the app already has; there is no second "before" copy of the UI. A counter beside the box compares "1 sentence" with the clicks and menus the set controls needed, computed from the controls, never written by hand. The signature motion is the controls settling in field order; its placements become the filter control, the form field and the chosen search result.
+- **First answer:** each case opens on a recorded real run, labelled with its date, replayed: the sentence types in, then the controls set themselves. Typing or picking a suggestion makes a live call. Six recordings, three cases in English and Spanish, each sentence taken from a frozen eval row the gates already pass.
+- **Page:** one showcase page. The 56px header keeps the product, the theme toggle and the language toggle; case tabs (Table, Form, Search) replace the three page links, and the case lives in the URL. The cost calculator sits below the case.
+- **Under the hood:** desktop at 1100px and up puts the app at about 58% and the hood as a sticky column at about 42%, open by default, with a toggle that hides it. On a phone, an "App | Under the hood" switch at the top of the case, App selected. The hood has a strip that's always visible (latency, tokens, cost), then tabs: Trace (what was sent with the facts, the candidates with every probability, the gate verdict per field), JSON (the resulting object), Code (a React snippet that reproduces the case).
+- **Table controls (#36):** the applied filters feed the table's own controls; a held field is filled or changed there by the person, never through justask's pieces. The date range uses the calendar popover, as on the card page. The filter page's hint and its Spanish twin go.
+- **Affordances:** suggestions look like buttons at rest (border and accent text), grouped by what they show. Nothing is clickable only on hover.
+- **Calculator:** users, times actions per person per day, times the measured cost per call, times 30 days, gives the cost per month. It starts from the displayed run's cost and shows the price source and the date it was read. Prices are fetched from TypeSafe's docs on the build day.
+- **States:** recorded replay, idle after replay, waiting (the last readout dims), filled, held (the field stays visibly empty and the hood says why), failed (the app stays as it was and says so).
+- **Mobile:** a separate layout with the same actions, checked at 390. Filter controls in a 2 by 2 grid; the five-column table becomes a card list under 560px, as `DESIGN.md` allows.
+- **Accessibility:** WCAG 2.2 AA. The tabs, the switch and the hood work by keyboard; the replay and each field set or held are announced.
+- **Anti-goals:** no landing-page hero, gradient or marketing claim; no invented users or numbers.
+- **Out of scope:** the playground and deploying (#29).
+- **DESIGN.md at build time:** update the page-title override (case tabs replace page links) and the signature motion's placements.
