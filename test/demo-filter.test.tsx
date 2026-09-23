@@ -218,6 +218,19 @@ describe("the demo's filter page", () => {
 		expect(state.queryByText("Cost")).toBeNull();
 	});
 
+	it("shows the tokens and cost in Spanish", async () => {
+		const { user } = renderDemo({
+			provider: priced,
+			url: "/?page=filter&lang=es",
+		});
+
+		await user.click(screen.getByRole("button", { name: "facturas vencidas" }));
+
+		const state = panel("Qué pasó");
+		expect(await figure(state, "Tokens de entrada")).toBe("120");
+		expect(await figure(state, "Costo")).toBe("0,000005\u00a0US$");
+	});
+
 	it("shows why each field filled or was held in the state panel", async () => {
 		const { container, user } = renderDemo();
 
