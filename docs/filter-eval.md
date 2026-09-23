@@ -201,3 +201,31 @@ No flip in either language; p95 297 and 354 ms, probes normal (206 and 214 ms).
 
 - Run 1: `demo/eval/runs/filter-en-round2-1.jsonl`, `demo/eval/runs/filter-es-round2-1.jsonl`
 - Run 2: `demo/eval/runs/filter-en-round2-2.jsonl`, `demo/eval/runs/filter-es-round2-2.jsonl`
+
+## Status-pair probes: the Spanish names, and the hold's cost
+
+Carried by [#75](https://github.com/franklinmdev/justask/issues/75). Rounds 1 and 2 stand as recorded. ADR 0011 left the status hold in English only, since the Spanish statuses declared no names, and unmeasured, since no round names two statuses.
+
+- **The Spanish statuses now declare names** the pair hold reads (`status()` in `demo/src/content/types.ts`): `pagadas`, `pendientes`, `vencidas`. The typo rule reads each singular too (`pagada`, one letter off). They are plural because `pagada` would also read `pasada`, one letter off, so "la semana pasada" would name the paid status. The provider reads a status's id and description, never its names, so what the status field fills is unchanged.
+- **Checked with no call** over every set in `demo/eval/` and the demo's suggestions (594 English and 614 Spanish requests): the rule holds the status of none. No false hold, and no evidence either, so the owner approved ten probe rows per language on 2026-09-23, before any call.
+
+### Probe rows
+
+`demo/eval/filter-en.pair.jsonl` and `filter-es.pair.jsonl`, frozen by checksum in `test/demo-filter-eval.test.ts`, run with `filter.ts run <en|es> pair <n>` and no verdict, at round 1's gates. Rows 1 to 4 name two statuses with "or" or "and" (ambiguous, the status held; row 4 in the singular: `la pagada o la vencida de Cafetal`); rows 5 and 6 one status beside a vendor pair (the vendor held, the status filled); rows 7 and 8 two statuses with one negated, where the person means one (`invoices not paid and overdue`, `facturas pendientes y no vencidas de Serena`), which the rule holds anyway; rows 9 and 10 one status and no pair.
+
+### Pair runs 1 and 2
+
+Runs of 2026-09-23 with `jev-1.13.0`, gates vendor 0.6, status 0.95, date 0.85, amount 0.9, today fixed at Tuesday 2026-09-22, probes normal in all four (medians 252 to 332 ms against 235). No flip between the runs.
+
+| Probe rows | The provider alone | With the hold |
+|---|---|---|
+| 1 to 4, two statuses | no status above 0.74 (`open and overdue invoices over $500`, overdue 0.74 and 0.71); `not_available` on top in the other 14 of 16, at 0.41 to 0.69: the status gate held all 16 | held, as meant |
+| 5 and 6, a status beside a vendor pair | vendor 0.54 to 0.72: row 6 fills a vendor at the gate of 0.6 in both languages and both runs (Inkhollow 0.68, Tintaverde 0.72) | vendor held; status right, 0.93 to 1.00, filled but for `en-p-06` run 1 (paid 0.93, under the gate) |
+| 7 and 8, one status negated | right, 0.98 to 1.00, all 8 | **held, 2 false holds per language per run** |
+| 9 and 10, one status | right, 0.97 to 1.00 | nothing held |
+
+### What the probes say
+
+- **The vendor hold is needed; the status hold, at this gate, is not.** A pair of statuses reads as `not_available` to the provider, and no status pick came within 0.2 of the status gate. The hold would matter only if that gate dropped below about 0.75.
+- **The status hold's cost is a negated status.** "not paid and overdue", "pendientes y no vencidas": two statuses joined by "and", one of them the one the person rules out. The provider read all 8 right at 0.98 or more; the rule held them. It never shows a wrong filter, so the cost is coverage: every such request leaves its status empty.
+- Run logs: `demo/eval/runs/filter-<en|es>-pair-<1|2>.jsonl`.
