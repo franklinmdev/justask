@@ -1,6 +1,6 @@
 # Search eval: sets, kill lines and verdict
 
-**Status: run, verdict FAIL (Spanish held ambiguous 0.667 against 0.75).** Approved by the owner on 2026-09-22 (#13), with the shortlist raised to 14; the eval sets, the kill lines and the gate rule were frozen then, before any provider call.
+**Status: round 3 run, verdict PASS at the line's minimum on held ambiguous (0.833 against 0.75 in both languages); rounds 1 and 2 failed it in Spanish at 0.667.** Approved by the owner on 2026-09-22 (#13), with the shortlist raised to 14; the eval sets, the kill lines and the gate rule were frozen then, before any provider call.
 
 **Hypothesis:** on the demo's fictional invoicing data, the search shows the vendor a request means, or nothing, in English and in Spanish, as the person types.
 
@@ -199,3 +199,53 @@ Dev runs of 2026-09-22 with `jev-1.13.0`, gate 0.15, shortlist 14, the same six 
 - **Cost:** about 5% more per call than before (one more label to read).
 
 Run logs: `demo/eval/runs/search-en-dev-2.jsonl`, `demo/eval/runs/search-es-dev-2.jsonl`.
+
+## Round 3: result
+
+**Verdict: PASS.** Both languages clear every kill line in run 1. This is the first round to pass; whether it closes delivery 1 is the owner's call.
+
+Runs of 2026-09-23 (UTC) with `jev-1.13.0`, gate 0.15 against `none` and `several` alike (ADR 0007), shortlist 14, the same six kill lines and today fixed at Tuesday 2026-09-22. The sets were drafted by the orchestrator with the owner, approved, copied in unchanged (sha256 checked against the approved drafts) and frozen by checksum in `test/demo-eval.test.ts` in the commit before the first call. No row repeats a round 1, round 2 or dev request, nor a suggestion. No dev run: the gate was already fixed.
+
+### Run 1: the verdict
+
+| Measure | Kill line | English | Spanish |
+|---|---|---|---|
+| exact | at least 0.9 | 1 (25 of 25) | 1 (25 of 25) |
+| coverage | at least 0.8 | 0.893 (25 of 28) | 0.893 (25 of 28) |
+| invented | at most 0 | 0 | 0 |
+| held ambiguous | at least 0.75 | 0.833 (5 of 6) | 0.833 (5 of 6) |
+| p95 | at most 800 ms | 288 ms | 297 ms |
+| errors | at most 0 | 0 | 0 |
+| cost per call | | $0.0000316 | $0.0000338 |
+
+Every vendor shown was the one meant, and no nothing row got a vendor: the twelve nothing rows sat at `none` 0.87 to 1.
+
+Misses:
+
+| Row | Request | Expected | Got | `none` | `several` |
+|---|---|---|---|---|---|
+| en-r3-39 | paper for the flyers | ambiguous | Inkhollow (0.87, next Papergrove 0.08) | 0.02 | 0.03 |
+| es-r3-39 | el papel para los volantes | ambiguous | Letranueva (0.63, next Tintaverde 0.19) | 0.04 | 0.14 |
+| en-r3-09 | the company that did the windows on the third floor | Glasswell | held | 0.41 | 0.01 |
+| en-r3-16 | tallyrot | Tallyroot | held | 0.28 | 0 |
+| en-r3-15 | accounting licenses for the new hires | Tallyroot | held | 0.16 | 0.01 |
+| es-r3-09 | la empresa que hizo las ventanas del tercer piso | Relucir | held | 0.94 | 0 |
+| es-r3-06 | nuvalia | Nubalia | held | 0.29 | 0.01 |
+| es-r3-19 | la entrega urgente al cliente del centro | Pieveloz | held | 0.22 | 0.02 |
+
+### Run 2: flips only
+
+English: one flip, `accounting licenses for the new hires`, held at `none` 0.16 in run 1, Tallyroot at 0.12 in run 2: it sits on the gate. Spanish: no flip. The same ambiguous row leaked in both runs of both languages.
+
+### What the misses say
+
+- **The pass has no slack on held ambiguous.** Each language held exactly 5 of 6, the line's minimum; one more leak in either fails it.
+- **The one leak is the same row in both languages, and it is a confident single pick.** `paper for the flyers` went to the print shop at 0.87 (0.79 in run 2) with `several` at 0.03; `el papel para los volantes` to Letranueva at 0.63 with `several` at 0.14 (0.12 in run 2), just under the gate. This is the shape round 2's misses warned of (`el trabajo de impresión`, Letranueva at 0.96), and `several` does not catch it in English. In Spanish it came within 0.01 of the gate.
+- **`several` held the rows that name two things, not the category rows.** `several` read 0.76 to 0.99 on the two named-vendor rows and the contracts-and-staff row in each language. The two category rows (`the kitchen supplier`, `what we pay every month for our computers` and their Spanish pairs) held on `none` instead, with `several` at 0.07 or less. Three sat far above the gate (0.68 to 0.88); the fourth is close: `el proveedor de la cocina` held at `none` 0.23 in run 1 and 0.18 in run 2, with Cazuela Azul at 0.70 and 0.75.
+- **Coverage lost the same windows row in both languages.** `the company that did the windows on the third floor` (`none` 0.41) and `la empresa que hizo las ventanas del tercer piso` (`none` 0.94, Relucir 0.06): "did the windows" can read as fitting windows, not washing them, and the catalog has no glazier. Recorded as a miss; the row stands as approved.
+- **The typos split.** `tallyrot` and `nuvalia` held at `none` 0.28 and 0.29; round 1's typos (`papergrov`, `Relusir`) filled. Two of 28 items per language, and coverage still clears its line.
+
+### Run logs
+
+- Run 1: `demo/eval/runs/search-en-round3-1.jsonl`, `demo/eval/runs/search-es-round3-1.jsonl`
+- Run 2: `demo/eval/runs/search-en-round3-2.jsonl`, `demo/eval/runs/search-es-round3-2.jsonl`
