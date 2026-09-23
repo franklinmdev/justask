@@ -79,6 +79,8 @@ export const spanish: Content = {
 			removeLabel: (field) => `Quitar el filtro de ${field.toLowerCase()}`,
 			removed: (field) => `Se quitó: ${field.toLowerCase()}`,
 			confirm: "Aplicar filtros",
+			heldHint:
+				"Un campo retenido queda fuera de los filtros. Una aplicación real lo completa con los controles de su propia tabla.",
 			empty: "Nada en esa solicitud filtra las transacciones.",
 			applied: "Aplicados",
 			clear: "Quitar filtros",

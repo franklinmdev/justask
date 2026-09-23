@@ -66,6 +66,8 @@ export type FilterCopy = {
 	/** What a screen reader hears once a proposed filter is removed. */
 	removed: (field: string) => string;
 	confirm: string;
+	/** Says who fills a held field, since the demo's table has no controls of its own. */
+	heldHint: string;
 	empty: string;
 	applied: string;
 	clear: string;

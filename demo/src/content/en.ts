@@ -78,6 +78,8 @@ export const english: Content = {
 			removeLabel: (field) => `Remove the ${field.toLowerCase()} filter`,
 			removed: (field) => `Removed: ${field.toLowerCase()}`,
 			confirm: "Apply filters",
+			heldHint:
+				"A held field stays out of the filters. A real app fills it with its own table controls.",
 			empty: "Nothing in that request filters the transactions.",
 			applied: "Applied",
 			clear: "Clear filters",

@@ -190,6 +190,12 @@ describe("the demo's filter page", () => {
 
 		await waitForProposal();
 		expect(proposed()).toEqual(["DateAug 1, 2026 to Aug 31, 2026Remove"]);
+		// The demo's table has no filter controls of its own, so it says who fills a held field.
+		expect(
+			screen.getByText(
+				"A held field stays out of the filters. A real app fills it with its own table controls.",
+			),
+		).toBeDefined();
 		const vendor = within(panel().getByRole("region", { name: "Vendor" }));
 		expect(vendor.getByText("Held")).toBeDefined();
 		expect(

@@ -4,6 +4,7 @@ import {
 	FilterConfirm,
 	FilterEmpty,
 	FilterFields,
+	type UseFilter,
 	useFilter,
 } from "justask/react";
 import { useState } from "react";
@@ -50,6 +51,12 @@ function fieldWords(content: Content) {
 		amount: (range) => copy.filter.amountRange(range, format.amount),
 	};
 	return words;
+}
+
+/** True when the proposal on screen leaves a declared field empty. */
+function held(filter: UseFilter<TransactionFields>): boolean {
+	const declared = Object.keys(filter.result?.fields ?? {});
+	return declared.some((name) => !(name in (filter.result?.value ?? {})));
 }
 
 function FieldChip({ name, text }: { name: string; text: string }) {
@@ -131,6 +138,9 @@ export function FilterPage({
 				<FilterEmpty filter={filter} className="result">
 					<p className="empty">{copy.filter.empty}</p>
 				</FilterEmpty>
+				{filter.value && filter.result && held(filter) && (
+					<p className="hint">{copy.filter.heldHint}</p>
+				)}
 				<div className="confirm-row">
 					<FilterConfirm filter={filter} className="confirm">
 						{copy.filter.confirm}
