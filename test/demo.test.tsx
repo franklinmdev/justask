@@ -21,12 +21,12 @@ import {
 } from "./fake-provider.ts";
 
 /** Every vendor of both sets and several at zero, so the fake answers any shortlist. */
-const nobody = Object.fromEntries(
-	[...english.vendors, ...spanish.vendors, { id: "several" }].map(({ id }) => [
-		id,
-		0,
-	]),
-);
+const nobody = {
+	...Object.fromEntries(
+		[...english.vendors, ...spanish.vendors].map(({ id }) => [id, 0]),
+	),
+	several: 0,
+};
 
 function answer(probabilities: Record<string, number>): FakeAnswers {
 	return { search: { ...nobody, ...probabilities } };

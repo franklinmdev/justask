@@ -135,10 +135,7 @@ export const spanish: Content = {
 				return from ? `desde el ${date(from)}` : `hasta el ${date(to ?? "")}`;
 			},
 			amountRange: ({ min, max, exact, currency }, amount) => {
-				const money = (value: number) =>
-					currency && currency !== "USD"
-						? `${value} ${currency}`
-						: amount(value);
+				const money = (value: number) => amount(value, currency);
 				if (exact !== undefined) return `exactamente ${money(exact)}`;
 				if (min !== undefined && max !== undefined) {
 					return `de ${money(min)} a ${money(max)}`;

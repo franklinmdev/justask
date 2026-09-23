@@ -20,6 +20,7 @@ import type {
 	TransactionFields,
 	Vendor,
 } from "../src/content/types.ts";
+import { LOCAL_CURRENCY } from "../src/format.ts";
 
 /**
  * Fixed by the owner for round 2, before its rows existed: round 1 failed at
@@ -32,7 +33,7 @@ export const GATE = 0.15;
 export const TIMEOUT_MS = 2_000;
 
 /** Written beside today, which the handler adds from the browser's time zone. */
-export const FACTS: Facts = { local_currency: "USD" };
+export const FACTS: Facts = { local_currency: LOCAL_CURRENCY };
 
 /**
  * The whole catalog. At 10 of 14 the fill came from the catalog's first

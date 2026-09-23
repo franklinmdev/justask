@@ -13,7 +13,7 @@ import { cardEndpoint } from "./api.ts";
 import { CardPanel } from "./card-panel.tsx";
 import type { Content, ExpenseFields, ExpenseName } from "./content/types.ts";
 import { DayPicker } from "./day-picker.tsx";
-import { formats } from "./format.ts";
+import { formats, LOCAL_CURRENCY } from "./format.ts";
 import { Suggestions } from "./parts.tsx";
 import { type Trace, timed, useSuggest } from "./trace.ts";
 
@@ -258,10 +258,7 @@ function SavedExpense({
 	let total: ReactNode = null;
 	if (expense.total) {
 		const { value, currency } = expense.total;
-		total =
-			currency && currency !== "USD"
-				? `${value} ${currency}`
-				: format.amount(value);
+		total = format.amount(value, currency);
 	}
 	return (
 		<li className="expense">
@@ -336,7 +333,7 @@ function AmountInput({
 	return (
 		<div className="amount">
 			<span className="amount-mark" aria-hidden="true">
-				{currency && currency !== "USD" ? currency : "$"}
+				{currency && currency !== LOCAL_CURRENCY ? currency : "$"}
 			</span>
 			<input
 				id={id}

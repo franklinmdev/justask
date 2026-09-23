@@ -9,7 +9,7 @@ export type RequestBoxProps = Omit<
 };
 
 /** The part of a flow's hook the request box drives. */
-type Flow = {
+export type RequestFlow = {
 	request: string;
 	setRequest: (request: string) => void;
 	submit: () => void;
@@ -24,7 +24,7 @@ export function RequestBox({
 	label,
 	onKeyDown,
 	...props
-}: RequestBoxProps & { flow: Flow }) {
+}: RequestBoxProps & { flow: RequestFlow }) {
 	function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
 		onKeyDown?.(event);
 		if (

@@ -84,17 +84,14 @@ export function scoreRun(run: Run, { gate = run.gate } = {}): Report {
 	const ambiguous = read.filter(({ row }) => row.kind === "ambiguous");
 	const leaked = ambiguous.filter(({ item }) => item !== null);
 
-	const measures: Measures = {
-		exact: ratio(right.length, covered.length),
-		coverage: ratio(covered.length, items.length),
+	const measures = measuresOf(run.rows, {
+		exact: right.length,
+		covered: covered.length,
+		expected: items.length,
 		invented: invented.length,
-		heldAmbiguous: ratio(ambiguous.length - leaked.length, ambiguous.length),
-		p95Ms: percentile(
-			answered.map(({ latencyMs }) => latencyMs),
-			95,
-		),
-		errors: run.rows.length - answered.length,
-	};
+		ambiguous: ambiguous.length,
+		held: ambiguous.length - leaked.length,
+	});
 
 	const misses = read
 		.filter(({ row, item }) => item !== row.expected)
@@ -199,6 +196,36 @@ function readRow(
 	};
 }
 
+/**
+ * The measures every flow's report shares, from its counts: exact over the
+ * covered rows, coverage over the rows that expect a fill, and latency over
+ * the answered rows. The error rows are the rest of the run.
+ */
+export function measuresOf(
+	rows: Pick<RunRow, "latencyMs" | "error">[],
+	counts: {
+		exact: number;
+		covered: number;
+		expected: number;
+		invented: number;
+		ambiguous: number;
+		held: number;
+	},
+): Measures {
+	const answered = rows.filter((row) => !row.error);
+	return {
+		exact: ratio(counts.exact, counts.covered),
+		coverage: ratio(counts.covered, counts.expected),
+		invented: counts.invented,
+		heldAmbiguous: ratio(counts.held, counts.ambiguous),
+		p95Ms: percentile(
+			answered.map(({ latencyMs }) => latencyMs),
+			95,
+		),
+		errors: rows.length - answered.length,
+	};
+}
+
 export function judge(killLines: KillLines, measures: Measures): Verdict {
 	const lines = MEASURES.map(({ measure, atLeast }): VerdictLine => {
 		const line = killLines[measure];
@@ -231,12 +258,12 @@ export function costPerCall(
 	return total / calls.length;
 }
 
-export function ratio(part: number, whole: number): number | null {
+function ratio(part: number, whole: number): number | null {
 	return whole === 0 ? null : part / whole;
 }
 
 /** Nearest rank, as in the lab. */
-export function percentile(values: number[], p: number): number | null {
+function percentile(values: number[], p: number): number | null {
 	if (values.length === 0) return null;
 	const sorted = [...values].sort((a, b) => a - b);
 	const rank = Math.ceil((p / 100) * sorted.length) - 1;

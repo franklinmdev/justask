@@ -168,9 +168,7 @@ function readoutsOf(
 						detail:
 							value.unresolved !== undefined
 								? copy.card.unresolved(value.unresolved)
-								: value.currency && value.currency !== "USD"
-									? `${value.value} ${value.currency}`
-									: format.amount(value.value),
+								: format.amount(value.value, value.currency),
 					})),
 					field,
 				),

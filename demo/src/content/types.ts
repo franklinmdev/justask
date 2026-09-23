@@ -154,7 +154,7 @@ export type FilterCopy = {
 	dateRange: (range: DateRange, date: (iso: string) => string) => string;
 	amountRange: (
 		range: AmountRange,
-		amount: (value: number) => string,
+		amount: (value: number, currency?: string) => string,
 	) => string;
 	summary: (filled: number, total: number) => string;
 	filledBecause: (probability: string, gate: string) => string;
@@ -162,7 +162,8 @@ export type FilterCopy = {
 	start: string;
 	end: string;
 	number: (text: string) => string;
-	roles: Record<"min" | "max" | "exact", string>;
+	/** What each number of an amount can do: its bounds, or the exact amount. */
+	roles: Record<Exclude<keyof AmountRange, "currency">, string>;
 	more: (count: number) => string;
 	gate: string;
 	questions: string;

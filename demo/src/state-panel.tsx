@@ -5,6 +5,10 @@ import { formats } from "./format.ts";
 import { Bar, failureOf } from "./parts.tsx";
 import type { Trace } from "./trace.ts";
 
+/** The search question's own labels, asked beside the candidates (ADR 0005, 0007). */
+const NONE = "none";
+const SEVERAL = "several";
+
 type Verdict =
 	| { kind: "idle" }
 	| { kind: "filled"; name: string; none: number; several: number }
@@ -26,8 +30,8 @@ function verdictOf(
 	if (result.candidates.length === 0) {
 		return { kind: "held", reason: { kind: "no-candidates" } };
 	}
-	const none = result.probabilities.none ?? 1;
-	const several = result.probabilities.several ?? 0;
+	const none = result.probabilities[NONE] ?? 1;
+	const several = result.probabilities[SEVERAL] ?? 0;
 	if (result.item) {
 		return { kind: "filled", name: result.item.name, none, several };
 	}
@@ -53,7 +57,7 @@ function verdictOf(
 		};
 	}
 	// Below the gate, a none or several pick still holds, like a tie (ADR 0005, 0007).
-	return result.pick.label === "several"
+	return result.pick.label === SEVERAL
 		? {
 				kind: "held",
 				reason: {
@@ -204,8 +208,8 @@ function Candidates({
 					);
 				})}
 			</tbody>
-			<tbody className="none-row">
-				{["none", "several"].map((label) => {
+			<tbody className="own-labels">
+				{[NONE, SEVERAL].map((label) => {
 					const picked = result.pick?.label === label;
 					return (
 						<tr key={label} data-picked={picked || undefined}>

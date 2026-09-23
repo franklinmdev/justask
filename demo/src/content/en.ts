@@ -134,10 +134,7 @@ export const english: Content = {
 				return from ? `since ${date(from)}` : `until ${date(to ?? "")}`;
 			},
 			amountRange: ({ min, max, exact, currency }, amount) => {
-				const money = (value: number) =>
-					currency && currency !== "USD"
-						? `${value} ${currency}`
-						: amount(value);
+				const money = (value: number) => amount(value, currency);
 				if (exact !== undefined) return `exactly ${money(exact)}`;
 				if (min !== undefined && max !== undefined) {
 					return `${money(min)} to ${money(max)}`;

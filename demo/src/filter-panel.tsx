@@ -1,4 +1,5 @@
 import type {
+	AmountRange,
 	CatalogFieldResult,
 	FieldAnswer,
 	FilterResult,
@@ -19,6 +20,12 @@ import type { Trace } from "./trace.ts";
 type Format = ReturnType<typeof formats>;
 
 export const MISSING = ["not_mentioned", "not_available"];
+
+/** What a number can do in an amount, in the panel's order: the bounds, then the exact amount. */
+const ROLES = ["min", "max", "exact"] as const satisfies readonly Exclude<
+	keyof AmountRange,
+	"currency"
+>[];
 
 /** How many of a catalog's candidates the panel lists, the likeliest first. */
 const SHOWN = 3;
@@ -43,15 +50,15 @@ export function answersOf(
 			: [];
 }
 
-/** The currency an amount names that the local one does not resolve, which holds it unasked. */
+/** The currency an amount names that the local one does not resolve, which holds the field unasked. */
 function unresolvedOf(
-	result: CatalogFieldResult<unknown> | ParsedFieldResult<unknown>,
+	name: FieldName,
+	result: FilterResult<TransactionFields>,
 ): string | undefined {
-	for (const { value } of result.candidates) {
-		const mark = (value as { unresolved?: string } | null)?.unresolved;
-		if (mark !== undefined) return mark;
-	}
-	return undefined;
+	if (name !== "amount") return undefined;
+	return result.fields.amount.candidates.find(
+		({ value }) => value.unresolved !== undefined,
+	)?.value.unresolved;
 }
 
 /**
@@ -61,11 +68,13 @@ function unresolvedOf(
  */
 function heldReasonOf(
 	result: CatalogFieldResult<unknown> | ParsedFieldResult<unknown>,
+	unresolved: string | undefined,
 	format: Format,
 ): FieldHeldReason {
 	if (result.candidates.length === 0) return { kind: "no-candidates" };
-	const mark = unresolvedOf(result);
-	if (mark !== undefined) return { kind: "unresolved-currency", mark };
+	if (unresolved !== undefined) {
+		return { kind: "unresolved-currency", mark: unresolved };
+	}
 	const answers = answersOf(result);
 	if (answers.length === 0) return { kind: "failed" };
 	const picks = answers.map(({ pick }) => pick);
@@ -96,8 +105,10 @@ function readoutsOf(
 ): Readout[] {
 	const { copy } = content;
 	// A field with no candidates, or held for its currency, was never asked.
-	const asked = result.fields[name];
-	if (asked.candidates.length === 0 || unresolvedOf(asked) !== undefined) {
+	if (
+		result.fields[name].candidates.length === 0 ||
+		unresolvedOf(name, result) !== undefined
+	) {
 		return [];
 	}
 	const missing = MISSING.map((label) => ({ label, name: label }));
@@ -140,7 +151,7 @@ function readoutsOf(
 		id,
 		title: copy.filter.number(value.text),
 		rows: [
-			...(["min", "max", "exact"] as const).map((role) => ({
+			...ROLES.map((role) => ({
 				label: role,
 				name: role,
 				detail: copy.filter.roles[role],
@@ -158,7 +169,9 @@ function questionsOf(result: FilterResult<TransactionFields>): number {
 		(vendor.candidates.length > 0 ? 1 : 0) +
 		(status.candidates.length > 0 ? 1 : 0) +
 		(date.candidates.length > 0 ? 2 : 0) +
-		(unresolvedOf(amount) === undefined ? amount.candidates.length : 0)
+		(unresolvedOf("amount", result) === undefined
+			? amount.candidates.length
+			: 0)
 	);
 }
 
@@ -285,7 +298,9 @@ function FieldReadout({
 							format.probability(field.gate),
 						)
 					: copy.filter.heldBecause(
-							failed ? { kind: "failed" } : heldReasonOf(field, format),
+							failed
+								? { kind: "failed" }
+								: heldReasonOf(field, unresolvedOf(name, result), format),
 						)}
 			</p>
 			{readouts.map((readout) => (
@@ -374,7 +389,7 @@ export function Question({
 					</tr>
 				)}
 			</tbody>
-			<tbody className="none-row">{missing.map(row)}</tbody>
+			<tbody className="own-labels">{missing.map(row)}</tbody>
 		</table>
 	);
 }
