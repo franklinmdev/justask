@@ -151,10 +151,15 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 				...Object.values(content.cardSuggestions).flat(),
 			].map(normalized),
 		);
-		for (const { request } of [...devSet, ...evalSet, ...round2]) {
-			expect(seen).not.toContain(normalized(request));
+		const repeated: string[] = [];
+		for (const { id, request } of [...devSet, ...evalSet, ...round2]) {
+			if (seen.has(normalized(request))) repeated.push(id);
 			seen.add(normalized(request));
 		}
+		// es-r2-n42, "perfecto, gracias", is also card round 5's es-r5-40: both
+		// sets were frozen seconds apart from parallel sessions (#68, #73), and
+		// the owner approved it as is, logged in docs/filter-eval.md.
+		expect(repeated).toEqual(content.language === "es" ? ["es-r2-n42"] : []);
 	});
 
 	it("hold a named pair in round 2 only on the vendor of its two pair rows (ADR 0011)", async () => {

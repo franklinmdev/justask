@@ -314,7 +314,7 @@ Misses, all held items:
 
 ### Run 2: flips only
 
-English: no flip. Spanish: one, `tecnorria`, Tecnoria at `none` 0.12 in run 1 and held at 0.18 in run 2: it sits on the gate. Both runs' probes were normal (233 and 237 ms), p95 304 and 302 ms.
+English: no flip. Spanish: one, `tecnorria`, Tecnoria at `none` 0.12 in run 1 and held at 0.18 in run 2: it sits on the gate. Spanish run 2's coverage is 0.821 (23 of 28), still above its line; run 2 carries no verdict. Both runs' probes were normal (233 and 237 ms), p95 304 and 302 ms.
 
 ### What #68 set out to check
 
