@@ -7,6 +7,7 @@ import {
 	gateField,
 	MISSING,
 } from "./filter.ts";
+import { checkGate } from "./gate.ts";
 import type { Pick } from "./pick.ts";
 import type {
 	Facts,
@@ -93,6 +94,7 @@ async function askSearch<T>({
 	timeoutMs,
 	search,
 }: AskInput<T>): Promise<AskResult<T>> {
+	checkGate(search.gate, "the search's gate");
 	const candidates = await search.shortlist(request);
 	checkShortlist(candidates, [NONE]);
 	const held: SearchResult<T> = {
@@ -138,6 +140,10 @@ async function askFilter<F extends Fields>({
 	filter,
 }: AskFilterInput<F>): Promise<AskFilterResult<F>> {
 	const names = Object.keys(filter.fields);
+	for (const name of names) {
+		const { gate } = filter.fields[name] as Fields[string];
+		checkGate(gate, `the gate of field "${name}"`);
+	}
 	const fields: Record<string, FieldResult<unknown>> = {};
 	await Promise.all(
 		names.map(async (name) => {

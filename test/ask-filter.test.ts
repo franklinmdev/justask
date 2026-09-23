@@ -310,6 +310,41 @@ describe("ask: filter with catalog fields", () => {
 		).rejects.toThrow(TypeError);
 	});
 
+	it.each([0, 1, 2, -0.1, Number.NaN, Number.POSITIVE_INFINITY])(
+		"rejects a field's gate of %s before any shortlist or provider call, naming the field",
+		async (gate) => {
+			const provider = fakeProvider({});
+			const shortlisted: string[] = [];
+			const filter = ledgerFilter({ statusGate: gate });
+
+			await expect(
+				ask({
+					...base,
+					provider,
+					filter: {
+						...filter,
+						fields: {
+							...filter.fields,
+							account: {
+								...filter.fields.account,
+								shortlist: () => {
+									shortlisted.push("account");
+									return accounts;
+								},
+							},
+						},
+					},
+				}),
+			).rejects.toThrow(
+				new TypeError(
+					`justask: the gate of field "status" must be a number strictly between 0 and 1, not ${gate}`,
+				),
+			);
+			expect(shortlisted).toEqual([]);
+			expect(provider.calls).toHaveLength(0);
+		},
+	);
+
 	it("infers the filter object's type from the declaration", async () => {
 		const result = await ask({
 			...base,

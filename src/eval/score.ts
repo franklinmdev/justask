@@ -1,3 +1,4 @@
+import { checkGate } from "../gate.ts";
 import { gateSearch, NONE } from "../search.ts";
 import { type KillLines, MEASURES, type Measure } from "./kill-lines.ts";
 import type { Run, RunRow } from "./run.ts";
@@ -69,7 +70,7 @@ export type Report = {
  * the call was paid for.
  */
 export function scoreRun(run: Run, { gate = run.gate } = {}): Report {
-	checkGate(gate);
+	checkGate(gate, "a gate");
 	const answered = run.rows.filter((row) => !row.error);
 	const read = answered.map((row) => ({ row, ...readRow(row, gate) }));
 
@@ -162,7 +163,7 @@ export function compareRuns(
 	second: Run,
 	{ gate = first.gate } = {},
 ): Flip[] {
-	checkGate(gate);
+	checkGate(gate, "a gate");
 	const again = new Map(second.rows.map((row) => [row.id, row]));
 	const flips: Flip[] = [];
 	for (const row of first.rows) {
@@ -221,14 +222,6 @@ function costPerCall(rows: RunRow[]): number | null {
 		total += costUsd;
 	}
 	return total / calls.length;
-}
-
-function checkGate(gate: number): void {
-	if (!(gate > 0 && gate <= 1)) {
-		throw new TypeError(
-			`justask: a gate must be above 0 and at most 1, not ${gate}`,
-		);
-	}
 }
 
 function ratio(part: number, whole: number): number | null {
