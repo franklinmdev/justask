@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { builtInParser } from "justask";
 import {
@@ -6,6 +7,7 @@ import {
 	parseCardEvalSet,
 } from "justask/eval";
 import { describe, expect, it } from "vitest";
+import { CARD_KILL_LINES } from "../demo/eval/kill-lines.ts";
 import { demoCard, FACTS } from "../demo/server/handler.ts";
 import { english } from "../demo/src/content/en.ts";
 import { spanish } from "../demo/src/content/es.ts";
@@ -147,5 +149,39 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 				expect(resolved.length === 0 || resolved.length > 1, row.id).toBe(true);
 			}
 		}
+	});
+});
+
+/**
+ * Frozen on the owner's approval, 2026-09-23 (#20), before any call. A
+ * failure here means the verdict's inputs changed after the fact: revert the
+ * edit, or log the owner's call in docs/card-eval.md with a new checksum or
+ * value.
+ */
+describe("the frozen card eval", () => {
+	it.each([
+		[
+			"card-en.jsonl",
+			"5657469070a8a22871b884782a50639e6b6b095950eea7335d52e6ea238bdab9",
+		],
+		[
+			"card-es.jsonl",
+			"abefd6adac98f967b41c28f696865df9b220b0ce7ffb74465505ccbb03de976b",
+		],
+	])("keeps %s as approved", (name, sha256) => {
+		const bytes = readFileSync(evalFile(name));
+		expect(createHash("sha256").update(bytes).digest("hex")).toBe(sha256);
+	});
+
+	// By value, so a formatter pass over the file never reads as a change.
+	it("keeps the kill lines as approved", () => {
+		expect(CARD_KILL_LINES).toEqual({
+			exact: 0.9,
+			coverage: 0.7,
+			invented: 0,
+			heldAmbiguous: 0.75,
+			p95Ms: 1000,
+			errors: 0,
+		});
 	});
 });

@@ -29,7 +29,8 @@ export const FILTER_KILL_LINES: KillLines = {
 
 /**
  * The card's kill lines, the same in both languages; the verdict passes only
- * when both do. The lab's card lines, drafted for the owner's approval (#20).
+ * when both do. The lab's card lines, approved by the owner on 2026-09-23
+ * (#20).
  * Why each sits where it does: docs/card-eval.md.
  */
 export const CARD_KILL_LINES: KillLines = {

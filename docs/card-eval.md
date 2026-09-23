@@ -1,6 +1,6 @@
 # Card eval: sets, kill lines and verdict
 
-**Status: drafted, waiting for the owner's approval (#20). No provider call has been made. Nothing below is frozen until the owner approves it; then the sets are frozen by checksum and the kill lines by value in `test/demo-card-eval.test.ts`, before the first dev run.**
+**Status: sets, measures, kill lines and gate rule approved and frozen by the owner on 2026-09-23 (#20), before any provider call. The eval sets are frozen by checksum and the kill lines by value in `test/demo-card-eval.test.ts`.**
 
 **Hypothesis:** on the demo's fictional vendors, the expense card turns a typed expense into the record a person means (vendor, tags, day, amount), leaves a field empty when it cannot tell, and fills nothing when the request asks for no new expense, in English and in Spanish, on Enter. The lab measured a salon appointment card; this is a new measurement.
 
