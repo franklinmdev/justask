@@ -1,14 +1,15 @@
 // The demo's filter eval, by hand with the key in .env, never in CI: every
 // row is a real Jev call.
 //
-//   node --conditions=source demo/eval/filter.ts run <en|es> <eval|round2|dev|pair> <n>
-//   node --conditions=source demo/eval/filter.ts compare <en|es> <eval|round2> <first n> <second n>
+//   node --conditions=source demo/eval/filter.ts run <en|es> <eval|round2|round3|dev|pair> <n>
+//   node --conditions=source demo/eval/filter.ts compare <en|es> <eval|round2|round3> <first n> <second n>
 //   node --conditions=source demo/eval/filter.ts gates <dev n>
 //
-// `run` writes demo/eval/runs/filter-<language>[-round2|-dev|-pair]-<n>.jsonl,
+// `run` writes demo/eval/runs/filter-<language>[-round2|-round3|-dev|-pair]-<n>.jsonl,
 // which it never overwrites, and prints its report. `eval` is round 1's set,
 // `round2` the fresh set of round 2, the first with the named-pair hold
-// (ADR 0011), and `pair` the probes of #75: two statuses named with "and" or
+// (ADR 0011), `round3` the fresh set of round 3, the first with status
+// pairs, and `pair` the probes of #75: two statuses named with "and" or
 // "or", as a pair, beside a vendor pair, or with one of them negated. A dev
 // or pair run gets no verdict: it tunes, it never decides. `compare`
 // reads two saved runs of one set and prints the second one's measures and
@@ -39,6 +40,7 @@ const TODAY = "Today is Tuesday 2026-09-22 (martes 22 de septiembre de 2026).";
 const SETS = {
 	eval: { file: "", log: "" },
 	round2: { file: ".round2", log: "-round2" },
+	round3: { file: ".round3", log: "-round3" },
 	dev: { file: ".dev", log: "-dev" },
 	pair: { file: ".pair", log: "-pair" },
 } as const;
@@ -110,7 +112,7 @@ if (command === "run") {
 
 function usage(): never {
 	console.error(
-		"usage: filter.ts run <en|es> <eval|round2|dev|pair> <n> | compare <en|es> <eval|round2> <first n> <second n> | gates <dev n>",
+		"usage: filter.ts run <en|es> <eval|round2|round3|dev|pair> <n> | compare <en|es> <eval|round2|round3> <first n> <second n> | gates <dev n>",
 	);
 	process.exit(1);
 }
