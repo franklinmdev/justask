@@ -53,9 +53,10 @@ export type CardMiss = {
 	/**
 	 * `shortlist` or `parser` when no candidate could build the expected value,
 	 * so no pick could have been right; `command` when the card's command
-	 * words held the intent (ADR 0009); `provider` otherwise.
+	 * words held the intent (ADR 0009); `pair` when a named pair held the
+	 * field (ADR 0010); `provider` otherwise.
 	 */
-	blame: "shortlist" | "parser" | "command" | "provider";
+	blame: "shortlist" | "parser" | "command" | "pair" | "provider";
 };
 
 export type CardReport = {
@@ -144,6 +145,7 @@ function readField(row: CardRunRow, name: string, gate: number): FieldReading {
 			...(logged.kind === "time" && { times: logged.candidates }),
 			...(logged.kind === "amount" && { amounts: logged.candidates }),
 		},
+		row.pairs?.[name],
 	);
 	const { result, value } = plan.read(row.answers);
 	const picks =
@@ -419,7 +421,8 @@ function fieldStats(name: string, gate: number, read: Read[]): FieldStats {
 			if (got !== null && sameCardValue(got, expected)) stats.right++;
 		}
 		if (got !== null && !sameCardValue(got, expected)) stats.wrong++;
-		if (row.kind === "nothing") continue;
+		// No gate lets a field a pair held through, so its pick fixes none.
+		if (row.kind === "nothing" || row.pairs?.[name]) continue;
 		const bare = readField(row, name, NO_GATE);
 		if (bare.value === null || bare.probability === null) continue;
 		notePick(stats, sameCardValue(bare.value, expected), bare.probability);
@@ -435,6 +438,7 @@ function blame(
 ): CardMiss["blame"] {
 	const logged = row.fields[name];
 	if (expected === null || !logged) return "provider";
+	if (row.pairs?.[name]) return "pair";
 	const ids = logged.candidates.map(({ id }) => id);
 	switch (logged.kind) {
 		case "catalog":

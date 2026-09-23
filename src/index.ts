@@ -58,6 +58,7 @@ export {
 	type SearchHandlerConfig,
 	type SearchHandlerResponse,
 } from "./handler.ts";
+export type { Joiners, NamedPair } from "./named-pair.ts";
 export {
 	type AmountReading,
 	builtInParser,

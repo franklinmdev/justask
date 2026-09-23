@@ -592,6 +592,65 @@ describe("runCardEval", () => {
 		expect(intent).toMatchObject({ filled: 0, lowestRight: null });
 	});
 
+	it("logs the pair that held a field, holds it at every gate, and reads none of its picks for the field's gate", async () => {
+		const run = await runCardEval({
+			...input(join(dir, "run-1.jsonl")),
+			card: { ...expenseCard(), joiners: { or: ["or"], and: [] } },
+		});
+
+		expect(run.rows[2]?.pairs).toEqual({
+			vendor: { ids: ["northwind", "acme"], text: "Northwind or Acme" },
+		});
+		expect(run.rows[0]).not.toHaveProperty("pairs");
+		expect(
+			(await readCardRun(join(dir, "run-1.jsonl"))).rows[2]?.pairs,
+		).toEqual(run.rows[2]?.pairs);
+		// Its vendor filled at 0.85 where it must stay held; no gate lets it through now.
+		const { leaked, fields } = scoreCardRun(run, { gates: { vendor: 0.5 } });
+		expect(leaked).toEqual([]);
+		expect(fields.vendor).toMatchObject({ wrong: 0, highestWrong: null });
+	});
+
+	it("blames the pair for a record the code held, a false hold", async () => {
+		const request = "Northwind lunch for the Acme or Northwind team, $42";
+		const run = await runCardEval({
+			...input(
+				join(dir, "run-1.jsonl"),
+				fakeProvider(() => ({
+					intent: answer(intentLabels, "new_record", 0.97),
+					vendor: answer(vendorLabels, "northwind", 0.95),
+					...mealsOnly(),
+					total: answer(amountLabels, "a0", 0.99),
+				})),
+			),
+			set: set([
+				{
+					id: "false-hold",
+					request,
+					kind: "record",
+					expected: {
+						vendor: "northwind",
+						tags: ["meals"],
+						total: { value: 42, currency: "USD" },
+					},
+				},
+			]),
+			card: { ...expenseCard(), joiners: { or: ["or"], and: [] } },
+		});
+
+		const { misses, fields } = scoreCardRun(run);
+
+		expect(misses).toEqual([
+			expect.objectContaining({
+				id: "false-hold",
+				field: "vendor",
+				got: null,
+				blame: "pair",
+			}),
+		]);
+		expect(fields.vendor).toMatchObject({ filled: 0, lowestRight: null });
+	});
+
 	it("names a card held by its intent as the intent's miss alone", async () => {
 		const run = await runCardEval(input(join(dir, "run-1.jsonl")));
 
