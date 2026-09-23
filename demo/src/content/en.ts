@@ -36,8 +36,13 @@ export const english: Content = {
 	copy: {
 		skip: "Skip to the content",
 		product: "justask demo",
-		pagesLabel: "Pages",
-		pages: { search: "Search", filter: "Filter", card: "Card" },
+		casesLabel: "Cases",
+		cases: { table: "Table", form: "Form", search: "Search" },
+		hood: "Under the hood",
+		hoodViews: "Views",
+		trace: "Trace",
+		showLabel: "Show",
+		app: "App",
 		languageLabel: "Language",
 		themeLabel: "Theme",
 		themes: { system: "Auto", light: "Light", dark: "Dark" },
@@ -49,7 +54,6 @@ export const english: Content = {
 		ambiguous: "Could mean two",
 		nothing: "Nothing to find",
 		empty: "No vendor fits that request.",
-		chooseHint: "Choose the vendor to see its transactions.",
 		transactionsWith: (name) => `Transactions with ${name}`,
 		columns: {
 			number: "Invoice",

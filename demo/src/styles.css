@@ -196,15 +196,17 @@ dd {
 	white-space: nowrap;
 }
 
-/* The pages: one link per flow, the current one marked with the accent. */
-.pages {
+/* The case tabs: one per case, the selected one marked with the accent. */
+.cases,
+.hood-tabs {
 	display: flex;
 	align-self: stretch;
 	gap: 4px;
 	margin-left: 16px;
 }
 
-.pages a {
+.cases a,
+.hood-tabs button {
 	display: inline-flex;
 	align-items: center;
 	padding: 0 8px;
@@ -214,26 +216,31 @@ dd {
 	transition: color 120ms ease-out;
 }
 
-.pages a[aria-current="page"] {
+.cases a[aria-selected="true"],
+.hood-tabs button[aria-selected="true"] {
 	border-bottom-color: var(--primary);
 	color: var(--text);
 }
 
 @media (hover: hover) {
-	.pages a:not([aria-current="page"]):hover {
+	.cases a:not([aria-selected="true"]):hover,
+	.hood-tabs button:not([aria-selected="true"]):hover {
 		color: var(--text);
 	}
 }
 
 .languages,
-.themes {
+.themes,
+.show {
 	display: flex;
 	border: 1px solid var(--border);
 	border-radius: 0.125rem;
 }
 
 .languages a,
-.themes button {
+.themes button,
+.show button,
+.hood-toggle {
 	display: inline-flex;
 	align-items: center;
 	height: 28px;
@@ -254,13 +261,16 @@ dd {
 	gap: 8px;
 }
 
-.themes {
+.themes,
+.show {
 	min-width: 0;
 	margin: 0;
 	padding: 0;
 }
 
-.themes button {
+.themes button,
+.show button,
+.hood-toggle {
 	margin: 0;
 	border: 0;
 	background: transparent;
@@ -268,35 +278,113 @@ dd {
 	cursor: pointer;
 }
 
+/* The phone's switch: two equal halves across the case. */
+.show button {
+	flex: 1;
+	justify-content: center;
+}
+
+/* The hood's tabs sit on its hairline. */
+.hood-tabs button {
+	min-height: 32px;
+	margin: 0 0 -1px;
+	border: 0;
+	border-bottom: 1px solid transparent;
+	background: transparent;
+	font: inherit;
+	cursor: pointer;
+}
+
 .languages a + a,
-.themes button + button {
+.themes button + button,
+.show button + button {
 	border-left: 1px solid var(--border);
 }
 
 .languages a[aria-current="true"],
-.themes button[aria-pressed="true"] {
+.themes button[aria-pressed="true"],
+.show button[aria-pressed="true"],
+.hood-toggle[aria-expanded="true"] {
 	background: var(--surface-strong);
 	color: var(--text);
 }
 
 @media (hover: hover) {
 	.languages a:not([aria-current="true"]):hover,
-	.themes button:not([aria-pressed="true"]):hover {
+	.themes button:not([aria-pressed="true"]):hover,
+	.show button:not([aria-pressed="true"]):hover,
+	.hood-toggle:not([aria-expanded="true"]):hover {
 		background: var(--surface);
 		color: var(--text);
 	}
 }
 
-/* Layout: the app beside the state panel */
+/*
+ * Layout: one case, the app and under the hood. Below 1100px a switch shows
+ * one at a time, the app first; at 1100px and up the hood is a sticky column
+ * beside the app at about 42%, and hiding it gives the app the full width.
+ */
 
 .layout {
-	display: grid;
-	grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
-	gap: 32px;
-	align-items: start;
 	max-width: 1536px;
 	margin: 0 auto;
 	padding: 24px;
+}
+
+.case {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 16px 32px;
+	align-items: start;
+}
+
+.case-bar {
+	display: flex;
+	justify-content: flex-end;
+	grid-column: 1 / -1;
+}
+
+/* The toggle is one hairline-bordered button, pressed while the hood shows. */
+.hood-toggle {
+	border: 1px solid var(--border);
+	border-radius: 0.125rem;
+}
+
+/* The phone's switch spans the case. */
+.show {
+	flex: 1;
+}
+
+.hood {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+/* Out of view by the toggle or the switch: hidden wins over the display above. */
+.app[hidden],
+.hood[hidden] {
+	display: none;
+}
+
+.hood-tabs {
+	align-self: stretch;
+	margin-left: 0;
+	border-bottom: 1px solid var(--border);
+}
+
+@media (min-width: 1100px) {
+	.case[data-hood="shown"] {
+		grid-template-columns: minmax(0, 58fr) minmax(0, 42fr);
+	}
+
+	/* The hood scrolls on its own when it is taller than the window. */
+	.hood {
+		position: sticky;
+		top: 24px;
+		max-height: calc(100dvh - 48px);
+		overflow-y: auto;
+	}
 }
 
 .app {
@@ -974,13 +1062,14 @@ h2 {
 	list-style: none;
 }
 
+/* A suggestion reads as a button at rest: a strong border and the accent's text. */
 .chip {
 	min-height: 28px;
 	padding: 4px 8px;
-	border: 1px solid var(--border);
+	border: 1px solid var(--border-strong);
 	border-radius: 0.125rem;
-	background: var(--surface);
-	color: var(--text);
+	background: var(--bg);
+	color: var(--primary-text);
 	font: inherit;
 	font-size: 0.8125rem;
 	text-align: left;
@@ -996,16 +1085,14 @@ h2 {
 
 @media (hover: hover) {
 	.chip:hover {
-		background: var(--surface-strong);
-		border-color: var(--border-strong);
+		background: var(--surface);
+		border-color: var(--primary);
 	}
 }
 
 /* The state panel */
 
 .panel {
-	position: sticky;
-	top: 24px;
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
@@ -1274,12 +1361,11 @@ h2 {
 	border-bottom: 1px solid var(--border);
 }
 
-/* Mobile: the app, then the panel under it */
+/* Narrower than a desktop: the switch picks the app or the hood. */
 
-@media (max-width: 899px) {
+/* The range form leaves no gap at a fractional width, such as 1099.5px under zoom. */
+@media (width < 1100px) {
 	.layout {
-		grid-template-columns: minmax(0, 1fr);
-		gap: 24px;
 		padding: 16px;
 	}
 
@@ -1290,10 +1376,6 @@ h2 {
 	.languages a,
 	.themes button {
 		padding: 0 8px;
-	}
-
-	.panel {
-		position: static;
 	}
 
 	.box {
@@ -1322,14 +1404,16 @@ h2 {
 		padding: 8px 12px;
 	}
 
-	.languages a {
+	.languages a,
+	.show button {
 		height: 44px;
 		padding: 0 14px;
 	}
 
 	.filter-remove,
 	.clear,
-	.pages a {
+	.cases a,
+	.hood-tabs button {
 		min-height: 44px;
 		padding: 0 12px;
 	}
@@ -1351,11 +1435,11 @@ h2 {
 
 /* Phone: the brand keeps the first row, the theme and language toggles take the second. */
 @media (max-width: 560px) {
-	.pages {
+	.cases {
 		margin-left: 4px;
 	}
 
-	.pages a {
+	.cases a {
 		min-height: 44px;
 	}
 

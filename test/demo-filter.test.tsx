@@ -94,7 +94,7 @@ const priced = fakeProvider(fixtureFor, {
 /** The demo as the browser runs it, its handler served in process. */
 function renderDemo({
 	provider = byRequest,
-	url = "/?page=filter",
+	url = "/?case=table",
 }: {
 	provider?: Provider;
 	url?: string;
@@ -221,7 +221,7 @@ describe("the demo's filter page", () => {
 	it("shows the tokens and cost in Spanish", async () => {
 		const { user } = renderDemo({
 			provider: priced,
-			url: "/?page=filter&lang=es",
+			url: "/?case=table&lang=es",
 		});
 
 		await user.click(screen.getByRole("button", { name: "facturas vencidas" }));
@@ -319,7 +319,7 @@ describe("the demo's filter page", () => {
 	});
 
 	it("filters the Spanish data from a Spanish request, with USD as the local currency", async () => {
-		const { container, user } = renderDemo({ url: "/?page=filter&lang=es" });
+		const { container, user } = renderDemo({ url: "/?case=table&lang=es" });
 
 		expect(
 			screen.getByRole("heading", { name: "Transacciones" }),
@@ -348,7 +348,7 @@ describe("the demo's filter page", () => {
 	});
 
 	it("holds the amount when the request names pesos, since the local currency is USD", async () => {
-		const { container, user } = renderDemo({ url: "/?page=filter&lang=es" });
+		const { container, user } = renderDemo({ url: "/?case=table&lang=es" });
 
 		await user.type(
 			screen.getByRole("searchbox", { name: "Filtrar las transacciones" }),
@@ -382,7 +382,7 @@ describe("the demo's filter page", () => {
 	});
 
 	it("announces a removed filter in Spanish", async () => {
-		const { user } = renderDemo({ url: "/?page=filter&lang=es" });
+		const { user } = renderDemo({ url: "/?case=table&lang=es" });
 
 		await user.click(screen.getByRole("button", { name: "facturas vencidas" }));
 		await user.click(
@@ -419,21 +419,5 @@ describe("the demo's filter page", () => {
 				.getAttribute("aria-disabled"),
 		).toBe("true");
 		await expectNoAxeViolations(container);
-	});
-
-	it("is its own page, linked from the header, with the language kept", async () => {
-		const { user } = renderDemo({ url: "/?lang=es" });
-
-		await user.click(screen.getByRole("link", { name: "Filtro" }));
-
-		expect(location.search).toBe("?page=filter&lang=es");
-		expect(
-			screen.getByRole("heading", { name: "Transacciones" }),
-		).toBeDefined();
-		expect(
-			screen.getByRole("link", { name: "Filtro" }).getAttribute("aria-current"),
-		).toBe("page");
-		await user.click(screen.getByRole("link", { name: "English" }));
-		expect(location.search).toBe("?page=filter");
 	});
 });
