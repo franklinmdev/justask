@@ -8,6 +8,8 @@
 
 **Round 4 (#63): the card fails on Spanish latency alone.** Every quality line passes in both languages and both runs, with a named pair held in code ([ADR 0010](adr/0010-card-holds-a-named-pair.md)) and the intent naming setting a value; Spanish run 1's p95 was 1,137 ms against a line of 1,000, in a provider slowdown across the whole run. The owner ruled that the FAIL stands, with latency carried by [#65](https://github.com/franklinmdev/justask/issues/65). See Round 4: result below; rounds 1 to 3 are unchanged.
 
+**Round 5 (#73): the same card fails on Spanish coverage by one field.** Under #65's latency rule, with nothing changed, English clears every kill line and Spanish covers 86 of 124 fields (0.694) against a line of 0.7, in both runs; every probe window was normal, and no warm-up call or row timed out. See Round 5: result below; rounds 1 to 4 are unchanged.
+
 **Latency (#65): from the next verdict run on, every run sends a fixed provider probe before and after its rows, and a run whose probes are more than twice the baseline leaves a failing latency line pending, to be measured again in a normal window.** See Latency below; round 4 stays a FAIL.
 
 **Hypothesis:** on the demo's fictional vendors, the expense card turns a typed expense into the record a person means (vendor, tags, day, amount), leaves a field empty when it cannot tell, and fills nothing when the request asks for no new expense, in English and in Spanish, on Enter. The lab measured a salon appointment card; this is a new measurement.
@@ -623,5 +625,98 @@ English: 7 flips on four rows; coverage 0.798, exact 0.941, held ambiguous 1, an
 - Pair probes: `demo/eval/runs/card-<en|es>-pair-<1|2>.jsonl`; dev: `demo/eval/runs/card-<en|es>-dev-5.jsonl`
 - Run 1: `demo/eval/runs/card-en-round4-1.jsonl`, `demo/eval/runs/card-es-round4-1.jsonl`
 - Run 2: `demo/eval/runs/card-en-round4-2.jsonl`, `demo/eval/runs/card-es-round4-2.jsonl`
+
+Each rescores with `scoreCardRun(await readCardRun(path), { gates })` and no call.
+
+## Round 5: the same card, under the latency rule
+
+Carried by [#73](https://github.com/franklinmdev/justask/issues/73). Rounds 1 to 4 above stand as recorded. Round 4 failed on Spanish p95 alone, in a slow provider window, and cannot be rescored under #65's rule (Latency, above), so the card gets a fresh round with nothing changed: the code of ADR 0009 and ADR 0010, the labels, and round 4's gates as `demo/server/handler.ts` serves them (intent 0.45, vendor 0.7, tags 0.4, spent_on 0.8, total 0.9, from dev run 5). #73 lists vendor 0.5 and tags 0.35, round 3's gates; it also says "as written in `demo/server/handler.ts`", which serves round 4's, so round 5 runs at those and nothing changes. No dev run is made.
+
+### Round 5 sets
+
+Files in `demo/eval/`, drafted against every set in `demo/eval/` (probes included) and the demo's suggestions and recordings, approved by the owner in five batches on 2026-09-23 (rows 1 to 10, 11 to 20, 21 to 30, 31 to 40, 41 and 42, English beside Spanish) and frozen by checksum in `test/demo-card-eval.test.ts` in the commit before the first round 5 call. Run logs `demo/eval/runs/card-<language>-round5-<n>.jsonl`.
+
+| File | Rows | record | ambiguous | nothing |
+|---|---|---|---|---|
+| `card-en.round5.jsonl` | 42 | 28 | 8 | 6 |
+| `card-es.round5.jsonl` | 42 | 28 | 8 | 6 |
+
+- **The same shape as round 4:** tags in all 28 records, the day in 24, the amount in 27, the vendor in 21, each of the 14 vendors at least once, 7 records with no vendor of the catalog (`a rideshare`, `a wine bar`, `a hardware store`), typos (`Tallroot`, `Klausewood`; `Cuemtia`, `Lindiero`), paraphrases (`the IT support team`, `our commercial insurer`), one euro amount. Spanish row N has the same shape as English row N.
+- **ambiguous:** vendor, two named pairs no earlier set or probe names, one per arm of the rule: `Sureharbor and Clausewood` (`Cobertura Plena y Lindero`) and `Paydale or Tallyroot` (`Serena o Cuentia`). Tags `Beanhaven order for the front desk` and `not sure if it's billable to a client`; day `last Friday` and `in July`; amount `2,200 pesos` and `$35 or $40`.
+- **A record names a third vendor beside an "or" pair** (row 23, `Larkspur dinner for the Clausewood or Paydale kickoff`): the rule holds no pair there, and the vendor is expected filled.
+- **nothing:** a question about spending, a delete, a change that sets a value, a thank-you, a question about tags, and a send. The code holds the delete in both languages (`remove the Tallyroot expense`, `quite el gasto de Cuentia`); no list holds the change (`the Brightmop charge on Thursday should be $210`, `el cargo de Brisamar del jueves debería ser $210`) or the send (`text the Cloudberth receipt to our accountant`, `pásele el recibo de Nubalia a nuestro contador`), which the label alone must hold. Checked with no call: the code holds no round 5 record, only the two pair rows' vendors and the delete.
+- The same checks as rounds 1 to 4 hold: no request repeats any other set, probe, suggestion or recording, every expected day and amount is one the parser builds on Wednesday 2026-09-23, and every held one is held by the parser's reading or by two candidates.
+- Kill lines, measures and procedure as round 1, under the latency rule: run 1 gives the verdict, a failing p95 in a slow window with every quality line passing reads `LATENCY PENDING` and is measured again in a normal window; run 2 reports flips only.
+
+## Round 5: result
+
+**Verdict: FAIL.** English clears every kill line; Spanish fails coverage alone, 0.694 (86 of 124 fields) against 0.7, one field short. Runs of 2026-09-23 with `jev-1.13.0`, round 4's card unchanged (gates intent 0.45, vendor 0.7, tags 0.4, spent_on 0.8, total 0.9), the frozen round 5 sets, the same kill lines and `PROBE_BASELINE_MS` 235, today fixed at Wednesday 2026-09-23. Every run's probes were normal, so no line is pending: the FAIL is a quality line, not latency.
+
+### Run 1: the verdict
+
+| Measure | Kill line | English | Spanish |
+|---|---|---|---|
+| exact | at least 0.9 | 0.97 (32 of 33 cards) | 0.938 (30 of 32 cards) |
+| coverage | at least 0.7 | 0.774 (96 of 124 fields) | **0.694** (86 of 124 fields) |
+| invented | at most 0 | 0 | 0 |
+| held ambiguous | at least 0.75 | 1 (8 of 8) | 0.875 (7 of 8) |
+| p95 | at most 1000 ms | 338 ms | 390 ms |
+| errors | at most 0 | 0 | 0 |
+| cost per call | | $0.0000873 | $0.0000924 |
+| probes, median against 235 ms | | 259 ms, normal | 375 ms, normal |
+
+Per field, filled of expected: vendor 21 and 20 of 27; tags 23 of 34 English (one wrong), 15 of 34 Spanish (one wrong, and one more on an ambiguous row that must hold its tags); day 21 of 30 in both; amount 31 and 30 of 33. The intent passed 33 English and 32 Spanish cards, and no nothing row in either language.
+
+### Filled and wrong
+
+| Row | Request | Field | Expected | Got | Pick |
+|---|---|---|---|---|---|
+| en-r5-24 | Inkhollow product catalogs for the client's sales team, billable to the client, $260 on September 15 | tags | office + client | client | office `not_mentioned` 0.77 |
+| es-r5-24 | catálogos de productos de Letranueva para el equipo de ventas del cliente, facturables al cliente, ... | tags | office + client | client | office `not_mentioned` 0.97 |
+| es-r5-31 | pedido del Cafetal para la recepción, $61 el viernes | tags | held | meals | meals yes 0.60 |
+
+Every correction is a tag again, as in rounds 1 to 4: `billable to the client` drops `office` in both languages for the fourth round running.
+
+### What the round measured
+
+| Row | English | Spanish |
+|---|---|---|
+| 29, an "and" pair | `Sureharbor and Clausewood`: held by the pair | `Cobertura Plena y Lindero`: held by the pair |
+| 30, an "or" pair | `Paydale or Tallyroot`: held by the pair | `Serena o Cuentia`: held by the pair |
+| 23, a third vendor beside a pair | larkspur, filled right | cazuela, filled right |
+| 38, a delete | held by the code; `new_record` 0.00 | held by the code; `new_record` 0.31, 0.38 |
+| 39, sets a value, no listed word | `new_record` 0.10, 0.11 | `new_record` 0.06, 0.06 |
+| 42, a send, no listed word | `new_record` 0.00, 0.00 | `new_record` 0.02, 0.01 |
+
+The pair hold and both labels held in all four runs, with no false hold: every nothing row stayed at 0.38 or below, and the pair rule held no record.
+
+### The warm-up
+
+The open question on #53: does a warm-up call cut off at 2 s still warm the provider? **This round cannot answer it: no warm-up call reached the cutoff.** No row timed out either, in any run, including the first rows after the warm-up.
+
+| Run | Warm-up (discarded) | Measured probes before | First three rows |
+|---|---|---|---|
+| English 1 | 600, 627, 254 | 300, 194, 296 | 269, 264, 304 |
+| English 2 | 535, 553, 166 | 223, 285, 198 | 285, 247, 278 |
+| Spanish 1 | 565, 650, 209 | 444, 363, 387 | 821, 360, 379 |
+| Spanish 2 | 857, 1,352, 181 | 297, 237, 260 | 285, 219, 311 |
+
+The first two warm-up calls of every run took 535 to 1,352 ms and the third 166 to 254 ms; the rows after them ran near 250 ms, the slowest first row at 821 ms (`es-r5-01`), well under the 2 s cutoff. The warm-up took most of the start-up cost. The one case of a cut-off warm-up remains search dev run 5 (Latency, above), where all three warm-up calls timed out and no row did.
+
+### Run 2: flips only
+
+English: no flips; coverage 0.774, exact 0.97, held ambiguous 1, p95 283 ms, probes 230 ms, normal. Spanish: 3 flips, coverage 0.694 again: `vuelos de Rumbo Claro ... para la presentación al cliente` lost its `client` tag and so became a correction, `el soporte técnico actualizó nuestras laptops` held its vendor, and `notas adhesivas y clips de Tintaverde` filled `office`. Exact 0.906, held ambiguous 0.875, p95 326 ms, probes 266 ms, normal. Spanish fails coverage alone in run 2 as well.
+
+### What the misses say
+
+- **Spanish `office` is what costs the line.** Spanish filled 15 of 34 expected tags, against 23 English and 19 in round 4. `office` answered `not_mentioned` on a courier (0.94), W-2 processing, a legal consultation and an accounting software add-on (0.88 each), a label maker, offsite backups, a lease amendment and a payroll-tax filing (0.50 to 0.66): the services the round 2 description names, read narrowly again. Every other Spanish field filled within one or two of English.
+- **The intent held four Spanish cards and three English ones**, none a nothing row read wrong: the insurance rider with no amount (`not_mentioned` 0.66 and 0.70), the maybe-billable car service (`not_available` 0.66 and 0.97), `$35 or $40` (`not_mentioned` 0.47 and 0.41), and `revisión de contratos laborales de Lindero` (`not_available` 0.46), which its English twin passed.
+- **Latency is not the issue this round.** Four normal windows, p95 283 to 390 ms, medians near the history: round 4's slow window did not recur.
+- Nothing about the card changed between round 4 and round 5, so round 5 measures the provider on fresh rows; round 4's Spanish coverage was 0.71, 0.01 above its line, and this round's is 0.006 below it.
+
+### Run logs
+
+- Run 1: `demo/eval/runs/card-en-round5-1.jsonl`, `demo/eval/runs/card-es-round5-1.jsonl`
+- Run 2: `demo/eval/runs/card-en-round5-2.jsonl`, `demo/eval/runs/card-es-round5-2.jsonl`
 
 Each rescores with `scoreCardRun(await readCardRun(path), { gates })` and no call.
