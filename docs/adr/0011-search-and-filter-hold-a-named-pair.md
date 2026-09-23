@@ -3,7 +3,7 @@
 Extends ADR 0010 to the other two flows, as its Consequences left open. The ticket's decision (#68): the search holds its one item; the filter holds its vendor field.
 
 1. **A search may declare `joiners`**, the card's shape. A request that names two of its candidates with an `or` or an `and` word between them, and no third, holds the item whatever the pick: the search takes one item, so "and" holds it as "or" does. The result names the pair's ids and words, and the provider is still asked, so the pick is reported.
-2. **A filter may declare `joiners`**, and a pair holds any of its catalog fields by the same rule. Every filter catalog field takes one item, so both joiners hold. The demo's filter has two: the vendor, which the ticket names, and the status, whose ids (`paid`, `open`, `overdue`) the rule reads exactly. So "paid or overdue invoices" holds the status in English, and "pagadas o vencidas" never does, since the Spanish statuses declare no `names`, as the card's tags do not.
+2. **A filter may declare `joiners`**, and a pair holds any of its catalog fields by the same rule. Every filter catalog field takes one item, so both joiners hold. The demo's filter has two: the vendor, which the ticket names, and the status, whose ids (`paid`, `open`, `overdue`) the rule reads exactly. So "paid or overdue invoices" holds the status in English. From #75 the Spanish statuses declare `names` (`pagadas`, `pendientes`, `vencidas`), so "pagadas o vencidas" holds it too; plural, since `pagada` would also read `pasada`, as in "la semana pasada".
 3. **The matcher, the typo rule and the third item are ADR 0010's, unchanged.** Its known limits hold here too.
 
 The demo's three flows share one list of joiners per language (`joiners` in `demo/src/content/`, which was `cardJoiners`).
@@ -23,7 +23,7 @@ Checked with no call over every set in `demo/eval/` and the demo's suggestions:
 - **`SearchResult` gains an optional `pair`**, and a filter's catalog field result the same, as the card's does.
 - **The search's and the filter's eval logs save the pair** (`pair` on a search row, `pairs` per field on a filter row). Their scorers hold the item or the field at every gate, blame the pair for a row they held, and the filter's gate rule reads no pick of a held field on that row, as the card's does.
 - **The demo's search and filter panels say the code held it**, naming the pair's words.
-- Each flow is judged on its own fresh round, with sets approved before any call. The filter's round 2 names pairs of vendors only, so it judges the vendor hold; the status hold is covered by unit tests alone, and no round has measured it yet. The owner approved it as it is on 2026-09-23; its Spanish asymmetry and a measured round are tracked in [#75](https://github.com/franklinmdev/justask/issues/75).
+- Each flow is judged on its own fresh round, with sets approved before any call. The filter's round 2 names pairs of vendors only, so it judges the vendor hold. The status hold was measured in [#75](https://github.com/franklinmdev/justask/issues/75), in both languages, by probe rows and the filter's round 3 (docs/filter-eval.md): at the status gate of 0.95 it held nothing the gate did not, and its one cost is a status negated beside another ("not paid and overdue"), which it holds though the provider reads it right. The owner kept the rule as it is on 2026-09-23; a negation rule is tracked in [#80](https://github.com/franklinmdev/justask/issues/80).
 
 ## Considered Options
 
