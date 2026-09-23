@@ -1,0 +1,40 @@
+{"id":"es01","request":"se nos acabó el papel de la impresora","kind":"item","expected":"tintaverde"}
+{"id":"es02","request":"tintaverd","kind":"item","expected":"tintaverde"}
+{"id":"es03","request":"la comida para la reunión del equipo","kind":"item","expected":"cazuela"}
+{"id":"es04","request":"la última factura de Cazuela Azul","kind":"item","expected":"cazuela"}
+{"id":"es05","request":"lo que pagamos por el servidor","kind":"item","expected":"nubalia"}
+{"id":"es06","request":"quienes mantienen la página en línea","kind":"item","expected":"nubalia"}
+{"id":"es07","request":"el equipo de limpieza de noche","kind":"item","expected":"brisamar"}
+{"id":"es08","request":"Brisamar","kind":"item","expected":"brisamar"}
+{"id":"es09","request":"los que lavan los cristales","kind":"item","expected":"relucir"}
+{"id":"es10","request":"Relusir","kind":"item","expected":"relucir"}
+{"id":"es11","request":"la imprenta de los volantes","kind":"item","expected":"letranueva"}
+{"id":"es12","request":"tarjetas nuevas para el equipo","kind":"item","expected":"letranueva"}
+{"id":"es13","request":"los boletos de avión para el congreso","kind":"item","expected":"rumboclaro"}
+{"id":"es14","request":"la agencia que nos reserva los hoteles","kind":"item","expected":"rumboclaro"}
+{"id":"es15","request":"la suscripción del programa de contabilidad","kind":"item","expected":"cuentia"}
+{"id":"es16","request":"Cuentia","kind":"item","expected":"cuentia"}
+{"id":"es17","request":"el alquiler de la cafetera","kind":"item","expected":"cafetal"}
+{"id":"es18","request":"kafetal","kind":"item","expected":"cafetal"}
+{"id":"es19","request":"el mensajero en moto","kind":"item","expected":"pieveloz"}
+{"id":"es20","request":"quién llevó los documentos al banco hoy mismo","kind":"item","expected":"pieveloz"}
+{"id":"es21","request":"nuestros abogados","kind":"item","expected":"lindero"}
+{"id":"es22","request":"Bufete Lindero","kind":"item","expected":"lindero"}
+{"id":"es23","request":"los que arreglaron mi laptop","kind":"item","expected":"tecnoria"}
+{"id":"es24","request":"soporte técnico","kind":"item","expected":"tecnoria"}
+{"id":"es25","request":"quién nos hace la nómina","kind":"item","expected":"serena"}
+{"id":"es26","request":"la firma de recursos humanos","kind":"item","expected":"serena"}
+{"id":"es27","request":"nuestra póliza","kind":"item","expected":"coberplena"}
+{"id":"es28","request":"the insurance company","kind":"item","expected":"coberplena"}
+{"id":"es29","request":"la compañía de luz","kind":"nothing"}
+{"id":"es30","request":"el dueño del local","kind":"nothing"}
+{"id":"es31","request":"la agencia de publicidad que hizo los anuncios","kind":"nothing"}
+{"id":"es32","request":"muebles de oficina","kind":"nothing"}
+{"id":"es33","request":"cancela eso","kind":"nothing"}
+{"id":"es34","request":"¿qué tiempo hará mañana?","kind":"nothing"}
+{"id":"es35","request":"la factura de limpieza de oficinas","kind":"ambiguous"}
+{"id":"es36","request":"quien limpia la oficina","kind":"ambiguous"}
+{"id":"es37","request":"la factura de Cuentia o de Tecnoria","kind":"ambiguous"}
+{"id":"es38","request":"la mensajería o el viaje","kind":"ambiguous"}
+{"id":"es39","request":"nuestro proveedor de tecnología","kind":"ambiguous"}
+{"id":"es40","request":"los de la comida y el café","kind":"ambiguous"}
