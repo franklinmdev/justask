@@ -27,7 +27,10 @@ export type {
 } from "./filter.ts";
 export { fuzzyShortlist } from "./fuzzy-shortlist.ts";
 export {
+	createFilterHandler,
 	createSearchHandler,
+	type FilterHandlerConfig,
+	type FilterHandlerResponse,
 	type HandlerBadRequest,
 	type HandlerError,
 	type HandlerRequest,

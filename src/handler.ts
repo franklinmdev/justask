@@ -1,4 +1,5 @@
-import { type AskError, ask, type SearchResult } from "./ask.ts";
+import { type AskError, type AskInput, ask, type SearchResult } from "./ask.ts";
+import type { Fields, Filter, FilterResult } from "./filter.ts";
 import type { Facts, Provider } from "./provider.ts";
 import type { Search } from "./search.ts";
 
@@ -6,7 +7,7 @@ import type { Search } from "./search.ts";
  * One handler per flow, each mounted at its own route: the browser never
  * chooses the flow, and each route owns its facts and limits.
  */
-export type SearchHandlerConfig<T> = {
+type HandlerConfig = {
 	provider: Provider;
 	/** How long the provider call may take before everything is held. No default. */
 	timeoutMs: number;
@@ -16,9 +17,14 @@ export type SearchHandlerConfig<T> = {
 	 * time zone the browser sends, so it cannot be configured.
 	 */
 	facts?: Facts;
-	search: Search<T>;
 	/** Called with the full error, cause included, which never reaches the browser. */
 	onError?: (error: AskError) => void;
+};
+
+export type SearchHandlerConfig<T> = HandlerConfig & { search: Search<T> };
+
+export type FilterHandlerConfig<F extends Fields> = HandlerConfig & {
+	filter: Filter<F>;
 };
 
 /** What the browser posts: the request and its own time zone, an IANA name. */
@@ -38,6 +44,12 @@ export type SearchHandlerResponse<T> = {
 	error?: HandlerError;
 };
 
+/** The body of a 200 response from the filter handler. Catalog values must survive JSON. */
+export type FilterHandlerResponse<F extends Fields> = {
+	filter: FilterResult<F>;
+	error?: HandlerError;
+};
+
 /** The body of a 400 response. */
 export type HandlerBadRequest = {
 	error: { kind: "request"; message: string };
@@ -53,7 +65,40 @@ export type HandlerBadRequest = {
 export function createSearchHandler<T>(
 	config: SearchHandlerConfig<T>,
 ): (httpRequest: Request) => Promise<Response> {
-	const { provider, timeoutMs, facts = {}, search, onError } = config;
+	const { search } = config;
+	return serve(config, async (input) => {
+		const result = await ask({ ...input, search });
+		const response: SearchHandlerResponse<T> = { search: result.search };
+		return { response, error: result.error };
+	});
+}
+
+/**
+ * The filter's handler, the search handler's twin: it runs the filter through
+ * `ask` and answers the filter object with every field's result. Date fields
+ * read today from the browser's time zone.
+ */
+export function createFilterHandler<F extends Fields>(
+	config: FilterHandlerConfig<F>,
+): (httpRequest: Request) => Promise<Response> {
+	const { filter } = config;
+	return serve(config, async (input) => {
+		const result = await ask({ ...input, filter });
+		const response: FilterHandlerResponse<F> = { filter: result.filter };
+		return { response, error: result.error };
+	});
+}
+
+type AskBase = Omit<AskInput<unknown>, "search">;
+
+/** What both handlers share: POST only, the body read, today written, errors kept on the server. */
+function serve(
+	{ provider, timeoutMs, facts = {}, onError }: HandlerConfig,
+	run: (input: AskBase) => Promise<{
+		response: { error?: HandlerError };
+		error: AskError | undefined;
+	}>,
+): (httpRequest: Request) => Promise<Response> {
 	if ("today" in facts) {
 		throw new TypeError(
 			'justask: the handler writes the "today" fact from the browser\'s time zone; leave it out of facts',
@@ -68,16 +113,16 @@ export function createSearchHandler<T>(
 		if ("error" in read) return badRequest(read.error);
 
 		const now = new Date();
-		const result = await ask({
+		const { response, error } = await run({
 			request: read.body.request,
 			facts: { today: todayFact(now, read.body.timeZone), ...facts },
 			provider,
 			timeoutMs,
-			search,
 		});
-		if (result.error) onError?.(result.error);
-		const response: SearchHandlerResponse<T> = { search: result.search };
-		if (result.error) response.error = forBrowser(result.error);
+		if (error) {
+			onError?.(error);
+			response.error = forBrowser(error);
+		}
 		return Response.json(response);
 	};
 }
