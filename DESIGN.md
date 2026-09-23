@@ -10,7 +10,10 @@ The package's React pieces ship unstyled, so these slots bind the demo and any s
 - Signature motion: the pick settling in, translateY(4px) to 0 with opacity over 150ms; placements: the search item, a filled field, the confirm bar. Reason: the core action is the model picking among real candidates and the person confirming it.
 
 ## Overrides
-- None.
+- Stack notes (Tailwind, shadcn, an icon set): the demo uses plain CSS on class names and no icons. Reason: it shows the package's unstyled pieces styled the way any host app would style them, and one page needs no component library.
+- App shell (icon-rail sidebar, command palette): the demo has a 56px header with the language toggle, and nothing else. Reason: one page per flow and one text box; a palette would compete with the box the demo exists to show.
+- Tables on mobile stay tables: the chosen vendor's transactions (four columns) and the panel's candidates (two). Reason: both fit a 375px screen without scrolling, checked at 390, and neither has row actions a card list would carry.
+- Page title: the header sets the page name at body size, beside the product name. Reason: the demo's pages are one flow each, and the app and panel headings below carry the hierarchy.
 
 ## Benchmarks
 - None named yet.

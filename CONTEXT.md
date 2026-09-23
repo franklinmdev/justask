@@ -37,7 +37,7 @@ The label the provider chose for one question, with its probability.
 _Avoid_: Answer, prediction, extraction
 
 **Provider**:
-The model service that answers questions. It picks; it never writes a value.
+The model service that answers questions. It picks; it never writes a value. Spanish UI copy calls it "el modelo", since "proveedor" is a vendor.
 _Avoid_: LLM, AI, backend
 
 **Field**:
@@ -49,8 +49,8 @@ Where a field's candidates come from: date, time, amount (from parsers), catalog
 _Avoid_: Type, field type
 
 **Gate**:
-The minimum probability a pick needs before its field is filled. A search reads it the other way, on its `none` label: the item is held once `none` reaches the gate (ADR 0005). Every field declares its own, a number strictly between 0 and 1; there is no default. Fixed before any run and measured on an eval set.
-_Avoid_: Threshold, confidence cutoff
+The minimum probability a pick needs before its field is filled. A search reads it the other way, on its `none` label: the item is held once `none` reaches the gate (ADR 0005). Every field declares its own, a number strictly between 0 and 1; there is no default. Fixed before any run and measured on an eval set. Spanish UI copy calls it "umbral".
+_Avoid_: Threshold, confidence cutoff (in English)
 
 **Eval set**:
 Real requests, each with the result a person expects, used to measure a gate before it is fixed.

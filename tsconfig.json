@@ -17,5 +17,5 @@
 		"skipLibCheck": true,
 		"noEmit": true
 	},
-	"include": ["src", "test", "scripts", "vitest.config.ts"]
+	"include": ["src", "test", "scripts", "demo", "vitest.config.ts"]
 }
