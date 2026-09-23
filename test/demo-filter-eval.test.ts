@@ -138,10 +138,13 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 
 	it("expect only dates and amounts the parser can build, on the day the runs are fixed at", () => {
 		for (const row of [...devSet, ...evalSet]) {
-			const { dates = [], amounts = [] } = builtInParser(row.request, {
+			const { dates: read = [], amounts = [] } = builtInParser(row.request, {
 				today: TODAY,
 				facts: FACTS,
+				reads: "past",
 			});
+			// A pick on an ambiguous reading holds the field whatever its probability.
+			const dates = read.filter((d) => !d.ambiguous);
 			const { date, amount } = row.expected;
 			if (date && date !== "held" && typeof date === "object") {
 				const { from, to } = date as { from?: string; to?: string };
