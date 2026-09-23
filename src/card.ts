@@ -106,7 +106,7 @@ export type CardCommands = {
 	references: string[];
 };
 
-/** The words of a command that held a card, as the request writes them. */
+/** The words of a command that held a card, as the request writes them, in NFC. */
 export type CardCommand = { verb: string; reference: string };
 
 /** An amount field's value on a card: the amount, with the currency when the request says which. */
@@ -188,14 +188,17 @@ export function readIntent(
 	};
 }
 
-/** The first verb and reference of the card's commands the request holds, as it writes them. */
+/**
+ * The first reference of the card's commands the request holds, and a verb
+ * outside it, as the request writes them in NFC.
+ */
 export function findCommand(
 	request: string,
 	commands: CardCommands | undefined,
 ): CardCommand | undefined {
 	if (!commands) return undefined;
 	const text = request.normalize("NFC");
-	const reference = findPhrase(text, commands.references);
+	const reference = findPhrase(text, commands.references, { gap: true });
 	if (!reference) return undefined;
 	// The verb never comes from inside the reference: "the email hosting
 	// invoice" is a reference, not "email" and "the invoice".
@@ -203,7 +206,7 @@ export function findCommand(
 		text.slice(0, reference.index) +
 		" ".repeat(reference.text.length) +
 		text.slice(reference.index + reference.text.length);
-	const verb = findPhrase(outside, commands.verbs);
+	const verb = findPhrase(outside, commands.verbs, { gap: false });
 	return verb ? { verb: verb.text, reference: reference.text } : undefined;
 }
 
@@ -222,12 +225,15 @@ export function checkCommands(commands: CardCommands | undefined): void {
 /**
  * The first of the phrases, in the phrases' order, found in the text as
  * whole words, ignoring case and spacing, never accents; with where it
- * starts. Up to two words may sit between a phrase's first word and the
- * rest: "the $58 Beanhaven expense" is "the expense".
+ * starts. With `gap`, up to two words may sit between a phrase's first
+ * word and the rest: "the $58 Beanhaven expense" is "the expense". A letter,
+ * a combining mark, a digit or a hyphen next to the phrase joins it to
+ * another word.
  */
 function findPhrase(
 	text: string,
 	phrases: string[],
+	{ gap }: { gap: boolean },
 ): { text: string; index: number } | undefined {
 	for (const phrase of phrases) {
 		const [first, ...rest] = phrase
@@ -235,10 +241,10 @@ function findPhrase(
 			.trim()
 			.split(/\s+/)
 			.map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-		const tail =
-			rest.length > 0 ? `(?:\\s+\\S+){0,2}?\\s+${rest.join("\\s+")}` : "";
+		const between = gap ? "(?:\\s+\\S+){0,2}?" : "";
+		const tail = rest.length > 0 ? `${between}\\s+${rest.join("\\s+")}` : "";
 		const found = new RegExp(
-			`(?<![\\p{L}\\p{N}-])${first}${tail}(?![\\p{L}\\p{N}-])`,
+			`(?<![\\p{L}\\p{M}\\p{N}-])${first}${tail}(?![\\p{L}\\p{M}\\p{N}-])`,
 			"iu",
 		).exec(text);
 		if (found) return { text: found[0], index: found.index };

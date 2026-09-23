@@ -322,6 +322,35 @@ describe("ask: card", () => {
 			expect(result.card.value).not.toEqual({});
 		});
 
+		it.each([
+			[
+				"a combining mark NFC cannot fold into the verb",
+				"quite\u0331 el gasto de $42 de Northwind",
+			],
+			[
+				"a verb split by another word, where only a reference may be",
+				"send it over, and the invoice was $42",
+			],
+		])("fills on %s", async (_, request) => {
+			const result = await ask({
+				...base,
+				request,
+				provider: fakeProvider({
+					intent: answer(INTENT, "new_record", 0.99),
+					...confident,
+				}),
+				card: {
+					...expenseCard(),
+					commands: {
+						verbs: ["quite", "send over"],
+						references: ["el gasto", "the invoice"],
+					},
+				},
+			});
+
+			expect(result.card.intent.command).toBeUndefined();
+		});
+
 		it("refuses a blank verb or reference, which would match anywhere", async () => {
 			const call = (commands: { verbs: string[]; references: string[] }) =>
 				ask({
