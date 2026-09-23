@@ -8,6 +8,8 @@
 
 **Round 4 (#63): the card fails on Spanish latency alone.** Every quality line passes in both languages and both runs, with a named pair held in code ([ADR 0010](adr/0010-card-holds-a-named-pair.md)) and the intent naming setting a value; Spanish run 1's p95 was 1,137 ms against a line of 1,000, in a provider slowdown across the whole run. The owner ruled that the FAIL stands, with latency carried by [#65](https://github.com/franklinmdev/justask/issues/65). See Round 4: result below; rounds 1 to 3 are unchanged.
 
+**Latency (#65): from the next verdict run on, every run sends a fixed provider probe before and after its rows, and a run whose probes are more than twice the baseline leaves a failing latency line pending, to be measured again in a normal window.** See Latency below; round 4 stays a FAIL.
+
 **Hypothesis:** on the demo's fictional vendors, the expense card turns a typed expense into the record a person means (vendor, tags, day, amount), leaves a field empty when it cannot tell, and fills nothing when the request asks for no new expense, in English and in Spanish, on Enter. The lab measured a salon appointment card; this is a new measurement.
 
 ## Sets
@@ -57,6 +59,32 @@ errors <= 0
 - `heldAmbiguous >= 0.75`: at least 6 of the 8 ambiguous rows keep their held field empty.
 - `p95Ms <= 1000`, `errors <= 0`: the card is asked once, on Enter, with more questions per call than the filter (an intent, a vendor, four tags, a day, an amount). The lab's line was `< 1000`; the package's lines are inclusive.
 - **Dropped from the lab: `client_invented`.** The lab had a line for a new client matched to a known one. Here a record whose vendor is not in the catalog expects the vendor empty, so a catalog vendor filled there is a correction and counts against exact.
+
+## Latency
+
+The owner's triage decision on [#65](https://github.com/franklinmdev/justask/issues/65), 2026-09-23, for the search, filter and card alike. The p95 kill line reads the provider's latency and the flow's together, so a verdict run in a slow provider window fails on it whatever the flow does, as card round 4 did. From the next verdict run on:
+
+- **Probes.** Every run sends one fixed provider probe (`PROBE` in `demo/eval/probe.ts`: one request, one question, three labels) straight to the provider, three times before its rows and three times after, and saves each probe's latency in its run log: the ones before in the header, the ones after on the log's last line.
+- **Warm-up.** Before the measured probes and before any row, every run sends the probe request three more times (`PROBE_WARM_UP`) and discards them: they are saved in the header as `warmUp`, and never counted in the probe median or the p95. The owner's ruling on #65, 2026-09-23, after the first two runs with probes (search dev runs 3 and 4, below): in both, the first calls after idle took 1,236 to 1,443 ms and the rest about 250 to 450 ms, a cold start and not a slow window. The warm-up keeps a cold start out of the baseline, and it also protects a verdict's first rows: dev run 3's first four rows (`en-dev01` to `en-dev04`) timed out at 2 s, and a verdict run's first rows would have done the same. The probe is the same for every flow and language, and frozen by value in `test/demo-probe.test.ts`. It is not the diagnostic probe sets of rounds 3 and 4 (`diag`, `pair`), which are eval rows.
+- **Baseline.** The probes' median from the most recent normal runs, written into `PROBE_BASELINE_MS` in `demo/eval/probe.ts` before the next verdict run, saved in every run log beside the kill lines, and frozen by value in the same test. `node --conditions=source demo/eval/baseline.ts <run log>...` prints the median over the runs named, with no call. A probe that timed out counts at its wait; one that failed fast is left out. While no baseline is written, a dev, diag or pair run still sends the probes, and the CLIs refuse a verdict run before any call.
+- **Slow window.** A run whose probes' median is more than twice its baseline, or whose every probe failed, is marked a slow window, in its report's measures. Its quality lines (exact, coverage, invented, held ambiguous, errors) still decide: any of them failing is a FAIL. A p95 that passes its line counts, since a slow provider only adds latency (the owner's ruling on #65, 2026-09-23). A p95 that fails is pending, and when every quality line passes the report's verdict reads `LATENCY PENDING`. Only that latency line is measured again: a later run of the same frozen rows, with nothing else changed, in a window whose probes are normal, under the next free run number (run 3 when run 2 took the flips). Read two lines of its report and nothing else: `Probes` must say `normal`, and the p95 in `Measures` decides the latency line against its kill line. Its verdict table decides nothing, even where it prints FAIL on a quality line; record the result beside run 1's. A remeasure run in a slow window decides nothing either; wait and run again.
+- **Round 4 stays a FAIL** as recorded. Every log saved before this rule has no probes and scores as it did.
+
+### Baseline: 235 ms, from search dev runs 5 and 6
+
+The owner ruled on 2026-09-23 (#65) that the first baseline is seeded from two search dev runs back to back, accepted only if the rows' median latency in both logs is near the normal history, about 240 ms (card round 3 run 1: 243 ms; round 4's normal runs: 224 and 240 ms; the slow ones: 693 and 726 ms). The row median is taken over rows answered by a call.
+
+| Run | Rows' median | Row errors | Warm-up (discarded) | Measured probes, before · after |
+|---|---|---|---|---|
+| Search `en` dev 3 | 444 ms (769 ms over all rows) | 4 timeouts | none yet | 1,236, 2,003 timeout, 2,001 timeout · 1,443, 445, 259 |
+| Search `en` dev 4 | 318 ms | 0 | none yet | 1,312, 1,392, 367 · 249, 415, 359 |
+| Search `en` dev 5 | 226 ms | 0 | 2,004, 2,002, 2,001, all timeouts | 336, 427, 306 · 227 provider error, 446, 176 |
+| Search `en` dev 6 | 273 ms | 0 | 414, 217, 317 | 228, 261, 202 · 235, 231, 223 |
+
+- **Dev runs 3 and 4 were rejected.** Dev run 3's rows sat far above the history, and both runs' first calls were a cold start. That led to the warm-up (above). Their logs are kept, and they seed nothing.
+- **Dev runs 5 and 6 were accepted**, both near the history. Dev run 5's warm-up took the cold start on its own: all three calls timed out, and no row did. `node --conditions=source demo/eval/baseline.ts demo/eval/runs/search-en-dev-5.jsonl demo/eval/runs/search-en-dev-6.jsonl` gives 235 ms over the 11 measured probes left: the warm-up is left out, and so is the one probe that failed fast. `PROBE_BASELINE_MS` is 235, frozen by value in `test/demo-probe.test.ts`, so a run is a slow window when its probes' median is above 470 ms.
+
+Run logs: `demo/eval/runs/search-en-dev-3.jsonl` to `search-en-dev-6.jsonl`.
 
 ## Gates, from the dev runs
 
@@ -108,9 +136,10 @@ By hand with the key in `.env`, never in CI; every row is a paid call.
 1. The owner approves the sets, the measures, the kill lines and the gate rule; they are frozen in `test/demo-card-eval.test.ts` before any call.
 2. Dev runs: `node --conditions=source demo/eval/card.ts run <en|es> dev 1`. They print no verdict.
 3. `node --conditions=source demo/eval/card.ts gates 1` prints the intent's and each field's gate by the rule; write them into the demo.
-4. Run 1 per language gives the verdict: `run <en|es> eval 1`.
-5. Run 2 per language reports flips only: `run <en|es> eval 2`, then `compare <en|es> eval 1 2`.
-6. Record here the verdict, the numbers, the misses and the run logs' paths (`demo/eval/runs/`, committed so anyone can rescore them with no call).
+4. From #65 on, write the probe baseline into the demo (Latency, above).
+5. Run 1 per language gives the verdict: `run <en|es> eval 1`. In a slow window a failing latency line is measured again, as Latency says.
+6. Run 2 per language reports flips only: `run <en|es> eval 2`, then `compare <en|es> eval 1 2`.
+7. Record here the verdict, the numbers, the misses and the run logs' paths (`demo/eval/runs/`, committed so anyone can rescore them with no call).
 
 A row found wrong after a run is the owner's call, logged here; it never silently changes the set.
 
