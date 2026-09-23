@@ -49,8 +49,15 @@ const answers: Record<string, FakeAnswers> = {
 		papergrove: 0.2,
 		larkspur: 0.19,
 	}),
-	// Several wins, below the demo's gate of 0.15, spread over the catalog.
+	// A named pair: Papergrove wins outright, and the code holds it anyway.
 	"the Papergrove or Larkspur invoice": answer({
+		papergrove: 0.9,
+		larkspur: 0.07,
+		none: 0.01,
+		several: 0.02,
+	}),
+	// Several wins, below the demo's gate of 0.15, spread over the catalog.
+	"the paper or the catering invoice": answer({
 		several: 0.13,
 		none: 0.03,
 		papergrove: 0.12,
@@ -312,13 +319,31 @@ describe("the demo's search page", () => {
 		).toBeDefined();
 	});
 
-	it("says the provider picked several when several wins below the gate", async () => {
+	it("holds a request that names two vendors whatever the pick, and names them (ADR 0010)", async () => {
 		const { user } = renderDemo();
 
 		await user.click(
 			screen.getByRole("button", {
 				name: "the Papergrove or Larkspur invoice",
 			}),
+		);
+
+		expect(
+			await screen.findByText("No vendor fits that request."),
+		).toBeDefined();
+		expect(
+			panel().getByText(
+				"The request names two candidates (“Papergrove or Larkspur”), so the code shows nothing, whatever the pick.",
+			),
+		).toBeDefined();
+	});
+
+	it("says the provider picked several when several wins below the gate", async () => {
+		const { user } = renderDemo();
+
+		await user.type(
+			screen.getByRole("searchbox"),
+			"the paper or the catering invoice",
 		);
 
 		expect(

@@ -3,6 +3,7 @@ import type {
 	CatalogFieldResult,
 	FieldAnswer,
 	FilterResult,
+	NamedPair,
 	ParsedFieldResult,
 	Pick,
 } from "justask";
@@ -62,16 +63,22 @@ function unresolvedOf(
 }
 
 /**
- * Why a field is held, read the way the code holds it: no candidates, no
- * answer, a tie, a missing label, a pick below the gate, and last the picks
- * that do not make one filter, such as two numbers both claiming the minimum.
+ * Why a field is held, read the way the code holds it: no candidates, a named
+ * pair, no answer, a tie, a missing label, a pick below the gate, and last the
+ * picks that do not make one filter, such as two numbers both claiming the
+ * minimum.
  */
 function heldReasonOf(
-	result: CatalogFieldResult<unknown> | ParsedFieldResult<unknown>,
+	result:
+		| (CatalogFieldResult<unknown> & { pair?: NamedPair })
+		| ParsedFieldResult<unknown>,
 	unresolved: string | undefined,
 	format: Format,
 ): FieldHeldReason {
 	if (result.candidates.length === 0) return { kind: "no-candidates" };
+	if ("pair" in result && result.pair) {
+		return { kind: "pair", text: result.pair.text };
+	}
 	if (unresolved !== undefined) {
 		return { kind: "unresolved-currency", mark: unresolved };
 	}

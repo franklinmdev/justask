@@ -1,4 +1,5 @@
 import { ask } from "../ask.ts";
+import type { NamedPair } from "../named-pair.ts";
 import type { Facts, Probabilities, Provider } from "../provider.ts";
 import type { Search } from "../search.ts";
 import { checkKillLines, type KillLines } from "./kill-lines.ts";
@@ -16,6 +17,8 @@ export type RunRow = EvalRow & {
 	latencyMs: number;
 	/** False when the shortlist was empty, so the provider was never asked. */
 	called: boolean;
+	/** The named pair that held the item whatever its pick (ADR 0010); absent when none did, and from logs written before it. */
+	pair?: NamedPair;
 	/** What the call cost, when the provider reports it (ADR 0006). */
 	costUsd?: number;
 	error?: { kind: "provider" | "timeout"; message: string };
@@ -107,6 +110,7 @@ async function runRow<T>(
 			description,
 		})),
 		probabilities: result.probabilities,
+		...(result.pair && { pair: result.pair }),
 		latencyMs,
 		called,
 		...(costUsd !== undefined && { costUsd }),

@@ -1,3 +1,4 @@
+import type { Joiners } from "./named-pair.ts";
 import { type Pick, readPick } from "./pick.ts";
 import type { Probabilities, Question } from "./provider.ts";
 
@@ -9,9 +10,9 @@ export type Candidate<T> = {
 	description: string;
 	value: T;
 	/**
-	 * Other words a request names this row by, such as a brand. A card's
-	 * pair hold reads them, exactly or with a clear typo, beside the id,
-	 * which it reads exactly (ADR 0010).
+	 * Other words a request names this row by, such as a brand. The pair
+	 * hold reads them, exactly or with a clear typo, beside the id, which it
+	 * reads exactly (ADR 0010).
 	 */
 	names?: string[];
 };
@@ -31,6 +32,14 @@ export type Search<T> = {
 	 */
 	gate: number;
 	shortlist: Shortlist<T>;
+	/**
+	 * Words that join two items, in the search's language, each one word:
+	 * `or` words ("or"; "o", "u") and `and` words ("and"; "y", "e"). A
+	 * request that names two candidates, and no third, with one of these
+	 * between them holds the item whatever its pick, since the search takes
+	 * one (ADR 0010).
+	 */
+	joiners?: Joiners;
 };
 
 export const NONE = "none";

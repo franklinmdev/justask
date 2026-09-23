@@ -1,5 +1,6 @@
 import { ask } from "../ask.ts";
 import type { Field, Fields, Filter } from "../filter.ts";
+import type { NamedPair } from "../named-pair.ts";
 import type { AmountReading, DateReading } from "../parse.ts";
 import type { Facts, Provider, ProviderAnswer } from "../provider.ts";
 import {
@@ -40,6 +41,8 @@ export type FilterRunRow = FilterEvalRow & {
 	fields: Record<string, LoggedField>;
 	/** The provider's raw answer, per question id; empty when there was none. */
 	answers: ProviderAnswer;
+	/** Per field, the named pair that held it whatever its pick (ADR 0010); absent when none did, and from logs written before it. */
+	pairs?: Record<string, NamedPair>;
 	/** The whole pipeline, parsing and shortlists included. */
 	latencyMs: number;
 	/** False when no field had a candidate, so the provider was never asked. */
@@ -161,10 +164,13 @@ async function runRow<F extends Fields>(
 	});
 	const latencyMs = performance.now() - started;
 	const fields: Record<string, LoggedField> = {};
+	const pairs: Record<string, NamedPair> = {};
 	for (const [name, field] of Object.entries(filter.fields)) {
-		const { candidates } = result.fields[name] as {
+		const { candidates, pair } = result.fields[name] as {
 			candidates: { id: string; description: string; value: unknown }[];
+			pair?: NamedPair;
 		};
+		if (pair) pairs[name] = pair;
 		fields[name] =
 			field.kind === "catalog"
 				? {
@@ -180,6 +186,7 @@ async function runRow<F extends Fields>(
 		...row,
 		fields,
 		answers: error ? {} : answers,
+		...(Object.keys(pairs).length > 0 && { pairs }),
 		latencyMs,
 		called,
 		...(costUsd !== undefined && { costUsd }),

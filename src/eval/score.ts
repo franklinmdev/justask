@@ -22,9 +22,10 @@ export type Miss = {
 	several: number | null;
 	/**
 	 * `shortlist` when the expected candidate never reached the provider, so
-	 * no pick could have been right; `provider` otherwise.
+	 * no pick could have been right; `pair` when a named pair held the item
+	 * (ADR 0010); `provider` otherwise.
 	 */
-	blame: "shortlist" | "provider";
+	blame: "shortlist" | "pair" | "provider";
 };
 
 export type VerdictLine = {
@@ -120,11 +121,7 @@ export function scoreRun(run: Run, { gate = run.gate } = {}): Report {
 				item,
 				none,
 				several,
-				blame:
-					row.expected !== null &&
-					!row.candidates.some(({ id }) => id === row.expected)
-						? "shortlist"
-						: "provider",
+				blame: blame(row),
 			}),
 		)
 		.sort(
@@ -202,13 +199,24 @@ function side(row: RunRow, gate: number): Side {
 	return { item, none, several, filled: item !== null };
 }
 
-/** The candidate id the item fills with at this gate, as `ask` reads it. */
+function blame(row: RunRow): Miss["blame"] {
+	if (row.expected === null) return "provider";
+	if (row.pair) return "pair";
+	return row.candidates.some(({ id }) => id === row.expected)
+		? "provider"
+		: "shortlist";
+}
+
+/**
+ * The candidate id the item fills with at this gate, as `ask` reads it. No
+ * gate lets an item a named pair held through.
+ */
 function readRow(
 	row: RunRow,
 	gate: number,
 ): { item: string | null; none: number | null; several: number | null } {
 	return {
-		item: gateSearch(row.probabilities, gate).filled,
+		item: row.pair ? null : gateSearch(row.probabilities, gate).filled,
 		none: row.probabilities[NONE] ?? null,
 		several: row.probabilities[SEVERAL] ?? null,
 	};
