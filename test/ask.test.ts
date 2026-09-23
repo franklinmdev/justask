@@ -40,7 +40,7 @@ const base = {
 };
 
 describe("ask: search", () => {
-	it("fills the item when the provider picks a candidate and none stays below the gate, in one call", async () => {
+	it("fills the item when the provider picks a candidate and none and several stay below the gate, in one call", async () => {
 		const fake = fakeProvider({
 			search: { acme: 0.93, northwind: 0.05, none: 0.02, several: 0 },
 		});
@@ -64,7 +64,7 @@ describe("ask: search", () => {
 		});
 	});
 
-	it("fills the item when near-duplicates split the vote, as long as none stays below the gate", async () => {
+	it("fills the item when near-duplicates split the vote, as long as none and several stay below the gate", async () => {
 		const fake = fakeProvider({
 			search: { acme: 0.45, northwind: 0.35, none: 0.2, several: 0 },
 		});
