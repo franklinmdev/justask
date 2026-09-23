@@ -1,0 +1,184 @@
+{
+	"set": "search-es.round3.jsonl",
+	"row": "es-r3-01",
+	"recordedAt": "2026-09-23T19:18:15.767Z",
+	"timeZone": "America/La_Paz",
+	"request": "una caja de sobres y una grapadora",
+	"latencyMs": 241,
+	"response": {
+		"search": {
+			"item": {
+				"id": "tintaverde",
+				"name": "Papelería Tintaverde",
+				"supplies": "papel, tóner y artículos de oficina"
+			},
+			"candidates": [
+				{
+					"id": "tintaverde",
+					"description": "Papelería Tintaverde, papel, tóner y artículos de oficina",
+					"value": {
+						"id": "tintaverde",
+						"name": "Papelería Tintaverde",
+						"supplies": "papel, tóner y artículos de oficina"
+					},
+					"names": ["Tintaverde"]
+				},
+				{
+					"id": "cazuela",
+					"description": "Banquetes Cazuela Azul, catering y almuerzos para la oficina",
+					"value": {
+						"id": "cazuela",
+						"name": "Banquetes Cazuela Azul",
+						"supplies": "catering y almuerzos para la oficina"
+					},
+					"names": ["Cazuela Azul"]
+				},
+				{
+					"id": "nubalia",
+					"description": "Nubalia Hosting, alojamiento de páginas web y servidores en la nube",
+					"value": {
+						"id": "nubalia",
+						"name": "Nubalia Hosting",
+						"supplies": "alojamiento de páginas web y servidores en la nube"
+					},
+					"names": ["Nubalia"]
+				},
+				{
+					"id": "brisamar",
+					"description": "Limpiezas Brisamar, limpieza nocturna de oficinas",
+					"value": {
+						"id": "brisamar",
+						"name": "Limpiezas Brisamar",
+						"supplies": "limpieza nocturna de oficinas"
+					},
+					"names": ["Brisamar"]
+				},
+				{
+					"id": "relucir",
+					"description": "Relucir Servicios de Limpieza, limpieza de oficinas y de ventanas",
+					"value": {
+						"id": "relucir",
+						"name": "Relucir Servicios de Limpieza",
+						"supplies": "limpieza de oficinas y de ventanas"
+					},
+					"names": ["Relucir"]
+				},
+				{
+					"id": "letranueva",
+					"description": "Imprenta Letranueva, tarjetas de presentación, volantes y letreros",
+					"value": {
+						"id": "letranueva",
+						"name": "Imprenta Letranueva",
+						"supplies": "tarjetas de presentación, volantes y letreros"
+					},
+					"names": ["Letranueva"]
+				},
+				{
+					"id": "rumboclaro",
+					"description": "Viajes Rumbo Claro, vuelos y hoteles para viajes de trabajo",
+					"value": {
+						"id": "rumboclaro",
+						"name": "Viajes Rumbo Claro",
+						"supplies": "vuelos y hoteles para viajes de trabajo"
+					},
+					"names": ["Rumbo Claro"]
+				},
+				{
+					"id": "cuentia",
+					"description": "Cuentia Software, licencias de software contable",
+					"value": {
+						"id": "cuentia",
+						"name": "Cuentia Software",
+						"supplies": "licencias de software contable"
+					},
+					"names": ["Cuentia"]
+				},
+				{
+					"id": "cafetal",
+					"description": "Café del Cafetal Alto, café en grano y alquiler de cafeteras",
+					"value": {
+						"id": "cafetal",
+						"name": "Café del Cafetal Alto",
+						"supplies": "café en grano y alquiler de cafeteras"
+					},
+					"names": ["Cafetal"]
+				},
+				{
+					"id": "pieveloz",
+					"description": "Mensajería Pieveloz, mensajería el mismo día",
+					"value": {
+						"id": "pieveloz",
+						"name": "Mensajería Pieveloz",
+						"supplies": "mensajería el mismo día"
+					},
+					"names": ["Pieveloz"]
+				},
+				{
+					"id": "lindero",
+					"description": "Bufete Lindero, revisión de contratos y asesoría legal",
+					"value": {
+						"id": "lindero",
+						"name": "Bufete Lindero",
+						"supplies": "revisión de contratos y asesoría legal"
+					},
+					"names": ["Lindero"]
+				},
+				{
+					"id": "tecnoria",
+					"description": "Tecnoria Soporte, reparación de computadoras y soporte técnico",
+					"value": {
+						"id": "tecnoria",
+						"name": "Tecnoria Soporte",
+						"supplies": "reparación de computadoras y soporte técnico"
+					},
+					"names": ["Tecnoria"]
+				},
+				{
+					"id": "serena",
+					"description": "Nómina Serena, nómina y recursos humanos",
+					"value": {
+						"id": "serena",
+						"name": "Nómina Serena",
+						"supplies": "nómina y recursos humanos"
+					},
+					"names": ["Serena"]
+				},
+				{
+					"id": "coberplena",
+					"description": "Seguros Cobertura Plena, seguros para empresas",
+					"value": {
+						"id": "coberplena",
+						"name": "Seguros Cobertura Plena",
+						"supplies": "seguros para empresas"
+					},
+					"names": ["Cobertura Plena"]
+				}
+			],
+			"pick": {
+				"label": "tintaverde",
+				"probability": 0.93
+			},
+			"probabilities": {
+				"rumboclaro": 0,
+				"cafetal": 0,
+				"tecnoria": 0,
+				"letranueva": 0,
+				"several": 0.02,
+				"brisamar": 0,
+				"coberplena": 0,
+				"lindero": 0,
+				"serena": 0,
+				"cuentia": 0,
+				"nubalia": 0,
+				"tintaverde": 0.93,
+				"relucir": 0,
+				"pieveloz": 0,
+				"cazuela": 0,
+				"none": 0.05
+			},
+			"gate": 0.15
+		},
+		"costUsd": 0.00003385200000000001,
+		"inputTokens": 806
+	}
+}

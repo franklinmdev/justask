@@ -1,36 +1,43 @@
 import { SearchBox, SearchEmpty, SearchItem, useSearch } from "justask/react";
-import { useState } from "react";
 import { searchEndpoint } from "./api.ts";
 import type { Content, Vendor } from "./content/types.ts";
 import { formats } from "./format.ts";
-import { DEBOUNCE_MS, Suggestions } from "./parts.tsx";
+import { DEBOUNCE_MS, RecordedLabel, Suggestions } from "./parts.tsx";
+import { dayOf, type SearchRecording } from "./recording.ts";
+import { useReplay } from "./replay.ts";
 import { CaseLayout } from "./showcase.tsx";
 import { StatePanel } from "./state-panel.tsx";
-import { type Trace, timed, useSuggest } from "./trace.ts";
+import { useSuggest } from "./trace.ts";
 
 /**
  * The fictional invoicing app's vendor search, with the state panel under
  * the hood. The vendor found shows its transactions at once. The app side is
- * what a host app would write; the panel reads the same hook.
+ * what a host app would write; the panel reads the same hook. With a
+ * recording, the case opens on it replayed: the sentence, then the vendor.
  */
 export function SearchPage({
 	content,
+	recording = null,
 	fetch: fetchImpl = fetch,
 }: {
 	content: Content;
+	recording?: SearchRecording | null;
 	fetch?: typeof fetch;
 }) {
 	const { copy } = content;
-	const [trace, setTrace] = useState<Trace | null>(null);
+	const replay = useReplay({ recording, fetch: fetchImpl });
+	const { trace } = replay;
 
 	const search = useSearch<Vendor>({
 		endpoint: searchEndpoint(content.language),
 		timing: { on: "type", debounceMs: DEBOUNCE_MS },
 		// The transactions already show; choosing the vendor takes the person to them.
 		onChoose: () => document.getElementById("vendor-transactions")?.focus(),
-		fetch: timed(fetchImpl, setTrace),
+		fetch: replay.fetch,
 	});
-	const suggest = useSuggest(search);
+	replay.follow(search);
+	const box = replay.take(search);
+	const suggest = useSuggest(box);
 
 	return (
 		<CaseLayout
@@ -40,9 +47,22 @@ export function SearchPage({
 			labelledBy="vendors-title"
 			hood={<StatePanel content={content} search={search} trace={trace} />}
 		>
-			<h2 id="vendors-title">{copy.vendors}</h2>
+			<div className="case-head">
+				<h2 id="vendors-title">{copy.vendors}</h2>
+				{recording && replay.recorded && (
+					<RecordedLabel content={content} recording={recording} />
+				)}
+			</div>
+			<p className="visually-hidden" role="status">
+				{recording && replay.started
+					? copy.replaying(
+							formats(content.locale).date(dayOf(recording)),
+							recording.request,
+						)
+					: ""}
+			</p>
 			<SearchBox
-				search={search}
+				search={box}
 				label={copy.boxLabel}
 				placeholder={copy.placeholder}
 				className="box"

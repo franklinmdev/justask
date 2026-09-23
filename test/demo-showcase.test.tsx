@@ -42,6 +42,7 @@ function renderDemo({ url = "/", width = 1280 } = {}) {
 			fetch={(input, init) =>
 				handler(new Request(new URL(String(input), location.href), init))
 			}
+			recordings={null}
 		/>,
 	);
 	return { container, user: userEvent.setup() };

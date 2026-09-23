@@ -1,5 +1,8 @@
+import type { Usage } from "justask";
 import type { SearchError } from "justask/react";
-import type { HeldReason } from "./content/types.ts";
+import type { Content, HeldReason } from "./content/types.ts";
+import { formats } from "./format.ts";
+import { dayOf, type Recording } from "./recording.ts";
 
 /**
  * Not measured yet: the demo is where the pause gets measured, so the round
@@ -62,4 +65,16 @@ export function Bar({ value, gate }: { value: number; gate?: number }) {
 			)}
 		</span>
 	);
+}
+
+/** The label on a case while its display is the recorded run's, with the day it ran. */
+export function RecordedLabel({
+	content,
+	recording,
+}: {
+	content: Content;
+	recording: Recording<Usage>;
+}) {
+	const day = formats(content.locale).date(dayOf(recording));
+	return <p className="recorded">{content.copy.recorded(day)}</p>;
 }

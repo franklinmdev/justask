@@ -108,6 +108,9 @@ export const english: Content = {
 		latency: "Latency",
 		inputTokens: "Input tokens",
 		cost: "Cost",
+		recorded: (date) => `Recorded run · ${date}`,
+		replaying: (date, request) =>
+			`Replaying a recorded run from ${date}: “${request}”`,
 		filter: {
 			transactions: "Transactions",
 			boxLabel: "Filter the transactions",
@@ -125,6 +128,14 @@ export const english: Content = {
 			confirm: "Apply filters",
 			empty: "Nothing in that request filters the transactions.",
 			applied: "Applied",
+			appliedFields: (set, held) =>
+				[
+					set.length > 0 &&
+						`Set: ${set.map(([field, value]) => `${field}, ${value}`).join("; ")}.`,
+					held.length > 0 && `Held: ${held.join(", ")}.`,
+				]
+					.filter(Boolean)
+					.join(" "),
 			clear: "Clear filters",
 			showing: (count, total) =>
 				count === total
