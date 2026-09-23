@@ -52,9 +52,10 @@ export type CardMiss = {
 	label: string | null;
 	/**
 	 * `shortlist` or `parser` when no candidate could build the expected value,
-	 * so no pick could have been right; `provider` otherwise.
+	 * so no pick could have been right; `command` when the card's command
+	 * words held the intent (ADR 0009); `provider` otherwise.
 	 */
-	blame: "shortlist" | "parser" | "provider";
+	blame: "shortlist" | "parser" | "command" | "provider";
 };
 
 export type CardReport = {
@@ -189,7 +190,11 @@ function checkGates(gates: Record<string, number>): void {
 /** The intent's pick, and whether it lets the card fill at this gate. */
 function readRowIntent(row: CardRunRow, gate: number) {
 	if (row.error) return { passes: false, pick: null };
-	const { result, passes } = readIntent(row.answers[INTENT] ?? {}, gate);
+	const { result, passes } = readIntent(
+		row.answers[INTENT] ?? {},
+		gate,
+		row.command,
+	);
 	return { passes, pick: result.pick };
 }
 
@@ -307,7 +312,7 @@ export function scoreCardRun(
 				got: intent.passes ? NEW_RECORD : null,
 				probability: intent.pick?.probability ?? null,
 				label: intent.pick?.label ?? null,
-				blame: "provider",
+				blame: row.command ? "command" : "provider",
 			});
 		}
 		// A held intent explains every held field; a passing one on a nothing row
@@ -389,6 +394,8 @@ function intentStats(gate: number, read: Read[]): FieldStats {
 		} else if (intent.passes) {
 			stats.wrong++;
 		}
+		// No gate lets a row the code held through, so its pick fixes none.
+		if (row.command) continue;
 		const pick = readPick(row.answers[INTENT] ?? {});
 		if (pick?.label !== NEW_RECORD) continue;
 		notePick(stats, wantsRecord, pick.probability);

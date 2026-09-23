@@ -1,5 +1,11 @@
 import { ask } from "../ask.ts";
-import { type Card, type CardField, type CardFields, INTENT } from "../card.ts";
+import {
+	type Card,
+	type CardCommand,
+	type CardField,
+	type CardFields,
+	INTENT,
+} from "../card.ts";
 import type { AmountReading, DateReading, TimeReading } from "../parse.ts";
 import type { Facts, Provider, ProviderAnswer } from "../provider.ts";
 import { type CardEvalRow, isAmount, isIds } from "./card-set.ts";
@@ -27,6 +33,8 @@ export type CardRunRow = CardEvalRow & {
 	fields: Record<string, LoggedCardField>;
 	/** The provider's raw answer, per question id, the intent's included; empty when there was none. */
 	answers: ProviderAnswer;
+	/** The command that held the card before its gate (ADR 0009); absent from logs written before it. */
+	command?: CardCommand;
 	/** The whole pipeline, parsing and shortlists included. */
 	latencyMs: number;
 	/** False when the provider was never asked. A card asks its intent on every request, so only a failure before the call leaves it false. */
@@ -172,10 +180,12 @@ async function runRow<F extends CardFields>(
 					}
 				: ({ kind, candidates } as LoggedCardField);
 	}
+	const { command } = result.intent;
 	return {
 		...row,
 		fields,
 		answers: error ? {} : answers,
+		...(command && { command }),
 		latencyMs,
 		called,
 		...(costUsd !== undefined && { costUsd }),

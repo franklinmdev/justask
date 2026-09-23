@@ -69,7 +69,7 @@ The raw answers of one eval run, saved with the gate and kill lines it ran under
 _Avoid_: Results, output, trace
 
 **Held field**:
-A field left empty because its pick did not clear the gate, because the provider picked `not_mentioned` or `not_available`, or because a parser marked its candidates ambiguous (such as "next Friday"). Empty looks the same whatever the reason.
+A field left empty because its pick did not clear the gate, because the provider picked `not_mentioned` or `not_available`, because a parser marked its candidates ambiguous (such as "next Friday"), or, on a card, because the request is a command on an existing record. Empty looks the same whatever the reason.
 _Avoid_: Abstained field, unknown, null field
 
 **Confirm**:
@@ -91,3 +91,7 @@ A request resolved to the exact filter object a table in the host app already un
 **Card**:
 A request resolved to a filled record, such as an expense or an appointment, gated first by an intent question.
 _Avoid_: Form fill, record card
+
+**Command**:
+A request that acts on a record that already exists ("quite el gasto de $75", "send the invoice to accounting"): a verb and a reference from the card's per-language lists. The card holds every field before the intent's gate, whatever the pick (ADR 0009).
+_Avoid_: Edit request, action

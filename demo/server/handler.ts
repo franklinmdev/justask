@@ -106,15 +106,16 @@ export function demoFilter(content: Content): Filter<TransactionFields> {
 
 /**
  * The intent's gate and each card field's, refixed on 2026-09-23 from dev run
- * 3 of both languages, the first with the tuned tag descriptions, by the rule
- * the owner approved before any call (fixGate in demo/eval/gates.ts), and
- * judged on round 2's frozen sets only (docs/card-eval.md).
+ * 4 of both languages, the first with the command hold and the intent label
+ * that names sending (ADR 0009), by the rule the owner approved before any
+ * call (fixGate in demo/eval/gates.ts), and judged on round 3's frozen sets
+ * only (docs/card-eval.md).
  */
 export const CARD_GATES = {
 	intent: 0.45,
 	vendor: 0.5,
 	tags: 0.35,
-	spent_on: 0.9,
+	spent_on: 0.8,
 	total: 0.9,
 } as const;
 
@@ -127,6 +128,7 @@ export function demoCard(content: Content): Card<ExpenseFields> {
 	return {
 		description: "expense the business paid",
 		gate: CARD_GATES.intent,
+		commands: content.cardCommands,
 		fields: {
 			vendor: {
 				kind: "catalog",

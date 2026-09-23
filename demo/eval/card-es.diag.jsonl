@@ -1,0 +1,65 @@
+{"id": "es-x-01", "request": "quite el gasto de $58 del Cafetal", "kind": "nothing"}
+{"id": "es-x-02", "request": "quite el gasto del Cafetal", "kind": "nothing"}
+{"id": "es-x-03", "request": "quite el gasto de $58", "kind": "nothing"}
+{"id": "es-x-04", "request": "quite ese gasto", "kind": "nothing"}
+{"id": "es-x-05", "request": "quita el gasto de $58 del Cafetal", "kind": "nothing"}
+{"id": "es-x-06", "request": "quita el gasto del Cafetal", "kind": "nothing"}
+{"id": "es-x-07", "request": "quita el gasto de $58", "kind": "nothing"}
+{"id": "es-x-08", "request": "quita ese gasto", "kind": "nothing"}
+{"id": "es-x-09", "request": "quité el gasto de $58 del Cafetal", "kind": "nothing"}
+{"id": "es-x-10", "request": "quité el gasto del Cafetal", "kind": "nothing"}
+{"id": "es-x-11", "request": "quité el gasto de $58", "kind": "nothing"}
+{"id": "es-x-12", "request": "quité ese gasto", "kind": "nothing"}
+{"id": "es-x-13", "request": "borre el gasto de $58 del Cafetal", "kind": "nothing"}
+{"id": "es-x-14", "request": "borre el gasto del Cafetal", "kind": "nothing"}
+{"id": "es-x-15", "request": "borre el gasto de $58", "kind": "nothing"}
+{"id": "es-x-16", "request": "borre ese gasto", "kind": "nothing"}
+{"id": "es-x-17", "request": "borra el gasto de $58 del Cafetal", "kind": "nothing"}
+{"id": "es-x-18", "request": "borra el gasto del Cafetal", "kind": "nothing"}
+{"id": "es-x-19", "request": "borra el gasto de $58", "kind": "nothing"}
+{"id": "es-x-20", "request": "borra ese gasto", "kind": "nothing"}
+{"id": "es-x-21", "request": "elimine el gasto de $58 del Cafetal", "kind": "nothing"}
+{"id": "es-x-22", "request": "elimine el gasto del Cafetal", "kind": "nothing"}
+{"id": "es-x-23", "request": "elimine el gasto de $58", "kind": "nothing"}
+{"id": "es-x-24", "request": "elimine ese gasto", "kind": "nothing"}
+{"id": "es-x-25", "request": "elimina el gasto de $58 del Cafetal", "kind": "nothing"}
+{"id": "es-x-26", "request": "elimina el gasto del Cafetal", "kind": "nothing"}
+{"id": "es-x-27", "request": "elimina el gasto de $58", "kind": "nothing"}
+{"id": "es-x-28", "request": "elimina ese gasto", "kind": "nothing"}
+{"id": "es-x-29", "request": "cambie el gasto de $58 del Cafetal al viernes", "kind": "nothing"}
+{"id": "es-x-30", "request": "cambie el gasto del Cafetal al viernes", "kind": "nothing"}
+{"id": "es-x-31", "request": "cambie el gasto de $58 al viernes", "kind": "nothing"}
+{"id": "es-x-32", "request": "cambie ese gasto al viernes", "kind": "nothing"}
+{"id": "es-x-33", "request": "cambia el gasto de $58 del Cafetal al viernes", "kind": "nothing"}
+{"id": "es-x-34", "request": "cambia el gasto del Cafetal al viernes", "kind": "nothing"}
+{"id": "es-x-35", "request": "cambia el gasto de $58 al viernes", "kind": "nothing"}
+{"id": "es-x-36", "request": "cambia ese gasto al viernes", "kind": "nothing"}
+{"id": "es-x-37", "request": "envíe la factura de $58 del Cafetal a contabilidad", "kind": "nothing"}
+{"id": "es-x-38", "request": "envíe la factura del Cafetal a contabilidad", "kind": "nothing"}
+{"id": "es-x-39", "request": "envíe la factura de $58 a contabilidad", "kind": "nothing"}
+{"id": "es-x-40", "request": "envíe esa factura a contabilidad", "kind": "nothing"}
+{"id": "es-x-41", "request": "envía la factura de $58 del Cafetal a contabilidad", "kind": "nothing"}
+{"id": "es-x-42", "request": "envía la factura del Cafetal a contabilidad", "kind": "nothing"}
+{"id": "es-x-43", "request": "envía la factura de $58 a contabilidad", "kind": "nothing"}
+{"id": "es-x-44", "request": "envía esa factura a contabilidad", "kind": "nothing"}
+{"id": "es-x-45", "request": "borre la factura de $58 del Cafetal", "kind": "nothing"}
+{"id": "es-x-46", "request": "envíe el gasto de $58 del Cafetal a contabilidad", "kind": "nothing"}
+{"id": "es-x-47", "request": "mande la factura de $58 del Cafetal a contabilidad", "kind": "nothing"}
+{"id": "es-x-48", "request": "quite el gasto de $320 de Nubalia", "kind": "nothing"}
+{"id": "es-x-49", "request": "quite la factura de $58 del Cafetal", "kind": "nothing"}
+{"id": "es-x-50", "request": "reenvíe la factura de Lindero a contabilidad", "kind": "nothing"}
+{"id": "es-x-51", "request": "hosting de correo de Nubalia para enviar facturas, $12", "kind": "record", "expected": {"vendor": "nubalia", "tags": ["office"], "total": {"value": 12, "currency": "USD"}}}
+{"id": "es-x-52", "request": "mensajería de Pieveloz para enviar la factura al cliente, $25 ayer", "kind": "record", "expected": {"vendor": "pieveloz", "tags": ["office"], "spent_on": "2026-09-22", "total": {"value": 25, "currency": "USD"}}}
+{"id": "es-x-53", "request": "honorario de Serena para cambiar la nómina, $60 el lunes", "kind": "record", "expected": {"vendor": "serena", "tags": ["office"], "spent_on": "2026-09-21", "total": {"value": 60, "currency": "USD"}}}
+{"id": "es-x-54", "request": "reparación de laptop de Tecnoria, la factura salió en $180", "kind": "record", "expected": {"vendor": "tecnoria", "tags": ["office"], "total": {"value": 180, "currency": "USD"}}}
+{"id": "es-x-55", "request": "honorarios de Lindero para cambiar el contrato de alquiler, $450 el 10 de septiembre", "kind": "record", "expected": {"vendor": "lindero", "tags": ["office"], "spent_on": "2026-09-10", "total": {"value": 450, "currency": "USD"}}}
+{"id": "es-x-56", "request": "volantes de Letranueva para repartir, $90 hoy", "kind": "record", "expected": {"vendor": "letranueva", "tags": ["office"], "spent_on": "2026-09-23", "total": {"value": 90, "currency": "USD"}}}
+{"id": "es-x-57", "request": "cargo por cambio del vuelo de Rumbo Claro a Denver, $75 ayer", "kind": "record", "expected": {"vendor": "rumboclaro", "tags": ["travel"], "spent_on": "2026-09-22", "total": {"value": 75, "currency": "USD"}}}
+{"id": "es-x-58", "request": "complemento de Cuentia para enviar las facturas, $30 hoy", "kind": "record", "expected": {"vendor": "cuentia", "tags": ["office"], "spent_on": "2026-09-23", "total": {"value": 30, "currency": "USD"}}}
+{"id": "es-x-59", "request": "sobres de Tintaverde para las facturas por correo, $14 el viernes", "kind": "record", "expected": {"vendor": "tintaverde", "tags": ["office"], "spent_on": "2026-09-18", "total": {"value": 14, "currency": "USD"}}}
+{"id": "es-x-60", "request": "mudanza para mover la oficina, $600 el lunes", "kind": "record", "expected": {"tags": ["office"], "spent_on": "2026-09-21", "total": {"value": 600, "currency": "USD"}}}
+{"id": "es-x-61", "request": "seguro de Cobertura Plena para el gasto de la laptop nueva, $40 ayer", "kind": "record", "expected": {"vendor": "coberplena", "tags": ["office"], "spent_on": "2026-09-22", "total": {"value": 40, "currency": "USD"}}}
+{"id": "es-x-62", "request": "taxi para mandar el contrato firmado a Lindero, $22 ayer", "kind": "record", "expected": {"tags": ["travel"], "spent_on": "2026-09-22", "total": {"value": 22, "currency": "USD"}}}
+{"id": "es-x-63", "request": "entrega de Pieveloz para reenviar la factura a Serena, $18 hoy", "kind": "record", "expected": {"vendor": "pieveloz", "tags": ["office"], "spent_on": "2026-09-23", "total": {"value": 18, "currency": "USD"}}}
+{"id": "es-x-64", "request": "limpieza de Brisamar para que quite las manchas de la alfombra, $140 el viernes", "kind": "record", "expected": {"vendor": "brisamar", "tags": ["office"], "spent_on": "2026-09-18", "total": {"value": 140, "currency": "USD"}}}
+{"id": "es-x-65", "request": "almuerzo bastante caro en Cazuela Azul, $95 ayer", "kind": "record", "expected": {"vendor": "cazuela", "tags": ["meals"], "spent_on": "2026-09-22", "total": {"value": 95, "currency": "USD"}}}
