@@ -819,8 +819,8 @@ h2 {
 	text-align: right;
 }
 
-.candidates .none-row th,
-.candidates .none-row td {
+.candidates .own-labels th,
+.candidates .own-labels td {
 	border-top: 1px solid var(--border-strong);
 }
 
@@ -857,7 +857,7 @@ h2 {
 	background: var(--primary);
 }
 
-.none-row .bar-fill {
+.own-labels .bar-fill {
 	background: var(--bar-none);
 }
 

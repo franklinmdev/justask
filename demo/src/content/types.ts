@@ -88,7 +88,8 @@ export type FilterCopy = {
 	start: string;
 	end: string;
 	number: (text: string) => string;
-	roles: Record<"min" | "max" | "exact", string>;
+	/** What each number of an amount can do: its bounds, or the exact amount. */
+	roles: Record<Exclude<keyof AmountRange, "currency">, string>;
 	more: (count: number) => string;
 	gate: string;
 	questions: string;
