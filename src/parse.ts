@@ -737,9 +737,21 @@ const DATE_RULES: DateRule[] = [
 		},
 	},
 	{
-		// "last Friday", "el viernes pasado".
+		// "this coming Friday": the first one after today, whichever way the field reads.
 		re: new RegExp(
-			`${b}(?:(?:last|past)\\s+${WEEKDAY_ANY}|${WEEKDAY_ANY}\\s+pasad[oa])${e}`,
+			`${b}(?:(?:this|the)\\s+)?coming\\s+${WEEKDAY_ANY}${e}`,
+			"g",
+		),
+		read: (m, today) => {
+			const w = WEEKDAYS[m[1] ?? ""] ?? 0;
+			const ahead = (w - weekday(today) + 7) % 7 || 7;
+			return point(addDays(today, ahead), "the first one after today");
+		},
+	},
+	{
+		// "last Friday", "el viernes pasado", "el pasado viernes".
+		re: new RegExp(
+			`${b}(?:(?:last|past|pasad[oa])\\s+${WEEKDAY_ANY}|${WEEKDAY_ANY}\\s+pasad[oa])${e}`,
 			"g",
 		),
 		read: (m, today) => {
@@ -1077,8 +1089,8 @@ const MINUTES =
 	"(?::(\\d{2})|\\s+y\\s+(media|cuarto|pico|algo|\\d{1,2})|\\s+(menos\\s+cuarto)|\\s+and\\s+a\\s+half|\\s*(?:h|hrs?)(?![a-z]))?";
 const MERIDIEM =
 	"(?:\\s*(a\\.?\\s?m\\.?|p\\.?\\s?m\\.?)(?![a-z])|\\s+(?:de\\s+la|en\\s+la|por\\s+la|in\\s+the)\\s+(manana|tarde|noche|morning|afternoon|evening|night)|\\s+at\\s+night)?";
-/** Not money, a share, an ordinal or a day of a month: "at 5 dollars", "a las 3 de mayo". */
-const NOT_A_TIME = `(?!\\s*(?:${CURRENCY_WORDS}|usd|eur|us\\$|€|%|k(?![a-z])|mil(?![a-z])|st|nd|rd|th|(?:de\\s+|of\\s+)?${MONTH_ANY}(?![a-z])))`;
+/** Not money, a share, an ordinal or a day of a month: "at 4.50", "at 5 dollars", "a las 3 de mayo". */
+const NOT_A_TIME = `(?![.,]\\d|\\s*(?:${CURRENCY_WORDS}|usd|eur|us\\$|€|%|k(?![a-z])|mil(?![a-z])|st|nd|rd|th|(?:de\\s+|of\\s+)?${MONTH_ANY}(?![a-z])))`;
 
 const hhmm = (h: number, min: number) =>
 	`${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;

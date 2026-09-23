@@ -223,6 +223,24 @@ describe("next and last weekdays", () => {
 		},
 	);
 
+	it("marks 'el pasado viernes' ambiguous like 'el viernes pasado', whichever way the field reads", () => {
+		const both = [
+			["2026-09-18", true],
+			["2026-09-11", true],
+		];
+		expect(readings("el pasado viernes", "future")).toEqual(both);
+		expect(readings("el pasado viernes", "past")).toEqual(both);
+	});
+
+	it("reads 'this coming Friday' as the first one after today, whichever way the field reads", () => {
+		expect(readings("this coming Friday", "past")).toEqual([
+			["2026-09-25", false],
+		]);
+		expect(readings("the coming Friday", "future")).toEqual([
+			["2026-09-25", false],
+		]);
+	});
+
 	it("marks both readings of 'last Tuesday' ambiguous: the most recent one before today, or the one a week earlier", () => {
 		const both = [
 			["2026-09-22", true],
@@ -285,6 +303,16 @@ describe("times", () => {
 		expect(times("lunch at 5 dollars")).toEqual([]);
 		expect(amounts("lunch at 5 dollars")).toEqual([["5 dollars", 5, "USD"]]);
 		expect(times("las 3 facturas")).toEqual([]);
+	});
+
+	it.each([
+		["coffee at 4.50", 4.5],
+		["lunch at 12.99", 12.99],
+		["lunch @ 9.99", 9.99],
+		["taxi a las 3,50", 3.5],
+	])("leaves a number with decimals to the amounts: %s", (text, value) => {
+		expect(times(text)).toEqual([]);
+		expect(amounts(text).map(([, v]) => v)).toEqual([value]);
 	});
 
 	it("does not read the hour of a time as an amount", () => {
