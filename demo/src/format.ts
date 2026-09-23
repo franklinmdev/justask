@@ -34,10 +34,19 @@ export function formats(locale: string) {
 		currency: "USD",
 		maximumSignificantDigits: 2,
 	});
+	// A month runs to cents; below a cent it reads like a call.
+	const cents = new Intl.NumberFormat(locale, {
+		style: "currency",
+		currency: "USD",
+		minimumFractionDigits: 2,
+		maximumFractionDigits: 2,
+	});
 	const count = new Intl.NumberFormat(locale);
 	return {
 		probability: (value: number) => probability.format(value),
 		cost: (usd: number) => cost.format(usd),
+		month: (usd: number) =>
+			usd >= 0.01 || usd === 0 ? cents.format(usd) : cost.format(usd),
 		count: (value: number) => count.format(value),
 		/** In the local currency, or as the bare number and its code when another one is named. */
 		amount: (value: number, currency?: string | null) =>

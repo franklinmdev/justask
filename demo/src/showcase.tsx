@@ -7,6 +7,7 @@ import {
 	useMemo,
 	useSyncExternalStore,
 } from "react";
+import { Calculator } from "./calculator.tsx";
 import type { Case, Content } from "./content/types.ts";
 import { formats } from "./format.ts";
 import { type SnippetFile, snippetOf } from "./snippet.ts";
@@ -98,7 +99,8 @@ export function nextTab<T>(
  * on a phone an "App | Under the hood" switch shows one at a time, the app
  * first. What is out of view is hidden, not unmounted, so the app keeps what
  * the person typed. The hood holds the call's strip, then the Trace, JSON
- * and Code tabs; `hood` is the Trace tab's panel.
+ * and Code tabs; `hood` is the Trace tab's panel. Below both, the cost
+ * calculator prices a month from the call the hood shows.
  */
 export function CaseLayout({
 	content,
@@ -127,112 +129,119 @@ export function CaseLayout({
 	const hoodHidden = wide ? !place.open : place.shown === "app";
 
 	return (
-		<div className="case" data-hood={hoodHidden ? "hidden" : "shown"}>
-			<div className="case-bar">
-				{wide ? (
-					<button
-						type="button"
-						className="hood-toggle"
-						aria-expanded={place.open}
-						aria-controls="hood"
-						onClick={() => place.setOpen(!place.open)}
-					>
-						{copy.hood}
-					</button>
-				) : (
-					<fieldset className="show" aria-label={copy.showLabel}>
-						{(["app", "hood"] as const).map((option) => (
-							<button
-								key={option}
-								type="button"
-								aria-pressed={place.shown === option}
-								onClick={() => place.setShown(option)}
-							>
-								{option === "app" ? copy.app : copy.hood}
-							</button>
-						))}
-					</fieldset>
-				)}
-			</div>
-			<section className="app" aria-labelledby={labelledBy} hidden={appHidden}>
-				{children}
-			</section>
-			<aside
-				id="hood"
-				className="hood"
-				aria-label={copy.hood}
-				hidden={hoodHidden}
-			>
-				<Strip content={content} call={call} />
-				<div className="hood-tabs" role="tablist" aria-label={copy.hoodViews}>
-					{hoodViews.map((view) => (
+		<>
+			<div className="case" data-hood={hoodHidden ? "hidden" : "shown"}>
+				<div className="case-bar">
+					{wide ? (
 						<button
-							key={view}
 							type="button"
-							role="tab"
-							id={`hood-tab-${view}`}
-							aria-selected={view === place.view}
-							aria-controls={`hood-${view}`}
-							tabIndex={view === place.view ? 0 : -1}
-							onClick={() => place.setView(view)}
-							onKeyDown={(event) => {
-								const next = nextTab(event, hoodViews, place.view);
-								if (next === null) return;
-								event.preventDefault();
-								place.setView(next);
-								document.getElementById(`hood-tab-${next}`)?.focus();
-							}}
+							className="hood-toggle"
+							aria-expanded={place.open}
+							aria-controls="hood"
+							onClick={() => place.setOpen(!place.open)}
 						>
-							{copy[view]}
+							{copy.hood}
 						</button>
-					))}
-				</div>
-				<div
-					role="tabpanel"
-					id="hood-trace"
-					aria-labelledby="hood-tab-trace"
-					className="hood-panel"
-					// biome-ignore lint/a11y/noNoninteractiveTabindex: a tab panel is a tab stop, so keys reach it when nothing inside takes the focus (ARIA tabs pattern).
-					tabIndex={0}
-					hidden={place.view !== "trace"}
-				>
-					{hood}
-				</div>
-				<div
-					role="tabpanel"
-					id="hood-json"
-					aria-labelledby="hood-tab-json"
-					className="hood-panel"
-					// biome-ignore lint/a11y/noNoninteractiveTabindex: a tab panel is a tab stop, so keys reach it when nothing inside takes the focus (ARIA tabs pattern).
-					tabIndex={0}
-					hidden={place.view !== "json"}
-				>
-					{call.trace ? (
-						<CodeFile
-							file={{
-								name: hookResult[shownCase],
-								code: JSON.stringify(call.result, null, 2),
-							}}
-							stale={call.loading}
-						/>
 					) : (
-						<p className="muted">{copy.jsonIdle}</p>
+						<fieldset className="show" aria-label={copy.showLabel}>
+							{(["app", "hood"] as const).map((option) => (
+								<button
+									key={option}
+									type="button"
+									aria-pressed={place.shown === option}
+									onClick={() => place.setShown(option)}
+								>
+									{option === "app" ? copy.app : copy.hood}
+								</button>
+							))}
+						</fieldset>
 					)}
 				</div>
-				<div
-					role="tabpanel"
-					id="hood-code"
-					aria-labelledby="hood-tab-code"
-					className="hood-panel"
-					// biome-ignore lint/a11y/noNoninteractiveTabindex: a tab panel is a tab stop, so keys reach it when nothing inside takes the focus (ARIA tabs pattern).
-					tabIndex={0}
-					hidden={place.view !== "code"}
+				<section
+					className="app"
+					aria-labelledby={labelledBy}
+					hidden={appHidden}
 				>
-					<CodeFile file={snippet.server} />
-					<CodeFile file={snippet.client} />
-				</div>
-			</aside>
-		</div>
+					{children}
+				</section>
+				<aside
+					id="hood"
+					className="hood"
+					aria-label={copy.hood}
+					hidden={hoodHidden}
+				>
+					<Strip content={content} call={call} />
+					<div className="hood-tabs" role="tablist" aria-label={copy.hoodViews}>
+						{hoodViews.map((view) => (
+							<button
+								key={view}
+								type="button"
+								role="tab"
+								id={`hood-tab-${view}`}
+								aria-selected={view === place.view}
+								aria-controls={`hood-${view}`}
+								tabIndex={view === place.view ? 0 : -1}
+								onClick={() => place.setView(view)}
+								onKeyDown={(event) => {
+									const next = nextTab(event, hoodViews, place.view);
+									if (next === null) return;
+									event.preventDefault();
+									place.setView(next);
+									document.getElementById(`hood-tab-${next}`)?.focus();
+								}}
+							>
+								{copy[view]}
+							</button>
+						))}
+					</div>
+					<div
+						role="tabpanel"
+						id="hood-trace"
+						aria-labelledby="hood-tab-trace"
+						className="hood-panel"
+						// biome-ignore lint/a11y/noNoninteractiveTabindex: a tab panel is a tab stop, so keys reach it when nothing inside takes the focus (ARIA tabs pattern).
+						tabIndex={0}
+						hidden={place.view !== "trace"}
+					>
+						{hood}
+					</div>
+					<div
+						role="tabpanel"
+						id="hood-json"
+						aria-labelledby="hood-tab-json"
+						className="hood-panel"
+						// biome-ignore lint/a11y/noNoninteractiveTabindex: a tab panel is a tab stop, so keys reach it when nothing inside takes the focus (ARIA tabs pattern).
+						tabIndex={0}
+						hidden={place.view !== "json"}
+					>
+						{call.trace ? (
+							<CodeFile
+								file={{
+									name: hookResult[shownCase],
+									code: JSON.stringify(call.result, null, 2),
+								}}
+								stale={call.loading}
+							/>
+						) : (
+							<p className="muted">{copy.jsonIdle}</p>
+						)}
+					</div>
+					<div
+						role="tabpanel"
+						id="hood-code"
+						aria-labelledby="hood-tab-code"
+						className="hood-panel"
+						// biome-ignore lint/a11y/noNoninteractiveTabindex: a tab panel is a tab stop, so keys reach it when nothing inside takes the focus (ARIA tabs pattern).
+						tabIndex={0}
+						hidden={place.view !== "code"}
+					>
+						<CodeFile file={snippet.server} />
+						<CodeFile file={snippet.client} />
+					</div>
+				</aside>
+			</div>
+			<Calculator content={content} trace={call.trace} loading={call.loading} />
+		</>
 	);
 }
 
