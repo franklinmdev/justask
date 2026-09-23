@@ -1,5 +1,7 @@
 import {
 	type AskError,
+	type Card,
+	createCardHandler,
 	createFilterHandler,
 	createSearchHandler,
 	type Facts,
@@ -8,11 +10,12 @@ import {
 	type Provider,
 	type Search,
 } from "justask";
-import { filterEndpoint, searchEndpoint } from "../src/api.ts";
+import { cardEndpoint, filterEndpoint, searchEndpoint } from "../src/api.ts";
 import { english } from "../src/content/en.ts";
 import { spanish } from "../src/content/es.ts";
 import type {
 	Content,
+	ExpenseFields,
 	Language,
 	TransactionFields,
 	Vendor,
@@ -102,11 +105,56 @@ export function demoFilter(content: Content): Filter<TransactionFields> {
 }
 
 /**
- * The demo's server side: a search and a filter handler per language, each at
- * its own route with its own catalog. Both languages' local currency is USD,
- * so "$" and "dólares" read as USD and "pesos" names no currency. The
- * provider is built by the caller, on the server, so the key never reaches
- * the browser.
+ * Not measured on the demo's data yet; the card eval set (#20) will fix the
+ * intent's and each field's. Until then all take the lab's card gate, 0.9,
+ * under which it passed 7 of 7 kill lines.
+ */
+export const CARD_GATE = 0.9;
+
+/**
+ * The expense card in one language: an expense the business paid, with its
+ * vendor from the whole catalog, its tags, the day it was spent, read back
+ * from today, and the amount.
+ */
+export function demoCard(content: Content): Card<ExpenseFields> {
+	return {
+		description: "expense the business paid",
+		gate: CARD_GATE,
+		fields: {
+			vendor: {
+				kind: "catalog",
+				description: "the vendor who was paid",
+				gate: CARD_GATE,
+				shortlist: () => content.vendors,
+			},
+			tags: {
+				kind: "catalog",
+				several: true,
+				description: "the expense's tags",
+				gate: CARD_GATE,
+				shortlist: () => content.tags,
+			},
+			spent_on: {
+				kind: "date",
+				reads: "past",
+				description: "the day the money was spent",
+				gate: CARD_GATE,
+			},
+			total: {
+				kind: "amount",
+				description: "the amount paid",
+				gate: CARD_GATE,
+			},
+		},
+	};
+}
+
+/**
+ * The demo's server side: a search, a filter and a card handler per
+ * language, each at its own route with its own catalog. Both languages'
+ * local currency is USD, so "$" and "dólares" read as USD and "pesos" names
+ * no currency. The provider is built by the caller, on the server, so the key
+ * never reaches the browser.
  */
 export function createDemoHandler(
 	provider: Provider,
@@ -131,6 +179,16 @@ export function createDemoHandler(
 					timeoutMs: TIMEOUT_MS,
 					facts: FACTS,
 					filter: demoFilter(content),
+					...(onError && { onError }),
+				}),
+			],
+			[
+				cardEndpoint(content.language),
+				createCardHandler({
+					provider,
+					timeoutMs: TIMEOUT_MS,
+					facts: FACTS,
+					card: demoCard(content),
 					...(onError && { onError }),
 				}),
 			],

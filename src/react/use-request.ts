@@ -23,13 +23,16 @@ export type RequestError =
 	| HandlerBadRequest["error"]
 	| { kind: "network"; message: string };
 
+/** The key of the handler's 200 body that holds the result. */
+type Flow = "search" | "filter" | "card";
+
 type Outcome<R> = { result: R | null; error: RequestError | null };
 
 /** An outcome with the request it answers, so an edit in the box retires it. */
 export type Answered<R> = Outcome<R> & { request: string };
 
 /**
- * What the search and filter hooks share: the box's text, the pause, one call
+ * What every flow's hook shares: the box's text, the pause, one call
  * at a time, and only the answer to the latest request kept. `flow` names the
  * key of the handler's 200 body that holds the result.
  */
@@ -42,7 +45,7 @@ export function useRequest<R>({
 	endpoint: string;
 	timing: RequestTiming;
 	fetch: typeof fetch | undefined;
-	flow: "search" | "filter";
+	flow: Flow;
 }) {
 	const [request, setRequestState] = useState("");
 	const [answer, setAnswer] = useState<Answered<R> | null>(null);
@@ -94,9 +97,19 @@ export function useRequest<R>({
 		}
 	}
 
+	/** Puts `text` in the box with no call, dropping any pending one; the last answer stays. */
+	function replaceRequest(text: string) {
+		clearTimeout(timer.current);
+		inFlight.current?.abort();
+		inFlight.current = null;
+		setRequestState(text);
+		setLoading(false);
+	}
+
 	return {
 		request,
 		setRequest,
+		replaceRequest,
 		submit: () => call(request),
 		loading,
 		answer,
@@ -112,7 +125,7 @@ function isBlank(text: string): boolean {
 async function post<R>(
 	fetchImpl: typeof fetch,
 	endpoint: string,
-	flow: "search" | "filter",
+	flow: Flow,
 	request: string,
 	signal: AbortSignal,
 ): Promise<Outcome<R>> {

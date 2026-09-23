@@ -390,7 +390,10 @@ h2 {
 }
 
 @media (prefers-reduced-motion: reduce) {
-	/* settle becomes a fade, and nothing moves: the item, the proposed filters, Confirm. */
+	/*
+	 * settle becomes a fade, and nothing moves: the item, the proposed filters,
+	 * a filled card field, the undo slot, Confirm.
+	 */
 	@keyframes settle {
 		from {
 			opacity: 0;
@@ -591,6 +594,354 @@ h2 {
 	max-width: 22ch;
 	overflow: hidden;
 	text-overflow: ellipsis;
+}
+
+/* The expense card: its fields, Confirm with the undo slot, and the saved expenses */
+
+.card-status:empty {
+	display: none;
+}
+
+.card {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+	gap: 16px;
+	padding: 16px;
+	border: 1px solid var(--border);
+	border-radius: 0.25rem;
+}
+
+.entry {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-width: 0;
+}
+
+/* The tags take the card's full width: four checkboxes in one row. */
+.entry:has(.tags) {
+	grid-column: 1 / -1;
+}
+
+/* The signature motion: a field the answer filled settling in. */
+.entry[data-filled-by="answer"] {
+	animation: settle 150ms var(--ease-out);
+}
+
+.entry-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.entry-label {
+	font-size: 0.75rem;
+	font-weight: 500;
+	letter-spacing: 0.04em;
+}
+
+/* Provenance: a value the request gave is marked, one the person gave is not. */
+.entry-source {
+	color: var(--muted);
+	font-family: var(--mono);
+	font-size: 0.6875rem;
+}
+
+.control,
+.day-trigger {
+	width: 100%;
+	height: 36px;
+	padding: 0 10px;
+	border: 1px solid var(--border-strong);
+	border-radius: 0.25rem;
+	background: var(--bg);
+	color: var(--text);
+	font: inherit;
+	transition: border-color 120ms ease-out;
+}
+
+.control:focus-visible,
+.day-trigger:focus-visible {
+	outline: none;
+	border-color: var(--primary);
+	box-shadow: 0 0 0 2px var(--ring);
+}
+
+.tags {
+	display: contents;
+}
+
+.tag-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.tag {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	min-height: 32px;
+	padding: 0 10px 0 8px;
+	border: 1px solid var(--border-strong);
+	border-radius: 0.125rem;
+	font-size: 0.875rem;
+	cursor: pointer;
+	transition:
+		background-color 120ms ease-out,
+		border-color 120ms ease-out;
+}
+
+.tag:has(:checked) {
+	border-color: var(--primary);
+	background: var(--surface);
+}
+
+.tag input {
+	margin: 0;
+	accent-color: var(--primary);
+}
+
+.tag:has(:focus-visible) {
+	border-color: var(--primary);
+	box-shadow: 0 0 0 2px var(--ring);
+}
+
+.tag input:focus-visible {
+	outline: none;
+	box-shadow: none;
+}
+
+@media (hover: hover) {
+	.tag:hover,
+	.day-trigger:hover,
+	.control:hover {
+		border-color: var(--primary);
+	}
+}
+
+/* The day: a button that opens a calendar under it. */
+.day-picker {
+	position: relative;
+}
+
+.day-trigger {
+	text-align: left;
+	cursor: pointer;
+}
+
+.day-trigger[data-empty],
+.control:has(option[value=""]:checked) {
+	color: var(--muted);
+}
+
+.calendar {
+	position: absolute;
+	z-index: 10;
+	top: calc(100% + 4px);
+	left: 0;
+	width: 264px;
+	padding: 8px;
+	border-radius: 0.375rem;
+	background: var(--bg);
+	/* Floating: it leaves the page plane. */
+	box-shadow:
+		0 0 0 1px oklch(0 0 0 / 0.05),
+		0 4px 12px oklch(0 0 0 / 0.08);
+	transform-origin: top left;
+	animation: pop 160ms var(--ease-out);
+}
+
+:root[data-theme="dark"] .calendar {
+	box-shadow: 0 0 0 1px oklch(1 0 0 / 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) .calendar {
+		box-shadow: 0 0 0 1px oklch(1 0 0 / 0.08);
+	}
+}
+
+@keyframes pop {
+	from {
+		opacity: 0;
+		transform: scale(0.97);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	/* pop becomes a fade: the calendar. */
+	@keyframes pop {
+		from {
+			opacity: 0;
+		}
+	}
+}
+
+.calendar-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 4px;
+}
+
+.calendar-title {
+	font-size: 0.875rem;
+	font-weight: 600;
+}
+
+.calendar-step,
+.calendar-day,
+.calendar-clear {
+	border: 0;
+	border-radius: 0.125rem;
+	background: transparent;
+	color: var(--text);
+	font: inherit;
+	cursor: pointer;
+	transition: background-color 120ms ease-out;
+}
+
+.calendar-step {
+	display: grid;
+	place-items: center;
+	width: 32px;
+	height: 32px;
+	color: var(--muted);
+}
+
+.calendar-days {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.calendar-days th {
+	height: 28px;
+	color: var(--muted);
+	font-size: 0.6875rem;
+	font-weight: 500;
+	letter-spacing: 0.04em;
+}
+
+.calendar-days td {
+	padding: 1px;
+	text-align: center;
+}
+
+.calendar-day {
+	width: 34px;
+	height: 32px;
+	font-family: var(--mono);
+	font-size: 0.8125rem;
+	font-variant-numeric: tabular-nums;
+}
+
+.calendar-day[data-outside] {
+	color: var(--muted);
+}
+
+.calendar-day[aria-current="date"] {
+	text-decoration: underline;
+	text-decoration-color: var(--primary);
+	text-underline-offset: 4px;
+}
+
+.calendar-day[aria-pressed="true"] {
+	background: var(--primary);
+	color: var(--on-primary);
+}
+
+.calendar-clear {
+	width: 100%;
+	height: 32px;
+	margin-top: 4px;
+	color: var(--muted);
+	font-size: 0.75rem;
+	font-weight: 500;
+	letter-spacing: 0.04em;
+}
+
+@media (hover: hover) {
+	.calendar-step:hover,
+	.calendar-day:hover:not([aria-pressed="true"]),
+	.calendar-clear:hover {
+		background: var(--surface-strong);
+		color: var(--text);
+	}
+}
+
+/* The amount: the currency mark sits inside the box, before the number. */
+.amount {
+	position: relative;
+}
+
+.amount-mark {
+	position: absolute;
+	top: 50%;
+	left: 10px;
+	transform: translateY(-50%);
+	color: var(--muted);
+	font-family: var(--mono);
+	font-size: 0.8125rem;
+	pointer-events: none;
+}
+
+.amount-input {
+	padding-left: 26px;
+	text-align: right;
+}
+
+.confirm-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 12px;
+}
+
+.undo {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	color: var(--muted);
+	font-size: 0.875rem;
+}
+
+.undo:not(:empty) {
+	animation: settle 150ms var(--ease-out);
+}
+
+.expenses {
+	padding: 0;
+	list-style: none;
+}
+
+.expense {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	grid-template-areas:
+		"vendor total"
+		"details total";
+	gap: 2px 12px;
+	padding: 10px 0;
+	border-bottom: 1px solid var(--border);
+}
+
+.expense-vendor {
+	grid-area: vendor;
+	font-weight: 500;
+}
+
+.expense-details {
+	grid-area: details;
+	color: var(--muted);
+	font-size: 0.8125rem;
+}
+
+.expense-total {
+	grid-area: total;
+	align-self: center;
+	text-align: right;
 }
 
 /* Suggested requests */
@@ -957,6 +1308,12 @@ h2 {
 	.confirm {
 		height: 44px;
 	}
+
+	.control,
+	.day-trigger {
+		height: 44px;
+		font-size: 1rem;
+	}
 }
 
 @media (pointer: coarse) {
@@ -975,6 +1332,20 @@ h2 {
 	.pages a {
 		min-height: 44px;
 		padding: 0 12px;
+	}
+
+	.tag,
+	.calendar-step,
+	.calendar-clear {
+		min-height: 44px;
+	}
+
+	.calendar-step {
+		width: 44px;
+	}
+
+	.calendar-day {
+		height: 40px;
 	}
 }
 
@@ -1058,5 +1429,11 @@ h2 {
 	.controls {
 		width: 100%;
 		justify-content: space-between;
+	}
+
+	/* The card's fields stack, one per row. */
+	.card {
+		grid-template-columns: minmax(0, 1fr);
+		padding: 12px;
 	}
 }

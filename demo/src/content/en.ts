@@ -1,4 +1,33 @@
-import { type Content, status, transaction as t, vendor } from "./types.ts";
+import {
+	type Content,
+	type FieldHeldReason,
+	status,
+	transaction as t,
+	tag,
+	vendor,
+} from "./types.ts";
+
+/** Why a filter or card field is held, as both panels say it. */
+function fieldHeldBecause(reason: FieldHeldReason): string {
+	switch (reason.kind) {
+		case "no-candidates":
+			return "The code found no candidates, so the provider was not asked.";
+		case "unresolved-currency":
+			return `The request names “${reason.mark}”, which is not the local currency, so the code held the field without asking.`;
+		case "failed":
+			return "No answer came back, so the field is held.";
+		case "tie":
+			return "Two labels tied for first place, so the field is held.";
+		case "not-mentioned":
+			return "The provider says the request does not mention it.";
+		case "not-available":
+			return "The provider says the request asks for something no candidate expresses.";
+		case "below-gate":
+			return `A pick (${reason.probability}) fell below the gate (${reason.gate}), so the field is held.`;
+		case "conflict":
+			return "The picks do not add up to one filter, so the code held the field.";
+	}
+}
 
 // Fictional vendors with invented names, made up to be no real business.
 export const english: Content = {
@@ -8,7 +37,7 @@ export const english: Content = {
 		skip: "Skip to the content",
 		product: "justask demo",
 		pagesLabel: "Pages",
-		pages: { search: "Search", filter: "Filter" },
+		pages: { search: "Search", filter: "Filter", card: "Card" },
 		languageLabel: "Language",
 		themeLabel: "Theme",
 		themes: { system: "Auto", light: "Light", dark: "Dark" },
@@ -117,29 +146,12 @@ export const english: Content = {
 			summary: (filled, total) =>
 				filled === 0
 					? `No field filled, all ${total} held.`
-					: `${filled} of ${total} fields filled, the rest held.`,
+					: filled === total
+						? `All ${total} fields filled.`
+						: `${filled} of ${total} fields filled, the rest held.`,
 			filledBecause: (probability, gate) =>
 				`Every pick cleared the gate: the lowest was ${probability}, the gate ${gate}.`,
-			heldBecause: (reason) => {
-				switch (reason.kind) {
-					case "no-candidates":
-						return "The code found no candidates, so the provider was not asked.";
-					case "unresolved-currency":
-						return `The request names “${reason.mark}”, which is not the local currency, so the code held the field without asking.`;
-					case "failed":
-						return "No answer came back, so the field is held.";
-					case "tie":
-						return "Two labels tied for first place, so the field is held.";
-					case "not-mentioned":
-						return "The provider says the request does not mention it.";
-					case "not-available":
-						return "The provider says the request asks for something no candidate expresses.";
-					case "below-gate":
-						return `A pick (${reason.probability}) fell below the gate (${reason.gate}), so the field is held.`;
-					case "conflict":
-						return "The picks do not add up to one filter, so the code held the field.";
-				}
-			},
+			heldBecause: fieldHeldBecause,
 			start: "Where it starts",
 			end: "Where it ends",
 			number: (text) => `What “${text}” does`,
@@ -151,6 +163,95 @@ export const english: Content = {
 			more: (count) => `${count} more candidates, not shown`,
 			gate: "Gate",
 			questions: "Questions in one call",
+		},
+		card: {
+			title: "New expense",
+			boxLabel: "Describe the expense",
+			placeholder: "Describe the expense in your own words",
+			fields: {
+				vendor: "Vendor",
+				tags: "Tags",
+				spent_on: "Day",
+				total: "Amount",
+			},
+			tags: {
+				meals: "Meals",
+				travel: "Travel",
+				office: "Office",
+				client: "Client",
+			},
+			chooseVendor: "Choose a vendor",
+			fromRequest: "from the request",
+			announce: (filled, waiting) => {
+				const list = (names: string[]) =>
+					new Intl.ListFormat("en").format(
+						names.map((name) => name.toLowerCase()),
+					);
+				if (filled.length === 0) {
+					return `Nothing filled. For you to fill: ${list(waiting)}.`;
+				}
+				return waiting.length === 0
+					? `Filled: ${list(filled)}. Nothing left to fill.`
+					: `Filled: ${list(filled)}. For you to fill: ${list(waiting)}.`;
+			},
+			unanswered:
+				"The request could not be read, so the card stays as it was. Fill it in by hand.",
+			pickDay: "Pick a day",
+			calendar: {
+				label: "Choose the day",
+				previous: "Previous month",
+				next: "Next month",
+				clear: "Clear",
+			},
+			confirm: "Save expense",
+			saved: "Expense saved.",
+			undo: "Undo",
+			expenses: "Saved expenses",
+			noExpenses:
+				"No expense saved yet. Saved ones stay in memory until the page reloads.",
+			fills: "Fills the card",
+			holds: "Leaves one empty",
+			nothing: "Not a new expense",
+			intent: "New expense?",
+			intentLabels: {
+				new_record: "records a new expense",
+				not_mentioned: "asks for no record",
+				not_available: "changes, deletes or asks about one",
+			},
+			intentBecause: (reason) => {
+				switch (reason.kind) {
+					case "passed":
+						return `The request asks for a new expense: new_record (${reason.probability}) cleared the gate (${reason.gate}).`;
+					case "below-gate":
+						return `new_record (${reason.probability}) fell below the gate (${reason.gate}), so every field is held.`;
+					case "not-mentioned":
+						return "The provider says the request asks for no record, so every field is held.";
+					case "not-available":
+						return "The provider says the request is about an expense but adds none, so every field is held.";
+					case "tie":
+						return "Two labels tied for first place, so every field is held.";
+					case "failed":
+						return "No answer came back, so every field is held.";
+				}
+			},
+			heldBecause: (reason) => {
+				switch (reason.kind) {
+					case "not-a-record":
+						return "The request asks for no new expense, so the field is held with the rest.";
+					case "foreign-currency":
+						return `The pick names “${reason.mark}”, which is not the local currency, so the code held the field.`;
+					case "ambiguous":
+						return `“${reason.text}” reads two ways, so the code held the field whatever its probability.`;
+					case "period":
+						return `“${reason.text}” is a period, not one day, so the code held the field.`;
+					default:
+						return fieldHeldBecause(reason);
+				}
+			},
+			tagQuestion: (name) => `Tagged ${name.toLowerCase()}?`,
+			yes: "the request asks for it",
+			unresolved: (mark) => `“${mark}” is not the local currency`,
+			ambiguous: "reads two ways",
 		},
 	},
 	vendors: [
@@ -248,5 +349,24 @@ export const english: Content = {
 		],
 		ambiguous: ["the cleaners", "the Papergrove or Larkspur invoice"],
 		nothing: ["the plumber who fixed the leak", "how much do we owe in total?"],
+	},
+	tags: [
+		tag("meals", "meals: lunch, dinner, coffee, catering"),
+		tag("travel", "travel: flights, hotels, taxis"),
+		tag("office", "office: supplies, equipment, software and services"),
+		tag("client", "billable to a client, or spent with a client"),
+	],
+	cardSuggestions: {
+		fills: [
+			"lunch with Larkspur yesterday, $86.40",
+			"Farwander taxi with a client on Friday, $64",
+			"Beanhaven coffee today, $18.50",
+		],
+		holds: [
+			"lunch with the cleaners yesterday, $40",
+			"Papergrove toner last Friday, $120",
+			"Swiftlane courier, 300 pesos",
+		],
+		nothing: ["how much did we spend on lunch?", "delete yesterday's taxi"],
 	},
 };
