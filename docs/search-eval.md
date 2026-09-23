@@ -127,3 +127,55 @@ Decided by the owner on 2026-09-22, after this verdict and before any row of the
 - **Kill lines:** the same six, unchanged in `demo/eval/kill-lines.ts`.
 - **A fresh eval set per language,** 40 rows each (28 item, 6 nothing, 6 ambiguous), drafted by the orchestrator with the owner and pasted in once approved. New files beside these: `demo/eval/search-en.round2.jsonl` and `demo/eval/search-es.round2.jsonl`, run logs `demo/eval/runs/search-<language>-round2-<n>.jsonl`. This round's sets, logs and verdict stay as they are.
 - **No call until the fresh sets are approved and frozen.** Run 1 of the fresh sets gives that round's verdict; run 2 reports flips only.
+
+## Round 2: result
+
+**Verdict: FAIL.** English passes every kill line; Spanish fails held ambiguous again, at 0.667 against 0.75. Delivery 1 is not closed.
+
+Runs of 2026-09-22 with `jev-1.13.0`, gate 0.15, shortlist 14, the same six kill lines and fixed today. The sets were drafted by the orchestrator with the owner, approved, copied in unchanged and frozen by checksum (`test/demo-eval.test.ts`) in the commit before the first call. No dev run: the gate was fixed by the owner beforehand.
+
+**One approved exception:** `es-r2-35`, `la empresa de limpieza`, is word for word one of the demo's Spanish suggestions, which round 1 counted as dev data. It was held, as expected; without it Spanish held ambiguous would be 3 of 5, still a FAIL. Nothing else in round 2 repeats a round 1 request, a dev request or a suggestion.
+
+### Run 1: the verdict
+
+| Measure | Kill line | English | Spanish |
+|---|---|---|---|
+| exact | at least 0.9 | 1 (26 of 26) | 1 (24 of 24) |
+| coverage | at least 0.8 | 0.929 (26 of 28) | 0.857 (24 of 28) |
+| invented | at most 0 | 0 | 0 |
+| held ambiguous | at least 0.75 | 0.833 (5 of 6) | **0.667 (4 of 6): FAIL** |
+| p95 | at most 800 ms | 332 ms | 347 ms |
+| errors | at most 0 | 0 | 0 |
+| cost per call | | $0.0000301 | $0.0000323 |
+
+Again every vendor shown was the one meant, and no nothing row got a vendor.
+
+Misses:
+
+| Row | Request | Expected | Got | `none` |
+|---|---|---|---|---|
+| en-r2-39 | the people who keep our computers and website running | ambiguous | Cloudberth (0.85, next Fixbright 0.12) | 0.03 |
+| es-r2-37 | el trabajo de impresión | ambiguous | Letranueva (0.96, next 0.00) | 0.04 |
+| es-r2-39 | los que mantienen funcionando las computadoras y la página | ambiguous | Tecnoria (0.46, next Nubalia 0.43) | 0.11 |
+| en-r2-11 | who drafted the lease agreement | Clausewood | held | 0.38 |
+| en-r2-18 | la mensajería | Swiftlane | held | 0.40 |
+| es-r2-11 | quién redactó el contrato de alquiler | Lindero | held | 0.17 |
+| es-r2-27 | el señor del café | Cafetal | held | 0.17 |
+| es-r2-07 | el vuelo de Ana a Madrid | Rumbo Claro | held | 0.20 |
+| es-r2-19 | los que traen la comida cuando vienen clientes | Cazuela Azul | held | 0.24 |
+
+### Run 2: flips only
+
+No flip in either language. The same rows filled and held; the failure is stable.
+
+### What the misses say
+
+- **Held ambiguous has now failed in Spanish on two independent sets, at two gates.** The rows that leak carry a `none` as low as the right answers' (0.03 to 0.19 across both rounds' first runs): `none` says "some vendor fits", not "exactly one fits".
+- **No gate on `none` passes both languages on round 2.** Rescored with no call, and so with no verdict: at 0.1 Spanish passes (coverage 0.821, held ambiguous 0.833) but English coverage falls to 0.679; from 0.15 up, Spanish held ambiguous stays at 0.667 or below.
+- **The leaks are of two shapes.** `es-r2-39` is a near tie (Tecnoria 0.46, Nubalia 0.43): the provider saw two vendors, and the gate on `none` alone let the winner through; ADR 0005 holds only an exact tie. `es-r2-37` and `en-r2-39` are confident single picks (0.96, 0.85), which no rule on this answer would hold.
+- **Coverage lost four Spanish items between 0.17 and 0.24:** requests that name a service by a person or an event (`el señor del café`, `el vuelo de Ana a Madrid`) put more weight on `none`. Coverage still clears its line.
+
+### Run logs
+
+- Run 1: `demo/eval/runs/search-en-round2-1.jsonl`, `demo/eval/runs/search-es-round2-1.jsonl`
+- Run 2: `demo/eval/runs/search-en-round2-2.jsonl`, `demo/eval/runs/search-es-round2-2.jsonl`

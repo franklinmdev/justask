@@ -1,0 +1,40 @@
+{"id":"es-r2-01","request":"notas adhesivas y bolígrafos","kind":"item","expected":"tintaverde"}
+{"id":"es-r2-02","request":"el almuerzo de la reunión del viernes","kind":"item","expected":"cazuela"}
+{"id":"es-r2-03","request":"el cobro del dominio y el hosting","kind":"item","expected":"nubalia"}
+{"id":"es-r2-04","request":"los que limpian después del cierre","kind":"item","expected":"brisamar"}
+{"id":"es-r2-05","request":"el lavado de ventanas del mes pasado","kind":"item","expected":"relucir"}
+{"id":"es-r2-06","request":"el cartel para la feria","kind":"item","expected":"letranueva"}
+{"id":"es-r2-07","request":"el vuelo de Ana a Madrid","kind":"item","expected":"rumboclaro"}
+{"id":"es-r2-08","request":"la renovación del sistema contable","kind":"item","expected":"cuentia"}
+{"id":"es-r2-09","request":"el café en grano de la cocina","kind":"item","expected":"cafetal"}
+{"id":"es-r2-10","request":"la factura de las entregas del mismo día","kind":"item","expected":"pieveloz"}
+{"id":"es-r2-11","request":"quién redactó el contrato de alquiler","kind":"item","expected":"lindero"}
+{"id":"es-r2-12","request":"la mesa de ayuda de informática","kind":"item","expected":"tecnoria"}
+{"id":"es-r2-13","request":"la nómina de septiembre","kind":"item","expected":"serena"}
+{"id":"es-r2-14","request":"la renovación del seguro de la empresa","kind":"item","expected":"coberplena"}
+{"id":"es-r2-15","request":"coberplna","kind":"item","expected":"coberplena"}
+{"id":"es-r2-16","request":"tecnorya","kind":"item","expected":"tecnoria"}
+{"id":"es-r2-17","request":"quien imprimio los volantes","kind":"item","expected":"letranueva"}
+{"id":"es-r2-18","request":"the courier","kind":"item","expected":"pieveloz"}
+{"id":"es-r2-19","request":"los que traen la comida cuando vienen clientes","kind":"item","expected":"cazuela"}
+{"id":"es-r2-20","request":"nuestra agencia de viajes","kind":"item","expected":"rumboclaro"}
+{"id":"es-r2-21","request":"Cazuela Azul","kind":"item","expected":"cazuela"}
+{"id":"es-r2-22","request":"papel para la fotocopiadora","kind":"item","expected":"tintaverde"}
+{"id":"es-r2-23","request":"brisa mar","kind":"item","expected":"brisamar"}
+{"id":"es-r2-24","request":"los limpiavidrios","kind":"item","expected":"relucir"}
+{"id":"es-r2-25","request":"por qué subió tanto lo de la página web","kind":"item","expected":"nubalia"}
+{"id":"es-r2-26","request":"el programa con el que llevamos las cuentas","kind":"item","expected":"cuentia"}
+{"id":"es-r2-27","request":"el señor del café","kind":"item","expected":"cafetal"}
+{"id":"es-r2-28","request":"honorarios legales","kind":"item","expected":"lindero"}
+{"id":"es-r2-29","request":"el estacionamiento del edificio","kind":"nothing"}
+{"id":"es-r2-30","request":"nuestro proveedor de internet","kind":"nothing"}
+{"id":"es-r2-31","request":"la empresa de mudanzas","kind":"nothing"}
+{"id":"es-r2-32","request":"los guardias de seguridad","kind":"nothing"}
+{"id":"es-r2-33","request":"¡gracias!","kind":"nothing"}
+{"id":"es-r2-34","request":"muéstrame todo","kind":"nothing"}
+{"id":"es-r2-35","request":"la empresa de limpieza","kind":"ambiguous"}
+{"id":"es-r2-36","request":"el pedido de Tintaverde o de Letranueva","kind":"ambiguous"}
+{"id":"es-r2-37","request":"el trabajo de impresión","kind":"ambiguous"}
+{"id":"es-r2-38","request":"la factura del abogado o la del seguro","kind":"ambiguous"}
+{"id":"es-r2-39","request":"los que mantienen funcionando las computadoras y la página","kind":"ambiguous"}
+{"id":"es-r2-40","request":"el desayuno del equipo: café y pan","kind":"ambiguous"}
