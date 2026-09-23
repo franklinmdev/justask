@@ -361,8 +361,8 @@ describe("ask: filter with catalog fields", () => {
 		>();
 	});
 
-	it("does not compile a field without a gate", () => {
-		const declare = () =>
+	it("does not compile a field without a gate, and compiles the same field with one", () => {
+		const withoutGate = () =>
 			ask({
 				...base,
 				provider: fakeProvider({}),
@@ -378,8 +378,26 @@ describe("ask: filter with catalog fields", () => {
 					},
 				},
 			});
+		// The same declaration plus a gate must compile, so the gate is the only error above.
+		const withGate = () =>
+			ask({
+				...base,
+				provider: fakeProvider({}),
+				filter: {
+					description: "ledger entries",
+					fields: {
+						account: {
+							kind: "catalog",
+							description: "the ledger account the entries belong to",
+							gate: 0.8,
+							shortlist: () => accounts,
+						},
+					},
+				},
+			});
 
-		expect(declare).toBeTypeOf("function");
+		expect(withoutGate).toBeTypeOf("function");
+		expect(withGate).toBeTypeOf("function");
 	});
 });
 
