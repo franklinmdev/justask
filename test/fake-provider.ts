@@ -132,3 +132,22 @@ export function jevResult(
 		usage: { input_tokens: 120, output_tokens: 0 },
 	};
 }
+
+/**
+ * Answers its first call from `first` after `delayMs`, and every later call
+ * from `then` at once, so a later request's answer arrives before the first's.
+ */
+export function slowFirstProvider(
+	first: FakeAnswers,
+	then: FakeAnswers,
+	delayMs: number,
+): RecordingProvider {
+	const slow = fakeProvider(first);
+	const fast = fakeProvider(then);
+	return recording(async (input) => {
+		if (slow.calls.length > 0) return fast.answer(input);
+		const answer = slow.answer(input);
+		await new Promise((resolve) => setTimeout(resolve, delayMs));
+		return answer;
+	});
+}

@@ -1,2 +1,15 @@
-// The React layer: useSearch and its unstyled pieces land in #11.
-export {};
+export {
+	SearchBox,
+	type SearchBoxProps,
+	SearchEmpty,
+	type SearchEmptyProps,
+	SearchItem,
+	type SearchItemProps,
+} from "./search.tsx";
+export {
+	type SearchError,
+	type SearchTiming,
+	type UseSearch,
+	type UseSearchOptions,
+	useSearch,
+} from "./use-search.ts";
