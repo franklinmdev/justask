@@ -6,11 +6,15 @@ import {
 	useState,
 } from "react";
 import type { Fields, FieldValue } from "../filter.ts";
-import { RequestBox, type RequestBoxProps } from "./request-box.tsx";
+import {
+	RequestBox,
+	type RequestBoxProps,
+	type RequestFlow,
+} from "./request-box.tsx";
 import type { UseFilter } from "./use-filter.ts";
 
 export type FilterBoxProps = RequestBoxProps & {
-	filter: Pick<UseFilter<Fields>, "request" | "setRequest" | "submit">;
+	filter: RequestFlow;
 };
 
 /**
