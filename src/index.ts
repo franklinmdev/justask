@@ -13,6 +13,8 @@ export {
 export type {
 	Amount,
 	Card,
+	CardCommand,
+	CardCommands,
 	CardDateField,
 	CardField,
 	CardFieldResult,

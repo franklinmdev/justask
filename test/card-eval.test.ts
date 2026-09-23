@@ -527,6 +527,71 @@ describe("runCardEval", () => {
 		).toEqual([["euros", "total", { value: 18, currency: "USD" }, "parser"]]);
 	});
 
+	it("logs a command that held a row, holds it at every gate, and reads no intent pick on it for the gate", async () => {
+		const request = "delete the Acme expense, $18";
+		const provider = fakeProvider(
+			(asked) =>
+				asked === request
+					? {
+							intent: answer(intentLabels, "new_record", 0.99),
+							vendor: answer(vendorLabels, "acme", 0.99),
+							tags_meals: answer(yesLabels, "not_mentioned", 0.9),
+							tags_travel: answer(yesLabels, "not_mentioned", 0.9),
+							total: answer(amountLabels, "a0", 0.99),
+						}
+					: (answersByRequest[asked] as FakeAnswers),
+			{ costUsd: 0.0001 },
+		);
+		const run = await runCardEval({
+			...input(join(dir, "run-1.jsonl"), provider),
+			set: set([
+				...rows().filter(({ id }) => id === "full"),
+				{ id: "delete", request, kind: "nothing" },
+			]),
+			card: {
+				...expenseCard(),
+				commands: { verbs: ["delete"], references: ["the expense"] },
+			},
+		});
+
+		expect(run.rows[1]?.command).toEqual({
+			verb: "delete",
+			reference: "the Acme expense",
+		});
+		expect(
+			(await readCardRun(join(dir, "run-1.jsonl"))).rows[1]?.command,
+		).toEqual(run.rows[1]?.command);
+		const { measures, intent } = scoreCardRun(run, {
+			gates: { intent: 0.5 },
+		});
+		expect(measures.invented).toBe(0);
+		expect(intent).toMatchObject({ wrong: 0, highestWrong: null });
+	});
+
+	it("blames the command for a record the code held, a false hold", async () => {
+		const run = await runCardEval({
+			...input(join(dir, "run-1.jsonl")),
+			set: set(rows().filter(({ id }) => id === "full")),
+			card: {
+				...expenseCard(),
+				commands: { verbs: ["lunch"], references: ["with Northwind"] },
+			},
+		});
+
+		const { misses, intent } = scoreCardRun(run);
+
+		expect(misses).toEqual([
+			expect.objectContaining({
+				id: "full",
+				field: "intent",
+				got: null,
+				label: "new_record",
+				blame: "command",
+			}),
+		]);
+		expect(intent).toMatchObject({ filled: 0, lowestRight: null });
+	});
+
 	it("names a card held by its intent as the intent's miss alone", async () => {
 		const run = await runCardEval(input(join(dir, "run-1.jsonl")));
 

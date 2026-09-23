@@ -86,7 +86,28 @@ export type Card<F extends CardFields> = {
 	fields: F;
 	/** The host app's own parsers, run beside the built-in one; their readings win where they overlap. */
 	parsers?: Parser[];
+	/**
+	 * Words of a command on a record that already exists, in the card's
+	 * language. A request with one of the verbs and one of the references,
+	 * each as whole words, ignoring case but not accents, is held whole before
+	 * the intent's gate, whatever its pick (ADR 0009).
+	 */
+	commands?: CardCommands;
 };
+
+/** A card's command words: "quite", "envíe"; "el gasto", "la factura". */
+export type CardCommands = {
+	verbs: string[];
+	/**
+	 * A determiner and a record's noun, so the noun alone in a new record does
+	 * not hold it. Up to two words may sit between them: "the $58 Beanhaven
+	 * expense" holds on "the expense".
+	 */
+	references: string[];
+};
+
+/** The words of a command that held a card, as the request writes them, in NFC. */
+export type CardCommand = { verb: string; reference: string };
 
 /** An amount field's value on a card: the amount, with the currency when the request says which. */
 export type Amount = {
@@ -136,6 +157,8 @@ export type IntentResult = {
 	/** Every label's probability; empty when there was no answer. */
 	probabilities: Probabilities;
 	gate: number;
+	/** The command that held the card before its gate, whatever the pick. */
+	command?: CardCommand;
 };
 
 export type CardResult<F extends CardFields> = {
@@ -152,13 +175,81 @@ export function cardQuestionIds(name: string, field: CardField): RegExp {
 		: new RegExp(`^${escaped}$`);
 }
 
-/** Whether the intent pick clears the card's gate. */
-export function readIntent(probabilities: Probabilities, gate: number) {
+/** Whether the intent pick clears the card's gate; a command holds it whatever the pick. */
+export function readIntent(
+	probabilities: Probabilities,
+	gate: number,
+	command?: CardCommand,
+): { result: IntentResult; passes: boolean } {
 	const pick = readPick(probabilities);
 	return {
-		result: { pick, probabilities, gate },
-		passes: pick?.label === NEW_RECORD && pick.probability >= gate,
+		result: { pick, probabilities, gate, ...(command && { command }) },
+		passes: !command && pick?.label === NEW_RECORD && pick.probability >= gate,
 	};
+}
+
+/**
+ * The first reference of the card's commands the request holds, and a verb
+ * outside it, as the request writes them in NFC.
+ */
+export function findCommand(
+	request: string,
+	commands: CardCommands | undefined,
+): CardCommand | undefined {
+	if (!commands) return undefined;
+	const text = request.normalize("NFC");
+	const reference = findPhrase(text, commands.references, { gap: true });
+	if (!reference) return undefined;
+	// The verb never comes from inside the reference: "the email hosting
+	// invoice" is a reference, not "email" and "the invoice".
+	const outside =
+		text.slice(0, reference.index) +
+		" ".repeat(reference.text.length) +
+		text.slice(reference.index + reference.text.length);
+	const verb = findPhrase(outside, commands.verbs, { gap: false });
+	return verb ? { verb: verb.text, reference: reference.text } : undefined;
+}
+
+/** Refuses a blank verb or reference, which would match between any two words. */
+export function checkCommands(commands: CardCommands | undefined): void {
+	if (!commands) return;
+	for (const phrase of [...commands.verbs, ...commands.references]) {
+		if (!phrase.trim()) {
+			throw new TypeError(
+				"justask: the card's commands hold a blank verb or reference",
+			);
+		}
+	}
+}
+
+/**
+ * The first of the phrases, in the phrases' order, found in the text as
+ * whole words, ignoring case and spacing, never accents; with where it
+ * starts. With `gap`, up to two words may sit between a phrase's first
+ * word and the rest: "the $58 Beanhaven expense" is "the expense". A letter,
+ * a combining mark, a digit or a hyphen next to the phrase joins it to
+ * another word.
+ */
+function findPhrase(
+	text: string,
+	phrases: string[],
+	{ gap }: { gap: boolean },
+): { text: string; index: number } | undefined {
+	for (const phrase of phrases) {
+		const [first, ...rest] = phrase
+			.normalize("NFC")
+			.trim()
+			.split(/\s+/)
+			.map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+		const between = gap ? "(?:\\s+\\S+){0,2}?" : "";
+		const tail = rest.length > 0 ? `${between}\\s+${rest.join("\\s+")}` : "";
+		const found = new RegExp(
+			`(?<![\\p{L}\\p{M}\\p{N}-])${first}${tail}(?![\\p{L}\\p{M}\\p{N}-])`,
+			"iu",
+		).exec(text);
+		if (found) return { text: found[0], index: found.index };
+	}
+	return undefined;
 }
 
 /** Whether the request asks for a new record at all, asked before every field. */
@@ -178,7 +269,7 @@ export function intentQuestion(card: Card<CardFields>): Question {
 			},
 			{
 				label: NOT_AVAILABLE,
-				description: `It is about a ${card.description} but does not add a new one: it changes, cancels or deletes one, or asks a question`,
+				description: `It is about a ${card.description} but does not add a new one: it changes, cancels, deletes, sends or forwards one, or asks a question`,
 			},
 		],
 	};

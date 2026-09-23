@@ -85,6 +85,12 @@ const answers: Record<string, FakeAnswers> = {
 		amount: "a0",
 	}),
 	"delete yesterday's taxi": answer({ intent: "not_available" }),
+	// A command on a recorded expense, read as a new one: the code holds it.
+	"quite el gasto de $58 del Cafetal": answer({
+		vendor: question(vendors, "cafetal"),
+		tagged: ["meals"],
+		amount: "a0",
+	}),
 	"almuerzo con Cazuela Azul ayer, $86.40": answer({
 		vendor: question(vendors, "cazuela"),
 		tagged: ["meals"],
@@ -373,6 +379,28 @@ describe("the demo's card page", () => {
 			),
 		).toBeDefined();
 		expect(save().getAttribute("aria-disabled")).toBe("true");
+		await expectNoAxeViolations(container);
+	});
+
+	it("holds the whole card on a command to an expense already recorded, whatever the pick, and says which words", async () => {
+		const { container, user } = renderDemo({ url: "/?case=form&lang=es" });
+
+		await user.type(
+			screen.getByRole("searchbox", { name: "Describa el gasto" }),
+			"quite el gasto de $58 del Cafetal{Enter}",
+		);
+		await screen.findByText(/^Nada completado\./);
+
+		expect(vendor("Proveedor").value).toBe("");
+		const intent = within(
+			panel("Qué pasó").getByRole("region", { name: "¿Gasto nuevo?" }),
+		);
+		expect(
+			intent.getByText(
+				"La solicitud actúa sobre un gasto ya registrado (“quite”, “el gasto”), así que el código retuvo todos los campos sin importar la elección.",
+			),
+		).toBeDefined();
+		expect(save("Guardar gasto").getAttribute("aria-disabled")).toBe("true");
 		await expectNoAxeViolations(container);
 	});
 

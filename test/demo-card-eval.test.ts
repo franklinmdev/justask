@@ -33,7 +33,17 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 	const round2Set = parseCardEvalSet(
 		read(`card-${content.language}.round2.jsonl`),
 	);
-	const allSets = [...devSet, ...evalSet, ...round2Set];
+	const round3Set = parseCardEvalSet(
+		read(`card-${content.language}.round3.jsonl`),
+	);
+	const diagSet = parseCardEvalSet(read(`card-${content.language}.diag.jsonl`));
+	const allSets = [
+		...devSet,
+		...evalSet,
+		...round2Set,
+		...round3Set,
+		...diagSet,
+	];
 	const card = demoCard(content);
 	const rows = (set: CardEvalRow[], kind: CardEvalKind) =>
 		set.filter((row) => row.kind === kind);
@@ -60,6 +70,7 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 	it.each([
 		["round 1", evalSet],
 		["round 2", round2Set],
+		["round 3", round3Set],
 	])(
 		"give the %s set 28 records, 2 ambiguous rows per field and 6 with nothing to record",
 		(_, set) => {
@@ -166,7 +177,7 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 });
 
 /**
- * Frozen on the owner's approval, 2026-09-23 (#20, round 2 #44), before any call. A
+ * Frozen on the owner's approval, 2026-09-23 (#20, round 2 #44, round 3 #57), before any call. A
  * failure here means the verdict's inputs changed after the fact: revert the
  * edit, or log the owner's call in docs/card-eval.md with a new checksum or
  * value.
@@ -190,6 +201,15 @@ describe("the frozen card eval", () => {
 			"card-es.round2.jsonl",
 			"8a4572903c88e437bce14a1e8210083ae190e117e4a421316074f578d99182f2",
 		],
+		// Round 3, approved in five batches on 2026-09-23 (#57), before any call.
+		[
+			"card-en.round3.jsonl",
+			"f0c044883020c57261022a89cd0154d9d8ce047cae652e08caec111a62f4b6cd",
+		],
+		[
+			"card-es.round3.jsonl",
+			"8e072a3faa4186b4921dcece01af0a32b6b87e69c55317ef14307fe31453bfb9",
+		],
 	])("keeps %s as approved", (name, sha256) => {
 		const bytes = readFileSync(evalFile(name));
 		expect(createHash("sha256").update(bytes).digest("hex")).toBe(sha256);
@@ -209,17 +229,18 @@ describe("the frozen card eval", () => {
 });
 
 /**
- * The demo serves the gates the rule gives on dev run 3 of both languages,
- * the first with the tuned tag descriptions, the intent's among them, read
- * from the committed logs with no call (docs/card-eval.md).
+ * The demo serves the gates the rule gives on dev run 4 of both languages,
+ * the first with the command hold and the intent label that names sending
+ * (ADR 0009), the intent's among them, read from the committed logs with no
+ * call (docs/card-eval.md).
  */
 describe("the card's gates", () => {
-	it("are the approved rule applied to dev run 3", async () => {
+	it("are the approved rule applied to dev run 4", async () => {
 		const reports = await Promise.all(
 			["en", "es"].map(async (language) => {
 				const { intent, fields } = scoreCardRun(
 					await readCardRun(
-						evalFile(`runs/card-${language}-dev-3.jsonl`).pathname,
+						evalFile(`runs/card-${language}-dev-4.jsonl`).pathname,
 					),
 				);
 				return { fields: { intent, ...fields } };

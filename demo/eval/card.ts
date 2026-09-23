@@ -1,15 +1,17 @@
 // The demo's card eval, by hand with the key in .env, never in CI: every
 // row is a real Jev call.
 //
-//   node --conditions=source demo/eval/card.ts run <en|es> <eval|round2|dev> <n>
-//   node --conditions=source demo/eval/card.ts compare <en|es> <eval|round2> <first n> <second n>
+//   node --conditions=source demo/eval/card.ts run <en|es> <eval|round2|round3|dev|diag> <n>
+//   node --conditions=source demo/eval/card.ts compare <en|es> <eval|round2|round3> <first n> <second n>
 //   node --conditions=source demo/eval/card.ts gates <dev n>
 //
-// `run` writes demo/eval/runs/card-<language>[-round2|-dev]-<n>.jsonl, which
-// it never overwrites, and prints its report. `eval` is round 1's set,
-// `round2` the fresh set of round 2. A dev run gets no verdict: it tunes, it
-// never decides. `compare` reads two saved eval runs and prints the second
-// one's measures and flips, with no call. `gates` reads dev run <n> of both
+// `run` writes demo/eval/runs/card-<language>[-round2|-round3|-dev|-diag]-<n>.jsonl,
+// which it never overwrites, and prints its report. `eval` is round 1's set,
+// `round2` and `round3` the fresh sets of rounds 2 and 3, `diag` the probes
+// of #57: commands on a recorded expense, and records with the command
+// words in them. A dev or diag run gets no verdict: it tunes, it never
+// decides. `compare` reads two saved eval runs and prints the second one's
+// measures and flips, with no call. `gates` reads dev run <n> of both
 // languages and prints the intent's and each field's gate by the rule in
 // gates.ts, with no call.
 
@@ -36,7 +38,9 @@ const TODAY =
 const SETS = {
 	eval: { file: "", log: "" },
 	round2: { file: ".round2", log: "-round2" },
+	round3: { file: ".round3", log: "-round3" },
 	dev: { file: ".dev", log: "-dev" },
+	diag: { file: ".diag", log: "-diag" },
 } as const;
 type SetKind = keyof typeof SETS;
 const isSet = (set: string | undefined): set is SetKind =>
@@ -68,12 +72,22 @@ if (command === "run") {
 	});
 	const report = scoreCardRun(run);
 	console.log(
-		formatCardReport(set === "dev" ? { ...report, verdict: null } : report),
+		formatCardReport(
+			set === "dev" || set === "diag" ? { ...report, verdict: null } : report,
+		),
 	);
 } else if (command === "compare") {
 	const [language, set, first, second] = rest;
 	const content = contents[language as Language];
-	if (!content || !isSet(set) || set === "dev" || !first || !second) usage();
+	if (
+		!content ||
+		!isSet(set) ||
+		set === "dev" ||
+		set === "diag" ||
+		!first ||
+		!second
+	)
+		usage();
 	const before = await readCardRun(runLogPath(content.language, set, first));
 	const after = await readCardRun(runLogPath(content.language, set, second));
 	console.log(
@@ -101,7 +115,7 @@ if (command === "run") {
 
 function usage(): never {
 	console.error(
-		"usage: card.ts run <en|es> <eval|round2|dev> <n> | compare <en|es> <eval|round2> <first n> <second n> | gates <dev n>",
+		"usage: card.ts run <en|es> <eval|round2|round3|dev|diag> <n> | compare <en|es> <eval|round2|round3> <first n> <second n> | gates <dev n>",
 	);
 	process.exit(1);
 }
