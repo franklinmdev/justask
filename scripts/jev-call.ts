@@ -6,12 +6,9 @@
 import { TypeSafeClient, type Usage } from "@typesafe-ai/sdk";
 import { ask, type Candidate, type Provider } from "justask";
 import { JEV_MODEL, jevProvider } from "justask/jev";
+import { loadKeyEnv } from "./load-env.ts";
 
-try {
-	process.loadEnvFile(".env");
-} catch {
-	// Fine when TYPESAFE_API_KEY is already in the environment.
-}
+loadKeyEnv(process.cwd());
 
 const vendors: Candidate<string>[] = [
 	{
