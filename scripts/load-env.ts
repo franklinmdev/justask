@@ -8,7 +8,8 @@ import { dirname, join } from "node:path";
  * which is fine when TYPESAFE_API_KEY is already in the environment.
  */
 export function loadKeyEnv(dir: string): void {
-	for (const file of [join(dir, ".env"), mainCheckoutEnv(dir)]) {
+	for (const find of [() => join(dir, ".env"), () => mainCheckoutEnv(dir)]) {
+		const file = find();
 		if (file === undefined) continue;
 		try {
 			process.loadEnvFile(file);
