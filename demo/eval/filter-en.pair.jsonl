@@ -1,0 +1,10 @@
+{"id": "en-p-01", "request": "paid or overdue invoices from Swiftlane", "kind": "ambiguous", "expected": {"vendor": "swiftlane", "status": "held"}}
+{"id": "en-p-02", "request": "open and overdue invoices over $500", "kind": "ambiguous", "expected": {"status": "held", "amount": {"min": 500, "currency": "USD"}}}
+{"id": "en-p-03", "request": "Glasswell invoices that are paid or open", "kind": "ambiguous", "expected": {"vendor": "glasswell", "status": "held"}}
+{"id": "en-p-04", "request": "the paid one or the overdue one from Beanhaven", "kind": "ambiguous", "expected": {"vendor": "beanhaven", "status": "held"}}
+{"id": "en-p-05", "request": "overdue Farwander or Clausewood invoices", "kind": "ambiguous", "expected": {"vendor": "held", "status": "overdue"}}
+{"id": "en-p-06", "request": "paid Inkhollow and Papergrove invoices from August", "kind": "ambiguous", "expected": {"vendor": "held", "status": "paid", "date": {"from": "2026-08-01", "to": "2026-08-31"}}}
+{"id": "en-p-07", "request": "invoices not paid and overdue", "kind": "filterable", "expected": {"status": "overdue"}}
+{"id": "en-p-08", "request": "open and not overdue invoices from Paydale", "kind": "filterable", "expected": {"vendor": "paydale", "status": "open"}}
+{"id": "en-p-09", "request": "the Sureharbor invoices already paid", "kind": "filterable", "expected": {"vendor": "sureharbor", "status": "paid"}}
+{"id": "en-p-10", "request": "overdue invoices from last week", "kind": "filterable", "expected": {"status": "overdue", "date": {"from": "2026-09-14", "to": "2026-09-20"}}}

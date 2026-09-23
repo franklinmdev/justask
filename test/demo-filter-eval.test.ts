@@ -48,6 +48,9 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 	const round2 = parseFilterEvalSet(
 		read(`filter-${content.language}.round2.jsonl`),
 	);
+	const pairSet = parseFilterEvalSet(
+		read(`filter-${content.language}.pair.jsonl`),
+	);
 	const filter = demoFilter(content);
 	const rows = (set: FilterEvalRow[], kind: FilterEvalKind) =>
 		set.filter((row) => row.kind === kind);
@@ -63,7 +66,7 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 	it("expect only fields of the demo's filter, and values of that language's catalogs", () => {
 		const vendors = new Set(content.vendors.map(({ id }) => id));
 		const statuses = new Set(content.statuses.map(({ id }) => id));
-		for (const row of [...evalSet, ...devSet, ...round2]) {
+		for (const row of [...evalSet, ...devSet, ...round2, ...pairSet]) {
 			for (const [field, value] of Object.entries(row.expected)) {
 				expect(Object.keys(filter.fields)).toContain(field);
 				if (value === "held") continue;
@@ -152,7 +155,12 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 			].map(normalized),
 		);
 		const repeated: string[] = [];
-		for (const { id, request } of [...devSet, ...evalSet, ...round2]) {
+		for (const { id, request } of [
+			...devSet,
+			...evalSet,
+			...round2,
+			...pairSet,
+		]) {
 			if (seen.has(normalized(request))) repeated.push(id);
 			seen.add(normalized(request));
 		}
@@ -180,6 +188,35 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 		expect(held).toEqual([
 			`${content.language}-r2-a29 vendor`,
 			`${content.language}-r2-a30 vendor`,
+		]);
+	});
+
+	it("hold a named pair on the probes' status pairs, vendor pairs and negated statuses alone (#75)", async () => {
+		// The code finds the pair before any answer, so a failing provider still reports it.
+		const held: string[] = [];
+		for (const { id, request } of pairSet) {
+			const { filter: result } = await ask({
+				request,
+				facts: { ...FACTS, today: TODAY },
+				provider: failingProvider(new Error("no call")),
+				timeoutMs: 1_000,
+				filter,
+			});
+			for (const [name, field] of Object.entries(result.fields)) {
+				if ("pair" in field && field.pair) held.push(`${id} ${name}`);
+			}
+		}
+		const p = `${content.language}-p`;
+		expect(held).toEqual([
+			`${p}-01 status`,
+			`${p}-02 status`,
+			`${p}-03 status`,
+			`${p}-04 status`,
+			`${p}-05 vendor`,
+			`${p}-06 vendor`,
+			// A negated status beside another: a false hold the probes measure.
+			`${p}-07 status`,
+			`${p}-08 status`,
 		]);
 	});
 
@@ -225,7 +262,7 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 	);
 
 	it("expect only dates and amounts the parser can build, on the day the runs are fixed at", () => {
-		for (const row of [...devSet, ...evalSet, ...round2]) {
+		for (const row of [...devSet, ...evalSet, ...round2, ...pairSet]) {
 			const { dates: read = [], amounts = [] } = builtInParser(row.request, {
 				today: TODAY,
 				facts: FACTS,
@@ -279,6 +316,15 @@ describe("the frozen filter eval", () => {
 		[
 			"filter-es.jsonl",
 			"f108351bbbcf5a28d4ef6d8a8aa72d28c65c76a3be6067017b60e073d414479f",
+		],
+		// #75's status-pair probes, approved on 2026-09-23, before any call.
+		[
+			"filter-en.pair.jsonl",
+			"6d0b70ceb0948f8ecac290c135536fc272dfbc65a529cc5a4def868bab87703f",
+		],
+		[
+			"filter-es.pair.jsonl",
+			"78cc6a60702dbfef57cd8833ae3d6d755f9d9126631fe092829a35e1a9c9d51b",
 		],
 		// Round 2 (#68), approved in five batches on 2026-09-23, before any call.
 		[
