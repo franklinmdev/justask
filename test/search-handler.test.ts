@@ -8,6 +8,7 @@ import {
 	failingProvider,
 	fakeProvider,
 	hangingProvider,
+	rawProvider,
 } from "./fake-provider.ts";
 
 type Vendor = { id: number; name: string };
@@ -91,13 +92,7 @@ describe("createSearchHandler", () => {
 
 	it("keeps the cost of a call whose answer broke the contract, since it was still made", async () => {
 		const response = await handler({
-			provider: {
-				answer: async () => ({
-					answers: {},
-					costUsd: 0.000005,
-					inputTokens: 120,
-				}),
-			},
+			provider: rawProvider({}, { costUsd: 0.000005, inputTokens: 120 }),
 		})(post(asked));
 
 		const body = await response.json();
