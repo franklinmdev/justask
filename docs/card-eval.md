@@ -6,6 +6,8 @@
 
 **Round 3 (#57): the card fails in both languages.** The fix held every command but one, a Spanish change no list names and the label did not hold (`deje en $260 el cargo de Brisamar de ayer`, `new_record` 0.58); English fails exact and held ambiguous on tags and the named pair, which #57 did not change. See Round 3: result below; rounds 1 and 2 are unchanged.
 
+**Round 4 (#63): fixed from dev runs, sets being drafted.** A named pair holds its field in code ([ADR 0010](adr/0010-card-holds-a-named-pair.md)), and the intent names setting a value. See Round 4 below; rounds 1 to 3 are unchanged.
+
 **Hypothesis:** on the demo's fictional vendors, the expense card turns a typed expense into the record a person means (vendor, tags, day, amount), leaves a field empty when it cannot tell, and fills nothing when the request asks for no new expense, in English and in Spanish, on Enter. The lab measured a salon appointment card; this is a new measurement.
 
 ## Sets
@@ -464,3 +466,45 @@ English: 1 flip, the amount of `Inkhollow brochures ...` held; coverage 0.806, e
 - Run 2: `demo/eval/runs/card-en-round3-2.jsonl`, `demo/eval/runs/card-es-round3-2.jsonl`
 
 Each rescores with `scoreCardRun(await readCardRun(path), { gates })` and no call.
+
+## Round 4: the fix, from dev runs only
+
+Carried by [#63](https://github.com/franklinmdev/justask/issues/63). Rounds 1 to 3 above stand as recorded. Two leaks were left after round 3: the named pair, which leaked in every verdict so far, and a change phrased as a new value (`deje en $260 el cargo`). The owner decided both fixes on 2026-09-23, recorded in [ADR 0010](adr/0010-card-holds-a-named-pair.md):
+
+1. **The demo's card holds a named pair in code**, before the field's gate: two vendors or two tags joined by a word from its language's `cardJoiners` (`or`; `o`, `u`, and `and`; `y`, `e` on the vendor alone), with no third one named. Each vendor is named by its id or its brand (`vendor()` in `demo/src/content/types.ts`), the brand also with a clear typo.
+2. **The intent's `not_available` label names setting a value**: "it changes, cancels, deletes, sends or forwards one, sets one to a new value, or asks a question".
+
+### Pair probes: false holds, and "and"
+
+No frozen set names two vendors joined by "and", and no dev row names a pair at all, so dev alone could not measure a false hold. The owner approved ten probe records per language on 2026-09-23, before any call: `demo/eval/card-en.pair.jsonl` and `card-es.pair.jsonl`, run with `card.ts run <en|es> pair <n>` and no verdict. Rows 1 to 4 name two vendors with "and" and no other (an ambiguous row, the vendor held); rows 5 to 7 name two with "and" beside a third, the one paid; rows 8 and 9 the same with "or"; row 10 names two tags with "and" (`for the office and client binders`). They are measured, never tuned against, and no round 4 row may repeat them.
+
+Pair run 1, of 2026-09-23 with `jev-1.13.0`, ran with the first rule, "or" alone, at round 3's gates. Its numbers decided the rule (ADR 0010):
+
+| Probe rows | The provider alone, vendor gate 0.5 | "or" alone | Both joiners, no third item |
+|---|---|---|---|
+| 1 to 4, "and", no other vendor (7 answered; `en-p-01` timed out at 2 s) | 4 filled a vendor: 0.54, 0.79, 0.68, 0.53 | 4 leak | 0 leak |
+| 5 to 7, "and", a third vendor paid (6) | right, 0.79 to 1.00 | right | right |
+| 8 and 9, "or", a third vendor paid (4) | right, 0.90 to 1.00 | 4 held, a false hold each | right |
+| 10, two tags with "and" | `office` alone, both languages | fills | fills |
+
+**Pair run 2**, with the rule the owner chose, held all 8 pair rows (the provider would have filled 6 of them: 0.81, 0.58, 0.52; 0.79, 0.71, 0.54) and none of the 12 records, whose vendors filled right at 0.85 to 1.00. Checked with no call over every set in `demo/eval/` and the demo's suggestions, the rule holds 22 rows, all ambiguous rows or pair probes, and no record.
+
+### Gates for round 4
+
+Dev run 5, of 2026-09-23 with `jev-1.13.0`, the first dev run with both fixes, fixes every gate by the same rule as rounds 1 to 3. `node --conditions=source demo/eval/card.ts gates 5`:
+
+| Field | Lowest right | Highest wrong | Rule | Gate | Round 3 |
+|---|---|---|---|---|---|
+| intent | 0.47 | none | lowest right rounded down | **0.45** | 0.45 |
+| vendor | 0.7 | none | lowest right rounded down | **0.7** | 0.5 |
+| tags | 0.41 | none | lowest right rounded down | **0.4** | 0.35 |
+| spent_on | 0.82 | none | lowest right rounded down | **0.8** | 0.8 |
+| total | 0.98 | none | lowest right rounded down, at most 0.9 | **0.9** | 0.9 |
+
+- **No dev card filled a wrong field**, in either language, and no nothing row filled anything. At these gates dev run 5 fills 49 of 57 English and 50 of 57 Spanish expected fields, every filled card exact, every ambiguous row held. The dev sets name no pair, so the hold changed nothing on them.
+- **The vendor's gate rises to 0.7 on one row**, `los de soporte técnico arreglaron la impresora` (`tecnoria` 0.70), a paraphrase with no vendor name; dev run 4's lowest right vendor was 0.52. Rescored with no call and no verdict, rounds 1 to 3 at these gates lose one to three filled vendors each, and Spanish round 3 run 1's coverage falls from 0.734 to 0.718, above its line with less slack.
+- **The intent sits where it did.** The code held 3 dev nothing rows per language, the same commands as dev run 4; among the rest `new_record` reached 0.03 English and 0.08 Spanish. The cards the intent held are the ones dev runs 1 and 4 held: `train ticket to Boston on Friday`, `the IT people fixed the printer` and `renovación de la póliza de Cobertura Plena`, all at 0.50 to 0.52 for another label.
+
+The gates are in `demo/server/handler.ts`; `test/demo-card-eval.test.ts` pins them to dev run 5.
+
+Run logs: `demo/eval/runs/card-<en|es>-pair-<1|2>.jsonl`, `demo/eval/runs/card-<en|es>-dev-5.jsonl`.
