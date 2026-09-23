@@ -22,6 +22,7 @@ import {
 	scoreFilterRun,
 } from "justask/eval";
 import { jevProvider } from "justask/jev";
+import { loadKeyEnv } from "../../scripts/load-env.ts";
 import { contents, demoFilter, FACTS, TIMEOUT_MS } from "../server/handler.ts";
 import type { Language } from "../src/content/types.ts";
 import { fixGate, poolFields } from "./gates.ts";
@@ -50,11 +51,7 @@ if (command === "run") {
 	const [language, set, n] = rest;
 	const content = contents[language as Language];
 	if (!content || !isSet(set) || !n) usage();
-	try {
-		process.loadEnvFile(".env");
-	} catch {
-		// Fine when TYPESAFE_API_KEY is already in the environment.
-	}
+	loadKeyEnv(process.cwd());
 	const run = await runFilterEval({
 		set: parseFilterEvalSet(
 			await readFile(setPath(content.language, set), "utf8"),

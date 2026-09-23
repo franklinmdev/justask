@@ -8,14 +8,12 @@ import {
 	isRunnableDevEnvironment,
 	type Plugin,
 } from "vite";
+import { loadKeyEnv } from "../scripts/load-env.ts";
 
-// The key lives in the repo's .env, read here on the server side. Vite hands
-// the browser only VITE_-prefixed variables, so it never reaches the bundle.
-try {
-	process.loadEnvFile(fileURLToPath(new URL("../.env", import.meta.url)));
-} catch {
-	// Fine when TYPESAFE_API_KEY is already in the environment.
-}
+// The key lives in the repo's .env, or the main checkout's from a worktree,
+// read here on the server side. Vite hands the browser only VITE_-prefixed
+// variables, so it never reaches the bundle.
+loadKeyEnv(fileURLToPath(new URL("..", import.meta.url)));
 
 /**
  * Mounts the demo's search handler as dev middleware under /api. The handler
@@ -28,7 +26,7 @@ function justaskHandler(): Plugin {
 		configureServer(server) {
 			if (!process.env.TYPESAFE_API_KEY) {
 				server.config.logger.warn(
-					"justask: TYPESAFE_API_KEY is not set. Copy .env.example to .env and add your key; until then every search fails and is held.",
+					"justask: TYPESAFE_API_KEY is not set. Copy .env.example to .env in the main checkout and add your key; until then every search fails and is held.",
 				);
 			}
 			server.middlewares.use("/api", async (req, res, next) => {
