@@ -1,6 +1,6 @@
 # Card eval: sets, kill lines and verdict
 
-**Status: sets, measures, kill lines and gate rule approved and frozen by the owner on 2026-09-23 (#20), before any provider call. The eval sets are frozen by checksum and the kill lines by value in `test/demo-card-eval.test.ts`.**
+**Status: run, verdict PASS in both languages (run 1), with nothing invented; Spanish passes held ambiguous with no slack. Sets, measures, kill lines and gate rule approved and frozen by the owner on 2026-09-23 (#20), before any provider call; the gates were fixed from the dev runs by that rule and written into the demo before run 1.**
 
 **Hypothesis:** on the demo's fictional vendors, the expense card turns a typed expense into the record a person means (vendor, tags, day, amount), leaves a field empty when it cannot tell, and fills nothing when the request asks for no new expense, in English and in Spanish, on Enter. The lab measured a salon appointment card; this is a new measurement.
 
@@ -110,4 +110,58 @@ A row found wrong after a run is the owner's call, logged here; it never silentl
 
 ## Result
 
-Not run yet.
+**Verdict: PASS.** Both languages clear every kill line in run 1. Whether it closes delivery 3 is the owner's call.
+
+Runs of 2026-09-23 with `jev-1.13.0`, gates intent 0.45, vendor 0.5, tags 0.5, spent_on 0.8, total 0.9 (from dev run 1, above), the frozen sets and kill lines, today fixed at Wednesday 2026-09-23.
+
+### Run 1: the verdict
+
+| Measure | Kill line | English | Spanish |
+|---|---|---|---|
+| exact | at least 0.9 | 0.939 (31 of 33 cards) | 0.941 (32 of 34 cards) |
+| coverage | at least 0.7 | 0.75 (93 of 124 fields) | 0.734 (91 of 124 fields) |
+| invented | at most 0 | 0 | 0 |
+| held ambiguous | at least 0.75 | 0.875 (7 of 8) | 0.75 (6 of 8) |
+| p95 | at most 1000 ms | 508 ms | 314 ms |
+| errors | at most 0 | 0 | 0 |
+| cost per call | | $0.0000780 | $0.0000813 |
+
+Per field, filled of expected: vendor 24 of 27 in both; tags 12 of 34 English (one of them wrong), 9 of 34 Spanish; day 26 and 27 of 30; amount 31 of 33 in both. The intent passed 33 and 34 of the 36 cards, and no nothing row in either language.
+
+Filled and wrong, the only corrections a person would make:
+
+| Row | Request | Field | Expected | Got | Pick |
+|---|---|---|---|---|---|
+| en-r-27 | Swiftlane delivery, billable to the client, $58.50 on August 18 | tags | office + client | client | office `not_mentioned` 0.92 |
+| en-a-32 | Larkspur lunch, might be billable to a client, $180 on Monday | tags | held | meals + client | client yes 0.74 |
+| es-a-32 | almuerzo de Cazuela Azul, quizás facturable a un cliente, $180 el lunes | tags | held | meals + client | client yes 0.63 |
+| es-a-30 | Tintaverde o Letranueva, $95 por impresiones el viernes | vendor | held | letranueva | letranueva 0.59 |
+
+Held and wrong, by cause:
+
+- **Tags, 19 English and 23 Spanish cards.** Almost all expect `office`, and the provider answers `not_mentioned` for it on hosting, cleaning, windows, couriers, legal, payroll and insurance, up to 0.98 (`business insurance premium to Sureharbor`). A `not_mentioned` on every tag leaves the field empty, so these are held, never wrong. `travel` and `meals` filled where the words said them.
+- **The intent, 3 English and 2 Spanish cards.** `hotel in Denver for two nights, $389, September 15` (`not_mentioned` 0.50), `flyers from Inkhollow` and `volantes de Letranueva` (no amount, `not_mentioned` 0.71 and 0.57), `entrega de Pieveloz, facturable al cliente, ...` (`not_mentioned` 0.50), and `Papergrove pens on Monday, $18 or $20, I forget` (`new_record` 0.35).
+- **The day on "Friday" beside a client visit or a printing job.** `flight to Chicago ... on Friday` held in both languages (`not_available` 0.54 and 0.51), `Tintaverde o Letranueva ... el viernes` at 0.55.
+- **The euro amount** held under the 0.9 gate in both languages (a0 0.81 and 0.66): the only amount with a currency other than the local one.
+- **`payroll company fee`** held its vendor in both languages (`not_mentioned` 0.57 and 0.52), the paraphrase with no vendor name.
+
+### Run 2: flips only
+
+English: 3 flips, all on one row whose intent crossed the gate: `hotel in Denver for two nights` filled tags, day and amount in run 2. Coverage 0.774, exact 0.941, held ambiguous 0.875. Spanish: 7 flips on three rows. `entrega de Pieveloz, facturable al cliente` passed its intent and filled four fields; `sillas de oficina de una mueblería` lost its `office` tag; `bolígrafos de Tintaverde el lunes, $18 o $20` held its vendor and day, its intent below the gate. Coverage 0.742, exact 0.912 (a third correction), held ambiguous 0.75 again.
+
+### What the misses say
+
+- **The card never filled a wrong vendor, day or amount on a record.** Every correction in run 1 is a tag, or a field an ambiguous row must hold. No nothing row filled anything in either run.
+- **Tags carry the coverage cost.** Without the tags field, run 1 fills 81 of 90 English and 82 of 90 Spanish expected fields. The provider reads `office: supplies, equipment, software and services` narrowly: services like hosting or insurance are `not_mentioned`, not `office`. The sets were frozen with the broad reading, so the rows stand; the tag's description is the thing to tune, on the dev set, in a follow-up.
+- **The intent sits low, and the rule set its gate low with no wrong pick to keep out.** Rescored with no call, and so with no verdict: at the lab's 0.9 on every gate, run 1 covers 0.137 English and 0.097 Spanish, with every filled card exact. The per-field gates are what makes the card fill at all.
+- **"Maybe billable to a client" is read as billable**, in both languages (0.74 and 0.63). The ambiguous row expects the tags held; `client` passes the tags gate of 0.5.
+- **The named pair leaks again.** `Tintaverde o Letranueva` filled Letranueva at 0.59 against a vendor gate of 0.5, as the filter's `Nubalia o Cuentia` filled at 0.61 (docs/filter-eval.md). The card's vendor has no `several` label either. This is the one reason Spanish passes held ambiguous with no slack.
+- **Spanish held ambiguous has no slack.** One more leak and it fails. A rescore at a tags gate of 0.9 holds `es-a-32` but not `es-a-30`, and drops coverage to 0.661 in both languages, below its line.
+
+### Run logs
+
+- Dev: `demo/eval/runs/card-en-dev-1.jsonl`, `demo/eval/runs/card-es-dev-1.jsonl`
+- Run 1: `demo/eval/runs/card-en-1.jsonl`, `demo/eval/runs/card-es-1.jsonl`
+- Run 2: `demo/eval/runs/card-en-2.jsonl`, `demo/eval/runs/card-es-2.jsonl`
+
+Each rescores with `scoreCardRun(await readCardRun(path), { gates })` and no call.
