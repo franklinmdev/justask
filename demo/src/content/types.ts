@@ -80,7 +80,7 @@ export type FilterCopy = {
 	dateRange: (range: DateRange, date: (iso: string) => string) => string;
 	amountRange: (
 		range: AmountRange,
-		amount: (value: number) => string,
+		amount: (value: number, currency?: string) => string,
 	) => string;
 	summary: (filled: number, total: number) => string;
 	filledBecause: (probability: string, gate: string) => string;

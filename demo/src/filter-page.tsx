@@ -16,13 +16,13 @@ import type {
 	TransactionFields,
 } from "./content/types.ts";
 import { FilterPanel } from "./filter-panel.tsx";
-import { formats } from "./format.ts";
+import { formats, LOCAL_CURRENCY } from "./format.ts";
 import { DEBOUNCE_MS, Suggestions } from "./parts.tsx";
 import { type Trace, timed, useSuggest } from "./trace.ts";
 
 type Applied = FilterValue<TransactionFields>;
 
-/** Every row the confirmed filter keeps. The table's amounts are in USD, so another currency keeps none. */
+/** Every row the confirmed filter keeps. The table's amounts are in the local currency, so another one keeps none. */
 function matches(row: Transaction, filter: Applied): boolean {
 	const { vendor, status, date, amount } = filter;
 	if (vendor && row.vendorId !== vendor.id) return false;
@@ -30,7 +30,7 @@ function matches(row: Transaction, filter: Applied): boolean {
 	if (date?.from && row.date < date.from) return false;
 	if (date?.to && row.date > date.to) return false;
 	if (amount) {
-		if (amount.currency && amount.currency !== "USD") return false;
+		if (amount.currency && amount.currency !== LOCAL_CURRENCY) return false;
 		if (amount.exact !== undefined && row.amount !== amount.exact) return false;
 		if (amount.min !== undefined && row.amount < amount.min) return false;
 		if (amount.max !== undefined && row.amount > amount.max) return false;
