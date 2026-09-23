@@ -1,3 +1,5 @@
+import type { CardFlip, CardReport } from "./card-score.ts";
+import type { CardExpectedValue } from "./card-set.ts";
 import type { FilterFlip, FilterReport } from "./filter-score.ts";
 import type { ExpectedValue } from "./filter-set.ts";
 import type { Flip, Report, Side } from "./score.ts";
@@ -169,6 +171,102 @@ export function formatFilterReport(
 			...flips.map(
 				({ id, request, field, before, after }) =>
 					`| ${id} | ${cell(request)} | ${field} | ${shown(before)} | ${shown(after)} |`,
+			),
+			"",
+		);
+	}
+	return lines.join("\n");
+}
+
+/** A card field's value as one short cell: an id, ids, a day, a time, an amount, or held. */
+function shownCard(value: CardExpectedValue | null): string {
+	if (value === null) return "held";
+	if (typeof value === "string") return value;
+	if (Array.isArray(value)) return value.join(" + ");
+	return value.currency
+		? `${value.value} ${value.currency}`
+		: String(value.value);
+}
+
+/**
+ * A card report as Markdown: the verdict first when there is one, then the
+ * measures, the intent and each field at its gate, the misses and, given a
+ * second run, the flips against the first. A second run's report has no
+ * verdict.
+ */
+export function formatCardReport(
+	report: CardReport,
+	flips?: CardFlip[],
+): string {
+	const { counts, measures } = report;
+	const note = flips
+		? " (second run, no verdict: the first run keeps it)"
+		: report.retuned
+			? " (retuned after the run: no verdict)"
+			: "";
+	const lines = [`# Card eval report${note}`, ""];
+	if (report.verdict && !flips) {
+		lines.push(
+			`## Verdict: ${report.verdict.pass ? "PASS" : "FAIL"}`,
+			"",
+			"| Measure | Kill line | Actual | |",
+			"|---|---|---|---|",
+			...report.verdict.lines.map(
+				({ measure, line, atLeast, actual, pass }) =>
+					`| ${measure} | ${atLeast ? "at least" : "at most"} ${line} | ${number(actual)} | ${pass ? "pass" : "FAIL"} |`,
+			),
+			"",
+		);
+	}
+	const cost = report.costPerCallUsd;
+	const stats = { intent: report.intent, ...report.fields };
+	lines.push(
+		"## Measures",
+		"",
+		`- Rows: ${report.rows} · errors: ${measures.errors} · p95 ${number(measures.p95Ms)} ms · cost per call ${cost === null ? "unknown" : `$${cost.toFixed(7)}`}`,
+		`- Cards (record and ambiguous rows): ${counts.cards} · fields expected: ${counts.fieldsExpected} · filled: ${counts.fieldsFilled} · coverage ${number(measures.coverage)}`,
+		`- Cards that filled a field: ${counts.filled} · nothing to correct: ${counts.exact} · exact ${number(measures.exact)}`,
+		`- Nothing rows: ${counts.nothing} · filled a field: ${measures.invented}${report.invented.length ? ` (${report.invented.join(", ")})` : ""}`,
+		`- Ambiguous rows: ${counts.ambiguous} · held: ${counts.held} · held ambiguous ${number(measures.heldAmbiguous)}${report.leaked.length ? ` · filled: ${report.leaked.join(", ")}` : ""}`,
+		"",
+		"## Intent and fields",
+		"",
+		"Right and wrong picks are read with no gate; a field's pick is its weakest, and the intent's is new_record's.",
+		"",
+		"| Field | Gate | Expected | Filled | Right | Wrong | Lowest right | Highest wrong |",
+		"|---|---|---|---|---|---|---|---|",
+		...Object.entries(stats).map(
+			([name, f]) =>
+				`| ${name} | ${f.gate} | ${f.expected} | ${f.filled} | ${f.right} | ${f.wrong} | ${f.lowestRight === null ? "" : number(f.lowestRight)} | ${f.highestWrong === null ? "" : number(f.highestWrong)} |`,
+		),
+		"",
+	);
+	if (report.misses.length) {
+		lines.push(
+			"## Misses",
+			"",
+			"Filled and wrong first, surest first; then held and wrong. A card its intent held lists the intent alone.",
+			"",
+			"| Row | Request | Field | Expected | Got | Pick | Whose |",
+			"|---|---|---|---|---|---|---|",
+			...report.misses.map(
+				(miss) =>
+					`| ${miss.id} | ${cell(miss.request)} | ${miss.field} | ${miss.expected === null ? "not mentioned" : shownCard(miss.expected === "held" ? null : miss.expected)} | ${shownCard(miss.got)} | ${miss.label === null ? "" : `${miss.label} `}${number(miss.probability)} | ${miss.blame} |`,
+			),
+			"",
+		);
+	}
+	if (flips) {
+		lines.push(
+			"## Flips",
+			"",
+			`${flips.length} ${flips.length === 1 ? "flip" : "flips"} against the first run, which keeps the verdict.`,
+			"",
+			"| Row | Request | Field | First run | This run |",
+			"|---|---|---|---|---|",
+			...flips.map(
+				({ id, request, field, before, after }) =>
+					`| ${id} | ${cell(request)} | ${field} | ${shownCard(before)} | ${shownCard(after)} |`,
 			),
 			"",
 		);

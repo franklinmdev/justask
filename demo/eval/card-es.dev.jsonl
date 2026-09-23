@@ -1,0 +1,20 @@
+{"id": "es-d-01", "request": "consultoría de recursos humanos de Serena, $400 el 24 de agosto", "kind": "record", "expected": {"vendor": "serena", "tags": ["office"], "spent_on": "2026-08-24", "total": {"value": 400, "currency": "USD"}}}
+{"id": "es-d-02", "request": "almuerzo en Cazuela Azul con un cliente ayer, $96", "kind": "record", "expected": {"vendor": "cazuela", "tags": ["meals", "client"], "spent_on": "2026-09-22", "total": {"value": 96, "currency": "USD"}}}
+{"id": "es-d-03", "request": "renovación de la póliza de Cobertura Plena hoy, $1,200", "kind": "record", "expected": {"vendor": "coberplena", "tags": ["office"], "spent_on": "2026-09-23", "total": {"value": 1200, "currency": "USD"}}}
+{"id": "es-d-04", "request": "boleto de tren a Boston el viernes, $64", "kind": "record", "expected": {"tags": ["travel"], "spent_on": "2026-09-18", "total": {"value": 64, "currency": "USD"}}}
+{"id": "es-d-05", "request": "asesoría legal de Lindero sobre el contrato de alquiler, $750 el 3 de septiembre", "kind": "record", "expected": {"vendor": "lindero", "tags": ["office"], "spent_on": "2026-09-03", "total": {"value": 750, "currency": "USD"}}}
+{"id": "es-d-06", "request": "ventanas de relusir, $320 ayer", "kind": "record", "expected": {"vendor": "relucir", "tags": ["office"], "spent_on": "2026-09-22", "total": {"value": 320, "currency": "USD"}}}
+{"id": "es-d-07", "request": "vuelos de Rumbo Claro para el viaje de ventas, $2,360.90 el 17 de septiembre", "kind": "record", "expected": {"vendor": "rumboclaro", "tags": ["travel"], "spent_on": "2026-09-17", "total": {"value": 2360.9, "currency": "USD"}}}
+{"id": "es-d-08", "request": "pizza para el equipo hoy, $43", "kind": "record", "expected": {"tags": ["meals"], "spent_on": "2026-09-23", "total": {"value": 43, "currency": "USD"}}}
+{"id": "es-d-09", "request": "Nubalia, $299 el 1 de agosto por el hosting", "kind": "record", "expected": {"vendor": "nubalia", "tags": ["office"], "spent_on": "2026-08-01", "total": {"value": 299, "currency": "USD"}}}
+{"id": "es-d-10", "request": "los de soporte técnico arreglaron la impresora, $110 el martes", "kind": "record", "expected": {"vendor": "tecnoria", "tags": ["office"], "spent_on": "2026-09-22", "total": {"value": 110, "currency": "USD"}}}
+{"id": "es-d-11", "request": "tarjetas de presentación de Letranueva, 60 dólares", "kind": "record", "expected": {"vendor": "letranueva", "tags": ["office"], "total": {"value": 60, "currency": "USD"}}}
+{"id": "es-d-12", "request": "licencia anual de Cuentia, $1,188 el 20 de agosto", "kind": "record", "expected": {"vendor": "cuentia", "tags": ["office"], "spent_on": "2026-08-20", "total": {"value": 1188, "currency": "USD"}}}
+{"id": "es-d-13", "request": "la compañía de limpieza, $1,800 ayer", "kind": "ambiguous", "expected": {"vendor": "held", "tags": ["office"], "spent_on": "2026-09-22", "total": {"value": 1800, "currency": "USD"}}}
+{"id": "es-d-14", "request": "Pieveloz, $40 el lunes, quizás para un cliente", "kind": "ambiguous", "expected": {"vendor": "pieveloz", "tags": "held", "spent_on": "2026-09-21", "total": {"value": 40, "currency": "USD"}}}
+{"id": "es-d-15", "request": "catering de Cazuela Azul el lunes pasado, $500", "kind": "ambiguous", "expected": {"vendor": "cazuela", "tags": ["meals"], "spent_on": "held", "total": {"value": 500, "currency": "USD"}}}
+{"id": "es-d-16", "request": "tóner de Tintaverde ayer, $150 o $160", "kind": "ambiguous", "expected": {"vendor": "tintaverde", "tags": ["office"], "spent_on": "2026-09-22", "total": "held"}}
+{"id": "es-d-17", "request": "¿cuánto le pagamos a Nubalia el mes pasado?", "kind": "nothing"}
+{"id": "es-d-18", "request": "deshaga el último gasto", "kind": "nothing"}
+{"id": "es-d-19", "request": "buenos días", "kind": "nothing"}
+{"id": "es-d-20", "request": "pase el gasto del taxi al viernes", "kind": "nothing"}

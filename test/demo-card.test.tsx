@@ -72,7 +72,7 @@ const answers: Record<string, FakeAnswers> = {
 	}),
 	// Two cleaners split the vendor below the gate, so the rest fills.
 	"lunch with the cleaners yesterday, $40": answer({
-		vendor: { ...question(vendors, "brightmop", 0.52), glasswell: 0.44 },
+		vendor: { ...question(vendors, "brightmop", 0.48), glasswell: 0.44 },
 		tagged: ["meals"],
 		day: "d0",
 		amount: "a0",
@@ -230,7 +230,7 @@ describe("the demo's card page", () => {
 		expect(held.getByText("Held")).toBeDefined();
 		expect(
 			held.getByText(
-				"A pick (0.52) fell below the gate (0.90), so the field is held.",
+				"A pick (0.48) fell below the gate (0.50), so the field is held.",
 			),
 		).toBeDefined();
 		await expectNoAxeViolations(container);
