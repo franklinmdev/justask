@@ -55,10 +55,10 @@ export function formats(locale: string) {
 
 /**
  * The number the person typed: a comma before one or two final digits is a
- * decimal comma, any other comma groups thousands.
+ * decimal comma, any other comma or a space groups thousands.
  */
 export function parseAmount(text: string): number | undefined {
-	const plain = text.trim();
+	const plain = text.replace(/\s/g, "");
 	if (plain === "") return undefined;
 	const decimal = /^[^.]*,\d{1,2}$/.test(plain)
 		? plain.replace(",", ".")

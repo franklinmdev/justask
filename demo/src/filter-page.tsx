@@ -105,6 +105,8 @@ export function FilterPage({
 	const words = fieldWords(content);
 	// What the table's own controls hold: Apply sets them, and so does the person.
 	const [applied, setApplied] = useState<Applied>({});
+	// Clear filters renews the controls, so text in a box that set no bound goes too.
+	const [cleared, setCleared] = useState(0);
 	const [trace, setTrace] = useState<Trace | null>(null);
 
 	const filter = useFilter<TransactionFields>({
@@ -199,13 +201,21 @@ export function FilterPage({
 						<button
 							type="button"
 							className="clear"
-							onClick={() => setApplied({})}
+							onClick={() => {
+								setApplied({});
+								setCleared((count) => count + 1);
+							}}
 						>
 							{copy.filter.clear}
 						</button>
 					)}
 				</div>
-				<TableFilters content={content} value={applied} onChange={setApplied} />
+				<TableFilters
+					key={cleared}
+					content={content}
+					value={applied}
+					onChange={setApplied}
+				/>
 				<Transactions content={content} rows={rows} />
 			</section>
 		</CaseLayout>

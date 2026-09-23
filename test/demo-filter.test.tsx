@@ -144,6 +144,11 @@ function select(name: string) {
 	return screen.getByRole("combobox", { name }) as HTMLSelectElement;
 }
 
+/** One bound of the table's amount range, by its label. */
+function amountBox(name: string) {
+	return screen.getByRole("textbox", { name }) as HTMLInputElement;
+}
+
 function waitForProposal() {
 	return screen.findByRole("list", { name: "Filters to apply" });
 }
@@ -367,7 +372,7 @@ describe("the demo's filter page", () => {
 		await user.click(screen.getByRole("button", { name: "Clear filters" }));
 		expect(rows()).toBe(english.transactions.length);
 		expect(select("Vendor").value).toBe("");
-		expect((min as HTMLInputElement).value).toBe("");
+		expect(amountBox("Minimum amount").value).toBe("");
 		expect(
 			screen.getByRole("button", { name: "Start date Start" }),
 		).toBeDefined();
@@ -398,6 +403,23 @@ describe("the demo's filter page", () => {
 				({ amount }) => amount >= 500 && amount <= 1000,
 			).length,
 		);
+	});
+
+	it("reads a bound typed with spaced thousands, and empties a box Clear filters reaches, whatever it holds", async () => {
+		const { user } = renderDemo();
+
+		await user.type(amountBox("Minimum amount"), "1 000");
+		expect(rows()).toBe(
+			english.transactions.filter(({ amount }) => amount >= 1000).length,
+		);
+
+		// Text that reads as no number sets no bound, and Clear filters takes it off the box too.
+		await user.type(amountBox("Maximum amount"), "1.2.3");
+		await user.click(screen.getByRole("button", { name: "Clear filters" }));
+
+		expect(rows()).toBe(english.transactions.length);
+		expect(amountBox("Minimum amount").value).toBe("");
+		expect(amountBox("Maximum amount").value).toBe("");
 	});
 
 	it("fills nothing from a request with nothing to filter, and offers nothing to apply", async () => {
