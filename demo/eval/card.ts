@@ -1,12 +1,13 @@
 // The demo's card eval, by hand with the key in .env, never in CI: every
 // row is a real Jev call.
 //
-//   node --conditions=source demo/eval/card.ts run <en|es> <eval|dev> <n>
-//   node --conditions=source demo/eval/card.ts compare <en|es> <first n> <second n>
+//   node --conditions=source demo/eval/card.ts run <en|es> <eval|round2|dev> <n>
+//   node --conditions=source demo/eval/card.ts compare <en|es> <eval|round2> <first n> <second n>
 //   node --conditions=source demo/eval/card.ts gates <dev n>
 //
-// `run` writes demo/eval/runs/card-<language>[-dev]-<n>.jsonl, which it never
-// overwrites, and prints its report. A dev run gets no verdict: it tunes, it
+// `run` writes demo/eval/runs/card-<language>[-round2|-dev]-<n>.jsonl, which
+// it never overwrites, and prints its report. `eval` is round 1's set,
+// `round2` the fresh set of round 2. A dev run gets no verdict: it tunes, it
 // never decides. `compare` reads two saved eval runs and prints the second
 // one's measures and flips, with no call. `gates` reads dev run <n> of both
 // languages and prints the intent's and each field's gate by the rule in
@@ -33,6 +34,7 @@ const TODAY =
 
 const SETS = {
 	eval: { file: "", log: "" },
+	round2: { file: ".round2", log: "-round2" },
 	dev: { file: ".dev", log: "-dev" },
 } as const;
 type SetKind = keyof typeof SETS;
@@ -72,11 +74,11 @@ if (command === "run") {
 		formatCardReport(set === "dev" ? { ...report, verdict: null } : report),
 	);
 } else if (command === "compare") {
-	const [language, first, second] = rest;
+	const [language, set, first, second] = rest;
 	const content = contents[language as Language];
-	if (!content || !first || !second) usage();
-	const before = await readCardRun(runLogPath(content.language, "eval", first));
-	const after = await readCardRun(runLogPath(content.language, "eval", second));
+	if (!content || !isSet(set) || set === "dev" || !first || !second) usage();
+	const before = await readCardRun(runLogPath(content.language, set, first));
+	const after = await readCardRun(runLogPath(content.language, set, second));
 	console.log(
 		formatCardReport(scoreCardRun(after), compareCardRuns(before, after)),
 	);
@@ -102,7 +104,7 @@ if (command === "run") {
 
 function usage(): never {
 	console.error(
-		"usage: card.ts run <en|es> <eval|dev> <n> | compare <en|es> <first n> <second n> | gates <dev n>",
+		"usage: card.ts run <en|es> <eval|round2|dev> <n> | compare <en|es> <eval|round2> <first n> <second n> | gates <dev n>",
 	);
 	process.exit(1);
 }

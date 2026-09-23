@@ -1,0 +1,42 @@
+{"id": "en-r2-01", "request": "Larkspur sandwiches for the board meeting today, $148", "kind": "record", "expected": {"vendor": "larkspur", "tags": ["meals"], "spent_on": "2026-09-23", "total": {"value": 148, "currency": "USD"}}}
+{"id": "en-r2-02", "request": "Cloudberth cloud storage, $59 on September 12", "kind": "record", "expected": {"vendor": "cloudberth", "tags": ["office"], "spent_on": "2026-09-12", "total": {"value": 59, "currency": "USD"}}}
+{"id": "en-r2-03", "request": "Brightmop deep clean after the move, $450 on Saturday", "kind": "record", "expected": {"vendor": "brightmop", "tags": ["office"], "spent_on": "2026-09-19", "total": {"value": 450, "currency": "USD"}}}
+{"id": "en-r2-04", "request": "Glasswell janitorial, $610 on August 31", "kind": "record", "expected": {"vendor": "glasswell", "tags": ["office"], "spent_on": "2026-08-31", "total": {"value": 610, "currency": "USD"}}}
+{"id": "en-r2-05", "request": "Inkhollow printed the new office signs, $330 on Thursday", "kind": "record", "expected": {"vendor": "inkhollow", "tags": ["office"], "spent_on": "2026-09-17", "total": {"value": 330, "currency": "USD"}}}
+{"id": "en-r2-06", "request": "Farwander hotel for the client workshop in Miami, $615, September 14", "kind": "record", "expected": {"vendor": "farwander", "tags": ["travel", "client"], "spent_on": "2026-09-14", "total": {"value": 615, "currency": "USD"}}}
+{"id": "en-r2-07", "request": "Tallyrot accounting software for two more users, $96 on Monday", "kind": "record", "expected": {"vendor": "tallyroot", "tags": ["office"], "spent_on": "2026-09-21", "total": {"value": 96, "currency": "USD"}}}
+{"id": "en-r2-08", "request": "Beanhaven coffee machine descaling, $55 on September 9", "kind": "record", "expected": {"vendor": "beanhaven", "tags": ["office"], "spent_on": "2026-09-09", "total": {"value": 55, "currency": "USD"}}}
+{"id": "en-r2-09", "request": "Swiftlane rushed the signed contracts across town, $46 on Tuesday", "kind": "record", "expected": {"vendor": "swiftlane", "tags": ["office"], "spent_on": "2026-09-22", "total": {"value": 46, "currency": "USD"}}}
+{"id": "en-r2-10", "request": "Clausewood trademark filing, $1,250 on September 2", "kind": "record", "expected": {"vendor": "clausewood", "tags": ["office"], "spent_on": "2026-09-02", "total": {"value": 1250, "currency": "USD"}}}
+{"id": "en-r2-11", "request": "the IT support company replaced a hard drive, $180", "kind": "record", "expected": {"vendor": "fixbright", "tags": ["office"], "total": {"value": 180, "currency": "USD"}}}
+{"id": "en-r2-12", "request": "Paydale monthly payroll processing, $410 on September 1", "kind": "record", "expected": {"vendor": "paydale", "tags": ["office"], "spent_on": "2026-09-01", "total": {"value": 410, "currency": "USD"}}}
+{"id": "en-r2-13", "request": "the insurance company, $730 for the liability policy on August 27", "kind": "record", "expected": {"vendor": "sureharbor", "tags": ["office"], "spent_on": "2026-08-27", "total": {"value": 730, "currency": "USD"}}}
+{"id": "en-r2-14", "request": "Papergrove, $58.75 of sticky notes and folders yesterday", "kind": "record", "expected": {"vendor": "papergrove", "tags": ["office"], "spent_on": "2026-09-22", "total": {"value": 58.75, "currency": "USD"}}}
+{"id": "en-r2-15", "request": "Uber to the client's office today, $27", "kind": "record", "expected": {"tags": ["travel", "client"], "spent_on": "2026-09-23", "total": {"value": 27, "currency": "USD"}}}
+{"id": "en-r2-16", "request": "breakfast for the team on Friday, $88", "kind": "record", "expected": {"tags": ["meals"], "spent_on": "2026-09-18", "total": {"value": 88, "currency": "USD"}}}
+{"id": "en-r2-17", "request": "bus ticket to Philadelphia on Sunday, $31", "kind": "record", "expected": {"tags": ["travel"], "spent_on": "2026-09-20", "total": {"value": 31, "currency": "USD"}}}
+{"id": "en-r2-18", "request": "a new monitor from an electronics store, $219 on Thursday", "kind": "record", "expected": {"tags": ["office"], "spent_on": "2026-09-17", "total": {"value": 219, "currency": "USD"}}}
+{"id": "en-r2-19", "request": "drinks with a client after the pitch yesterday, $64.50", "kind": "record", "expected": {"tags": ["meals", "client"], "spent_on": "2026-09-22", "total": {"value": 64.5, "currency": "USD"}}}
+{"id": "en-r2-20", "request": "hotel in Austin for the trade show, $540", "kind": "record", "expected": {"tags": ["travel"], "total": {"value": 540, "currency": "USD"}}}
+{"id": "en-r2-21", "request": "cake for Ana's birthday at the office today, $35", "kind": "record", "expected": {"tags": ["meals"], "spent_on": "2026-09-23", "total": {"value": 35, "currency": "USD"}}}
+{"id": "en-r2-22", "request": "Farwander train tickets for the team offsite, $276", "kind": "record", "expected": {"vendor": "farwander", "tags": ["travel"], "total": {"value": 276, "currency": "USD"}}}
+{"id": "en-r2-23", "request": "Larkspur dinner with the client's team, $430 on Thursday", "kind": "record", "expected": {"vendor": "larkspur", "tags": ["meals", "client"], "spent_on": "2026-09-17", "total": {"value": 430, "currency": "USD"}}}
+{"id": "en-r2-24", "request": "Inkhollow banner for the client's launch, billable to them, $210 on September 11", "kind": "record", "expected": {"vendor": "inkhollow", "tags": ["office", "client"], "spent_on": "2026-09-11", "total": {"value": 210, "currency": "USD"}}}
+{"id": "en-r2-25", "request": "clausewod, NDA review, $300 yesterday", "kind": "record", "expected": {"vendor": "clausewood", "tags": ["office"], "spent_on": "2026-09-22", "total": {"value": 300, "currency": "USD"}}}
+{"id": "en-r2-26", "request": "Sureharbor premium for the new van", "kind": "record", "expected": {"vendor": "sureharbor", "tags": ["office"]}}
+{"id": "en-r2-27", "request": "Swiftlane package pickup, 52 dollars on September 15", "kind": "record", "expected": {"vendor": "swiftlane", "tags": ["office"], "spent_on": "2026-09-15", "total": {"value": 52, "currency": "USD"}}}
+{"id": "en-r2-28", "request": "Cloudberth backup add-on, €25 on Tuesday", "kind": "record", "expected": {"vendor": "cloudberth", "tags": ["office"], "spent_on": "2026-09-22", "total": {"value": 25, "currency": "EUR"}}}
+{"id": "en-r2-29", "request": "the cleaners, $520 on September 4", "kind": "ambiguous", "expected": {"vendor": "held", "tags": ["office"], "spent_on": "2026-09-04", "total": {"value": 520, "currency": "USD"}}}
+{"id": "en-r2-30", "request": "Fixbright or Cloudberth, $140 for the server fix on Monday", "kind": "ambiguous", "expected": {"vendor": "held", "tags": ["office"], "spent_on": "2026-09-21", "total": {"value": 140, "currency": "USD"}}}
+{"id": "en-r2-31", "request": "Beanhaven order, $62 on Thursday", "kind": "ambiguous", "expected": {"vendor": "beanhaven", "tags": "held", "spent_on": "2026-09-17", "total": {"value": 62, "currency": "USD"}}}
+{"id": "en-r2-32", "request": "Farwander flight, possibly billable to a client, $310 yesterday", "kind": "ambiguous", "expected": {"vendor": "farwander", "tags": "held", "spent_on": "2026-09-22", "total": {"value": 310, "currency": "USD"}}}
+{"id": "en-r2-33", "request": "Papergrove toner last Thursday, $140", "kind": "ambiguous", "expected": {"vendor": "papergrove", "tags": ["office"], "spent_on": "held", "total": {"value": 140, "currency": "USD"}}}
+{"id": "en-r2-34", "request": "Clausewood retainer earlier this month, $900", "kind": "ambiguous", "expected": {"vendor": "clausewood", "tags": ["office"], "spent_on": "held", "total": {"value": 900, "currency": "USD"}}}
+{"id": "en-r2-35", "request": "Swiftlane delivery on Monday, 600 pesos", "kind": "ambiguous", "expected": {"vendor": "swiftlane", "tags": ["office"], "spent_on": "2026-09-21", "total": "held"}}
+{"id": "en-r2-36", "request": "Fixbright keyboard yesterday, $45 or $54", "kind": "ambiguous", "expected": {"vendor": "fixbright", "tags": ["office"], "spent_on": "2026-09-22", "total": "held"}}
+{"id": "en-r2-37", "request": "how much have we spent on Swiftlane since August?", "kind": "nothing"}
+{"id": "en-r2-38", "request": "remove the $75 Beanhaven expense", "kind": "nothing"}
+{"id": "en-r2-39", "request": "change the Sureharbor expense to August 27", "kind": "nothing"}
+{"id": "en-r2-40", "request": "perfect, thank you!", "kind": "nothing"}
+{"id": "en-r2-41", "request": "can an expense have two tags?", "kind": "nothing"}
+{"id": "en-r2-42", "request": "email the Clausewood invoice to accounting", "kind": "nothing"}

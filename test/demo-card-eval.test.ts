@@ -30,6 +30,10 @@ const FIELDS: ExpenseName[] = ["vendor", "tags", "spent_on", "total"];
 describe.each([english, spanish])("the card sets in $language", (content) => {
 	const evalSet = parseCardEvalSet(read(`card-${content.language}.jsonl`));
 	const devSet = parseCardEvalSet(read(`card-${content.language}.dev.jsonl`));
+	const round2Set = parseCardEvalSet(
+		read(`card-${content.language}.round2.jsonl`),
+	);
+	const allSets = [...devSet, ...evalSet, ...round2Set];
 	const card = demoCard(content);
 	const rows = (set: CardEvalRow[], kind: CardEvalKind) =>
 		set.filter((row) => row.kind === kind);
@@ -41,7 +45,7 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 	it("expect only fields of the demo's card, and values of that language's catalogs", () => {
 		const vendors = new Set(content.vendors.map(({ id }) => id));
 		const tags = new Set(content.tags.map(({ id }) => id));
-		for (const row of [...evalSet, ...devSet]) {
+		for (const row of allSets) {
 			for (const [field, value] of Object.entries(row.expected)) {
 				expect(Object.keys(card.fields)).toContain(field);
 				if (value === "held") continue;
@@ -53,23 +57,29 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 		}
 	});
 
-	it("give the eval set 28 records, 2 ambiguous rows per field and 6 with nothing to record", () => {
-		const records = rows(evalSet, "record");
-		const ambiguous = rows(evalSet, "ambiguous");
-		expect(records).toHaveLength(28);
-		expect(ambiguous).toHaveLength(8);
-		expect(rows(evalSet, "nothing")).toHaveLength(6);
-		for (const field of FIELDS)
-			expect(heldOn(ambiguous, field)).toHaveLength(2);
-		// Every vendor at least once, and seven records with no vendor of the catalog.
-		expect(new Set(records.map((row) => row.expected.vendor))).toEqual(
-			new Set([...content.vendors.map(({ id }) => id), undefined]),
-		);
-		expect(mentioning(records, "vendor")).toHaveLength(21);
-		expect(mentioning(records, "tags")).toHaveLength(28);
-		expect(mentioning(records, "spent_on")).toHaveLength(24);
-		expect(mentioning(records, "total")).toHaveLength(27);
-	});
+	it.each([
+		["round 1", evalSet],
+		["round 2", round2Set],
+	])(
+		"give the %s set 28 records, 2 ambiguous rows per field and 6 with nothing to record",
+		(_, set) => {
+			const records = rows(set, "record");
+			const ambiguous = rows(set, "ambiguous");
+			expect(records).toHaveLength(28);
+			expect(ambiguous).toHaveLength(8);
+			expect(rows(set, "nothing")).toHaveLength(6);
+			for (const field of FIELDS)
+				expect(heldOn(ambiguous, field)).toHaveLength(2);
+			// Every vendor at least once, and seven records with no vendor of the catalog.
+			expect(new Set(records.map((row) => row.expected.vendor))).toEqual(
+				new Set([...content.vendors.map(({ id }) => id), undefined]),
+			);
+			expect(mentioning(records, "vendor")).toHaveLength(21);
+			expect(mentioning(records, "tags")).toHaveLength(28);
+			expect(mentioning(records, "spent_on")).toHaveLength(24);
+			expect(mentioning(records, "total")).toHaveLength(27);
+		},
+	);
 
 	it("give the dev set 12 records, 1 ambiguous row per field and 12 with nothing to record", () => {
 		const records = rows(devSet, "record");
@@ -98,14 +108,14 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 				...Object.values(content.cardSuggestions).flat(),
 			].map(normalized),
 		);
-		for (const { request } of [...devSet, ...evalSet]) {
+		for (const { request } of allSets) {
 			expect(seen).not.toContain(normalized(request));
 			seen.add(normalized(request));
 		}
 	});
 
 	it("expect only days and amounts the parser can build, on the day the runs are fixed at", () => {
-		for (const row of [...devSet, ...evalSet]) {
+		for (const row of allSets) {
 			const { dates = [], amounts = [] } = builtInParser(row.request, {
 				today: TODAY,
 				facts: FACTS,
@@ -137,7 +147,7 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 	});
 
 	it("hold each ambiguous day and amount by the parser's own reading, or by two candidates", () => {
-		for (const row of rows([...devSet, ...evalSet], "ambiguous")) {
+		for (const row of rows(allSets, "ambiguous")) {
 			const { dates = [], amounts = [] } = builtInParser(row.request, {
 				today: TODAY,
 				facts: FACTS,
@@ -156,7 +166,7 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 });
 
 /**
- * Frozen on the owner's approval, 2026-09-23 (#20), before any call. A
+ * Frozen on the owner's approval, 2026-09-23 (#20, round 2 #44), before any call. A
  * failure here means the verdict's inputs changed after the fact: revert the
  * edit, or log the owner's call in docs/card-eval.md with a new checksum or
  * value.
@@ -170,6 +180,15 @@ describe("the frozen card eval", () => {
 		[
 			"card-es.jsonl",
 			"abefd6adac98f967b41c28f696865df9b220b0ce7ffb74465505ccbb03de976b",
+		],
+		// Round 2, approved in two batches on 2026-09-23 (#44), before any call.
+		[
+			"card-en.round2.jsonl",
+			"aab38a439966cc961998f2746928d3731155f338a6e28987445a25c29c2c32c9",
+		],
+		[
+			"card-es.round2.jsonl",
+			"8a4572903c88e437bce14a1e8210083ae190e117e4a421316074f578d99182f2",
 		],
 	])("keeps %s as approved", (name, sha256) => {
 		const bytes = readFileSync(evalFile(name));

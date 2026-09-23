@@ -103,7 +103,7 @@ By hand with the key in `.env`, never in CI; every row is a paid call.
 2. Dev runs: `node --conditions=source demo/eval/card.ts run <en|es> dev 1`. They print no verdict.
 3. `node --conditions=source demo/eval/card.ts gates 1` prints the intent's and each field's gate by the rule; write them into the demo.
 4. Run 1 per language gives the verdict: `run <en|es> eval 1`.
-5. Run 2 per language reports flips only: `run <en|es> eval 2`, then `compare <en|es> 1 2`.
+5. Run 2 per language reports flips only: `run <en|es> eval 2`, then `compare <en|es> eval 1 2`.
 6. Record here the verdict, the numbers, the misses and the run logs' paths (`demo/eval/runs/`, committed so anyone can rescore them with no call).
 
 A row found wrong after a run is the owner's call, logged here; it never silently changes the set.
@@ -221,3 +221,19 @@ The owner ruled on 2026-09-23 that dev run 3 alone fixes the gates, the only dev
 At these gates dev run 3 fills 51 of 57 English and 54 of 57 Spanish expected fields, every filled card exact, every ambiguous row held. The gates are in `demo/server/handler.ts`; `test/demo-card-eval.test.ts` pins them to dev run 3.
 
 Run logs: `demo/eval/runs/card-en-dev-2.jsonl`, `demo/eval/runs/card-es-dev-2.jsonl`, `demo/eval/runs/card-en-dev-3.jsonl`, `demo/eval/runs/card-es-dev-3.jsonl`.
+
+### Round 2 sets
+
+Files in `demo/eval/`, drafted against every set in `demo/eval/` and the demo's suggestions, approved by the owner in two batches on 2026-09-23 (the 28 records, then the 8 ambiguous and 6 nothing rows) and frozen by checksum in `test/demo-card-eval.test.ts` in the commit before the first round 2 call. Run logs `demo/eval/runs/card-<language>-round2-<n>.jsonl`.
+
+| File | Rows | record | ambiguous | nothing |
+|---|---|---|---|---|
+| `card-en.round2.jsonl` | 42 | 28 | 8 | 6 |
+| `card-es.round2.jsonl` | 42 | 28 | 8 | 6 |
+
+- **The same shape as round 1**, so the two rounds read side by side: tags in all 28 records, the day in 24, the amount in 27, the vendor in 21, each of the 14 vendors at least once, 7 records with no vendor of the catalog (`Uber`, `a bus ticket`, `an electronics store`), typos (`Tallyrot`, `clausewod`; `Cuentya`, `lindro`), paraphrases (`the IT support company`, `the insurance company`), one euro amount. Spanish row N has the same shape as English row N.
+- **Tags not named in any description**, so the tuned descriptions are not what is measured word for word: a bus, a birthday cake, drinks, a monitor, a trademark filing, a descaling service.
+- **ambiguous:** vendor `the cleaners` and the named pair `Fixbright or Cloudberth` (`Tecnoria o Nubalia`), the shape that leaked in round 1; tags `Beanhaven order` (coffee or beans) and `possibly billable to a client`; day `last Thursday` and `earlier this month`; amount `600 pesos` and `$45 or $54`.
+- **nothing:** a question about spending, a delete, a date change on an existing expense, a thank-you, a question about tags, and an email of an invoice.
+- The same checks as round 1 hold: no request repeats any other set or suggestion, every expected day and amount is one the parser builds on Wednesday 2026-09-23, and every held one is held by the parser's reading or by two candidates.
+- Kill lines, measures and procedure as round 1. Run 1 gives the verdict at the gates above; run 2 reports flips only (`compare <en|es> round2 1 2`).
