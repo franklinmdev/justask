@@ -498,7 +498,28 @@ describe("ask: parsers the host app registers", () => {
 		).toEqual(["DOP", "DOP"]);
 	});
 
-	it("hands a parser today as a date and the facts", async () => {
+	it.each(["d0", "d1"])(
+		"holds a date field whose pick is a reading the request leaves open, 'last Monday' as %s at 0.99",
+		async (picked) => {
+			const labels = ["d0", "d1", ...MISSING];
+			const result = await ask({
+				...base,
+				request: "invoices from last Monday",
+				provider: fakeProvider({
+					issued_from: answer(labels, picked, 0.99),
+					issued_to: answer(labels, picked, 0.99),
+				}),
+				filter: invoiceFilter(),
+			});
+
+			expect(
+				result.filter.fields.issued.candidates.map(({ value }) => value.from),
+			).toEqual(["2026-09-21", "2026-09-14"]);
+			expect(result.filter.value).toEqual({});
+		},
+	);
+
+	it("hands a parser today as a date, the past as the way a filter reads, and the facts", async () => {
 		const seen: unknown[] = [];
 		const fiscalYear: Parser = (request, input) => {
 			seen.push(input);
@@ -527,7 +548,7 @@ describe("ask: parsers the host app registers", () => {
 			filter: invoiceFilter({ parsers: [fiscalYear] }),
 		});
 
-		expect(seen).toEqual([{ today: "2026-09-22", facts }]);
+		expect(seen).toEqual([{ today: "2026-09-22", reads: "past", facts }]);
 		expect(result.filter.value).toEqual({
 			issued: { from: "2025-10-01", to: "2026-09-30" },
 		});
