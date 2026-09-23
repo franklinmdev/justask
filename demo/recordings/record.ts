@@ -8,8 +8,9 @@
 // from a frozen eval row. The eval runners' warm-up goes first, discarded,
 // so a cold start never falls on a recorded call. A call whose result is not
 // the row's expected one writes nothing, and neither do the others, so every
-// recording shows the gates passing its row. Nothing in a recording is edited by hand: after a
-// change to the gates, run this again for the cases they serve.
+// recording shows the gates passing its row. Nothing in a recording is
+// edited by hand: after a change to the gates, run this again for the cases
+// they serve.
 
 import { execFileSync } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
