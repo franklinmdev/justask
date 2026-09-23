@@ -43,6 +43,9 @@ export type {
 } from "./filter.ts";
 export { fuzzyShortlist } from "./fuzzy-shortlist.ts";
 export {
+	type CardHandlerConfig,
+	type CardHandlerResponse,
+	createCardHandler,
 	createFilterHandler,
 	createSearchHandler,
 	type FilterHandlerConfig,

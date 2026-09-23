@@ -2,15 +2,17 @@ import type {
 	AmountField,
 	AmountRange,
 	Candidate,
+	CardDateField,
 	CatalogField,
 	DateField,
 	DateRange,
+	SeveralCatalogField,
 } from "justask";
 
 export type Language = "en" | "es";
 
 /** One page per flow. */
-export type Page = "search" | "filter";
+export type Page = "search" | "filter" | "card";
 
 /** A vendor of the fictional invoicing app: the search's candidate value. */
 export type Vendor = {
@@ -52,6 +54,78 @@ export type FieldHeldReason =
 	| { kind: "not-available" }
 	| { kind: "below-gate"; probability: string; gate: string }
 	| { kind: "conflict" };
+
+/** How an expense is tagged; several can apply to one. */
+export type Tag = "meals" | "travel" | "office" | "client";
+
+/** The expense card, as the demo's card handler declares it. */
+export type ExpenseFields = {
+	vendor: CatalogField<Vendor>;
+	tags: SeveralCatalogField<Tag>;
+	spent_on: CardDateField;
+	total: AmountField;
+};
+
+export type ExpenseName = keyof ExpenseFields;
+
+/** Why a card field is held, as the state panel explains it. */
+export type CardHeldReason =
+	| FieldHeldReason
+	| { kind: "not-a-record" }
+	| { kind: "foreign-currency"; mark: string }
+	| { kind: "ambiguous"; text: string }
+	| { kind: "period"; text: string };
+
+/** Why the intent question let the fields fill, or held them all. */
+export type IntentReason =
+	| { kind: "passed"; probability: string; gate: string }
+	| { kind: "below-gate"; probability: string; gate: string }
+	| { kind: "not-mentioned" }
+	| { kind: "not-available" }
+	| { kind: "tie" }
+	| { kind: "failed" };
+
+/** The card page's own words. */
+export type CardCopy = {
+	title: string;
+	boxLabel: string;
+	placeholder: string;
+	fields: Record<ExpenseName, string>;
+	tags: Record<Tag, string>;
+	chooseVendor: string;
+	/** Beside a field's label while its value is the one the request gave. */
+	fromRequest: string;
+	/** What a screen reader hears, and the page shows, once an answer comes back. */
+	announce: (filled: string[], waiting: string[]) => string;
+	/** What the page says when the answer failed: the card stays as it was. */
+	unanswered: string;
+	pickDay: string;
+	calendar: {
+		label: string;
+		previous: string;
+		next: string;
+		clear: string;
+	};
+	confirm: string;
+	saved: string;
+	undo: string;
+	expenses: string;
+	noExpenses: string;
+	fills: string;
+	holds: string;
+	nothing: string;
+	intent: string;
+	intentLabels: Record<
+		"new_record" | "not_mentioned" | "not_available",
+		string
+	>;
+	intentBecause: (reason: IntentReason) => string;
+	heldBecause: (reason: CardHeldReason) => string;
+	tagQuestion: (tag: string) => string;
+	yes: string;
+	unresolved: (mark: string) => string;
+	ambiguous: string;
+};
 
 /** The filter page's own words. */
 export type FilterCopy = {
@@ -148,6 +222,7 @@ export type Copy = {
 	shortlist: (count: number, catalog: number) => string;
 	roundTrip: string;
 	filter: FilterCopy;
+	card: CardCopy;
 };
 
 /** One language's whole demo: UI text, suggested requests and data. */
@@ -162,6 +237,9 @@ export type Content = {
 	statuses: Candidate<TransactionStatus>[];
 	suggestions: { oneVendor: string[]; ambiguous: string[]; nothing: string[] };
 	filterSuggestions: { fills: string[]; holds: string[]; nothing: string[] };
+	/** The card's tags field reads these; the provider reads the description. */
+	tags: Candidate<Tag>[];
+	cardSuggestions: { fills: string[]; holds: string[]; nothing: string[] };
 };
 
 /** A catalog row: the provider reads the description, never the value. */
@@ -185,6 +263,10 @@ export function transaction(
 	status: TransactionStatus,
 ): Transaction {
 	return { vendorId, number, date, amount, status };
+}
+
+export function tag(id: Tag, description: string): Candidate<Tag> {
+	return { id, description, value: id };
 }
 
 export function status(

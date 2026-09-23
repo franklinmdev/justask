@@ -1,4 +1,5 @@
 import { type AskError, type AskInput, ask, type SearchResult } from "./ask.ts";
+import type { Card, CardFields, CardResult } from "./card.ts";
 import type { Fields, Filter, FilterResult } from "./filter.ts";
 import type { Facts, Provider } from "./provider.ts";
 import type { Search } from "./search.ts";
@@ -27,6 +28,10 @@ export type FilterHandlerConfig<F extends Fields> = HandlerConfig & {
 	filter: Filter<F>;
 };
 
+export type CardHandlerConfig<F extends CardFields> = HandlerConfig & {
+	card: Card<F>;
+};
+
 /** What the browser posts: the request and its own time zone, an IANA name. */
 export type HandlerRequest = {
 	request: string;
@@ -47,6 +52,12 @@ export type SearchHandlerResponse<T> = {
 /** The body of a 200 response from the filter handler. Catalog values must survive JSON. */
 export type FilterHandlerResponse<F extends Fields> = {
 	filter: FilterResult<F>;
+	error?: HandlerError;
+};
+
+/** The body of a 200 response from the card handler. Catalog values must survive JSON. */
+export type CardHandlerResponse<F extends CardFields> = {
+	card: CardResult<F>;
 	error?: HandlerError;
 };
 
@@ -89,9 +100,25 @@ export function createFilterHandler<F extends Fields>(
 	});
 }
 
+/**
+ * The card's handler, the filter handler's twin: it runs the card through
+ * `ask` and answers the record with the intent and every field's result.
+ * Date fields read today from the browser's time zone.
+ */
+export function createCardHandler<F extends CardFields>(
+	config: CardHandlerConfig<F>,
+): (httpRequest: Request) => Promise<Response> {
+	const { card } = config;
+	return serve(config, async (input) => {
+		const result = await ask({ ...input, card });
+		const response: CardHandlerResponse<F> = { card: result.card };
+		return { response, error: result.error };
+	});
+}
+
 type AskBase = Omit<AskInput<unknown>, "search">;
 
-/** What both handlers share: POST only, the body read, today written, errors kept on the server. */
+/** What every handler shares: POST only, the body read, today written, errors kept on the server. */
 function serve(
 	{ provider, timeoutMs, facts = {}, onError }: HandlerConfig,
 	run: (input: AskBase) => Promise<{

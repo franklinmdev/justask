@@ -1,4 +1,33 @@
-import { type Content, status, transaction as t, vendor } from "./types.ts";
+import {
+	type Content,
+	type FieldHeldReason,
+	status,
+	transaction as t,
+	tag,
+	vendor,
+} from "./types.ts";
+
+/** Why a filter or card field is held, as both panels say it. */
+function fieldHeldBecause(reason: FieldHeldReason): string {
+	switch (reason.kind) {
+		case "no-candidates":
+			return "El código no encontró candidatos, así que no se consultó al modelo.";
+		case "unresolved-currency":
+			return `La solicitud nombra “${reason.mark}”, que no es la moneda local, así que el código retuvo el campo sin consultar al modelo.`;
+		case "failed":
+			return "No llegó respuesta, así que el campo queda retenido.";
+		case "tie":
+			return "Dos etiquetas empataron en el primer lugar, así que el campo queda retenido.";
+		case "not-mentioned":
+			return "El modelo dice que la solicitud no lo menciona.";
+		case "not-available":
+			return "El modelo dice que la solicitud pide algo que ningún candidato expresa.";
+		case "below-gate":
+			return `Una elección (${reason.probability}) quedó por debajo del umbral (${reason.gate}), así que el campo queda retenido.`;
+		case "conflict":
+			return "Las elecciones no forman un solo filtro, así que el código retuvo el campo.";
+	}
+}
 
 // Fictional vendors with invented names, made up to be no real business. In
 // the Spanish UI the provider is "el modelo", since "proveedor" is a vendor.
@@ -9,7 +38,7 @@ export const spanish: Content = {
 		skip: "Ir al contenido",
 		product: "justask demo",
 		pagesLabel: "Páginas",
-		pages: { search: "Búsqueda", filter: "Filtro" },
+		pages: { search: "Búsqueda", filter: "Filtro", card: "Tarjeta" },
 		languageLabel: "Idioma",
 		themeLabel: "Tema",
 		themes: { system: "Auto", light: "Claro", dark: "Oscuro" },
@@ -121,29 +150,12 @@ export const spanish: Content = {
 			summary: (filled, total) =>
 				filled === 0
 					? `Ningún campo completado, los ${total} retenidos.`
-					: `${filled} de ${total} campos completados, el resto retenido.`,
+					: filled === total
+						? `Los ${total} campos completados.`
+						: `${filled} de ${total} campos completados, el resto retenido.`,
 			filledBecause: (probability, gate) =>
 				`Cada elección superó el umbral: la más baja fue ${probability}, el umbral ${gate}.`,
-			heldBecause: (reason) => {
-				switch (reason.kind) {
-					case "no-candidates":
-						return "El código no encontró candidatos, así que no se consultó al modelo.";
-					case "unresolved-currency":
-						return `La solicitud nombra “${reason.mark}”, que no es la moneda local, así que el código retuvo el campo sin consultar al modelo.`;
-					case "failed":
-						return "No llegó respuesta, así que el campo queda retenido.";
-					case "tie":
-						return "Dos etiquetas empataron en el primer lugar, así que el campo queda retenido.";
-					case "not-mentioned":
-						return "El modelo dice que la solicitud no lo menciona.";
-					case "not-available":
-						return "El modelo dice que la solicitud pide algo que ningún candidato expresa.";
-					case "below-gate":
-						return `Una elección (${reason.probability}) quedó por debajo del umbral (${reason.gate}), así que el campo queda retenido.`;
-					case "conflict":
-						return "Las elecciones no forman un solo filtro, así que el código retuvo el campo.";
-				}
-			},
+			heldBecause: fieldHeldBecause,
 			start: "Dónde empieza",
 			end: "Dónde termina",
 			number: (text) => `Qué hace “${text}”`,
@@ -151,6 +163,95 @@ export const spanish: Content = {
 			more: (count) => `${count} candidatos más, sin mostrar`,
 			gate: "Umbral",
 			questions: "Preguntas en una llamada",
+		},
+		card: {
+			title: "Nuevo gasto",
+			boxLabel: "Describa el gasto",
+			placeholder: "Describa el gasto con sus palabras",
+			fields: {
+				vendor: "Proveedor",
+				tags: "Etiquetas",
+				spent_on: "Día",
+				total: "Monto",
+			},
+			tags: {
+				meals: "Comidas",
+				travel: "Viajes",
+				office: "Oficina",
+				client: "Cliente",
+			},
+			chooseVendor: "Elija un proveedor",
+			fromRequest: "de la solicitud",
+			announce: (filled, waiting) => {
+				const list = (names: string[]) =>
+					new Intl.ListFormat("es").format(
+						names.map((name) => name.toLowerCase()),
+					);
+				if (filled.length === 0) {
+					return `Nada completado. Por completar: ${list(waiting)}.`;
+				}
+				return waiting.length === 0
+					? `Completado: ${list(filled)}. Nada por completar.`
+					: `Completado: ${list(filled)}. Por completar: ${list(waiting)}.`;
+			},
+			unanswered:
+				"No se pudo leer la solicitud, así que la tarjeta queda como estaba. Complétela a mano.",
+			pickDay: "Elija un día",
+			calendar: {
+				label: "Elija el día",
+				previous: "Mes anterior",
+				next: "Mes siguiente",
+				clear: "Borrar",
+			},
+			confirm: "Guardar gasto",
+			saved: "Gasto guardado.",
+			undo: "Deshacer",
+			expenses: "Gastos guardados",
+			noExpenses:
+				"Aún no hay gastos guardados. Los guardados quedan en memoria hasta que se recargue la página.",
+			fills: "Completa la tarjeta",
+			holds: "Deja uno vacío",
+			nothing: "No es un gasto nuevo",
+			intent: "¿Gasto nuevo?",
+			intentLabels: {
+				new_record: "registra un gasto nuevo",
+				not_mentioned: "no pide ningún registro",
+				not_available: "cambia, borra o pregunta por uno",
+			},
+			intentBecause: (reason) => {
+				switch (reason.kind) {
+					case "passed":
+						return `La solicitud pide un gasto nuevo: new_record (${reason.probability}) superó el umbral (${reason.gate}).`;
+					case "below-gate":
+						return `new_record (${reason.probability}) quedó por debajo del umbral (${reason.gate}), así que todos los campos quedan retenidos.`;
+					case "not-mentioned":
+						return "El modelo dice que la solicitud no pide ningún registro, así que todos los campos quedan retenidos.";
+					case "not-available":
+						return "El modelo dice que la solicitud trata de un gasto pero no agrega ninguno, así que todos los campos quedan retenidos.";
+					case "tie":
+						return "Dos etiquetas empataron en el primer lugar, así que todos los campos quedan retenidos.";
+					case "failed":
+						return "No llegó respuesta, así que todos los campos quedan retenidos.";
+				}
+			},
+			heldBecause: (reason) => {
+				switch (reason.kind) {
+					case "not-a-record":
+						return "La solicitud no pide un gasto nuevo, así que el campo queda retenido con los demás.";
+					case "foreign-currency":
+						return `La elección nombra “${reason.mark}”, que no es la moneda local, así que el código retuvo el campo.`;
+					case "ambiguous":
+						return `“${reason.text}” se lee de dos maneras, así que el código retuvo el campo sin importar su probabilidad.`;
+					case "period":
+						return `“${reason.text}” es un período, no un día, así que el código retuvo el campo.`;
+					default:
+						return fieldHeldBecause(reason);
+				}
+			},
+			tagQuestion: (name) => `¿Etiqueta ${name.toLowerCase()}?`,
+			yes: "la solicitud lo pide",
+			unresolved: (mark) => `“${mark}” no es la moneda local`,
+			ambiguous: "se lee de dos maneras",
 		},
 	},
 	vendors: [
@@ -269,5 +370,24 @@ export const spanish: Content = {
 			"la factura de Tintaverde o de Cazuela Azul",
 		],
 		nothing: ["el plomero que arregló la fuga", "¿cuánto debemos en total?"],
+	},
+	tags: [
+		tag("meals", "comidas: almuerzo, cena, café, catering"),
+		tag("travel", "viajes: vuelos, hoteles, taxis"),
+		tag("office", "oficina: artículos, equipos, software y servicios"),
+		tag("client", "facturable a un cliente, o gastado con un cliente"),
+	],
+	cardSuggestions: {
+		fills: [
+			"almuerzo con Cazuela Azul ayer, $86.40",
+			"taxi de Rumbo Claro con un cliente el viernes, 64 dólares",
+			"café del Cafetal hoy, $18.50",
+		],
+		holds: [
+			"almuerzo con los de limpieza ayer, $40",
+			"tóner de Tintaverde el viernes pasado, $120",
+			"mensajería Pieveloz, 300 pesos",
+		],
+		nothing: ["¿cuánto gastamos en almuerzos?", "borre el taxi de ayer"],
 	},
 };

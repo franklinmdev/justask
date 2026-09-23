@@ -1,4 +1,5 @@
 import { type MouseEvent, useEffect, useState } from "react";
+import { CardPage } from "./card-page.tsx";
 import { english } from "./content/en.ts";
 import { spanish } from "./content/es.ts";
 import type { Language, Page } from "./content/types.ts";
@@ -13,16 +14,17 @@ const languages: { language: Language; name: string }[] = [
 	{ language: "es", name: "Español" },
 ];
 
-const pages: Page[] = ["search", "filter"];
+const pages: Page[] = ["search", "filter", "card"];
 
 type View = { language: Language; page: Page };
 
 /** The page and the language live in the URL, so each view is a link. */
 function viewFromUrl(): View {
 	const params = new URLSearchParams(location.search);
+	const page = params.get("page");
 	return {
 		language: params.get("lang") === "es" ? "es" : "en",
-		page: params.get("page") === "filter" ? "filter" : "search",
+		page: page === "filter" || page === "card" ? page : "search",
 	};
 }
 
@@ -109,11 +111,9 @@ export function App({ fetch }: { fetch?: typeof globalThis.fetch }) {
 					</nav>
 				</div>
 			</header>
-			{page === "search" ? (
-				<SearchPage key={language} {...shared} />
-			) : (
-				<FilterPage key={language} {...shared} />
-			)}
+			{page === "search" && <SearchPage key={language} {...shared} />}
+			{page === "filter" && <FilterPage key={language} {...shared} />}
+			{page === "card" && <CardPage key={language} {...shared} />}
 		</>
 	);
 }

@@ -18,13 +18,13 @@ import type { Trace } from "./trace.ts";
 
 type Format = ReturnType<typeof formats>;
 
-const MISSING = ["not_mentioned", "not_available"];
+export const MISSING = ["not_mentioned", "not_available"];
 
 /** How many of a catalog's candidates the panel lists, the likeliest first. */
 const SHOWN = 3;
 
 /** One question as the panel shows it: its labels, ranked, and its pick. */
-type Readout = {
+export type Readout = {
 	/** The question's id within its field. */
 	id: string;
 	title?: string;
@@ -33,7 +33,7 @@ type Readout = {
 };
 
 /** The answers a field's result holds, one per question. */
-function answersOf(
+export function answersOf(
 	result: CatalogFieldResult<unknown> | ParsedFieldResult<unknown>,
 ): FieldAnswer[] {
 	return "answers" in result
@@ -302,7 +302,8 @@ function FieldReadout({
 	);
 }
 
-function Question({
+/** One question's table: the likeliest candidates, then not_mentioned and not_available. */
+export function Question({
 	readout,
 	gate,
 	labelledBy,
