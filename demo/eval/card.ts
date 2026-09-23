@@ -33,6 +33,7 @@ import { contents, demoCard, FACTS, TIMEOUT_MS } from "../server/handler.ts";
 import type { Language } from "../src/content/types.ts";
 import { fixGate, poolFields } from "./gates.ts";
 import { CARD_KILL_LINES } from "./kill-lines.ts";
+import { needBaseline, probe } from "./probe.ts";
 
 /** Fixed, so every run reads the same day. */
 const TODAY =
@@ -50,6 +51,8 @@ const SETS = {
 type SetKind = keyof typeof SETS;
 const isSet = (set: string | undefined): set is SetKind =>
 	set !== undefined && Object.hasOwn(SETS, set);
+/** The sets that tune or diagnose: their runs never give a verdict. */
+const NO_VERDICT = new Set<SetKind>(["dev", "diag", "pair"]);
 
 const here = (path: string) => new URL(path, import.meta.url).pathname;
 const setPath = (language: Language, set: SetKind) =>
@@ -63,6 +66,7 @@ if (command === "run") {
 	const [language, set, n] = rest;
 	const content = contents[language as Language];
 	if (!content || !isSet(set) || !n) usage();
+	if (!NO_VERDICT.has(set)) needBaseline();
 	loadKeyEnv(process.cwd());
 	const run = await runCardEval({
 		set: parseCardEvalSet(
@@ -74,27 +78,18 @@ if (command === "run") {
 		timeoutMs: TIMEOUT_MS,
 		killLines: CARD_KILL_LINES,
 		log: runLogPath(content.language, set, n),
+		probe: probe(),
 	});
 	const report = scoreCardRun(run);
 	console.log(
 		formatCardReport(
-			set === "dev" || set === "diag" || set === "pair"
-				? { ...report, verdict: null }
-				: report,
+			NO_VERDICT.has(set) ? { ...report, verdict: null } : report,
 		),
 	);
 } else if (command === "compare") {
 	const [language, set, first, second] = rest;
 	const content = contents[language as Language];
-	if (
-		!content ||
-		!isSet(set) ||
-		set === "dev" ||
-		set === "diag" ||
-		set === "pair" ||
-		!first ||
-		!second
-	)
+	if (!content || !isSet(set) || NO_VERDICT.has(set) || !first || !second)
 		usage();
 	const before = await readCardRun(runLogPath(content.language, set, first));
 	const after = await readCardRun(runLogPath(content.language, set, second));

@@ -1,6 +1,7 @@
 import { checkGate } from "../gate.ts";
 import { gateSearch, NONE, SEVERAL } from "../search.ts";
 import { type KillLines, MEASURES, type Measure } from "./kill-lines.ts";
+import { type ProbeWindow, probeWindow } from "./probe.ts";
 import type { Run, RunRow } from "./run.ts";
 import type { EvalKind } from "./set.ts";
 
@@ -32,9 +33,22 @@ export type VerdictLine = {
 	atLeast: boolean;
 	actual: number | null;
 	pass: boolean;
+	/** A latency line that failed in a slow window: measured again in a normal one (#65). */
+	pending?: true;
 };
 
-export type Verdict = { pass: boolean; lines: VerdictLine[] };
+/**
+ * Passes only when every line does. In a slow window a latency line that
+ * passes counts, and one that fails is pending, so the run cannot pass; its
+ * quality lines still decide a fail. `latencyPending` is true when they all
+ * pass: the verdict waits on the latency line, measured again in a normal
+ * window.
+ */
+export type Verdict = {
+	pass: boolean;
+	latencyPending: boolean;
+	lines: VerdictLine[];
+};
 
 export type Report = {
 	gate: number;
@@ -58,6 +72,8 @@ export type Report = {
 	leaked: string[];
 	/** Null when the provider did not report every call's cost. */
 	costPerCallUsd: number | null;
+	/** The provider's latency around the run; null for a run saved before probes. */
+	window: ProbeWindow | null;
 	/** Filled and wrong first, surest first; then held and wrong. */
 	misses: Miss[];
 	/** Checked against the kill lines saved with the run; null when retuned. */
@@ -118,6 +134,7 @@ export function scoreRun(run: Run, { gate = run.gate } = {}): Report {
 		);
 
 	const retuned = gate !== run.gate;
+	const window = probeWindow(run.probes);
 	return {
 		gate,
 		retuned,
@@ -134,8 +151,9 @@ export function scoreRun(run: Run, { gate = run.gate } = {}): Report {
 		invented: invented.map(({ row }) => row.id),
 		leaked: leaked.map(({ row }) => row.id),
 		costPerCallUsd: costPerCall(run.rows),
+		window,
 		misses,
-		verdict: retuned ? null : judge(run.killLines, measures),
+		verdict: retuned ? null : judge(run.killLines, measures, window),
 	};
 }
 
@@ -226,16 +244,31 @@ export function measuresOf(
 	};
 }
 
-export function judge(killLines: KillLines, measures: Measures): Verdict {
+export function judge(
+	killLines: KillLines,
+	measures: Measures,
+	window: ProbeWindow | null = null,
+): Verdict {
+	const slowWindow = window?.slow ?? false;
 	const lines = MEASURES.map(({ measure, atLeast }): VerdictLine => {
 		const line = killLines[measure];
 		const actual = measures[measure];
 		// A line the set cannot measure fails: a set without ambiguous rows
 		// has not shown that ambiguous requests stay held.
 		const pass = actual !== null && (atLeast ? actual >= line : actual <= line);
+		// A slow provider only adds latency, so a pass in a slow window counts.
+		if (!pass && slowWindow && measure === "p95Ms") {
+			return { measure, line, atLeast, actual, pass, pending: true };
+		}
 		return { measure, line, atLeast, actual, pass };
 	});
-	return { pass: lines.every(({ pass }) => pass), lines };
+	return {
+		pass: lines.every(({ pass }) => pass),
+		latencyPending:
+			lines.some(({ pending }) => pending) &&
+			lines.every(({ pass, pending }) => pass || pending),
+		lines,
+	};
 }
 
 /**

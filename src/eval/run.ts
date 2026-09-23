@@ -3,6 +3,7 @@ import type { Facts, Probabilities, Provider } from "../provider.ts";
 import type { Search } from "../search.ts";
 import { checkKillLines, type KillLines } from "./kill-lines.ts";
 import { readRunLog, writeRunLog } from "./log.ts";
+import { type Probe, type Probes, probeSender } from "./probe.ts";
 import type { EvalRow } from "./set.ts";
 
 /** One row of a run: the eval row and everything needed to rescore it without a call. */
@@ -23,6 +24,8 @@ export type RunRow = EvalRow & {
 /** A saved run: the gate and kill lines it was run under, and its raw rows. */
 export type Run = {
 	startedAt: string;
+	/** The provider's latency around the run (#65); absent from logs written before it. */
+	probes?: Probes;
 	gate: number;
 	killLines: KillLines;
 	rows: RunRow[];
@@ -39,6 +42,8 @@ export type RunEvalInput<T> = {
 	killLines: KillLines;
 	/** Where the raw run log is written, one JSON line per row. It must not exist yet. */
 	log: string;
+	/** Sent before the rows and after, to measure the provider's latency on its own (#65). */
+	probe?: Probe;
 };
 
 /**
@@ -55,10 +60,15 @@ export async function runEval<T>({
 	timeoutMs,
 	killLines,
 	log,
+	probe,
 }: RunEvalInput<T>): Promise<Run> {
 	checkKillLines(killLines);
-	return writeRunLog(log, { gate: search.gate, killLines }, set, (row) =>
-		runRow(row, { search, provider, facts, timeoutMs }),
+	return writeRunLog(
+		log,
+		{ gate: search.gate, killLines },
+		set,
+		(row) => runRow(row, { search, provider, facts, timeoutMs }),
+		probeSender(provider, probe, timeoutMs),
 	);
 }
 

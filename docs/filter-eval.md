@@ -82,11 +82,15 @@ By hand with the key in `.env`, never in CI; every row is a paid call.
 
 1. After #39 is in main and merged into this branch: dev runs, `node --conditions=source demo/eval/filter.ts run <en|es> dev <n>`. They print no verdict.
 2. `node --conditions=source demo/eval/filter.ts gates <n>` prints each field's gate by the rule; write them into the demo.
-3. Run 1 per language gives the verdict: `run <en|es> eval 1`.
+3. From #65 on, write the probe baseline into the demo, as Latency below says. Run 1 per language gives the verdict: `run <en|es> eval 1`.
 4. Run 2 per language reports flips only: `run <en|es> eval 2`, then `compare <en|es> 1 2`.
 5. Record here the verdict, the numbers, the misses and the run logs' paths (`demo/eval/runs/`, committed so anyone can rescore them with no call).
 
 A row found wrong after a run is the owner's call, logged here; it never silently changes the set.
+
+## Latency
+
+The owner's triage decision on [#65](https://github.com/franklinmdev/justask/issues/65), 2026-09-23, holds here as for the card: every run sends the fixed provider probe before and after its rows, and a verdict run whose probes' median is more than twice the baseline is a slow window. Its quality lines still decide, and so does a p95 that passes its line; a p95 that fails is pending, measured again on the same frozen rows in a later window whose probes are normal. The rule, the probe and the baseline are written once, in [card-eval.md, Latency](card-eval.md#latency). Every verdict recorded here was run before probes and stands as recorded.
 
 ## Result
 

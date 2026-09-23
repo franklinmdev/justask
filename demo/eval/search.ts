@@ -24,6 +24,7 @@ import { loadKeyEnv } from "../../scripts/load-env.ts";
 import { contents, demoSearch, FACTS, TIMEOUT_MS } from "../server/handler.ts";
 import type { Language } from "../src/content/types.ts";
 import { KILL_LINES } from "./kill-lines.ts";
+import { needBaseline, probe } from "./probe.ts";
 
 /** Fixed, so every run reads the same day. */
 const TODAY = "Today is Tuesday 2026-09-22 (martes 22 de septiembre de 2026).";
@@ -52,6 +53,7 @@ if (!content) usage();
 if (command === "run") {
 	const [set, n] = rest;
 	if (!isSet(set) || !n) usage();
+	if (set !== "dev") needBaseline();
 	loadKeyEnv(process.cwd());
 	const run = await runEval({
 		set: parseEvalSet(await readFile(setPath(content.language, set), "utf8")),
@@ -61,6 +63,7 @@ if (command === "run") {
 		timeoutMs: TIMEOUT_MS,
 		killLines: KILL_LINES,
 		log: runLogPath(content.language, set, n),
+		probe: probe(),
 	});
 	const report = scoreRun(run);
 	console.log(
