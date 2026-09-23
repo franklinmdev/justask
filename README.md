@@ -214,7 +214,7 @@ const card = useCard<typeof expense.fields>({
 <CardStatus
   card={card}
   announce={({ filled, waiting }) => `Filled: ${filled.join(", ")}. For you to fill: ${waiting.join(", ")}.`}
-  unanswered="Nothing filled. Fill the card by hand."
+  unanswered="The request could not be read, so the card stays as it was."
 />
 <CardEntry card={card} name="vendor">
   {({ value, set }) => <VendorSelect value={value} onChange={set} />}

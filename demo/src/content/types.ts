@@ -97,7 +97,7 @@ export type CardCopy = {
 	fromRequest: string;
 	/** What a screen reader hears, and the page shows, once an answer comes back. */
 	announce: (filled: string[], waiting: string[]) => string;
-	/** What the page says when no answer came back at all, so no field is known. */
+	/** What the page says when the answer failed: the card stays as it was. */
 	unanswered: string;
 	pickDay: string;
 	calendar: {

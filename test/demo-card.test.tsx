@@ -144,7 +144,7 @@ function saved(name = "Saved expenses") {
 async function suggest(user: ReturnType<typeof userEvent.setup>, name: string) {
 	await user.click(screen.getByRole("button", { name }));
 	await screen.findByText(
-		/^(Filled:|Nothing filled[.:]|Completado:|Nada completado[.:])/,
+		/^(Filled:|Nothing filled\.|The request could not|Completado:|Nada completado\.|No se pudo leer)/,
 	);
 }
 
@@ -328,6 +328,19 @@ describe("the demo's card page", () => {
 		await expectNoAxeViolations(container);
 	});
 
+	it("keeps only a number's characters in the amount box, and empties it when a new answer holds the amount", async () => {
+		const { user } = renderDemo();
+
+		await user.type(amount(), "abc");
+		expect(amount().value).toBe("");
+		await user.type(amount(), ".");
+		expect(amount().value).toBe(".");
+
+		await suggest(user, "delete yesterday's taxi");
+
+		expect(amount().value).toBe("");
+	});
+
 	it("fills the Spanish card from a Spanish request", async () => {
 		const { container, user } = renderDemo({ url: "/?page=card&lang=es" });
 
@@ -367,7 +380,7 @@ describe("the demo's card page", () => {
 		).toBeDefined();
 		expect(
 			screen.getByText(
-				"Nothing filled: the card could not be filled from the request. Fill it by hand.",
+				"The request could not be read, so the card stays as it was. Fill it in by hand.",
 			),
 		).toBeDefined();
 		await expectNoAxeViolations(container);

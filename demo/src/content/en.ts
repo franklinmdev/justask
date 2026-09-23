@@ -198,7 +198,7 @@ export const english: Content = {
 					: `Filled: ${list(filled)}. For you to fill: ${list(waiting)}.`;
 			},
 			unanswered:
-				"Nothing filled: the card could not be filled from the request. Fill it by hand.",
+				"The request could not be read, so the card stays as it was. Fill it in by hand.",
 			pickDay: "Pick a day",
 			calendar: {
 				label: "Choose the day",

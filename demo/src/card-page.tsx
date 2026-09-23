@@ -172,7 +172,12 @@ export function CardPage({
 						{({ value, set, filledBy }) => (
 							<>
 								{head("total", filledBy, "card-total")}
-								<AmountInput id="card-total" value={value} onChange={set} />
+								<AmountInput
+									key={answerKey(card.result)}
+									id="card-total"
+									value={value}
+									onChange={set}
+								/>
 							</>
 						)}
 					</CardEntry>
@@ -269,6 +274,23 @@ function SavedExpense({
 	);
 }
 
+const answerIds = new WeakMap<object, number>();
+let lastAnswerId = 0;
+
+/**
+ * A key that changes with each answer, so the amount box drops text the
+ * person typed that no longer stands for the card's amount.
+ */
+function answerKey(result: object | null): number {
+	if (result === null) return 0;
+	let id = answerIds.get(result);
+	if (id === undefined) {
+		id = ++lastAnswerId;
+		answerIds.set(result, id);
+	}
+	return id;
+}
+
 /**
  * The number the person typed: a comma before one or two final digits is a
  * decimal comma, any other comma groups thousands.
@@ -323,7 +345,8 @@ function AmountInput({
 				autoComplete="off"
 				value={text}
 				onChange={(event) => {
-					const next = event.target.value;
+					// Only a number's characters: digits, separators and spaces.
+					const next = event.target.value.replace(/[^\d.,\s]/g, "");
 					const number = parseAmount(next);
 					const amount =
 						number === undefined
