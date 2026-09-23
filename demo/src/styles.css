@@ -456,8 +456,13 @@ h2 {
 
 /* The proposed filters, Confirm and the applied filters */
 
-.proposed:empty {
-	display: none;
+/*
+ * With nothing proposed, the list's region is empty and the removal region is
+ * visually hidden, but both stay in the page so a screen reader keeps hearing
+ * them. The negative margin takes back the app column's gap.
+ */
+.proposed:not(:has(li)) {
+	margin-top: -12px;
 }
 
 .proposed ul,

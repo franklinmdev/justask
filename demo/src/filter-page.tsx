@@ -125,6 +125,8 @@ export function FilterPage({
 						copy.filter.removeLabel(copy.filter.fields[name])
 					}
 					removeContent={copy.filter.remove}
+					removedLabel={(name) => copy.filter.removed(copy.filter.fields[name])}
+					announcementProps={{ className: "visually-hidden" }}
 				/>
 				<FilterEmpty filter={filter} className="result">
 					<p className="empty">{copy.filter.empty}</p>

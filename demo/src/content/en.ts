@@ -76,6 +76,7 @@ export const english: Content = {
 			},
 			remove: "Remove",
 			removeLabel: (field) => `Remove the ${field.toLowerCase()} filter`,
+			removed: (field) => `Removed: ${field.toLowerCase()}`,
 			confirm: "Apply filters",
 			empty: "Nothing in that request filters the transactions.",
 			applied: "Applied",
@@ -120,6 +121,8 @@ export const english: Content = {
 				switch (reason.kind) {
 					case "no-candidates":
 						return "The code found no candidates, so the provider was not asked.";
+					case "unresolved-currency":
+						return `The request names “${reason.mark}”, which is not the local currency, so the code held the field without asking.`;
 					case "failed":
 						return "No answer came back, so the field is held.";
 					case "tie":

@@ -43,6 +43,17 @@ function answersOf(
 			: [];
 }
 
+/** The currency an amount names that the local one does not resolve, which holds it unasked. */
+function unresolvedOf(
+	result: CatalogFieldResult<unknown> | ParsedFieldResult<unknown>,
+): string | undefined {
+	for (const { value } of result.candidates) {
+		const mark = (value as { unresolved?: string } | null)?.unresolved;
+		if (mark !== undefined) return mark;
+	}
+	return undefined;
+}
+
 /**
  * Why a field is held, read the way the code holds it: no candidates, no
  * answer, a tie, a missing label, a pick below the gate, and last the picks
@@ -53,6 +64,8 @@ function heldReasonOf(
 	format: Format,
 ): FieldHeldReason {
 	if (result.candidates.length === 0) return { kind: "no-candidates" };
+	const mark = unresolvedOf(result);
+	if (mark !== undefined) return { kind: "unresolved-currency", mark };
 	const answers = answersOf(result);
 	if (answers.length === 0) return { kind: "failed" };
 	const picks = answers.map(({ pick }) => pick);
@@ -82,8 +95,11 @@ function readoutsOf(
 	format: Format,
 ): Readout[] {
 	const { copy } = content;
-	// A field with no candidates was never asked.
-	if (result.fields[name].candidates.length === 0) return [];
+	// A field with no candidates, or held for its currency, was never asked.
+	const asked = result.fields[name];
+	if (asked.candidates.length === 0 || unresolvedOf(asked) !== undefined) {
+		return [];
+	}
 	const missing = MISSING.map((label) => ({ label, name: label }));
 	if (name === "vendor" || name === "status") {
 		const field = result.fields[name];
@@ -142,7 +158,7 @@ function questionsOf(result: FilterResult<TransactionFields>): number {
 		(vendor.candidates.length > 0 ? 1 : 0) +
 		(status.candidates.length > 0 ? 1 : 0) +
 		(date.candidates.length > 0 ? 2 : 0) +
-		amount.candidates.length
+		(unresolvedOf(amount) === undefined ? amount.candidates.length : 0)
 	);
 }
 

@@ -3,6 +3,7 @@ import {
 	type ReactNode,
 	useEffect,
 	useRef,
+	useState,
 } from "react";
 import type { Fields, FieldValue } from "../filter.ts";
 import { RequestBox, type RequestBoxProps } from "./request-box.tsx";
@@ -33,6 +34,13 @@ export type FilterFieldsProps<F extends Fields> = Omit<
 	removeLabel: (name: keyof F & string) => string;
 	/** What the remove button shows, such as an icon. Its text is `removeLabel` when left out. */
 	removeContent?: ReactNode;
+	/** What is announced once the person removes one field's filter, such as "Removed: vendor". */
+	removedLabel: (name: keyof F & string) => string;
+	/** Props for the region that announces a removal, such as a class that hides it visually. */
+	announcementProps?: Omit<
+		ComponentPropsWithoutRef<"p">,
+		"role" | "children" | "aria-live"
+	>;
 	/** Props for each list item, such as its class name. */
 	itemProps?: Omit<ComponentPropsWithoutRef<"li">, "children">;
 	/** Props for each remove button, such as its class name. */
@@ -45,9 +53,11 @@ export type FilterFieldsProps<F extends Fields> = Omit<
 /**
  * The proposed filters: one list item per filled field, in the order the
  * fields are declared, each with a button that removes it before Confirm. A
- * held field is not listed, exactly as one the request never mentioned. A
- * polite live region, so the filters are announced when they appear, and busy
- * while the next answer is on its way. It follows the box in the DOM, so Tab
+ * held field is not listed, exactly as one the request never mentioned. The
+ * list sits in a polite live region that reads only what is added to it, so
+ * the filters are announced when they appear, and it is busy while the next
+ * answer is on its way. A removal is announced on its own, in a second
+ * region, as `removedLabel` says it. It follows the box in the DOM, so Tab
  * moves from the box to the filters, then on to Confirm.
  */
 export function FilterFields<F extends Fields>({
@@ -56,11 +66,20 @@ export function FilterFields<F extends Fields>({
 	render,
 	removeLabel,
 	removeContent,
+	removedLabel,
+	announcementProps,
 	itemProps,
 	removeProps,
 	...props
 }: FilterFieldsProps<F>) {
 	const region = useRef<HTMLDivElement>(null);
+	// Keyed by the answer it was removed from, so a new answer starts silent.
+	const [removed, setRemoved] = useState<{
+		result: UseFilter<F>["result"];
+		text: string;
+	} | null>(null);
+	const announcement =
+		removed && removed.result === filter.result ? removed.text : "";
 	const buttons = useRef(new Map<string, HTMLButtonElement>());
 	// The filter to focus once a removal has rendered: the next one, or the list itself.
 	const focusNext = useRef<string | null>(null);
@@ -78,40 +97,45 @@ export function FilterFields<F extends Fields>({
 		if (name === undefined) return;
 		focusNext.current = names[index + 1] ?? names[index - 1] ?? "";
 		filter.remove(name);
+		setRemoved({ result: filter.result, text: removedLabel(name) });
 	}
 
 	return (
-		<div
-			{...props}
-			ref={region}
-			tabIndex={-1}
-			role="status"
-			aria-busy={filter.loading}
-		>
-			{names.length > 0 && (
-				<ul aria-label={label}>
-					{names.map((name, index) => {
-						const value = filter.value?.[name] as FieldValue<F[typeof name]>;
-						return (
-							<li key={name} {...itemProps}>
-								<span>{render[name](value)}</span>
-								<button
-									{...removeProps}
-									ref={(button) => {
-										if (button) buttons.current.set(name, button);
-										else buttons.current.delete(name);
-									}}
-									type="button"
-									aria-label={removeLabel(name)}
-									onClick={() => removeAt(index)}
-								>
-									{removeContent ?? removeLabel(name)}
-								</button>
-							</li>
-						);
-					})}
-				</ul>
-			)}
+		<div {...props} ref={region} tabIndex={-1}>
+			<div
+				role="status"
+				aria-busy={filter.loading}
+				aria-relevant="additions"
+				aria-atomic="false"
+			>
+				{names.length > 0 && (
+					<ul aria-label={label}>
+						{names.map((name, index) => {
+							const value = filter.value?.[name] as FieldValue<F[typeof name]>;
+							return (
+								<li key={name} {...itemProps}>
+									<span>{render[name](value)}</span>
+									<button
+										{...removeProps}
+										ref={(button) => {
+											if (button) buttons.current.set(name, button);
+											else buttons.current.delete(name);
+										}}
+										type="button"
+										aria-label={removeLabel(name)}
+										onClick={() => removeAt(index)}
+									>
+										{removeContent ?? removeLabel(name)}
+									</button>
+								</li>
+							);
+						})}
+					</ul>
+				)}
+			</div>
+			<p {...announcementProps} role="status">
+				{announcement}
+			</p>
 		</div>
 	);
 }

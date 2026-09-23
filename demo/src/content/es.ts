@@ -77,6 +77,7 @@ export const spanish: Content = {
 			},
 			remove: "Quitar",
 			removeLabel: (field) => `Quitar el filtro de ${field.toLowerCase()}`,
+			removed: (field) => `Se quitó: ${field.toLowerCase()}`,
 			confirm: "Aplicar filtros",
 			empty: "Nada en esa solicitud filtra las transacciones.",
 			applied: "Aplicados",
@@ -121,6 +122,8 @@ export const spanish: Content = {
 				switch (reason.kind) {
 					case "no-candidates":
 						return "El código no encontró candidatos, así que no se consultó al modelo.";
+					case "unresolved-currency":
+						return `La solicitud nombra “${reason.mark}”, que no es la moneda local, así que el código retuvo el campo sin consultar al modelo.`;
 					case "failed":
 						return "No llegó respuesta, así que el campo queda retenido.";
 					case "tie":

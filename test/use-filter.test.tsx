@@ -139,6 +139,7 @@ function renderFilter({
 						amount: (amount) => `Amount: ${amountText(amount)}`,
 					}}
 					removeLabel={(name) => `Remove the ${name} filter`}
+					removedLabel={(name) => `Removed: ${name}`}
 				/>
 				<FilterEmpty filter={filter}>
 					Nothing in that request filters
@@ -244,6 +245,49 @@ describe("useFilter and its pieces", () => {
 		expect(onConfirm).toHaveBeenCalledExactlyOnceWith({
 			amount: { min: 500, currency: "USD" },
 		});
+	});
+
+	it("announces only the filter the person removed, not the whole list again", async () => {
+		const { user } = renderFilter({ provider: fakeProvider(fills) });
+
+		await user.type(screen.getByRole("searchbox"), "acme invoices over $500");
+		await screen.findByText("Vendor: Acme Supplies");
+		expect(announced()).not.toContain("Removed: vendor");
+		await user.click(
+			screen.getByRole("button", { name: "Remove the vendor filter" }),
+		);
+
+		const regions = screen.getAllByRole("status");
+		const removal = regions.find(
+			(region) => region.textContent === "Removed: vendor",
+		);
+		expect(removal).toBeDefined();
+		// The list's own region reads only what is added to it, never a removal.
+		const list = screen.getByRole("list", { name: "Filters to apply" });
+		const listRegion = regions.find((region) => region.contains(list));
+		expect(listRegion?.getAttribute("aria-relevant")).toBe("additions");
+		expect(listRegion?.getAttribute("aria-atomic")).toBe("false");
+
+		await user.click(
+			screen.getByRole("button", { name: "Remove the amount filter" }),
+		);
+		expect(announced()).toContain("Removed: amount");
+		expect(announced()).not.toContain("Removed: vendor");
+	});
+
+	it("clears the removal once a new answer comes in", async () => {
+		const { user } = renderFilter({ provider: fakeProvider(fills) });
+		const box = screen.getByRole("searchbox");
+
+		await user.type(box, "acme invoices over $500");
+		await screen.findByText("Vendor: Acme Supplies");
+		await user.click(
+			screen.getByRole("button", { name: "Remove the vendor filter" }),
+		);
+		await user.type(box, " please");
+		await screen.findByText("Vendor: Acme Supplies");
+
+		expect(announced().join(" ")).not.toContain("Removed");
 	});
 
 	it("lets the person remove a proposed filter before Confirm, and keeps the focus on the list", async () => {

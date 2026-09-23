@@ -73,6 +73,8 @@ const answers: Record<string, FakeAnswers> = {
 	}),
 	"how much do we owe in total?": answer({}),
 	"facturas vencidas": answer({ status: "overdue" }),
+	// The local currency is USD, so "pesos" resolves to none: the amount is never asked.
+	"facturas de más de 500 pesos": answer({}),
 };
 
 const byRequest = fakeProvider((request) => {
@@ -245,6 +247,9 @@ describe("the demo's filter page", () => {
 		await user.click(
 			await screen.findByRole("button", { name: "Remove the amount filter" }),
 		);
+		expect(
+			screen.getAllByRole("status").map(({ textContent }) => textContent),
+		).toContain("Removed: amount");
 		await user.click(screen.getByRole("button", { name: "Apply filters" }));
 
 		expect(rows()).toBe(
@@ -282,6 +287,53 @@ describe("the demo's filter page", () => {
 			),
 		).toBeDefined();
 		await expectNoAxeViolations(container);
+	});
+
+	it("holds the amount when the request names pesos, since the local currency is USD", async () => {
+		const { container, user } = renderDemo({ url: "/?page=filter&lang=es" });
+
+		await user.type(
+			screen.getByRole("searchbox", { name: "Filtrar las transacciones" }),
+			"facturas de más de 500 pesos",
+		);
+
+		expect(
+			await screen.findByText(
+				"Nada en esa solicitud filtra las transacciones.",
+			),
+		).toBeDefined();
+		expect(byRequest.calls[0]?.questions.map(({ id }) => id)).toEqual([
+			"vendor",
+			"status",
+		]);
+		const amount = within(
+			panel("Qué pasó").getByRole("region", { name: "Monto" }),
+		);
+		expect(amount.getByText("Retenido")).toBeDefined();
+		expect(
+			amount.getByText(
+				"La solicitud nombra “pesos”, que no es la moneda local, así que el código retuvo el campo sin consultar al modelo.",
+			),
+		).toBeDefined();
+		expect(
+			screen
+				.getByRole("button", { name: "Aplicar filtros" })
+				.getAttribute("aria-disabled"),
+		).toBe("true");
+		await expectNoAxeViolations(container);
+	});
+
+	it("announces a removed filter in Spanish", async () => {
+		const { user } = renderDemo({ url: "/?page=filter&lang=es" });
+
+		await user.click(screen.getByRole("button", { name: "facturas vencidas" }));
+		await user.click(
+			await screen.findByRole("button", { name: "Quitar el filtro de estado" }),
+		);
+
+		expect(
+			screen.getAllByRole("status").map(({ textContent }) => textContent),
+		).toContain("Se quitó: estado");
 	});
 
 	it("says the provider failed, holds every field and offers nothing to apply", async () => {

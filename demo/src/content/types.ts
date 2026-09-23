@@ -45,6 +45,7 @@ export type FieldName = keyof TransactionFields;
 /** Why a filter field is held, as the state panel explains it. */
 export type FieldHeldReason =
 	| { kind: "no-candidates" }
+	| { kind: "unresolved-currency"; mark: string }
 	| { kind: "failed" }
 	| { kind: "tie" }
 	| { kind: "not-mentioned" }
@@ -62,6 +63,8 @@ export type FilterCopy = {
 	/** The visible text of a proposed filter's remove button. */
 	remove: string;
 	removeLabel: (field: string) => string;
+	/** What a screen reader hears once a proposed filter is removed. */
+	removed: (field: string) => string;
 	confirm: string;
 	empty: string;
 	applied: string;

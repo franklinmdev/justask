@@ -133,7 +133,7 @@ const { filter } = await ask({
 
 - **catalog** fields take their candidates from the host app's `shortlist`, one question each.
 - **date** fields take theirs from the parsers, read backward as a filter looks at what already happened, and fill as `{ from?, to? }` in days. Two questions: where the period starts and where it ends.
-- **amount** fields take theirs from the parsers and fill as `{ min?, max?, exact?, currency? }`, one question per number found. The `local_currency` fact, an ISO 4217 code, decides what a bare "$" and "pesos" mean; without it, or when it does not fit, the currency is left out.
+- **amount** fields take theirs from the parsers and fill as `{ min?, max?, exact?, currency? }`, one question per number found. The `local_currency` fact, an ISO 4217 code, decides what a bare "$" and "pesos" mean. Without it, the currency is left out. When the request names a currency that does not resolve against it, such as "500 pesos" with `local_currency: "USD"`, the whole amount field is held without a question, so the number never fills alone.
 
 ### Over HTTP and in React
 
@@ -154,12 +154,15 @@ const filter = useFilter<typeof invoices.fields>({
   label="Filters to apply"
   render={{ vendor: (v) => v.name, issued: formatRange, total: formatAmount }}
   removeLabel={(name) => `Remove the ${name} filter`}
+  removedLabel={(name) => `Removed: ${name}`}
 />
 <FilterEmpty filter={filter}>Nothing in that request filters the invoices.</FilterEmpty>
 <FilterConfirm filter={filter}>Apply filters</FilterConfirm>
 ```
 
-With nothing to confirm, `FilterConfirm` stays focusable and sets `aria-disabled`. After Confirm the request and its answer stay, so an inspector still reads `filter.result`, and the proposal is spent until the person types again.
+The pieces never edit a field. A held field is left out of the proposal, and the person fills it afterwards with the host table's own filter controls, which already know every value it can take.
+
+The proposed filters sit in a polite live region that reads only what is added, so a new proposal is announced. A removal is announced on its own, in the words `removedLabel` gives; pass `announcementProps` to hide that region visually. With nothing to confirm, `FilterConfirm` stays focusable and sets `aria-disabled`. After Confirm the request and its answer stay, so an inspector still reads `filter.result`, and the proposal is spent until the person types again.
 
 The built-in parser reads English and general Spanish; no regional formats ship. A host app adds its own in `filter.parsers`: each is a function from the request and `{ today, facts }` to `{ dates?, amounts? }`, runs before the built-in one, and wins where their text overlaps.
 
