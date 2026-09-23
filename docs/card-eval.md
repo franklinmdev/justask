@@ -503,8 +503,24 @@ Dev run 5, of 2026-09-23 with `jev-1.13.0`, the first dev run with both fixes, f
 
 - **No dev card filled a wrong field**, in either language, and no nothing row filled anything. At these gates dev run 5 fills 49 of 57 English and 50 of 57 Spanish expected fields, every filled card exact, every ambiguous row held. The dev sets name no pair, so the hold changed nothing on them.
 - **The vendor's gate rises to 0.7 on one row**, `los de soporte técnico arreglaron la impresora` (`tecnoria` 0.70), a paraphrase with no vendor name; dev run 4's lowest right vendor was 0.52. Rescored with no call and no verdict, rounds 1 to 3 at these gates lose one to three filled vendors each, and Spanish round 3 run 1's coverage falls from 0.734 to 0.718, above its line with less slack.
-- **The intent sits where it did.** The code held 3 dev nothing rows per language, the same commands as dev run 4; among the rest `new_record` reached 0.03 English and 0.08 Spanish. The cards the intent held are the ones dev runs 1 and 4 held: `train ticket to Boston on Friday`, `the IT people fixed the printer` and `renovación de la póliza de Cobertura Plena`, all at 0.50 to 0.52 for another label.
+- **The intent sits where it did.** The code held 3 dev nothing rows per language, the same commands as dev run 4; among the rest `new_record` reached 0.03 English and 0.08 Spanish. The cards the intent held are ones earlier dev runs held too: `train ticket to Boston on Friday`, `the IT people fixed the printer` and `renovación de la póliza de Cobertura Plena`, all at 0.50 to 0.52 for another label.
 
 The gates are in `demo/server/handler.ts`; `test/demo-card-eval.test.ts` pins them to dev run 5.
 
 Run logs: `demo/eval/runs/card-<en|es>-pair-<1|2>.jsonl`, `demo/eval/runs/card-<en|es>-dev-5.jsonl`.
+
+### Round 4 sets
+
+Files in `demo/eval/`, drafted against every set in `demo/eval/` (probes included) and the demo's suggestions, approved by the owner in five batches on 2026-09-23 (rows 1 to 10, 11 to 20, 21 to 30, 31 to 40, 41 and 42, English beside Spanish) and frozen by checksum in `test/demo-card-eval.test.ts` in the commit before the first round 4 call. Run logs `demo/eval/runs/card-<language>-round4-<n>.jsonl`.
+
+| File | Rows | record | ambiguous | nothing |
+|---|---|---|---|---|
+| `card-en.round4.jsonl` | 42 | 28 | 8 | 6 |
+| `card-es.round4.jsonl` | 42 | 28 | 8 | 6 |
+
+- **The same shape as rounds 1 to 3:** tags in all 28 records, the day in 24, the amount in 27, the vendor in 21, each of the 14 vendors at least once, 7 records with no vendor of the catalog (`a cab`, `a steakhouse`, `a warehouse club`), typos (`Tallyrut`, `Clauzewood`; `Kuentia`, `Lindeiro`), paraphrases (`the computer repair people`, `our insurance carrier`), one euro amount. Spanish row N has the same shape as English row N.
+- **ambiguous:** vendor, two named pairs, one per arm of the rule: `Fixbright and Cloudberth` (`Tecnoria y Nubalia`) and `Beanhaven or Larkspur` (`Cafetal o Cazuela Azul`); this round has no vendor paraphrase. Tags `Beanhaven, $73 for the break room` and `could be billable to a client`; day `last Thursday` and `in August`; amount `1,800 pesos` and `$19 or $24`.
+- **A record names a third vendor beside an "or" pair** (row 23, `Larkspur lunch for the Paydale or Sureharbor meeting`): the rule holds no pair there, and the vendor is expected filled.
+- **nothing:** a question about spending, a delete, a change that sets a value, a thank-you, a question about tags, and a send. The code holds the delete in both languages (`erase the Fixbright expense`, `elimine el gasto`); no list holds the change (`set the Larkspur lunch from Monday to $140`, `deje el almuerzo de Cazuela Azul del lunes en $140`) or the send (`share Glasswell's receipt`, `compártale el recibo`), which the label alone must hold. Checked with no call: the code holds no round 4 record, only the two pair rows' vendors and the delete.
+- The same checks as rounds 1 to 3 hold: no request repeats any other set, probe or suggestion, every expected day and amount is one the parser builds on Wednesday 2026-09-23, and every held one is held by the parser's reading or by two candidates.
+- Kill lines, measures and procedure as round 1, at the gates from dev run 5 (above). Run 1 gives the verdict; run 2 reports flips only.
