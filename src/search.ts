@@ -1,9 +1,9 @@
 import { type Pick, readPick } from "./pick.ts";
 import type { Probabilities, Question } from "./provider.ts";
 
-/** A value code found for the search before the provider is asked: one catalog row. */
+/** A value code found for a decision before the provider is asked: one catalog row. */
 export type Candidate<T> = {
-	/** The label the provider picks; unique in the shortlist and never `none`. */
+	/** The label the provider picks; unique in the shortlist and never one of the question's own labels. */
 	id: string;
 	/** What the provider reads about this row. */
 	description: string;

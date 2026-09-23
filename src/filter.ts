@@ -18,7 +18,7 @@ export type CatalogField<T> = {
 	shortlist: Shortlist<T>;
 };
 
-/** One named slot of a filter, declared with its kind, description and gate. */
+/** One named part of a filter, declared with its kind, description and gate. */
 export type Field = CatalogField<unknown>;
 
 export type Fields = Record<string, Field>;
