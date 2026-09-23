@@ -205,6 +205,18 @@ The saved log is enough for everything else, with no provider call:
 
 Keep a separate dev set for tuning descriptions and shortlists, and never let it decide a verdict.
 
+### A filter's gates
+
+A filter has one gate per field, so its eval set names the filter object a person expects. A `filterable` row gives each field it mentions a value: a catalog field's candidate id, a date field's `{ from, to }`, an amount field's `{ min, max, exact, currency }`. A field left out is not mentioned and must stay empty. An `ambiguous` row marks at least one field `"held"`; a `nothing` row expects no field at all:
+
+```jsonl
+{"id": "f01", "request": "Acme invoices over $500 last month", "kind": "filterable", "expected": {"vendor": "acme", "date": {"from": "2026-08-01", "to": "2026-08-31"}, "amount": {"min": 500, "currency": "USD"}}}
+{"id": "f02", "request": "Acme or Northwind invoices", "kind": "ambiguous", "expected": {"vendor": "held"}}
+{"id": "f03", "request": "how do I mark an invoice as paid?", "kind": "nothing"}
+```
+
+`runFilterEval` takes the same input as `runEval`, with `filter` in place of `search`, and logs each field's candidates and the provider's raw answer. `scoreFilterRun(run)` reports coverage (filterable rows where every expected field filled), exact (of those, the whole object right, no extra field), invented (nothing rows that filled any field) and held ambiguous (ambiguous rows whose held fields stayed empty), then each field on its own: filled, right, wrong, and, read with no gate, its lowest right pick and highest wrong pick, which is what a field's gate is fixed from. A field's pick is its weakest one: a date field's start or end, an amount field's weakest number. `scoreFilterRun(run, { gates: { vendor: 0.7 } })` rescores any field at another gate with no call and no verdict; `compareFilterRuns` and `formatFilterReport` work as their search counterparts, flipping per field.
+
 ## Demo
 
 A local demo shows a fictional invoicing app, in English or Spanish, one page per flow, each beside a state panel that shows what happened. The search page finds a vendor: the shortlist, every label's probability, the pick, the gate on `none` and `several`, and why the item filled or was held. The filter page turns a request into the transactions table's filters (vendor, status, date and amount), applied only when the person confirms; its panel shows each field's questions, picks and gate, and why it filled or was held. Each page's suggested requests include ones that hold and ones with nothing to do.
@@ -216,7 +228,7 @@ pnpm demo              # http://localhost:5173
 
 Vite serves the page and mounts the handlers as dev middleware, one route per flow and language (`/api/search/en`, `/api/filter/es` and so on), each with its own catalog. Both languages' local currency is USD. The key is read from `.env` on the server side and never reaches the browser bundle. Every search or filter request is one real, paid Jev call. Without a key the page still runs, and every request fails and is held.
 
-The demo's gate (0.15) was fixed by the owner before round 2 and measured on that round's fresh search eval sets. It failed there, as round 1's gate did, on Spanish requests that could mean two vendors. With `several` read against it (ADR 0007), it passed round 3's fresh sets in both languages, with no slack on held ambiguous; every round's verdict and misses are in `docs/search-eval.md`. Its timeout (2 s) and typing pause (300 ms) are not measured yet. `node --conditions=source demo/eval/search.ts` runs those sets by hand with the key in `.env`, never in CI. The filter's fields all take the lab's filter gate, 0.9, until the filter eval set measures one per field.
+The demo's gate (0.15) was fixed by the owner before round 2 and measured on that round's fresh search eval sets. It failed there, as round 1's gate did, on Spanish requests that could mean two vendors. With `several` read against it (ADR 0007), it passed round 3's fresh sets in both languages, with no slack on held ambiguous; every round's verdict and misses are in `docs/search-eval.md`. Its timeout (2 s) and typing pause (300 ms) are not measured yet. `node --conditions=source demo/eval/search.ts` runs those sets by hand with the key in `.env`, never in CI. The filter's fields all take the lab's filter gate, 0.9, until the dev runs of the filter eval fix one per field by a rule written before them; `docs/filter-eval.md` has the frozen sets, the kill lines and the rule.
 
 ## Development
 

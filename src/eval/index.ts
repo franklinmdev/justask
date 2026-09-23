@@ -1,4 +1,26 @@
-export { formatReport } from "./format.ts";
+export {
+	type FilterRun,
+	type FilterRunRow,
+	type LoggedField,
+	type RunFilterEvalInput,
+	readFilterRun,
+	runFilterEval,
+} from "./filter-run.ts";
+export {
+	compareFilterRuns,
+	type FieldStats,
+	type FilterFlip,
+	type FilterMiss,
+	type FilterReport,
+	scoreFilterRun,
+} from "./filter-score.ts";
+export {
+	type ExpectedValue,
+	type FilterEvalKind,
+	type FilterEvalRow,
+	parseFilterEvalSet,
+} from "./filter-set.ts";
+export { formatFilterReport, formatReport } from "./format.ts";
 export type { KillLines, Measure } from "./kill-lines.ts";
 export {
 	type Run,
