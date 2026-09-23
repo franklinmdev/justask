@@ -1,28 +1,50 @@
 import {
 	type AskError,
 	createSearchHandler,
+	type Facts,
 	fuzzyShortlist,
 	type Provider,
+	type Search,
 } from "justask";
 import { searchEndpoint } from "../src/api.ts";
 import { english } from "../src/content/en.ts";
 import { spanish } from "../src/content/es.ts";
-import type { Content, Language } from "../src/content/types.ts";
+import type { Content, Language, Vendor } from "../src/content/types.ts";
 
 /**
- * Not measured on the demo's data yet; its search eval set will fix it. Until
- * then it sits in the gap the lab measured (ADR 0005): none at 0.00 to 0.03
- * on every request with an answer, and 0.58 or more on every one without.
+ * Fixed from the dev runs before the scored run, by the rule in
+ * docs/search-eval.md: the midpoint between the highest none on a dev item
+ * that filled right (0.17) and the lowest on a dev row with no single vendor
+ * (0.23).
  */
-export const GATE = 0.5;
+export const GATE = 0.2;
 
 /** The lab's search p95 was under 650 ms; this leaves room for a slow call. */
-const TIMEOUT_MS = 2_000;
+export const TIMEOUT_MS = 2_000;
 
-/** How many vendors the provider reads per request, out of the 14. */
-const SHORTLIST_LIMIT = 10;
+/** Written beside today, which the handler adds from the browser's time zone. */
+export const FACTS: Facts = { local_currency: "USD" };
 
-const contents: Record<Language, Content> = { en: english, es: spanish };
+/**
+ * The whole catalog. At 10 of 14 the fill came from the catalog's first
+ * vendors, so the last four were reachable only by a shared word: 5 of the 16
+ * dev item rows never reached the provider (docs/search-eval.md).
+ */
+const SHORTLIST_LIMIT = 14;
+
+export const contents: Record<Language, Content> = {
+	en: english,
+	es: spanish,
+};
+
+/** The search the demo serves in one language, which its eval sets measure. */
+export function demoSearch(content: Content): Search<Vendor> {
+	return {
+		description: "the vendor the request means",
+		gate: GATE,
+		shortlist: fuzzyShortlist(content.vendors, { limit: SHORTLIST_LIMIT }),
+	};
+}
 
 /**
  * The demo's server side: one search handler per language, each at its own
@@ -39,14 +61,8 @@ export function createDemoHandler(
 			createSearchHandler({
 				provider,
 				timeoutMs: TIMEOUT_MS,
-				facts: { local_currency: "USD" },
-				search: {
-					description: "the vendor the request means",
-					gate: GATE,
-					shortlist: fuzzyShortlist(content.vendors, {
-						limit: SHORTLIST_LIMIT,
-					}),
-				},
+				facts: FACTS,
+				search: demoSearch(content),
 				...(onError && { onError }),
 			}),
 		]),

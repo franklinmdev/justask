@@ -1,0 +1,40 @@
+{"id":"en01","request":"we ran out of printer paper again","kind":"item","expected":"papergrove"}
+{"id":"en02","request":"papergrov","kind":"item","expected":"papergrove"}
+{"id":"en03","request":"the food for the team offsite","kind":"item","expected":"larkspur"}
+{"id":"en04","request":"Larkspur's last bill","kind":"item","expected":"larkspur"}
+{"id":"en05","request":"our server bill","kind":"item","expected":"cloudberth"}
+{"id":"en06","request":"the company that keeps the site online","kind":"item","expected":"cloudberth"}
+{"id":"en07","request":"the night cleaning crew","kind":"item","expected":"brightmop"}
+{"id":"en08","request":"Brightmop","kind":"item","expected":"brightmop"}
+{"id":"en09","request":"who washes the windows","kind":"item","expected":"glasswell"}
+{"id":"en10","request":"Glaswell Janitorial","kind":"item","expected":"glasswell"}
+{"id":"en11","request":"the print shop that made our flyers","kind":"item","expected":"inkhollow"}
+{"id":"en12","request":"new business cards for the team","kind":"item","expected":"inkhollow"}
+{"id":"en13","request":"plane tickets for the conference","kind":"item","expected":"farwander"}
+{"id":"en14","request":"the agency that books our hotels","kind":"item","expected":"farwander"}
+{"id":"en15","request":"our bookkeeping software subscription","kind":"item","expected":"tallyroot"}
+{"id":"en16","request":"Tallyroot","kind":"item","expected":"tallyroot"}
+{"id":"en17","request":"the espresso machine lease","kind":"item","expected":"beanhaven"}
+{"id":"en18","request":"beanhavn","kind":"item","expected":"beanhaven"}
+{"id":"en19","request":"the bike messengers","kind":"item","expected":"swiftlane"}
+{"id":"en20","request":"who took the documents across town the same day","kind":"item","expected":"swiftlane"}
+{"id":"en21","request":"our lawyers","kind":"item","expected":"clausewood"}
+{"id":"en22","request":"Clausewood","kind":"item","expected":"clausewood"}
+{"id":"en23","request":"the guys who fixed my laptop","kind":"item","expected":"fixbright"}
+{"id":"en24","request":"tech support","kind":"item","expected":"fixbright"}
+{"id":"en25","request":"who runs our payroll","kind":"item","expected":"paydale"}
+{"id":"en26","request":"the HR outsourcing firm","kind":"item","expected":"paydale"}
+{"id":"en27","request":"our insurance policy","kind":"item","expected":"sureharbor"}
+{"id":"en28","request":"la aseguradora","kind":"item","expected":"sureharbor"}
+{"id":"en29","request":"the electricity company","kind":"nothing"}
+{"id":"en30","request":"our landlord","kind":"nothing"}
+{"id":"en31","request":"the marketing agency that ran our ads","kind":"nothing"}
+{"id":"en32","request":"office furniture","kind":"nothing"}
+{"id":"en33","request":"cancel that","kind":"nothing"}
+{"id":"en34","request":"what's the weather tomorrow?","kind":"nothing"}
+{"id":"en35","request":"the office cleaning invoice","kind":"ambiguous"}
+{"id":"en36","request":"whoever cleans the office","kind":"ambiguous"}
+{"id":"en37","request":"the Tallyroot or Fixbright bill","kind":"ambiguous"}
+{"id":"en38","request":"the courier or the travel invoice","kind":"ambiguous"}
+{"id":"en39","request":"our tech vendor","kind":"ambiguous"}
+{"id":"en40","request":"the food and coffee people","kind":"ambiguous"}
