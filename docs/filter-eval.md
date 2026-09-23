@@ -215,7 +215,7 @@ Carried by [#75](https://github.com/franklinmdev/justask/issues/75). Rounds 1 an
 
 ### Pair runs 1 and 2
 
-Runs of 2026-09-23 with `jev-1.13.0`, gates vendor 0.6, status 0.95, date 0.85, amount 0.9, today fixed at Tuesday 2026-09-22, probes normal in all four (medians 252 to 332 ms against 235). No flip between the runs.
+Runs of 2026-09-23 with `jev-1.13.0`, gates vendor 0.6, status 0.95, date 0.85, amount 0.9, today fixed at Tuesday 2026-09-22, probes normal in all four (medians 252 to 332 ms against 235). One flip between the runs, on no pair: `en-p-06`'s status, paid, held at 0.93 in run 1 and filled at 0.95 in run 2.
 
 | Probe rows | The provider alone | With the hold |
 |---|---|---|
