@@ -247,6 +247,16 @@ describe("the Table case's recorded run", () => {
 		expect(control("Vendor").value).toBe("fixbright");
 	});
 
+	it("drops the label once the person edits the box, even when an empty box makes no call", async () => {
+		const { user, provider } = renderDemo();
+		await replayApplied();
+
+		await user.clear(searchbox("Filter the transactions"));
+
+		expect(screen.queryByText(label("en", table))).toBeNull();
+		expect(provider.calls).toHaveLength(0);
+	});
+
 	it("stops when the person types first, and applies nothing", async () => {
 		const { user, provider } = renderDemo();
 		const box = searchbox("Filter the transactions");

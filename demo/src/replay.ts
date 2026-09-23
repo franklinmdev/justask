@@ -123,14 +123,18 @@ export function useReplay({
 		});
 	});
 
+	/**
+	 * The person took the box: the replay ends, and the label goes with it,
+	 * since the box no longer holds the recorded sentence, even when an empty
+	 * box makes no call to replace the rest.
+	 */
 	function stop() {
+		setRecorded(false);
 		if (stopped.current) return;
 		stopped.current = true;
 		for (const timer of timers.current) clearTimeout(timer);
 		timers.current = [];
 		setPressing(false);
-		// Nothing recorded is on display yet, so there is nothing to label.
-		if (!served.current) setRecorded(false);
 	}
 
 	const live = timed(fetchImpl, (next) => {
