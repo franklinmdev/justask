@@ -1,6 +1,6 @@
 # Search eval: sets, kill lines and verdict
 
-**Status: approved by the owner on 2026-09-22 (#13), with the shortlist raised to 14.** The eval sets, the kill lines and the gate rule were frozen then, before any provider call.
+**Status: run, verdict FAIL (Spanish held ambiguous 0.667 against 0.75).** Approved by the owner on 2026-09-22 (#13), with the shortlist raised to 14; the eval sets, the kill lines and the gate rule were frozen then, before any provider call.
 
 **Hypothesis:** on the demo's fictional invoicing data, the search shows the vendor a request means, or nothing, in English and in Spanish, as the person types.
 
@@ -61,4 +61,58 @@ A row found wrong after a run is the owner's call, logged here; it never silentl
 
 ## Result
 
-Not run yet.
+**Verdict: FAIL.** English passes every kill line; Spanish fails one, held ambiguous at 0.667 against 0.75. Delivery 1 is not closed by this set.
+
+Runs of 2026-09-22 with `jev-1.13.0`, gate 0.2, shortlist 14, today fixed at Tuesday 2026-09-22.
+
+### Gate, from the dev runs
+
+| Dev run | exact | coverage | invented | held ambiguous | p95 | cost per call |
+|---|---|---|---|---|---|---|
+| English | 8 of 8 | 8 of 8 | 0 | 1 of 2 | 594 ms | $0.0000300 |
+| Spanish | 8 of 8 | 8 of 8 | 0 | 1 of 2 | 421 ms | $0.0000323 |
+
+Highest `none` on a dev item that filled right: 0.17 (`the attorneys`). Lowest on a dev nothing or ambiguous row: 0.23 (`la factura de la limpieza`). Midpoint 0.20, so the gate is 0.2, written into the demo before run 1. The misses of both dev runs were the cleaning near-duplicate: `the cleaning bill` filled Brightmop at `none` 0.32 (gate 0.5 then), `la factura de la limpieza` filled Relucir at 0.23.
+
+### Run 1: the verdict
+
+| Measure | Kill line | English | Spanish |
+|---|---|---|---|
+| exact | at least 0.9 | 1 (28 of 28) | 1 (27 of 27) |
+| coverage | at least 0.8 | 1 (28 of 28) | 0.964 (27 of 28) |
+| invented | at most 0 | 0 | 0 |
+| held ambiguous | at least 0.75 | 0.833 (5 of 6) | **0.667 (4 of 6): FAIL** |
+| p95 | at most 800 ms | 416 ms | 528 ms |
+| errors | at most 0 | 0 | 0 |
+| cost per call | | $0.0000301 | $0.0000323 |
+
+Every vendor shown was the one meant, in both languages, and no nothing row got a vendor: the six Spanish and six English nothing rows sat at `none` 0.97 to 1.
+
+Misses:
+
+| Row | Request | Expected | Got | `none` |
+|---|---|---|---|---|
+| en36 | whoever cleans the office | ambiguous | Brightmop (0.58, next 0.23) | 0.19 |
+| es35 | la factura de limpieza de oficinas | ambiguous | Relucir (0.78, next 0.08) | 0.14 |
+| es39 | nuestro proveedor de tecnología | ambiguous | Tecnoria (0.77, next 0.04) | 0.18 |
+| es20 | quién llevó los documentos al banco hoy mismo | Pieveloz | held | 0.66 |
+
+### Run 2: flips only
+
+English: one flip, `whoever cleans the office`, Brightmop at `none` 0.19 in run 1, held at 0.21 in run 2: it sits on the gate. Spanish: no flip; the same two ambiguous rows filled and the same item held, so the failure is stable, not noise.
+
+### What the misses say
+
+- **The two Spanish failures are confident single picks, not near-misses.** Relucir at 0.78 and Tecnoria at 0.77, with the runner-up at 0.08 and 0.04: the provider read each request as naming one vendor. No gate on `none` and no margin between the top two would hold them without holding right answers too.
+- **The item and ambiguous `none` values overlap in Spanish.** Items reach 0.16 (`la firma de recursos humanos`), ambiguous rows start at 0.14. Rescored with no call, and so with no verdict: a gate of 0.15 holds 5 of 6 Spanish ambiguous rows but drops Spanish coverage to 0.893; 0.1 holds all 6 but drops coverage to 0.929 in English and 0.893 in Spanish. The old demo gate of 0.5 would have held only 1 of 6 in English and 2 of 6 in Spanish, so the dev-run rule moved the gate the right way.
+- **`es35`** reads the words of one vendor's description (Relucir: "limpieza de oficinas y de ventanas") over the other's ("limpieza nocturna de oficinas"). Both vendors clean offices, so the row is ambiguous as drafted; the catalog's wording pulls it to one.
+- **`es39` may be a drafting error, the owner's call.** "tecnología" shares its root with the vendor's name, Tecnoria, which the English row (`our tech vendor` against Fixbright) does not. A Spanish speaker with a vendor called Tecnoria may well mean it. The row is left as frozen; if the owner rules it wrong, the ruling is logged here and the verdict stays with run 1 as written.
+- **`es20`** held a request for the courier at `none` 0.66 and 0.58 in both runs: phrased as a question about who did something today, it read as nothing to find.
+
+### Run logs
+
+- Dev: `demo/eval/runs/search-en-dev-1.jsonl`, `demo/eval/runs/search-es-dev-1.jsonl`
+- Run 1: `demo/eval/runs/search-en-1.jsonl`, `demo/eval/runs/search-es-1.jsonl`
+- Run 2: `demo/eval/runs/search-en-2.jsonl`, `demo/eval/runs/search-es-2.jsonl`
+
+Each rescores with `scoreRun(await readRun(path), { gate })` and no call.
