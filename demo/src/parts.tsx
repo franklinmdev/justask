@@ -3,6 +3,7 @@ import type { SearchError } from "justask/react";
 import type { Content, HeldReason } from "./content/types.ts";
 import { formats } from "./format.ts";
 import { dayOf, type Recording } from "./recording.ts";
+import type { Cost } from "./saved.ts";
 
 /**
  * Not measured yet: the demo is where the pause gets measured, so the round
@@ -77,4 +78,26 @@ export function RecordedLabel({
 }) {
 	const day = formats(content.locale).date(dayOf(recording));
 	return <p className="recorded">{content.copy.recorded(day)}</p>;
+}
+
+/**
+ * Beside the box: the one sentence against the clicks and menus the controls
+ * the answer set take by hand. Nothing while the answer set none; dimmed
+ * while the next answer is on its way.
+ */
+export function Saved({
+	content,
+	cost,
+	stale,
+}: {
+	content: Content;
+	cost: Cost | null;
+	stale: boolean;
+}) {
+	if (cost === null) return null;
+	return (
+		<p className="saved" data-stale={stale || undefined}>
+			{content.copy.saved(cost)}
+		</p>
+	);
 }

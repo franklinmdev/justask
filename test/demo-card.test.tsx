@@ -169,6 +169,11 @@ function saved(name = "Saved expenses") {
 		: [];
 }
 
+/** What the sentence saved, as the counter beside the box says it; null when it shows none. */
+function counter() {
+	return screen.queryByText(/^1 (sentence|frase) /)?.textContent ?? null;
+}
+
 async function suggest(user: ReturnType<typeof userEvent.setup>, name: string) {
 	await user.click(screen.getByRole("button", { name }));
 	await screen.findByText(
@@ -466,6 +471,33 @@ describe("the demo's card page", () => {
 		expect(saved("Gastos guardados")).toHaveLength(1);
 		expect(screen.getByText("Gasto guardado.")).toBeDefined();
 		await expectNoAxeViolations(container);
+	});
+
+	it("counts the clicks and menus the filled fields take, a held field none, and shows no comparison when nothing fills", async () => {
+		const { user } = renderDemo();
+		expect(counter()).toBeNull();
+
+		// The vendor's menu, one tag, the day's calendar and the amount's box.
+		await suggest(user, "lunch with Larkspur yesterday, $86.40");
+		expect(counter()).toBe("1 sentence vs 6 clicks in 2 menus");
+
+		// The vendor is held: the person still picks it, so it counts nothing.
+		await suggest(user, "lunch with the cleaners yesterday, $40");
+		expect(counter()).toBe("1 sentence vs 4 clicks in 1 menu");
+
+		// What the person changes afterwards leaves the answer's count as it was.
+		await user.click(checkbox("Travel"));
+		expect(counter()).toBe("1 sentence vs 4 clicks in 1 menu");
+
+		await suggest(user, "delete yesterday's taxi");
+		expect(counter()).toBeNull();
+	});
+
+	it("says the count in Spanish", async () => {
+		const { user } = renderDemo({ url: "/?case=form&lang=es" });
+
+		await suggest(user, "almuerzo con Cazuela Azul ayer, $86.40");
+		expect(counter()).toBe("1 frase frente a 6 clics en 2 menús");
 	});
 
 	it("keeps working when the provider fails: the person fills the card by hand", async () => {

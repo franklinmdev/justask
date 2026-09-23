@@ -14,7 +14,8 @@ import { CardPanel } from "./card-panel.tsx";
 import type { Content, ExpenseFields, ExpenseName } from "./content/types.ts";
 import { DayPicker } from "./day-picker.tsx";
 import { formats, LOCAL_CURRENCY, parseAmount } from "./format.ts";
-import { Suggestions } from "./parts.tsx";
+import { Saved, Suggestions } from "./parts.tsx";
+import { costOf, formControls } from "./saved.ts";
 import { CaseLayout } from "./showcase.tsx";
 import { type Trace, timed, useSuggest } from "./trace.ts";
 
@@ -95,6 +96,11 @@ export function CardPage({
 				className="box"
 				autoComplete="off"
 				spellCheck={false}
+			/>
+			<Saved
+				content={content}
+				cost={costOf(formControls(card.result?.value ?? {}))}
+				stale={card.loading}
 			/>
 			<CardStatus
 				card={card}

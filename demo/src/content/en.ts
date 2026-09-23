@@ -111,6 +111,12 @@ export const english: Content = {
 		recorded: (date) => `Recorded run · ${date}`,
 		replaying: (date, request) =>
 			`Replaying a recorded run from ${date}: “${request}”`,
+		saved: ({ clicks, menus }) => {
+			const words = `1 sentence vs ${clicks} ${clicks === 1 ? "click" : "clicks"}`;
+			return menus === 0
+				? words
+				: `${words} in ${menus} ${menus === 1 ? "menu" : "menus"}`;
+		},
 		filter: {
 			transactions: "Transactions",
 			boxLabel: "Filter the transactions",
