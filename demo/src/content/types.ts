@@ -206,6 +206,13 @@ export type Copy = {
 	hood: string;
 	hoodViews: string;
 	trace: string;
+	json: string;
+	code: string;
+	/** The strip over the hood's tabs: what the displayed call took and used. */
+	strip: string;
+	stripIdle: string;
+	notReported: string;
+	jsonIdle: string;
 	showLabel: string;
 	app: string;
 	languageLabel: string;
@@ -242,7 +249,7 @@ export type Copy = {
 	gate: string;
 	shortlistLabel: string;
 	shortlist: (count: number, catalog: number) => string;
-	roundTrip: string;
+	latency: string;
 	inputTokens: string;
 	cost: string;
 	filter: FilterCopy;

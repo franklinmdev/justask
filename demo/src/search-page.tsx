@@ -35,6 +35,8 @@ export function SearchPage({
 	return (
 		<CaseLayout
 			content={content}
+			shownCase="search"
+			call={{ trace, result: search.result, loading: search.loading }}
 			labelledBy="vendors-title"
 			hood={<StatePanel content={content} search={search} trace={trace} />}
 		>

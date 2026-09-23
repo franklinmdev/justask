@@ -3,9 +3,14 @@ import {
 	type KeyboardEvent,
 	type ReactNode,
 	useContext,
+	useId,
+	useMemo,
 	useSyncExternalStore,
 } from "react";
-import type { Content } from "./content/types.ts";
+import type { Case, Content } from "./content/types.ts";
+import { formats } from "./format.ts";
+import { type SnippetFile, snippetOf } from "./snippet.ts";
+import type { Trace } from "./trace.ts";
 
 /** At this width and up the hood sits beside the app; below it, a switch picks one. */
 const WIDE = "(min-width: 1100px)";
@@ -24,15 +29,40 @@ function useWide(): boolean {
 	);
 }
 
+/** The hood's tabs, in the order they show. */
+export const hoodViews = ["trace", "json", "code"] as const;
+
+export type HoodView = (typeof hoodViews)[number];
+
 /**
  * Where the hood is, kept by the page so it holds across the cases: open or
- * hidden beside the app on a desktop, and on a phone which of the two shows.
+ * hidden beside the app on a desktop, on a phone which of the two shows, and
+ * which of its tabs is chosen.
  */
 export type HoodPlace = {
 	open: boolean;
 	setOpen: (open: boolean) => void;
 	shown: "app" | "hood";
 	setShown: (shown: "app" | "hood") => void;
+	view: HoodView;
+	setView: (view: HoodView) => void;
+};
+
+/** What the hook a case uses is called, so the JSON tab names what it shows. */
+const hookResult: Record<Case, string> = {
+	table: "filter.result",
+	form: "card.result",
+	search: "search.result",
+};
+
+/**
+ * The call the hood shows: the page's timing of it, and the result the hook
+ * handed the app, while the next call may be on its way.
+ */
+export type ShownCall = {
+	trace: Trace | null;
+	result: unknown;
+	loading: boolean;
 };
 
 export const HoodPlaceContext = createContext<HoodPlace | null>(null);
@@ -67,20 +97,29 @@ export function nextTab<T>(
  * desktop the hood is a column beside the app with a toggle that hides it;
  * on a phone an "App | Under the hood" switch shows one at a time, the app
  * first. What is out of view is hidden, not unmounted, so the app keeps what
- * the person typed.
+ * the person typed. The hood holds the call's strip, then the Trace, JSON
+ * and Code tabs; `hood` is the Trace tab's panel.
  */
 export function CaseLayout({
 	content,
+	shownCase,
+	call,
 	labelledBy,
 	hood,
 	children,
 }: {
 	content: Content;
+	shownCase: Case;
+	call: ShownCall;
 	labelledBy: string;
 	hood: ReactNode;
 	children: ReactNode;
 }) {
 	const { copy } = content;
+	const snippet = useMemo(
+		() => snippetOf(shownCase, content),
+		[shownCase, content],
+	);
 	const place = useContext(HoodPlaceContext);
 	if (!place) throw new Error("A case needs the page's hood place");
 	const wide = useWide();
@@ -124,26 +163,143 @@ export function CaseLayout({
 				aria-label={copy.hood}
 				hidden={hoodHidden}
 			>
+				<Strip content={content} call={call} />
 				<div className="hood-tabs" role="tablist" aria-label={copy.hoodViews}>
-					<button
-						type="button"
-						role="tab"
-						id="hood-tab-trace"
-						aria-selected="true"
-						aria-controls="hood-trace"
-					>
-						{copy.trace}
-					</button>
+					{hoodViews.map((view) => (
+						<button
+							key={view}
+							type="button"
+							role="tab"
+							id={`hood-tab-${view}`}
+							aria-selected={view === place.view}
+							aria-controls={`hood-${view}`}
+							tabIndex={view === place.view ? 0 : -1}
+							onClick={() => place.setView(view)}
+							onKeyDown={(event) => {
+								const next = nextTab(event, hoodViews, place.view);
+								if (next === null) return;
+								event.preventDefault();
+								place.setView(next);
+								document.getElementById(`hood-tab-${next}`)?.focus();
+							}}
+						>
+							{copy[view]}
+						</button>
+					))}
 				</div>
 				<div
 					role="tabpanel"
 					id="hood-trace"
 					aria-labelledby="hood-tab-trace"
 					className="hood-panel"
+					// biome-ignore lint/a11y/noNoninteractiveTabindex: a tab panel is a tab stop, so keys reach it when nothing inside takes the focus (ARIA tabs pattern).
+					tabIndex={0}
+					hidden={place.view !== "trace"}
 				>
 					{hood}
 				</div>
+				<div
+					role="tabpanel"
+					id="hood-json"
+					aria-labelledby="hood-tab-json"
+					className="hood-panel"
+					// biome-ignore lint/a11y/noNoninteractiveTabindex: a tab panel is a tab stop, so keys reach it when nothing inside takes the focus (ARIA tabs pattern).
+					tabIndex={0}
+					hidden={place.view !== "json"}
+				>
+					{call.trace ? (
+						<CodeFile
+							file={{
+								name: hookResult[shownCase],
+								code: JSON.stringify(call.result, null, 2),
+							}}
+							stale={call.loading}
+						/>
+					) : (
+						<p className="muted">{copy.jsonIdle}</p>
+					)}
+				</div>
+				<div
+					role="tabpanel"
+					id="hood-code"
+					aria-labelledby="hood-tab-code"
+					className="hood-panel"
+					// biome-ignore lint/a11y/noNoninteractiveTabindex: a tab panel is a tab stop, so keys reach it when nothing inside takes the focus (ARIA tabs pattern).
+					tabIndex={0}
+					hidden={place.view !== "code"}
+				>
+					<CodeFile file={snippet.server} />
+					<CodeFile file={snippet.client} />
+				</div>
 			</aside>
 		</div>
+	);
+}
+
+/**
+ * The strip over the hood's tabs: the displayed call's latency, then its
+ * input tokens and cost, each saying so when the provider did not report it.
+ */
+function Strip({ content, call }: { content: Content; call: ShownCall }) {
+	const { copy } = content;
+	const format = formats(content.locale);
+	const { trace } = call;
+	return (
+		<section
+			className="strip"
+			aria-label={copy.strip}
+			data-stale={call.loading || undefined}
+		>
+			{trace ? (
+				<dl className="strip-figures">
+					<div>
+						<dt>{copy.latency}</dt>
+						<dd className="data">{trace.ms} ms</dd>
+					</div>
+					<div>
+						<dt>{copy.inputTokens}</dt>
+						{trace.inputTokens === undefined ? (
+							<dd className="unreported">{copy.notReported}</dd>
+						) : (
+							<dd className="data">{format.count(trace.inputTokens)}</dd>
+						)}
+					</div>
+					<div>
+						<dt>{copy.cost}</dt>
+						{trace.costUsd === undefined ? (
+							<dd className="unreported">{copy.notReported}</dd>
+						) : (
+							<dd className="data">{format.cost(trace.costUsd)}</dd>
+						)}
+					</div>
+				</dl>
+			) : (
+				<p className="muted">{copy.stripIdle}</p>
+			)}
+		</section>
+	);
+}
+
+/**
+ * One file of code or JSON, named by its caption. It scrolls on its own, so
+ * a long line never widens the page, and takes the focus so keys scroll it.
+ */
+function CodeFile({ file, stale }: { file: SnippetFile; stale?: boolean }) {
+	// Named from its caption by reference, which every browser reads alike.
+	const caption = useId();
+	return (
+		<figure
+			className="code-file"
+			aria-labelledby={caption}
+			data-stale={stale || undefined}
+		>
+			<figcaption id={caption} className="data">
+				{file.name}
+			</figcaption>
+			{/* biome-ignore lint/a11y/noNoninteractiveTabindex: a scrolling region needs a tab stop to be scrolled by keys. */}
+			<pre tabIndex={0}>
+				<code>{file.code}</code>
+			</pre>
+		</figure>
 	);
 }

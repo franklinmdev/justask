@@ -109,8 +109,17 @@ function renderDemo({
 	return { container, user: userEvent.setup() };
 }
 
-function panel() {
-	return within(screen.getByRole("region", { name: "What happened" }));
+function panel(name = "What happened") {
+	return within(screen.getByRole("region", { name }));
+}
+
+/** One of the hood's tabs, and the panel it shows once chosen. */
+async function hoodView(
+	user: ReturnType<typeof userEvent.setup>,
+	name: string,
+) {
+	await user.click(screen.getByRole("tab", { name }));
+	return within(screen.getByRole("tabpanel", { name }));
 }
 
 /** The figure the state panel shows under a term, once the call has returned. */
@@ -163,34 +172,34 @@ describe("the demo's search page", () => {
 		await expectNoAxeViolations(container);
 	});
 
-	it("shows the call's input tokens and cost beside the round trip, when the provider reports them", async () => {
+	it("shows the call's latency, input tokens and cost in the hood's strip, when the provider reports them", async () => {
 		const { container, user } = renderDemo({ provider: priced });
 
 		await user.click(
 			screen.getByRole("button", { name: "the catering people" }),
 		);
 
-		const state = panel();
+		const state = panel("This call");
 		expect(await figure(state, "Input tokens")).toBe("120");
 		expect(await figure(state, "Cost")).toBe("$0.000005");
-		expect(await figure(state, "Round trip")).toMatch(/^\d+ ms$/);
+		expect(await figure(state, "Latency")).toMatch(/^\d+ ms$/);
 		await expectNoAxeViolations(container);
 	});
 
-	it("shows neither tokens nor cost when the provider does not report them", async () => {
+	it("says in the strip when the provider did not report tokens or cost", async () => {
 		const { user } = renderDemo();
 
 		await user.click(
 			screen.getByRole("button", { name: "the catering people" }),
 		);
 
-		const state = panel();
-		await figure(state, "Round trip");
-		expect(state.queryByText("Input tokens")).toBeNull();
-		expect(state.queryByText("Cost")).toBeNull();
+		const state = panel("This call");
+		expect(await figure(state, "Latency")).toMatch(/^\d+ ms$/);
+		expect(await figure(state, "Input tokens")).toBe("Not reported");
+		expect(await figure(state, "Cost")).toBe("Not reported");
 	});
 
-	it("shows the tokens and cost in Spanish", async () => {
+	it("shows the strip in Spanish", async () => {
 		const { user } = renderDemo({
 			provider: priced,
 			url: "/?case=search&lang=es",
@@ -198,9 +207,60 @@ describe("the demo's search page", () => {
 
 		await user.click(screen.getByRole("button", { name: "los del catering" }));
 
-		const state = within(screen.getByRole("region", { name: "Qué pasó" }));
+		const state = within(screen.getByRole("region", { name: "Esta llamada" }));
 		expect(await figure(state, "Tokens de entrada")).toBe("120");
 		expect(await figure(state, "Costo")).toBe("0,000005\u00a0US$");
+	});
+
+	it("shows the displayed call's result in the JSON tab, as the hook hands it to the app", async () => {
+		const { container, user } = renderDemo();
+
+		const json = await hoodView(user, "JSON");
+		expect(
+			json.getByText("The result shows here after the first call."),
+		).toBeDefined();
+
+		await user.click(
+			screen.getByRole("button", { name: "the catering people" }),
+		);
+		await screen.findByRole("button", { name: /Larkspur Catering/ });
+
+		const result = JSON.parse(
+			json.getByRole("figure", { name: "search.result" }).querySelector("pre")
+				?.textContent ?? "",
+		);
+		expect(result.item.name).toBe("Larkspur Catering");
+		expect(result.pick).toEqual({ label: "larkspur", probability: 0.94 });
+		expect(result.gate).toBe(0.15);
+		await expectNoAxeViolations(container);
+
+		await user.click(screen.getByRole("button", { name: "the cleaners" }));
+		await screen.findByText("No vendor fits that request.");
+
+		const next = JSON.parse(
+			json.getByRole("figure", { name: "search.result" }).querySelector("pre")
+				?.textContent ?? "",
+		);
+		expect(next.item).toBeNull();
+		expect(next.probabilities.several).toBe(0.43);
+	});
+
+	it("keeps the latency of a call that never reached the handler, with no tokens or cost", async () => {
+		history.replaceState(null, "", "/?case=search");
+		render(<App fetch={() => Promise.reject(new TypeError("offline"))} />);
+		const user = userEvent.setup();
+
+		await user.click(
+			screen.getByRole("button", { name: "the catering people" }),
+		);
+
+		const state = panel("This call");
+		expect(await figure(state, "Latency")).toMatch(/^\d+ ms$/);
+		expect(await figure(state, "Input tokens")).toBe("Not reported");
+		const json = await hoodView(user, "JSON");
+		expect(
+			json.getByRole("figure", { name: "search.result" }).textContent,
+		).toContain("null");
 	});
 
 	it("holds a request that could mean two vendors, and says several reached the gate", async () => {

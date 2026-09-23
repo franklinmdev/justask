@@ -42,6 +42,13 @@ export const spanish: Content = {
 		hood: "Bajo el capó",
 		hoodViews: "Vistas",
 		trace: "Traza",
+		json: "JSON",
+		code: "Código",
+		strip: "Esta llamada",
+		stripIdle:
+			"La latencia, los tokens y el costo aparecen después de la primera llamada.",
+		notReported: "No informado",
+		jsonIdle: "El resultado aparece aquí después de la primera llamada.",
 		showLabel: "Mostrar",
 		app: "Aplicación",
 		languageLabel: "Idioma",
@@ -100,7 +107,7 @@ export const spanish: Content = {
 		gate: "Umbral sobre none y several",
 		shortlistLabel: "Lista corta",
 		shortlist: (count, catalog) => `${count} de ${catalog} proveedores`,
-		roundTrip: "Ida y vuelta",
+		latency: "Latencia",
 		inputTokens: "Tokens de entrada",
 		cost: "Costo",
 		filter: {

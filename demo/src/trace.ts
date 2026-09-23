@@ -8,9 +8,10 @@ import { useEffect, useState } from "react";
 export type Trace = Usage & { request: string; ms: number };
 
 /**
- * A `fetch` that times each call for the state panel, reads what the call
- * used from a copy of the response, and drops the trace of a call the hook
- * dropped.
+ * A `fetch` that times each call for the hood, reads what the call used from
+ * a copy of the response, and drops the trace of a call the hook dropped. A
+ * call that never reached the handler is timed too, with nothing used, so
+ * the hood never shows the call before it.
  */
 export function timed(
 	fetchImpl: typeof fetch,
@@ -18,17 +19,26 @@ export function timed(
 ): typeof fetch {
 	return async (input, init) => {
 		const started = performance.now();
-		const response = await fetchImpl(input, init);
-		const ms = Math.round(performance.now() - started);
-		// Read before the hook sees the response, so the panel never shows a
-		// new answer beside the last call's figures.
-		const usage = await usageOf(response.clone());
-		if (!init?.signal?.aborted) {
+		const elapsed = () => Math.round(performance.now() - started);
+		const trace = (ms: number, usage: Usage) => {
+			if (init?.signal?.aborted) return;
 			const { request } = JSON.parse(String(init?.body)) as {
 				request: string;
 			};
 			onTrace({ request, ms, ...usage });
+		};
+		let response: Response;
+		try {
+			response = await fetchImpl(input, init);
+		} catch (error) {
+			trace(elapsed(), {});
+			throw error;
 		}
+		// The round trip ends when the response arrives, before its copy is read.
+		const ms = elapsed();
+		// Read before the hook sees the response, so the hood never shows a
+		// new answer beside the last call's figures.
+		trace(ms, await usageOf(response.clone()));
 		return response;
 	};
 }

@@ -205,32 +205,32 @@ describe("the demo's filter page", () => {
 		expect(proposed()).toEqual([]);
 	});
 
-	it("shows the call's input tokens and cost beside the round trip, when the provider reports them", async () => {
+	it("shows the call's latency, input tokens and cost in the hood's strip, when the provider reports them", async () => {
 		const { user } = renderDemo({ provider: priced });
 
 		await user.click(
 			screen.getByRole("button", { name: "Larkspur invoices over $1,000" }),
 		);
 
-		const state = panel();
+		const state = panel("This call");
 		expect(await figure(state, "Input tokens")).toBe("120");
 		expect(await figure(state, "Cost")).toBe("$0.000005");
 	});
 
-	it("shows neither tokens nor cost when the provider does not report them", async () => {
+	it("says in the strip when the provider did not report tokens or cost", async () => {
 		const { user } = renderDemo();
 
 		await user.click(
 			screen.getByRole("button", { name: "Larkspur invoices over $1,000" }),
 		);
 
-		const state = panel();
-		await figure(state, "Round trip");
-		expect(state.queryByText("Input tokens")).toBeNull();
-		expect(state.queryByText("Cost")).toBeNull();
+		const state = panel("This call");
+		expect(await figure(state, "Latency")).toMatch(/^\d+ ms$/);
+		expect(await figure(state, "Input tokens")).toBe("Not reported");
+		expect(await figure(state, "Cost")).toBe("Not reported");
 	});
 
-	it("shows the tokens and cost in Spanish", async () => {
+	it("shows the strip in Spanish", async () => {
 		const { user } = renderDemo({
 			provider: priced,
 			url: "/?case=table&lang=es",
@@ -238,7 +238,7 @@ describe("the demo's filter page", () => {
 
 		await user.click(screen.getByRole("button", { name: "facturas vencidas" }));
 
-		const state = panel("Qué pasó");
+		const state = panel("Esta llamada");
 		expect(await figure(state, "Tokens de entrada")).toBe("120");
 		expect(await figure(state, "Costo")).toBe("0,000005\u00a0US$");
 	});
