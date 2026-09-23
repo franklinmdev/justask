@@ -39,20 +39,28 @@ export type UseSearch<T> = {
 	setRequest: (request: string) => void;
 	/** Calls the handler now, skipping the pause. */
 	submit: () => void;
-	/** True from the moment the shown answer stops matching the typed request until the new one arrives. */
+	/** True while a call is waiting out the pause or on its way. */
 	loading: boolean;
-	/** The last answer, with candidates, pick, probabilities and gate; null before one, or when the box is empty. */
+	/**
+	 * The last answer, with candidates, pick, probabilities and gate, for an
+	 * inspector. It may be for an earlier request; null before one, or when the
+	 * box is empty.
+	 */
 	result: SearchResult<T> | null;
-	/** The item to show, or null when held, failed or not asked yet. */
+	/** The item to show for the request in the box, or null when held, failed or not answered yet. */
 	item: T | null;
+	/** Why the last answer failed, beside `result`. */
 	error: SearchError | null;
-	/** True once a request has an answer or an error, and false again when the box is emptied. */
+	/** True when the last answer, or error, is for the request in the box, so an empty state can show. */
 	answered: boolean;
 	/** Hands the shown item to `onChoose`. */
 	choose: () => void;
 };
 
 type Outcome<T> = { result: SearchResult<T> | null; error: SearchError | null };
+
+/** An outcome with the request it answers, so an edit in the box retires it. */
+type Answered<T> = Outcome<T> & { request: string };
 
 /**
  * Drives a search from the host app's own markup: posts what the person types
@@ -66,7 +74,7 @@ export function useSearch<T>({
 	fetch: fetchImpl,
 }: UseSearchOptions<T>): UseSearch<T> {
 	const [request, setRequestState] = useState("");
-	const [answer, setAnswer] = useState<Outcome<T> | null>(null);
+	const [answer, setAnswer] = useState<Answered<T> | null>(null);
 	const [loading, setLoading] = useState(false);
 	const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 	const inFlight = useRef<AbortController | null>(null);
@@ -75,6 +83,8 @@ export function useSearch<T>({
 		() => () => {
 			clearTimeout(timer.current);
 			inFlight.current?.abort();
+			// A hidden <Activity> keeps this state, and its aborted call never lands.
+			setLoading(false);
 		},
 		[],
 	);
@@ -96,7 +106,7 @@ export function useSearch<T>({
 			(next) => {
 				if (controller.signal.aborted) return;
 				inFlight.current = null;
-				setAnswer(next);
+				setAnswer({ ...next, request: text });
 				setLoading(false);
 			},
 		);
@@ -113,7 +123,8 @@ export function useSearch<T>({
 		}
 	}
 
-	const item = answer?.result?.item ?? null;
+	const current = answer !== null && answer.request === request;
+	const item = current ? (answer.result?.item ?? null) : null;
 	return {
 		request,
 		setRequest,
@@ -122,7 +133,7 @@ export function useSearch<T>({
 		result: answer?.result ?? null,
 		item,
 		error: answer?.error ?? null,
-		answered: answer !== null,
+		answered: current,
 		choose: () => {
 			if (item !== null) onChoose(item);
 		},

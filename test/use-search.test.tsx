@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import axe from "axe-core";
 import { type Candidate, createSearchHandler, type Provider } from "justask";
@@ -11,6 +11,7 @@ import {
 	type UseSearch,
 	useSearch,
 } from "justask/react";
+import { Activity, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	failingProvider,
@@ -57,7 +58,10 @@ function renderSearch({
 		},
 	});
 	const onChoose = vi.fn<(vendor: Vendor) => void>();
-	const seen: { search: UseSearch<Vendor> | null } = { search: null };
+	const seen: {
+		search: UseSearch<Vendor> | null;
+		setMode: (mode: "visible" | "hidden") => void;
+	} = { search: null, setMode: () => {} };
 
 	function Page() {
 		const search = useSearch<Vendor>({
@@ -77,7 +81,18 @@ function renderSearch({
 		);
 	}
 
-	const { container } = render(<Page />);
+	/** Lets a test hide and show the page the way a host app's tabs would. */
+	function Host() {
+		const [mode, setMode] = useState<"visible" | "hidden">("visible");
+		seen.setMode = setMode;
+		return (
+			<Activity mode={mode}>
+				<Page />
+			</Activity>
+		);
+	}
+
+	const { container } = render(<Host />);
 	return { container, onChoose, seen, user: userEvent.setup() };
 }
 
@@ -239,5 +254,58 @@ describe("useSearch and its pieces", () => {
 		await pause(100);
 		expect(screen.getByRole("button", { name: "Acme Supplies" })).toBeDefined();
 		expect(screen.queryByText("No vendor matches")).toBeNull();
+	});
+
+	it("never offers the item for an earlier request once the person types on", async () => {
+		const provider = slowFirstProvider(picksAcme, picksAcme, 0);
+		const { onChoose, user } = renderSearch({ provider });
+		const box = screen.getByRole("searchbox");
+
+		await user.type(box, "acme");
+		await screen.findByRole("button", { name: "Acme Supplies" });
+		await user.type(box, " invoices");
+
+		expect(screen.queryByRole("button")).toBeNull();
+		expect(onChoose).not.toHaveBeenCalled();
+		expect(
+			await screen.findByRole("button", { name: "Acme Supplies" }),
+		).toBeDefined();
+	});
+
+	it("under Enter timing, drops the answer as soon as the request changes", async () => {
+		const { user } = renderSearch({
+			provider: fakeProvider(picksNone),
+			timing: { on: "enter" },
+		});
+		const box = screen.getByRole("searchbox");
+
+		await user.type(box, "globex{Enter}");
+		await screen.findByText("No vendor matches");
+		await user.type(box, " inc");
+
+		expect(screen.queryByText("No vendor matches")).toBeNull();
+		expect(
+			screen
+				.getAllByRole("status")
+				.map((region) => region.getAttribute("aria-busy")),
+		).toEqual(["false", "false"]);
+	});
+
+	it("is not left busy when the page is hidden during a call and shown again", async () => {
+		const provider = slowFirstProvider(picksAcme, picksAcme, 80);
+		const { seen, user } = renderSearch({ provider });
+
+		await user.type(screen.getByRole("searchbox"), "acme");
+		await waitFor(() => expect(provider.calls).toHaveLength(1));
+		act(() => seen.setMode("hidden"));
+		act(() => seen.setMode("visible"));
+		await pause(120);
+
+		expect(seen.search?.loading).toBe(false);
+		expect(
+			screen
+				.getAllByRole("status")
+				.map((region) => region.getAttribute("aria-busy")),
+		).toEqual(["false", "false"]);
 	});
 });
