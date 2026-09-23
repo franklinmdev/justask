@@ -1,11 +1,5 @@
 // @vitest-environment jsdom
-import {
-	act,
-	cleanup,
-	render,
-	screen,
-	within,
-} from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
@@ -49,8 +43,9 @@ function tab(name: string) {
 	return screen.getByRole("tab", { name });
 }
 
-function hood(name = "Under the hood") {
-	return screen.getByRole("complementary", { name, hidden: true });
+/** The hood, found by role alone: a hidden element has no accessible name. */
+function hood() {
+	return screen.getByRole("complementary", { hidden: true });
 }
 
 async function expectNoAxeViolations(container: Element) {
@@ -102,19 +97,25 @@ describe("the demo's showcase page", () => {
 
 		await act(async () => {
 			history.back();
-			await new Promise((resolve) => addEventListener("popstate", resolve, { once: true }));
+			await new Promise((resolve) =>
+				addEventListener("popstate", resolve, { once: true }),
+			);
 		});
 		expect(tab("Búsqueda").getAttribute("aria-selected")).toBe("true");
 
 		await act(async () => {
 			history.back();
-			await new Promise((resolve) => addEventListener("popstate", resolve, { once: true }));
+			await new Promise((resolve) =>
+				addEventListener("popstate", resolve, { once: true }),
+			);
 		});
 		expect(tab("Formulario").getAttribute("aria-selected")).toBe("true");
 
 		await act(async () => {
 			history.forward();
-			await new Promise((resolve) => addEventListener("popstate", resolve, { once: true }));
+			await new Promise((resolve) =>
+				addEventListener("popstate", resolve, { once: true }),
+			);
 		});
 		expect(tab("Búsqueda").getAttribute("aria-selected")).toBe("true");
 	});
@@ -189,13 +190,17 @@ describe("the demo's showcase page", () => {
 		expect(app.getAttribute("aria-pressed")).toBe("true");
 		expect(under.getAttribute("aria-pressed")).toBe("false");
 		expect(hood().hidden).toBe(true);
-		expect(screen.getByRole("searchbox", { hidden: true })).toBeDefined();
+		expect(screen.getByRole("region", { name: "Transactions" }).hidden).toBe(
+			false,
+		);
 
 		await user.click(under);
 		expect(under.getAttribute("aria-pressed")).toBe("true");
 		expect(hood().hidden).toBe(false);
 		expect(
-			screen.getByRole("region", { name: "App", hidden: true }).hidden,
+			screen
+				.getByRole("heading", { name: "Transactions", hidden: true })
+				.closest("section")?.hidden,
 		).toBe(true);
 		await expectNoAxeViolations(container);
 

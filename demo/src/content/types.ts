@@ -12,7 +12,8 @@ import type {
 export type Language = "en" | "es";
 
 /** One page per flow. */
-export type Page = "search" | "filter" | "card";
+/** The showcase's cases, in the order the tabs show them. */
+export type Case = "table" | "form" | "search";
 
 /** A vendor of the fictional invoicing app: the search's candidate value. */
 export type Vendor = {
@@ -184,8 +185,13 @@ export type HeldReason =
 export type Copy = {
 	skip: string;
 	product: string;
-	pagesLabel: string;
-	pages: Record<Page, string>;
+	casesLabel: string;
+	cases: Record<Case, string>;
+	hood: string;
+	hoodViews: string;
+	trace: string;
+	showLabel: string;
+	app: string;
 	languageLabel: string;
 	themeLabel: string;
 	themes: { system: string; light: string; dark: string };
@@ -197,7 +203,6 @@ export type Copy = {
 	ambiguous: string;
 	nothing: string;
 	empty: string;
-	chooseHint: string;
 	transactionsWith: (name: string) => string;
 	columns: { number: string; date: string; amount: string; status: string };
 	statuses: Record<TransactionStatus, string>;

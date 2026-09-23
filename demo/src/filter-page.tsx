@@ -18,6 +18,7 @@ import type {
 import { FilterPanel } from "./filter-panel.tsx";
 import { formats, LOCAL_CURRENCY } from "./format.ts";
 import { DEBOUNCE_MS, Suggestions } from "./parts.tsx";
+import { Case } from "./showcase.tsx";
 import { type Trace, timed, useSuggest } from "./trace.ts";
 
 type Applied = FilterValue<TransactionFields>;
@@ -105,103 +106,103 @@ export function FilterPage({
 	const rows = content.transactions.filter((row) => matches(row, applied));
 
 	return (
-		<main id="main" className="layout">
-			<section className="app" aria-labelledby="transactions-title">
-				<h2 id="transactions-title">{copy.filter.transactions}</h2>
-				<FilterBox
-					filter={filter}
-					label={copy.filter.boxLabel}
-					placeholder={copy.filter.placeholder}
-					className="box"
-					autoComplete="off"
-					spellCheck={false}
-				/>
-				<FilterFields
-					filter={filter}
-					label={copy.filter.proposed}
-					className="proposed"
-					itemProps={{ className: "filter" }}
-					removeProps={{ className: "filter-remove" }}
-					render={{
-						vendor: chip("vendor"),
-						status: chip("status"),
-						date: chip("date"),
-						amount: chip("amount"),
-					}}
-					removeLabel={(name) =>
-						copy.filter.removeLabel(copy.filter.fields[name])
-					}
-					removeContent={copy.filter.remove}
-					removedLabel={(name) => copy.filter.removed(copy.filter.fields[name])}
-					announcementProps={{ className: "visually-hidden" }}
-				/>
-				<FilterEmpty filter={filter} className="result">
-					<p className="empty">{copy.filter.empty}</p>
-				</FilterEmpty>
-				{filter.value && filter.result && held(filter) && (
-					<p className="hint">{copy.filter.heldHint}</p>
-				)}
-				<div className="confirm-row">
-					<FilterConfirm filter={filter} className="confirm">
-						{copy.filter.confirm}
-					</FilterConfirm>
-				</div>
+		<Case
+			content={content}
+			labelledBy="transactions-title"
+			hood={<FilterPanel content={content} filter={filter} trace={trace} />}
+		>
+			<h2 id="transactions-title">{copy.filter.transactions}</h2>
+			<FilterBox
+				filter={filter}
+				label={copy.filter.boxLabel}
+				placeholder={copy.filter.placeholder}
+				className="box"
+				autoComplete="off"
+				spellCheck={false}
+			/>
+			<FilterFields
+				filter={filter}
+				label={copy.filter.proposed}
+				className="proposed"
+				itemProps={{ className: "filter" }}
+				removeProps={{ className: "filter-remove" }}
+				render={{
+					vendor: chip("vendor"),
+					status: chip("status"),
+					date: chip("date"),
+					amount: chip("amount"),
+				}}
+				removeLabel={(name) =>
+					copy.filter.removeLabel(copy.filter.fields[name])
+				}
+				removeContent={copy.filter.remove}
+				removedLabel={(name) => copy.filter.removed(copy.filter.fields[name])}
+				announcementProps={{ className: "visually-hidden" }}
+			/>
+			<FilterEmpty filter={filter} className="result">
+				<p className="empty">{copy.filter.empty}</p>
+			</FilterEmpty>
+			{filter.value && filter.result && held(filter) && (
+				<p className="hint">{copy.filter.heldHint}</p>
+			)}
+			<div className="confirm-row">
+				<FilterConfirm filter={filter} className="confirm">
+					{copy.filter.confirm}
+				</FilterConfirm>
+			</div>
 
-				<section className="suggestions" aria-labelledby="suggestions-title">
-					<h3 id="suggestions-title">{copy.suggestions}</h3>
-					<Suggestions
-						id="fills"
-						title={copy.filter.fills}
-						requests={content.filterSuggestions.fills}
-						onPick={suggest}
-					/>
-					<Suggestions
-						id="holds"
-						title={copy.filter.holds}
-						requests={content.filterSuggestions.holds}
-						onPick={suggest}
-					/>
-					<Suggestions
-						id="nothing"
-						title={copy.filter.nothing}
-						requests={content.filterSuggestions.nothing}
-						onPick={suggest}
-					/>
-				</section>
-
-				<section className="table-section" aria-labelledby="applied-title">
-					<div className="applied">
-						<h3 id="applied-title" className="label">
-							{copy.filter.applied}
-						</h3>
-						<p className="applied-count" role="status">
-							{copy.filter.showing(rows.length, content.transactions.length)}
-						</p>
-						{appliedNames.length > 0 && (
-							<>
-								<ul className="applied-list">
-									{appliedNames.map(({ name, value }) => (
-										<li key={name} className="filter">
-											{chip(name)(value)}
-										</li>
-									))}
-								</ul>
-								<button
-									type="button"
-									className="clear"
-									onClick={() => setApplied({})}
-								>
-									{copy.filter.clear}
-								</button>
-							</>
-						)}
-					</div>
-					<Transactions content={content} rows={rows} />
-				</section>
+			<section className="suggestions" aria-labelledby="suggestions-title">
+				<h3 id="suggestions-title">{copy.suggestions}</h3>
+				<Suggestions
+					id="fills"
+					title={copy.filter.fills}
+					requests={content.filterSuggestions.fills}
+					onPick={suggest}
+				/>
+				<Suggestions
+					id="holds"
+					title={copy.filter.holds}
+					requests={content.filterSuggestions.holds}
+					onPick={suggest}
+				/>
+				<Suggestions
+					id="nothing"
+					title={copy.filter.nothing}
+					requests={content.filterSuggestions.nothing}
+					onPick={suggest}
+				/>
 			</section>
 
-			<FilterPanel content={content} filter={filter} trace={trace} />
-		</main>
+			<section className="table-section" aria-labelledby="applied-title">
+				<div className="applied">
+					<h3 id="applied-title" className="label">
+						{copy.filter.applied}
+					</h3>
+					<p className="applied-count" role="status">
+						{copy.filter.showing(rows.length, content.transactions.length)}
+					</p>
+					{appliedNames.length > 0 && (
+						<>
+							<ul className="applied-list">
+								{appliedNames.map(({ name, value }) => (
+									<li key={name} className="filter">
+										{chip(name)(value)}
+									</li>
+								))}
+							</ul>
+							<button
+								type="button"
+								className="clear"
+								onClick={() => setApplied({})}
+							>
+								{copy.filter.clear}
+							</button>
+						</>
+					)}
+				</div>
+				<Transactions content={content} rows={rows} />
+			</section>
+		</Case>
 	);
 }
 

@@ -110,7 +110,7 @@ const priced = fakeProvider(fixtureFor, {
 /** The demo as the browser runs it, its handler served in process. */
 function renderDemo({
 	provider = byRequest,
-	url = "/?page=card",
+	url = "/?case=form",
 }: {
 	provider?: Provider;
 	url?: string;
@@ -236,7 +236,7 @@ describe("the demo's card page", () => {
 	it("shows the tokens and cost in Spanish", async () => {
 		const { user } = renderDemo({
 			provider: priced,
-			url: "/?page=card&lang=es",
+			url: "/?case=form&lang=es",
 		});
 
 		await suggest(user, "almuerzo con Cazuela Azul ayer, $86.40");
@@ -390,7 +390,7 @@ describe("the demo's card page", () => {
 	});
 
 	it("fills the Spanish card from a Spanish request", async () => {
-		const { container, user } = renderDemo({ url: "/?page=card&lang=es" });
+		const { container, user } = renderDemo({ url: "/?case=form&lang=es" });
 
 		expect(screen.getByRole("heading", { name: "Nuevo gasto" })).toBeDefined();
 		await suggest(user, "almuerzo con Cazuela Azul ayer, $86.40");
@@ -436,14 +436,5 @@ describe("the demo's card page", () => {
 		await user.type(amount(), "86.4");
 		await user.click(save());
 		expect(saved()).toEqual(["Larkspur Catering$86.40"]);
-	});
-
-	it("is its own page, linked from the header, with the language kept", async () => {
-		const { user } = renderDemo({ url: "/?lang=es" });
-
-		await user.click(screen.getByRole("link", { name: "Tarjeta" }));
-
-		expect(location.search).toBe("?page=card&lang=es");
-		expect(screen.getByRole("heading", { name: "Nuevo gasto" })).toBeDefined();
 	});
 });

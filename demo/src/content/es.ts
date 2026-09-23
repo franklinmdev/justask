@@ -37,8 +37,13 @@ export const spanish: Content = {
 	copy: {
 		skip: "Ir al contenido",
 		product: "justask demo",
-		pagesLabel: "Páginas",
-		pages: { search: "Búsqueda", filter: "Filtro", card: "Tarjeta" },
+		casesLabel: "Casos",
+		cases: { table: "Tabla", form: "Formulario", search: "Búsqueda" },
+		hood: "Bajo el capó",
+		hoodViews: "Vistas",
+		trace: "Traza",
+		showLabel: "Mostrar",
+		app: "Aplicación",
 		languageLabel: "Idioma",
 		themeLabel: "Tema",
 		themes: { system: "Auto", light: "Claro", dark: "Oscuro" },
@@ -50,7 +55,6 @@ export const spanish: Content = {
 		ambiguous: "Podría ser uno de dos",
 		nothing: "Nada que encontrar",
 		empty: "Ningún proveedor corresponde a esa solicitud.",
-		chooseHint: "Elija el proveedor para ver sus transacciones.",
 		transactionsWith: (name) => `Transacciones con ${name}`,
 		columns: {
 			number: "Factura",

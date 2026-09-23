@@ -92,7 +92,7 @@ const priced = fakeProvider(fixtureFor, {
 /** The demo as the browser runs it, its handler served in process. */
 function renderDemo({
 	provider = byRequest,
-	url = "/",
+	url = "/?case=search",
 }: {
 	provider?: Provider;
 	url?: string;
@@ -191,7 +191,10 @@ describe("the demo's search page", () => {
 	});
 
 	it("shows the tokens and cost in Spanish", async () => {
-		const { user } = renderDemo({ provider: priced, url: "/?lang=es" });
+		const { user } = renderDemo({
+			provider: priced,
+			url: "/?case=search&lang=es",
+		});
 
 		await user.click(screen.getByRole("button", { name: "los del catering" }));
 
@@ -287,20 +290,19 @@ describe("the demo's search page", () => {
 		}
 	});
 
-	it("hands the chosen vendor to the app, which lists its transactions", async () => {
+	it("shows the found vendor's transactions at once, and choosing the vendor goes to them", async () => {
 		const { user } = renderDemo();
 
 		await user.click(
 			screen.getByRole("button", { name: "the catering people" }),
 		);
-		await user.click(
-			await screen.findByRole("button", { name: /Larkspur Catering/ }),
-		);
 
-		const table = screen.getByRole("table", {
+		const table = await screen.findByRole("table", {
 			name: "Transactions with Larkspur Catering",
 		});
 		expect(within(table).getAllByRole("row").length).toBeGreaterThan(1);
+		await user.click(screen.getByRole("button", { name: /Larkspur Catering/ }));
+		expect(document.activeElement).toBe(table);
 	});
 
 	it("switches the UI text, the suggested requests and the data to Spanish", async () => {
@@ -309,7 +311,7 @@ describe("the demo's search page", () => {
 		await user.click(screen.getByRole("link", { name: "Español" }));
 
 		expect(document.documentElement.lang).toBe("es");
-		expect(location.search).toBe("?lang=es");
+		expect(location.search).toBe("?case=search&lang=es");
 		expect(screen.getByRole("heading", { name: "Proveedores" })).toBeDefined();
 		await user.click(screen.getByRole("button", { name: "los del catering" }));
 
@@ -327,7 +329,7 @@ describe("the demo's search page", () => {
 	});
 
 	it("opens in Spanish from the link", () => {
-		renderDemo({ url: "/?lang=es" });
+		renderDemo({ url: "/?case=search&lang=es" });
 
 		expect(screen.getByRole("heading", { name: "Proveedores" })).toBeDefined();
 		expect(

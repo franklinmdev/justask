@@ -15,6 +15,7 @@ import type { Content, ExpenseFields, ExpenseName } from "./content/types.ts";
 import { DayPicker } from "./day-picker.tsx";
 import { formats, LOCAL_CURRENCY } from "./format.ts";
 import { Suggestions } from "./parts.tsx";
+import { Case } from "./showcase.tsx";
 import { type Trace, timed, useSuggest } from "./trace.ts";
 
 type Expense = CardValue<ExpenseFields> & { id: number };
@@ -78,167 +79,166 @@ export function CardPage({
 	);
 
 	return (
-		<main id="main" className="layout">
-			<section className="app" aria-labelledby="card-title">
-				<h2 id="card-title">{copy.card.title}</h2>
-				<CardBox
-					card={card}
-					id="card-box"
-					label={copy.card.boxLabel}
-					placeholder={copy.card.placeholder}
-					className="box"
-					autoComplete="off"
-					spellCheck={false}
-				/>
-				<CardStatus
-					card={card}
-					className="hint card-status"
-					announce={({ filled, waiting }) =>
-						copy.card.announce(
-							filled.map((name) => copy.card.fields[name]),
-							waiting.map((name) => copy.card.fields[name]),
-						)
-					}
-					unanswered={copy.card.unanswered}
-				/>
+		<Case
+			content={content}
+			labelledBy="card-title"
+			hood={<CardPanel content={content} card={card} trace={trace} />}
+		>
+			<h2 id="card-title">{copy.card.title}</h2>
+			<CardBox
+				card={card}
+				id="card-box"
+				label={copy.card.boxLabel}
+				placeholder={copy.card.placeholder}
+				className="box"
+				autoComplete="off"
+				spellCheck={false}
+			/>
+			<CardStatus
+				card={card}
+				className="hint card-status"
+				announce={({ filled, waiting }) =>
+					copy.card.announce(
+						filled.map((name) => copy.card.fields[name]),
+						waiting.map((name) => copy.card.fields[name]),
+					)
+				}
+				unanswered={copy.card.unanswered}
+			/>
 
-				<div className="card">
-					<CardEntry card={card} name="vendor" className="entry">
-						{({ value, set, filledBy }) => (
-							<>
-								{head("vendor", filledBy, "card-vendor")}
-								<select
-									id="card-vendor"
-									className="control"
-									value={value?.id ?? ""}
-									onChange={(event) =>
-										set(
-											content.vendors.find(
-												({ id }) => id === event.target.value,
-											)?.value,
-										)
-									}
-								>
-									<option value="">{copy.card.chooseVendor}</option>
-									{content.vendors.map(({ id, value: vendor }) => (
-										<option key={id} value={id}>
-											{vendor.name}
-										</option>
-									))}
-								</select>
-							</>
-						)}
-					</CardEntry>
-					<CardEntry card={card} name="tags" className="entry">
-						{({ value = [], set, filledBy }) => (
-							<fieldset className="tags" aria-labelledby={label("tags")}>
-								{head("tags", filledBy)}
-								<div className="tag-list">
-									{content.tags.map(({ id, value: tag }) => (
-										<label key={id} className="tag">
-											<input
-												type="checkbox"
-												checked={value.includes(tag)}
-												onChange={(event) => {
-													const next = event.target.checked
-														? [...value, tag]
-														: value.filter((other) => other !== tag);
-													set(next.length > 0 ? next : undefined);
-												}}
-											/>
-											{copy.card.tags[tag]}
-										</label>
-									))}
-								</div>
-							</fieldset>
-						)}
-					</CardEntry>
-					<CardEntry card={card} name="spent_on" className="entry">
-						{({ value, set, filledBy }) => (
-							<>
-								{head("spent_on", filledBy)}
-								<DayPicker
-									labelId={label("spent_on")}
-									value={value}
-									onChange={set}
-									copy={copy.card}
-									locale={content.locale}
-									format={format.date}
-								/>
-							</>
-						)}
-					</CardEntry>
-					<CardEntry card={card} name="total" className="entry">
-						{({ value, set, filledBy }) => (
-							<>
-								{head("total", filledBy, "card-total")}
-								<AmountInput
-									key={answerKey(card.result)}
-									id="card-total"
-									value={value}
-									onChange={set}
-								/>
-							</>
-						)}
-					</CardEntry>
-				</div>
-
-				<div className="confirm-row">
-					<CardConfirm card={card} className="confirm">
-						{copy.card.confirm}
-					</CardConfirm>
-					<CardUndo card={card} className="undo">
-						<span>{copy.card.saved}</span>
-						<button type="button" className="clear" onClick={undo}>
-							{copy.card.undo}
-						</button>
-					</CardUndo>
-				</div>
-
-				<section className="suggestions" aria-labelledby="suggestions-title">
-					<h3 id="suggestions-title">{copy.suggestions}</h3>
-					<Suggestions
-						id="fills"
-						title={copy.card.fills}
-						requests={content.cardSuggestions.fills}
-						onPick={suggest}
-					/>
-					<Suggestions
-						id="holds"
-						title={copy.card.holds}
-						requests={content.cardSuggestions.holds}
-						onPick={suggest}
-					/>
-					<Suggestions
-						id="nothing"
-						title={copy.card.nothing}
-						requests={content.cardSuggestions.nothing}
-						onPick={suggest}
-					/>
-				</section>
-
-				<section className="table-section" aria-labelledby="expenses-title">
-					<h3 id="expenses-title" className="label">
-						{copy.card.expenses}
-					</h3>
-					{expenses.length === 0 ? (
-						<p className="muted">{copy.card.noExpenses}</p>
-					) : (
-						<ul className="expenses" aria-labelledby="expenses-title">
-							{expenses.map((expense) => (
-								<SavedExpense
-									key={expense.id}
-									expense={expense}
-									content={content}
-								/>
-							))}
-						</ul>
+			<div className="card">
+				<CardEntry card={card} name="vendor" className="entry">
+					{({ value, set, filledBy }) => (
+						<>
+							{head("vendor", filledBy, "card-vendor")}
+							<select
+								id="card-vendor"
+								className="control"
+								value={value?.id ?? ""}
+								onChange={(event) =>
+									set(
+										content.vendors.find(({ id }) => id === event.target.value)
+											?.value,
+									)
+								}
+							>
+								<option value="">{copy.card.chooseVendor}</option>
+								{content.vendors.map(({ id, value: vendor }) => (
+									<option key={id} value={id}>
+										{vendor.name}
+									</option>
+								))}
+							</select>
+						</>
 					)}
-				</section>
+				</CardEntry>
+				<CardEntry card={card} name="tags" className="entry">
+					{({ value = [], set, filledBy }) => (
+						<fieldset className="tags" aria-labelledby={label("tags")}>
+							{head("tags", filledBy)}
+							<div className="tag-list">
+								{content.tags.map(({ id, value: tag }) => (
+									<label key={id} className="tag">
+										<input
+											type="checkbox"
+											checked={value.includes(tag)}
+											onChange={(event) => {
+												const next = event.target.checked
+													? [...value, tag]
+													: value.filter((other) => other !== tag);
+												set(next.length > 0 ? next : undefined);
+											}}
+										/>
+										{copy.card.tags[tag]}
+									</label>
+								))}
+							</div>
+						</fieldset>
+					)}
+				</CardEntry>
+				<CardEntry card={card} name="spent_on" className="entry">
+					{({ value, set, filledBy }) => (
+						<>
+							{head("spent_on", filledBy)}
+							<DayPicker
+								labelId={label("spent_on")}
+								value={value}
+								onChange={set}
+								copy={copy.card}
+								locale={content.locale}
+								format={format.date}
+							/>
+						</>
+					)}
+				</CardEntry>
+				<CardEntry card={card} name="total" className="entry">
+					{({ value, set, filledBy }) => (
+						<>
+							{head("total", filledBy, "card-total")}
+							<AmountInput
+								key={answerKey(card.result)}
+								id="card-total"
+								value={value}
+								onChange={set}
+							/>
+						</>
+					)}
+				</CardEntry>
+			</div>
+
+			<div className="confirm-row">
+				<CardConfirm card={card} className="confirm">
+					{copy.card.confirm}
+				</CardConfirm>
+				<CardUndo card={card} className="undo">
+					<span>{copy.card.saved}</span>
+					<button type="button" className="clear" onClick={undo}>
+						{copy.card.undo}
+					</button>
+				</CardUndo>
+			</div>
+
+			<section className="suggestions" aria-labelledby="suggestions-title">
+				<h3 id="suggestions-title">{copy.suggestions}</h3>
+				<Suggestions
+					id="fills"
+					title={copy.card.fills}
+					requests={content.cardSuggestions.fills}
+					onPick={suggest}
+				/>
+				<Suggestions
+					id="holds"
+					title={copy.card.holds}
+					requests={content.cardSuggestions.holds}
+					onPick={suggest}
+				/>
+				<Suggestions
+					id="nothing"
+					title={copy.card.nothing}
+					requests={content.cardSuggestions.nothing}
+					onPick={suggest}
+				/>
 			</section>
 
-			<CardPanel content={content} card={card} trace={trace} />
-		</main>
+			<section className="table-section" aria-labelledby="expenses-title">
+				<h3 id="expenses-title" className="label">
+					{copy.card.expenses}
+				</h3>
+				{expenses.length === 0 ? (
+					<p className="muted">{copy.card.noExpenses}</p>
+				) : (
+					<ul className="expenses" aria-labelledby="expenses-title">
+						{expenses.map((expense) => (
+							<SavedExpense
+								key={expense.id}
+								expense={expense}
+								content={content}
+							/>
+						))}
+					</ul>
+				)}
+			</section>
+		</Case>
 	);
 }
 

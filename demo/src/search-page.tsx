@@ -4,12 +4,14 @@ import { searchEndpoint } from "./api.ts";
 import type { Content, Vendor } from "./content/types.ts";
 import { formats } from "./format.ts";
 import { DEBOUNCE_MS, Suggestions } from "./parts.tsx";
+import { Case } from "./showcase.tsx";
 import { StatePanel } from "./state-panel.tsx";
 import { type Trace, timed, useSuggest } from "./trace.ts";
 
 /**
- * The fictional invoicing app's vendor search beside the state panel. The app
- * side is what a host app would write; the panel reads the same hook.
+ * The fictional invoicing app's vendor search, with the state panel under
+ * the hood. The vendor found shows its transactions at once. The app side is
+ * what a host app would write; the panel reads the same hook.
  */
 export function SearchPage({
 	content,
@@ -19,75 +21,71 @@ export function SearchPage({
 	fetch?: typeof fetch;
 }) {
 	const { copy } = content;
-	const [chosen, setChosen] = useState<Vendor | null>(null);
 	const [trace, setTrace] = useState<Trace | null>(null);
 
 	const search = useSearch<Vendor>({
 		endpoint: searchEndpoint(content.language),
 		timing: { on: "type", debounceMs: DEBOUNCE_MS },
-		onChoose: setChosen,
+		// The transactions already show; choosing the vendor takes the person to them.
+		onChoose: () => document.getElementById("vendor-transactions")?.focus(),
 		fetch: timed(fetchImpl, setTrace),
 	});
 	const suggest = useSuggest(search);
 
 	return (
-		<main id="main" className="layout">
-			<section className="app" aria-labelledby="vendors-title">
-				<h2 id="vendors-title">{copy.vendors}</h2>
-				<SearchBox
-					search={search}
-					label={copy.boxLabel}
-					placeholder={copy.placeholder}
-					className="box"
-					autoComplete="off"
-					spellCheck={false}
-				/>
-				<SearchItem
-					search={search}
-					className="result"
-					itemProps={{ className: "item" }}
-				>
-					{(vendor) => (
-						<>
-							<span className="item-name">{vendor.name}</span>
-							<span className="item-supplies">{vendor.supplies}</span>
-						</>
-					)}
-				</SearchItem>
-				<SearchEmpty search={search} className="result">
-					<p className="empty">{copy.empty}</p>
-				</SearchEmpty>
-				{search.item && chosen?.id !== search.item.id && (
-					<p className="hint">{copy.chooseHint}</p>
+		<Case
+			content={content}
+			labelledBy="vendors-title"
+			hood={<StatePanel content={content} search={search} trace={trace} />}
+		>
+			<h2 id="vendors-title">{copy.vendors}</h2>
+			<SearchBox
+				search={search}
+				label={copy.boxLabel}
+				placeholder={copy.placeholder}
+				className="box"
+				autoComplete="off"
+				spellCheck={false}
+			/>
+			<SearchItem
+				search={search}
+				className="result"
+				itemProps={{ className: "item" }}
+			>
+				{(vendor) => (
+					<>
+						<span className="item-name">{vendor.name}</span>
+						<span className="item-supplies">{vendor.supplies}</span>
+					</>
 				)}
+			</SearchItem>
+			<SearchEmpty search={search} className="result">
+				<p className="empty">{copy.empty}</p>
+			</SearchEmpty>
+			{search.item && <Transactions content={content} vendor={search.item} />}
 
-				{chosen && <Transactions content={content} vendor={chosen} />}
-
-				<section className="suggestions" aria-labelledby="suggestions-title">
-					<h3 id="suggestions-title">{copy.suggestions}</h3>
-					<Suggestions
-						id="one-vendor"
-						title={copy.oneVendor}
-						requests={content.suggestions.oneVendor}
-						onPick={suggest}
-					/>
-					<Suggestions
-						id="ambiguous"
-						title={copy.ambiguous}
-						requests={content.suggestions.ambiguous}
-						onPick={suggest}
-					/>
-					<Suggestions
-						id="nothing"
-						title={copy.nothing}
-						requests={content.suggestions.nothing}
-						onPick={suggest}
-					/>
-				</section>
+			<section className="suggestions" aria-labelledby="suggestions-title">
+				<h3 id="suggestions-title">{copy.suggestions}</h3>
+				<Suggestions
+					id="one-vendor"
+					title={copy.oneVendor}
+					requests={content.suggestions.oneVendor}
+					onPick={suggest}
+				/>
+				<Suggestions
+					id="ambiguous"
+					title={copy.ambiguous}
+					requests={content.suggestions.ambiguous}
+					onPick={suggest}
+				/>
+				<Suggestions
+					id="nothing"
+					title={copy.nothing}
+					requests={content.suggestions.nothing}
+					onPick={suggest}
+				/>
 			</section>
-
-			<StatePanel content={content} search={search} trace={trace} />
-		</main>
+		</Case>
 	);
 }
 
@@ -104,7 +102,7 @@ function Transactions({
 		({ vendorId }) => vendorId === vendor.id,
 	);
 	return (
-		<table className="transactions">
+		<table id="vendor-transactions" className="transactions" tabIndex={-1}>
 			<caption>{copy.transactionsWith(vendor.name)}</caption>
 			<thead>
 				<tr>
