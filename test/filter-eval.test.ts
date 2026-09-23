@@ -507,7 +507,7 @@ describe("formatFilterReport", () => {
 		expect(text).toContain("| coverage | at least 0.7 | 0 | FAIL |");
 		expect(text).toContain("| vendor | 0.8 |");
 		expect(text).toContain(
-			"| r1 | northwind bills | vendor | northwind | held |",
+			"| r1 | northwind bills | vendor | northwind | held | northwind 0.75 |",
 		);
 	});
 

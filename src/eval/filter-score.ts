@@ -55,8 +55,10 @@ export type FilterMiss = {
 	expected: ExpectedValue | typeof HELD | null;
 	/** The value the field filled with (a catalog field's candidate id), or null when held. */
 	got: ExpectedValue | null;
-	/** The field's weakest pick; null when the field was not asked. */
+	/** The field's weakest pick; null when the field was not asked or tied. */
 	probability: number | null;
+	/** That pick's label, such as a candidate id or `not_mentioned`. */
+	label: string | null;
 	/**
 	 * `shortlist` or `parser` when no candidate could build the expected value,
 	 * so no pick could have been right; `provider` otherwise.
@@ -101,6 +103,15 @@ const NO_GATE = Number.MIN_VALUE;
 /** The plans only read answers here; the questions they build are never asked. */
 const REREAD: Filter<Fields> = { description: "", fields: {} };
 
+/** A field read at a gate: its value, and its weakest pick's probability and label. */
+type FieldReading = {
+	value: ExpectedValue | null;
+	probability: number | null;
+	label: string | null;
+};
+
+const UNASKED: FieldReading = { value: null, probability: null, label: null };
+
 /**
  * A field's value at a gate, as `ask` builds it: a catalog field's candidate
  * id, a date range or an amount. Null when the field is held.
@@ -109,16 +120,17 @@ export function readField(
 	row: FilterRunRow,
 	name: string,
 	gate: number,
-): { value: ExpectedValue | null; probability: number | null } {
+): FieldReading {
 	const logged = row.fields[name];
-	if (!logged || row.error) return { value: null, probability: null };
+	if (!logged || row.error || logged.candidates.length === 0) return UNASKED;
 	if (logged.kind === "catalog") {
-		if (logged.candidates.length === 0)
-			return { value: null, probability: null };
 		const { pick, filled } = gateField(row.answers[name] ?? {}, gate);
-		return { value: filled, probability: pick?.probability ?? null };
+		return {
+			value: filled,
+			probability: pick?.probability ?? null,
+			label: pick?.label ?? null,
+		};
 	}
-	if (logged.candidates.length === 0) return { value: null, probability: null };
 	const plan =
 		logged.kind === "date"
 			? datePlan(
@@ -133,17 +145,20 @@ export function readField(
 					{ kind: "amount", description: "", gate },
 					logged.candidates,
 				);
-	if (plan.questions.length === 0) return { value: null, probability: null };
+	if (plan.questions.length === 0) return UNASKED;
 	const { result, value } = plan.read(row.answers);
 	const picks = Object.values(
 		(result as { answers: Record<string, FieldAnswer> }).answers,
 	).map(({ pick }) => pick);
-	const probability = picks.every((pick) => pick !== null)
-		? Math.min(...picks.map((pick) => pick?.probability ?? 0))
+	const weakest = picks.every((pick) => pick !== null)
+		? picks.reduce((a, b) =>
+				(b?.probability ?? 1) < (a?.probability ?? 1) ? b : a,
+			)
 		: null;
 	return {
 		value: (value as DateRange | AmountRange | undefined) ?? null,
-		probability,
+		probability: weakest?.probability ?? null,
+		label: weakest?.label ?? null,
 	};
 }
 
@@ -238,6 +253,7 @@ export function scoreFilterRun(
 				expected: wanted,
 				got,
 				probability: at[name]?.probability ?? null,
+				label: at[name]?.label ?? null,
 				blame: blame(row, name, expected),
 			});
 		}

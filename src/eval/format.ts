@@ -153,7 +153,7 @@ export function formatFilterReport(
 			"|---|---|---|---|---|---|---|",
 			...report.misses.map(
 				(miss) =>
-					`| ${miss.id} | ${cell(miss.request)} | ${miss.field} | ${miss.expected === null ? "not mentioned" : shown(miss.expected === "held" ? null : miss.expected)} | ${shown(miss.got)} | ${number(miss.probability)} | ${miss.blame} |`,
+					`| ${miss.id} | ${cell(miss.request)} | ${miss.field} | ${miss.expected === null ? "not mentioned" : shown(miss.expected === "held" ? null : miss.expected)} | ${shown(miss.got)} | ${miss.label === null ? "" : `${miss.label} `}${number(miss.probability)} | ${miss.blame} |`,
 			),
 			"",
 		);
