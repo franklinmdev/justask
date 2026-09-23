@@ -1,0 +1,40 @@
+{"id":"en-r2-01","request":"sticky notes and pens","kind":"item","expected":"papergrove"}
+{"id":"en-r2-02","request":"lunch for Friday's all-hands","kind":"item","expected":"larkspur"}
+{"id":"en-r2-03","request":"the domain and hosting charge","kind":"item","expected":"cloudberth"}
+{"id":"en-r2-04","request":"the crew that cleans after closing","kind":"item","expected":"brightmop"}
+{"id":"en-r2-05","request":"last month's window washing","kind":"item","expected":"glasswell"}
+{"id":"en-r2-06","request":"the banner for the trade fair","kind":"item","expected":"inkhollow"}
+{"id":"en-r2-07","request":"Mia's flight to Denver","kind":"item","expected":"farwander"}
+{"id":"en-r2-08","request":"the accounting app renewal","kind":"item","expected":"tallyroot"}
+{"id":"en-r2-09","request":"coffee beans for the break room","kind":"item","expected":"beanhaven"}
+{"id":"en-r2-10","request":"the same-day delivery invoice","kind":"item","expected":"swiftlane"}
+{"id":"en-r2-11","request":"who drafted the lease agreement","kind":"item","expected":"clausewood"}
+{"id":"en-r2-12","request":"the IT help desk","kind":"item","expected":"fixbright"}
+{"id":"en-r2-13","request":"September's payroll run","kind":"item","expected":"paydale"}
+{"id":"en-r2-14","request":"renewing the business insurance","kind":"item","expected":"sureharbor"}
+{"id":"en-r2-15","request":"sureharbour","kind":"item","expected":"sureharbor"}
+{"id":"en-r2-16","request":"fixbrite","kind":"item","expected":"fixbright"}
+{"id":"en-r2-17","request":"who printd the flyers","kind":"item","expected":"inkhollow"}
+{"id":"en-r2-18","request":"la mensajería","kind":"item","expected":"swiftlane"}
+{"id":"en-r2-19","request":"the people who bring lunch when clients visit","kind":"item","expected":"larkspur"}
+{"id":"en-r2-20","request":"our travel agent","kind":"item","expected":"farwander"}
+{"id":"en-r2-21","request":"Larkspur Catering","kind":"item","expected":"larkspur"}
+{"id":"en-r2-22","request":"paper for the copier","kind":"item","expected":"papergrove"}
+{"id":"en-r2-23","request":"bright mop","kind":"item","expected":"brightmop"}
+{"id":"en-r2-24","request":"the window cleaners","kind":"item","expected":"glasswell"}
+{"id":"en-r2-25","request":"why is our website bill so high","kind":"item","expected":"cloudberth"}
+{"id":"en-r2-26","request":"the software we do the books with","kind":"item","expected":"tallyroot"}
+{"id":"en-r2-27","request":"the espresso guy","kind":"item","expected":"beanhaven"}
+{"id":"en-r2-28","request":"legal fees","kind":"item","expected":"clausewood"}
+{"id":"en-r2-29","request":"the parking garage fee","kind":"nothing"}
+{"id":"en-r2-30","request":"our internet provider","kind":"nothing"}
+{"id":"en-r2-31","request":"the moving company","kind":"nothing"}
+{"id":"en-r2-32","request":"the security guards","kind":"nothing"}
+{"id":"en-r2-33","request":"thanks!","kind":"nothing"}
+{"id":"en-r2-34","request":"show me everything","kind":"nothing"}
+{"id":"en-r2-35","request":"the cleaning company","kind":"ambiguous"}
+{"id":"en-r2-36","request":"the Papergrove or Inkhollow order","kind":"ambiguous"}
+{"id":"en-r2-37","request":"the print job","kind":"ambiguous"}
+{"id":"en-r2-38","request":"the lawyer or the insurance invoice","kind":"ambiguous"}
+{"id":"en-r2-39","request":"the people who keep our computers and website running","kind":"ambiguous"}
+{"id":"en-r2-40","request":"breakfast for the team: coffee and pastries","kind":"ambiguous"}
