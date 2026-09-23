@@ -61,9 +61,11 @@ export type UseCard<F extends CardFields> = {
 	/** True when the last answer, or error, is for the request in the box. */
 	answered: boolean;
 	/**
-	 * The card as it stands: what the last answer filled, with the person's
-	 * changes since. A held field's key is left out, exactly as one the request
-	 * never mentioned. Each answer starts the card over, a failed one empty.
+	 * The card as it stands: what the last successful answer filled, with the
+	 * person's changes since. A held field's key is left out, exactly as one
+	 * the request never mentioned. A successful answer starts the card over; a
+	 * failed one leaves it as it was, the person's changes included, and says
+	 * why in `error`.
 	 */
 	value: CardValue<F>;
 	/** Who filled a field, or null while it is empty. */
@@ -102,9 +104,16 @@ type Draft = {
 
 const EMPTY: Draft = { answer: null, value: {}, by: {} };
 
-/** A new card from an answer: its filled fields, or nothing when it failed. */
-function draftOf(answer: Answered<CardResult<CardFields>>): Draft {
-	const value = answer.error ? {} : { ...(answer.result?.value ?? {}) };
+/**
+ * The card once `answer` lands: a new card from its filled fields, or, when
+ * it failed, the card as it was.
+ */
+function draftOf(
+	answer: Answered<CardResult<CardFields>>,
+	current: Draft,
+): Draft {
+	if (answer.error) return { ...current, answer };
+	const value = { ...(answer.result?.value ?? {}) };
 	const by = Object.fromEntries(
 		Object.keys(value).map((name) => [name, "answer" as const]),
 	);
@@ -137,11 +146,11 @@ export function useCard<F extends CardFields>({
 		draft: Draft;
 	} | null>(null);
 
-	// An answer that landed since the card was last touched starts it over,
-	// kept at once so an emptied box, which drops the answer, keeps the card.
+	// An answer that landed since the card was last touched is read at once,
+	// and kept, so an emptied box, which drops the answer, keeps the card.
 	let draft = kept;
 	if (answer !== null && answer !== kept.answer) {
-		draft = draftOf(answer as Answered<CardResult<CardFields>>);
+		draft = draftOf(answer as Answered<CardResult<CardFields>>, kept);
 		setKept(draft);
 	}
 	const value = draft.value as CardValue<F>;

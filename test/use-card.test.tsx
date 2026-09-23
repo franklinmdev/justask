@@ -457,7 +457,7 @@ describe("useCard and its pieces", () => {
 		await expectNoAxeViolations(container);
 	});
 
-	it("keeps working when the provider fails: every field waits, and the person fills and confirms by hand", async () => {
+	it("keeps working when the provider fails: it says so, and the person fills and confirms by hand", async () => {
 		const { container, onConfirm, seen, user } = renderCard({
 			provider: failingProvider(new Error("503")),
 		});
@@ -469,12 +469,57 @@ describe("useCard and its pieces", () => {
 			message: "The provider failed",
 		});
 		expect(announced()).toContain(
-			"Filled: nothing. Waiting for you: vendor, tags, spent_on, total.",
+			"Filled: nothing. The card could not be filled; fill it by hand.",
 		);
 		await expectNoAxeViolations(container);
 		await user.type(amount(), "42");
 		await user.click(confirmButton());
 		expect(onConfirm).toHaveBeenCalledExactlyOnceWith({ total: { value: 42 } });
+	});
+
+	it("keeps the card as it was, the person's changes included, when a later answer fails, and shows the error", async () => {
+		const failing = "and a taxi, $12";
+		const provider = fakeProvider((request) => {
+			if (request === failing) throw new Error("503");
+			return holdsVendor;
+		});
+		const { onConfirm, seen, user } = renderCard({ provider });
+
+		await ask(user);
+		await user.selectOptions(vendor(), "acme");
+		await user.clear(box());
+		await ask(user, failing);
+
+		expect(seen.card?.error).toEqual({
+			kind: "provider",
+			message: "The provider failed",
+		});
+		expect(announced()).toContain(
+			"Filled: nothing. The card could not be filled; fill it by hand.",
+		);
+		expect(vendor().value).toBe("acme");
+		expect(filledBy(vendor())).toBe("person");
+		expect(amount().value).toBe("42");
+		expect(filledBy(amount())).toBe("answer");
+		await user.click(confirmButton());
+		expect(onConfirm).toHaveBeenCalledExactlyOnceWith({
+			vendor: { id: "acme", name: "Acme" },
+			tags: ["meals"],
+			spent_on: "2026-09-21",
+			total: { value: 42, currency: "USD" },
+		});
+	});
+
+	it("starts the card over when a later answer succeeds", async () => {
+		const { user } = renderCard({ provider: fakeProvider(holdsVendor) });
+
+		await ask(user);
+		await user.selectOptions(vendor(), "acme");
+		await user.clear(box());
+		await ask(user, "lunch with Northwind again, $42");
+
+		expect(vendor().value).toBe("");
+		expect(amount().value).toBe("42");
 	});
 
 	it("says the card was not filled when the handler cannot be reached, and the person still fills it", async () => {

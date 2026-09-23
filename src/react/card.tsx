@@ -69,23 +69,23 @@ export type CardStatusProps<F extends CardFields> = Omit<
 	/**
 	 * What is announced once an answer comes back, in the host app's own
 	 * words: the fields it filled and the fields that wait for the person, each
-	 * in the order they are declared. A failed answer fills none.
+	 * in the order they are declared.
 	 */
 	announce: (fields: {
 		filled: (keyof F & string)[];
 		waiting: (keyof F & string)[];
 	}) => string;
 	/**
-	 * What is announced when no answer came back at all: the handler could not
-	 * be reached, refused the request or failed, so nothing says which fields
-	 * the card has. The person still fills it by hand.
+	 * What is announced when the answer failed: the provider failed or ran out
+	 * of time, the handler refused the request or could not be reached. The
+	 * card stays as it was, and the person fills it by hand.
 	 */
 	unanswered: string;
 };
 
 /**
  * A polite live region that says, once per answer, which fields were filled
- * and which wait for the person, or `unanswered` when no answer came back.
+ * and which wait for the person, or `unanswered` when the answer failed.
  * The person filling the card does not change it. Empty before an answer,
  * while the box holds another request, and after Confirm; pass a class that
  * hides it visually, or show it as a hint.
@@ -98,13 +98,11 @@ export function CardStatus<F extends CardFields>({
 }: CardStatusProps<F>) {
 	const { result } = card;
 	let text = "";
-	if (card.answered && !result) {
+	if (card.answered && (card.error || !result)) {
 		text = unanswered;
 	} else if (card.answered && result) {
 		const names = Object.keys(result.fields) as (keyof F & string)[];
-		const filled = card.error
-			? []
-			: names.filter((name) => name in result.value);
+		const filled = names.filter((name) => name in result.value);
 		text = announce({
 			filled,
 			waiting: names.filter((name) => !filled.includes(name)),

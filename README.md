@@ -202,7 +202,7 @@ const { card } = await ask({
 
 `createCardHandler` takes the same `provider`, `timeoutMs`, `facts` and `onError` as the other handlers, plus the `card` declaration, and answers `200` with `{ card, error? }`: the record in `card.value`, the intent question's pick and gate in `card.intent`, and every field's candidates, picks and gate in `card.fields`.
 
-`useCard` from `justask/react` drives it from the host app's markup. It calls when the person presses Enter, unless `timing` says `{ on: "type", debounceMs }`. Each answer starts the card over: the fields it filled, the held ones empty. The person fills or changes any field through `set`, and `onConfirm` receives the card only on Confirm. Saving and undo are the host app's: after Confirm the box and the card empty for the next record and the undo slot opens, and the host's undo control takes the record back its own way, then calls `card.restore()` to put the card back as it was.
+`useCard` from `justask/react` drives it from the host app's markup. It calls when the person presses Enter, unless `timing` says `{ on: "type", debounceMs }`. A successful answer starts the card over: the fields it filled, the held ones empty. A failed one leaves the card as it was, the person's changes included, and says why in `card.error`. The person fills or changes any field through `set`, and `onConfirm` receives the card only on Confirm. Saving and undo are the host app's: after Confirm the box and the card empty for the next record and the undo slot opens, and the host's undo control takes the record back its own way, then calls `card.restore()` to put the card back as it was.
 
 ```tsx
 const card = useCard<typeof expense.fields>({
@@ -226,9 +226,9 @@ const card = useCard<typeof expense.fields>({
 </CardUndo>
 ```
 
-The pieces are unstyled. `CardEntry` wraps the host's own control for one field and passes it `{ value, set, filledBy }`. It sets `data-empty` on an empty field, held or never mentioned alike, and `data-filled-by="answer"` or `"person"` on a filled one. `CardStatus` is a polite live region that says once per answer which fields were filled and which wait for the person, in the words `announce` gives, or says `unanswered` when no answer came back at all (the handler could not be reached, or refused the request). Filling the card does not change it. `CardConfirm` stays focusable with `aria-disabled` while there is nothing to confirm or an answer is on its way. `CardUndo` is a polite live region that shows its children from Confirm until the person types or fills a field again. Place them in this order, box, status, entries, Confirm, undo, so Tab follows the card. When the undo control disappears after `restore`, the host moves the focus, for example back to the box.
+The pieces are unstyled. `CardEntry` wraps the host's own control for one field and passes it `{ value, set, filledBy }`. It sets `data-empty` on an empty field, held or never mentioned alike, and `data-filled-by="answer"` or `"person"` on a filled one. `CardStatus` is a polite live region that says once per answer which fields were filled and which wait for the person, in the words `announce` gives, or says `unanswered` when the answer failed (the provider failed or ran out of time, or the handler could not be reached or refused the request). Filling the card does not change it. `CardConfirm` stays focusable with `aria-disabled` while there is nothing to confirm or an answer is on its way. `CardUndo` is a polite live region that shows its children from Confirm until the person types or fills a field again. Place them in this order, box, status, entries, Confirm, undo, so Tab follows the card. When the undo control disappears after `restore`, the host moves the focus, for example back to the box.
 
-A failed provider fills nothing, and the card keeps working by hand: `card.error` says why.
+A failed provider fills nothing and takes nothing away, and the card keeps working by hand.
 
 ## Measuring a gate
 

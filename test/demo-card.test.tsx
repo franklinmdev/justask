@@ -144,7 +144,7 @@ function saved(name = "Saved expenses") {
 async function suggest(user: ReturnType<typeof userEvent.setup>, name: string) {
 	await user.click(screen.getByRole("button", { name }));
 	await screen.findByText(
-		/^(Filled:|Nothing filled\.|Completado:|Nada completado\.)/,
+		/^(Filled:|Nothing filled[.:]|Completado:|Nada completado[.:])/,
 	);
 }
 
@@ -363,6 +363,11 @@ describe("the demo's card page", () => {
 		expect(
 			panel().getByText(
 				"The provider failed, so nothing is shown. The server log has the details.",
+			),
+		).toBeDefined();
+		expect(
+			screen.getByText(
+				"Nothing filled: the card could not be filled from the request. Fill it by hand.",
 			),
 		).toBeDefined();
 		await expectNoAxeViolations(container);
