@@ -19,27 +19,26 @@ export function timed(
 ): typeof fetch {
 	return async (input, init) => {
 		const started = performance.now();
-		const trace = (usage: Usage) => {
+		const elapsed = () => Math.round(performance.now() - started);
+		const trace = (ms: number, usage: Usage) => {
 			if (init?.signal?.aborted) return;
 			const { request } = JSON.parse(String(init?.body)) as {
 				request: string;
 			};
-			onTrace({
-				request,
-				ms: Math.round(performance.now() - started),
-				...usage,
-			});
+			onTrace({ request, ms, ...usage });
 		};
 		let response: Response;
 		try {
 			response = await fetchImpl(input, init);
 		} catch (error) {
-			trace({});
+			trace(elapsed(), {});
 			throw error;
 		}
+		// The round trip ends when the response arrives, before its copy is read.
+		const ms = elapsed();
 		// Read before the hook sees the response, so the hood never shows a
 		// new answer beside the last call's figures.
-		trace(await usageOf(response.clone()));
+		trace(ms, await usageOf(response.clone()));
 		return response;
 	};
 }

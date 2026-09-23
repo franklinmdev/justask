@@ -7,6 +7,7 @@ import {
 	SHORTLIST_LIMIT,
 	TIMEOUT_MS,
 } from "../server/handler.ts";
+import { cardEndpoint, filterEndpoint, searchEndpoint } from "./api.ts";
 import type { Case, Content } from "./content/types.ts";
 import { DEBOUNCE_MS } from "./parts.tsx";
 
@@ -243,7 +244,7 @@ export function Transactions({
   onApply: (filter: FilterValue<TransactionFields>) => void;
 }) {
   const filter = useFilter<TransactionFields>({
-    endpoint: ${JSON.stringify(`/api/filter/${content.language}`)},
+    endpoint: ${JSON.stringify(filterEndpoint(content.language))},
     timing: { on: "type", debounceMs: ${DEBOUNCE_MS} },
     onConfirm: onApply,
   });
@@ -292,7 +293,7 @@ export function NewExpense({
   onSave: (expense: CardValue<ExpenseFields>) => void;
 }) {
   const card = useCard<ExpenseFields>({
-    endpoint: ${JSON.stringify(`/api/card/${content.language}`)},
+    endpoint: ${JSON.stringify(cardEndpoint(content.language))},
     onConfirm: onSave,
   });
   return (
@@ -353,7 +354,7 @@ export function VendorSearch({
   onChoose: (vendor: Vendor) => void;
 }) {
   const search = useSearch<Vendor>({
-    endpoint: ${JSON.stringify(`/api/search/${content.language}`)},
+    endpoint: ${JSON.stringify(searchEndpoint(content.language))},
     timing: { on: "type", debounceMs: ${DEBOUNCE_MS} },
     onChoose,
   });
