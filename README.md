@@ -262,6 +262,8 @@ console.log(formatReport(scoreRun(run)));
 
 The report gives exact (filled items that are the expected one), coverage (item rows that filled), invented (nothing rows that got an item), held ambiguous, p95 latency, errors and cost per call, then checks each kill line. `exact`, `coverage` and `heldAmbiguous` must be at least their line, and the other three at most theirs. A line the set cannot measure fails; for example, a set with no ambiguous rows fails `heldAmbiguous`. Misses name whether the expected item never reached the shortlist or the provider picked wrong.
 
+The p95 line reads the provider's latency and yours together. To tell them apart, pass `probe`: a fixed provider input (`request`, `facts`, `questions`), how many `times` to send it before the rows and again after, and a `baselineMs` declared before the run (or `null` until you have one). The log saves each probe's latency. When the probes' median is more than twice the baseline, the report marks a slow window: the quality lines still decide, and the p95 line is pending, to be measured again on the same rows when the probes are normal. `probeMedian` over earlier runs' probes (`readProbes(log)`) gives the baseline.
+
 The saved log is enough for everything else, with no provider call:
 
 - `scoreRun(await readRun(log), { gate: 0.3 })` rescores at another gate. A gate chosen after seeing the run gives no verdict, because it would be judged on the rows it was tuned on.

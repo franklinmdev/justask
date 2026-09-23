@@ -13,6 +13,7 @@ import { type CardEvalRow, isAmount, isIds } from "./card-set.ts";
 import { HELD } from "./held.ts";
 import { checkKillLines, type KillLines } from "./kill-lines.ts";
 import { readRunLog, writeRunLog } from "./log.ts";
+import { type Probe, type Probes, probeSender } from "./probe.ts";
 
 type Described = { id: string; description: string };
 
@@ -53,6 +54,8 @@ export type CardRunRow = CardEvalRow & {
  */
 export type CardRun = {
 	startedAt: string;
+	/** The provider\'s latency around the run (#65); absent from logs written before it. */
+	probes?: Probes;
 	gates: Record<string, number>;
 	killLines: KillLines;
 	rows: CardRunRow[];
@@ -69,6 +72,8 @@ export type RunCardEvalInput<F extends CardFields> = {
 	killLines: KillLines;
 	/** Where the raw run log is written, one JSON line per row. It must not exist yet. */
 	log: string;
+	/** Sent before the rows and after, to measure the provider's latency on its own (#65). */
+	probe?: Probe;
 };
 
 /**
@@ -85,6 +90,7 @@ export async function runCardEval<F extends CardFields>({
 	timeoutMs,
 	killLines,
 	log,
+	probe,
 }: RunCardEvalInput<F>): Promise<CardRun> {
 	checkKillLines(killLines);
 	checkSet(set, card);
@@ -97,8 +103,12 @@ export async function runCardEval<F extends CardFields>({
 			]),
 		),
 	};
-	return writeRunLog(log, { gates, killLines }, set, (row) =>
-		runRow(row, { card, provider, facts, timeoutMs }),
+	return writeRunLog(
+		log,
+		{ gates, killLines },
+		set,
+		(row) => runRow(row, { card, provider, facts, timeoutMs }),
+		probeSender(provider, probe, timeoutMs),
 	);
 }
 

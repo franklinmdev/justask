@@ -404,7 +404,8 @@ function readCandidates(
 	};
 }
 
-async function answer(
+/** One call to the provider under the timeout; the eval's probes make theirs through it too. */
+export async function answer(
 	provider: Provider,
 	input: { request: string; facts: Facts; questions: Question[] },
 	timeoutMs: number,

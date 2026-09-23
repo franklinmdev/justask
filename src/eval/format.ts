@@ -2,7 +2,8 @@ import type { CardFlip, CardReport } from "./card-score.ts";
 import type { CardExpectedValue } from "./card-set.ts";
 import type { FilterFlip, FilterReport } from "./filter-score.ts";
 import type { ExpectedValue } from "./filter-set.ts";
-import type { Flip, Report, Side } from "./score.ts";
+import type { ProbeWindow } from "./probe.ts";
+import type { Flip, Report, Side, Verdict } from "./score.ts";
 
 const number = (value: number | null) =>
 	value === null ? "not measured" : String(Number(value.toFixed(3)));
@@ -12,6 +13,43 @@ const probability = (none: number | null, several: number | null) =>
 	none === null
 		? "no answer"
 		: `none ${none.toFixed(2)}${several === null ? "" : `, several ${several.toFixed(2)}`}`;
+
+/**
+ * The verdict and its lines. A run in a slow window whose quality lines
+ * pass waits on its latency line, measured again in a normal window.
+ */
+function verdictLines(verdict: Verdict): string[] {
+	const failed = verdict.lines.some(({ pass, pending }) => !pass && !pending);
+	const outcome = verdict.pass
+		? "PASS"
+		: failed
+			? "FAIL"
+			: "LATENCY PENDING (slow window: the latency line is measured again in a normal one)";
+	return [
+		`## Verdict: ${outcome}`,
+		"",
+		"| Measure | Kill line | Actual | |",
+		"|---|---|---|---|",
+		...verdict.lines.map(
+			({ measure, line, atLeast, actual, pass, pending }) =>
+				`| ${measure} | ${atLeast ? "at least" : "at most"} ${line} | ${number(actual)} | ${pending ? "pending" : pass ? "pass" : "FAIL"} |`,
+		),
+		"",
+	];
+}
+
+/** The probes' line of the measures; none for a run saved before probes. */
+function windowLines(window: ProbeWindow | null): string[] {
+	if (!window) return [];
+	const { medianMs, baselineMs, slow } = window;
+	if (medianMs === null) return ["- Probes: every probe failed"];
+	const median = `- Probes: median ${number(medianMs)} ms`;
+	return [
+		baselineMs === null
+			? `${median} · no baseline yet`
+			: `${median} against a baseline of ${number(baselineMs)} ms · ${slow ? "slow window" : "normal"}`,
+	];
+}
 
 /**
  * A report as Markdown: the verdict first when there is one, then the
@@ -26,24 +64,13 @@ export function formatReport(report: Report, flips?: Flip[]): string {
 			? " (retuned after the run: no verdict)"
 			: "";
 	const lines = [`# Eval report at gate ${report.gate}${note}`, ""];
-	if (report.verdict && !flips) {
-		lines.push(
-			`## Verdict: ${report.verdict.pass ? "PASS" : "FAIL"}`,
-			"",
-			"| Measure | Kill line | Actual | |",
-			"|---|---|---|---|",
-			...report.verdict.lines.map(
-				({ measure, line, atLeast, actual, pass }) =>
-					`| ${measure} | ${atLeast ? "at least" : "at most"} ${line} | ${number(actual)} | ${pass ? "pass" : "FAIL"} |`,
-			),
-			"",
-		);
-	}
+	if (report.verdict && !flips) lines.push(...verdictLines(report.verdict));
 	const cost = report.costPerCallUsd;
 	lines.push(
 		"## Measures",
 		"",
 		`- Rows: ${report.rows} · errors: ${measures.errors} · p95 ${number(measures.p95Ms)} ms · cost per call ${cost === null ? "unknown" : `$${cost.toFixed(7)}`}`,
+		...windowLines(report.window),
 		`- Item rows: ${counts.items} · filled: ${counts.covered} · coverage ${number(measures.coverage)}`,
 		`- Filled with the expected item: ${counts.right} of ${counts.covered} · exact ${number(measures.exact)}`,
 		`- Nothing rows: ${counts.nothing} · invented an item: ${measures.invented}${report.invented.length ? ` (${report.invented.join(", ")})` : ""}`,
@@ -110,24 +137,13 @@ export function formatFilterReport(
 			? " (retuned after the run: no verdict)"
 			: "";
 	const lines = [`# Filter eval report${note}`, ""];
-	if (report.verdict && !flips) {
-		lines.push(
-			`## Verdict: ${report.verdict.pass ? "PASS" : "FAIL"}`,
-			"",
-			"| Measure | Kill line | Actual | |",
-			"|---|---|---|---|",
-			...report.verdict.lines.map(
-				({ measure, line, atLeast, actual, pass }) =>
-					`| ${measure} | ${atLeast ? "at least" : "at most"} ${line} | ${number(actual)} | ${pass ? "pass" : "FAIL"} |`,
-			),
-			"",
-		);
-	}
+	if (report.verdict && !flips) lines.push(...verdictLines(report.verdict));
 	const cost = report.costPerCallUsd;
 	lines.push(
 		"## Measures",
 		"",
 		`- Rows: ${report.rows} · errors: ${measures.errors} · p95 ${number(measures.p95Ms)} ms · cost per call ${cost === null ? "unknown" : `$${cost.toFixed(7)}`}`,
+		...windowLines(report.window),
 		`- Filterable rows: ${counts.filterable} · every expected field filled: ${counts.covered} · coverage ${number(measures.coverage)}`,
 		`- Filled with the exact filter object: ${counts.exact} of ${counts.covered} · exact ${number(measures.exact)}`,
 		`- Nothing rows: ${counts.nothing} · filled a field: ${measures.invented}${report.invented.length ? ` (${report.invented.join(", ")})` : ""}`,
@@ -205,25 +221,14 @@ export function formatCardReport(
 			? " (retuned after the run: no verdict)"
 			: "";
 	const lines = [`# Card eval report${note}`, ""];
-	if (report.verdict && !flips) {
-		lines.push(
-			`## Verdict: ${report.verdict.pass ? "PASS" : "FAIL"}`,
-			"",
-			"| Measure | Kill line | Actual | |",
-			"|---|---|---|---|",
-			...report.verdict.lines.map(
-				({ measure, line, atLeast, actual, pass }) =>
-					`| ${measure} | ${atLeast ? "at least" : "at most"} ${line} | ${number(actual)} | ${pass ? "pass" : "FAIL"} |`,
-			),
-			"",
-		);
-	}
+	if (report.verdict && !flips) lines.push(...verdictLines(report.verdict));
 	const cost = report.costPerCallUsd;
 	const stats = { intent: report.intent, ...report.fields };
 	lines.push(
 		"## Measures",
 		"",
 		`- Rows: ${report.rows} · errors: ${measures.errors} · p95 ${number(measures.p95Ms)} ms · cost per call ${cost === null ? "unknown" : `$${cost.toFixed(7)}`}`,
+		...windowLines(report.window),
 		`- Cards (record and ambiguous rows): ${counts.cards} · fields expected: ${counts.fieldsExpected} · filled: ${counts.fieldsFilled} · coverage ${number(measures.coverage)}`,
 		`- Cards that filled a field: ${counts.filled} · nothing to correct: ${counts.exact} · exact ${number(measures.exact)}`,
 		`- Nothing rows: ${counts.nothing} · filled a field: ${measures.invented}${report.invented.length ? ` (${report.invented.join(", ")})` : ""}`,

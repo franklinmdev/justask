@@ -48,9 +48,17 @@ export {
 } from "./format.ts";
 export type { KillLines, Measure } from "./kill-lines.ts";
 export {
+	type Probe,
+	type ProbeResult,
+	type Probes,
+	type ProbeWindow,
+	probeMedian,
+} from "./probe.ts";
+export {
 	type Run,
 	type RunEvalInput,
 	type RunRow,
+	readProbes,
 	readRun,
 	runEval,
 } from "./run.ts";

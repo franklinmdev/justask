@@ -23,6 +23,7 @@ import {
 	weakestPick,
 } from "./field-stats.ts";
 import { HELD } from "./held.ts";
+import { type ProbeWindow, probeWindow } from "./probe.ts";
 import {
 	costPerCall,
 	judge,
@@ -95,6 +96,8 @@ export type CardReport = {
 	fields: Record<string, FieldStats>;
 	/** Null when the provider did not report every call's cost. */
 	costPerCallUsd: number | null;
+	/** The provider's latency around the run; null for a run saved before probes. */
+	window: ProbeWindow | null;
 	/** Filled and wrong first, surest first; then held and wrong, in set order. */
 	misses: CardMiss[];
 	/** Checked against the kill lines saved with the run; null when retuned. */
@@ -373,7 +376,8 @@ export function scoreCardRun(
 		),
 		costPerCallUsd: costPerCall(run.rows),
 		misses,
-		verdict: retuned ? null : judge(run.killLines, measures),
+		window: probeWindow(run.probes),
+		verdict: retuned ? null : judge(run.killLines, measures, run.probes),
 	};
 }
 

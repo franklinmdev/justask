@@ -10,6 +10,7 @@ import {
 import { HELD } from "./held.ts";
 import { checkKillLines, type KillLines } from "./kill-lines.ts";
 import { readRunLog, writeRunLog } from "./log.ts";
+import { type Probe, type Probes, probeSender } from "./probe.ts";
 
 /**
  * A field's candidates as the provider read them. A date or amount
@@ -51,6 +52,8 @@ export type FilterRunRow = FilterEvalRow & {
 /** A saved filter run: each field's gate and the kill lines it ran under, and its raw rows. */
 export type FilterRun = {
 	startedAt: string;
+	/** The provider\'s latency around the run (#65); absent from logs written before it. */
+	probes?: Probes;
 	gates: Record<string, number>;
 	killLines: KillLines;
 	rows: FilterRunRow[];
@@ -67,6 +70,8 @@ export type RunFilterEvalInput<F extends Fields> = {
 	killLines: KillLines;
 	/** Where the raw run log is written, one JSON line per row. It must not exist yet. */
 	log: string;
+	/** Sent before the rows and after, to measure the provider's latency on its own (#65). */
+	probe?: Probe;
 };
 
 /**
@@ -83,6 +88,7 @@ export async function runFilterEval<F extends Fields>({
 	timeoutMs,
 	killLines,
 	log,
+	probe,
 }: RunFilterEvalInput<F>): Promise<FilterRun> {
 	checkKillLines(killLines);
 	checkSet(set, filter);
@@ -92,8 +98,12 @@ export async function runFilterEval<F extends Fields>({
 			(field as Field).gate,
 		]),
 	);
-	return writeRunLog(log, { gates, killLines }, set, (row) =>
-		runRow(row, { filter, provider, facts, timeoutMs }),
+	return writeRunLog(
+		log,
+		{ gates, killLines },
+		set,
+		(row) => runRow(row, { filter, provider, facts, timeoutMs }),
+		probeSender(provider, probe, timeoutMs),
 	);
 }
 
