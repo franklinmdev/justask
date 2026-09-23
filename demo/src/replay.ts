@@ -9,6 +9,9 @@ const START_MS = 400;
 /** One character per step, about a fast typist. */
 const TYPE_MS = 35;
 
+/** The pause after the last character before Enter, for a box that calls only on Enter. */
+const ENTER_MS = 300;
+
 /** How long the proposal shows before Confirm is pressed, then how long it looks pressed. */
 const PROPOSAL_MS = 900;
 const PRESS_MS = 150;
@@ -61,16 +64,19 @@ export type Replay = {
  * Opens a case on its recorded run at no cost: the sentence types into the
  * box, the hook's call is answered with the recorded response and the hood
  * shows the recorded latency and use, then, where the flow has one, Confirm
- * is pressed on screen. Typing or picking a suggestion ends it, and the next
- * answer is a live call that replaces the recording's display. With no
- * recording the case opens idle.
+ * is pressed on screen. A box that calls only on Enter, `enter`, has Enter
+ * pressed once the sentence is in. Typing or picking a suggestion ends it,
+ * and the next answer is a live call that replaces the recording's display.
+ * With no recording the case opens idle.
  */
 export function useReplay({
 	recording,
 	fetch: fetchImpl,
+	enter = false,
 }: {
 	recording: Recording<Usage> | null;
 	fetch: typeof fetch;
+	enter?: boolean;
 }): Replay {
 	const [trace, setTrace] = useState<Trace | null>(null);
 	const [recorded, setRecorded] = useState(recording !== null);
@@ -91,7 +97,8 @@ export function useReplay({
 		if (recording === null) return;
 		const { request } = recording;
 		later(timers, START_MS, () => setStarted(true));
-		if (reducedMotion()) {
+		const typing = reducedMotion() ? 0 : request.length * TYPE_MS;
+		if (typing === 0) {
 			later(timers, START_MS, () => latest.current.flow?.setRequest(request));
 		} else {
 			for (let typed = 1; typed <= request.length; typed++) {
@@ -100,12 +107,17 @@ export function useReplay({
 				);
 			}
 		}
-		// The box's own pause then calls, and `fetch` answers from the recording.
+		// The box's own pause then calls, or Enter does, and `fetch` answers from the recording.
+		if (enter) {
+			later(timers, START_MS + typing + ENTER_MS, () =>
+				latest.current.flow?.submit(),
+			);
+		}
 		return () => {
 			for (const timer of timers.current) clearTimeout(timer);
 			timers.current = [];
 		};
-	}, [recording]);
+	}, [recording, enter]);
 
 	// Once the recorded proposal is ready, Confirm is pressed on screen.
 	useEffect(() => {

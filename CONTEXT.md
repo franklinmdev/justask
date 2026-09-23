@@ -73,7 +73,7 @@ A fixed request an eval run sends straight to the provider before its rows and a
 _Avoid_: Ping, health check
 
 **Warm-up**:
-Calls of the provider probe's request that an eval run sends first and discards, before the measured probes and before any row, so a cold start after idle falls on them. Logged, never counted in the probe median or the p95.
+Calls of the provider probe's request that an eval run sends first and discards, before the measured probes and before any row, so a cold start after idle falls on them. Logged, never counted in the probe median or the p95. The demo's recording script sends the same before its recorded calls, and the demo's dev server sends one on start, before a visitor's first request.
 _Avoid_: Priming, preflight
 
 **Slow window**:

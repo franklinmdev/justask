@@ -23,6 +23,8 @@ import { failingProvider, fakeProvider } from "./fake-provider.ts";
 // figures and day, never what these tests check.
 const table = recordings.table.en;
 const search = recordings.search.es;
+const form = recordings.form.en;
+const formEs = recordings.form.es;
 
 /**
  * A desktop's width; `reduced` is the visitor's motion setting, on by
@@ -318,4 +320,155 @@ describe("the Search case's recorded run", () => {
 		expect(provider.calls).toHaveLength(0);
 		await expectNoAxeViolations(container);
 	});
+});
+
+describe("the Form case's recorded run", () => {
+	const box = () => searchbox("Describe the expense");
+	const checkbox = (name: string) =>
+		screen.getByRole("checkbox", { name }) as HTMLInputElement;
+	const replayFilled = () =>
+		waitFor(() => expect(textbox("Amount").value).toBe("156.00"), REPLAY);
+
+	it("replays with no call and no click: the sentence, then the fields fill in order and the held vendor and day stay empty, the hood saying why", async () => {
+		const { container, provider } = renderDemo({ url: "/?case=form" });
+
+		expect(screen.getByText(label("en", form))).toBeDefined();
+		await replayFilled();
+		expect(box().value).toBe(form.request);
+		expect(announced()).toContain(
+			`Replaying a recorded run from ${day("en", form)}: “${form.request}”`,
+		);
+		expect(announced()).toContain(
+			"Filled: tags and amount. For you to fill: vendor and day.",
+		);
+		expect(checkbox("Travel").checked).toBe(true);
+		expect(checkbox("Office").checked).toBe(false);
+		// The held vendor and day stay empty, for the person to choose.
+		expect(control("Vendor").value).toBe("");
+		expect(
+			screen.getByRole("button", { name: "Day Pick a day" }),
+		).toBeDefined();
+		// Each field the answer filled settles in after the one before; the held one stays still.
+		expect(
+			[...container.querySelectorAll<HTMLElement>("[data-settle]")].map(
+				(entry) => [
+					entry.querySelector(".entry-label")?.textContent,
+					entry.style.getPropertyValue("--settle-at"),
+				],
+			),
+		).toEqual([
+			["Tags", "0"],
+			["Amount", "1"],
+		]);
+
+		const hood = within(screen.getByRole("region", { name: "What happened" }));
+		const vendor = within(hood.getByRole("region", { name: "Vendor" }));
+		expect(vendor.getByText("Held")).toBeDefined();
+		expect(
+			vendor.getByText("The provider says the request does not mention it."),
+		).toBeDefined();
+		const spentOn = within(hood.getByRole("region", { name: "Day" }));
+		expect(spentOn.getByText("Held")).toBeDefined();
+		expect(
+			spentOn.getByText(
+				"The code found no candidates, so the provider was not asked.",
+			),
+		).toBeDefined();
+		expect(figure("Latency")).toBe(`${form.latencyMs} ms`);
+		expect(figure("Cost")).toBe(
+			formats("en").cost(form.response.costUsd ?? Number.NaN),
+		);
+		// The replay fills the card and saves nothing: Save is the person's.
+		expect(screen.getByText(english.copy.card.noExpenses)).toBeDefined();
+		expect(provider.calls).toHaveLength(0);
+		await expectNoAxeViolations(container);
+	});
+
+	it("replays in Spanish with no call", async () => {
+		const { provider } = renderDemo({ url: "/?case=form&lang=es" });
+
+		expect(screen.getByText(label("es", formEs))).toBeDefined();
+		await waitFor(() => expect(textbox("Monto").value).toBe("156.00"), REPLAY);
+		expect(checkbox("Viajes").checked).toBe(true);
+		expect(control("Proveedor").value).toBe("");
+		expect(searchbox("Describa el gasto").value).toBe(formEs.request);
+		expect(announced()).toContain(
+			`Reproduciendo una ejecución grabada del ${day("es", formEs)}: “${formEs.request}”`,
+		);
+		expect(
+			screen.getByRole("button", { name: "Día Elija un día" }),
+		).toBeDefined();
+		expect(provider.calls).toHaveLength(0);
+	});
+
+	it("gives way to the person: a request they type and send is a live call that replaces the recording's display", async () => {
+		const { user, provider } = renderDemo({
+			url: "/?case=form",
+			provider: fakeProvider(
+				() => ({
+					intent: picking([{ id: "new_record" }], "new_record"),
+					vendor: picking(english.vendors, "papergrove"),
+					...Object.fromEntries(
+						english.tags.map(({ id }) => [
+							`tags_${id}`,
+							picking(
+								[{ id: "yes" }],
+								id === "office" ? "yes" : "not_mentioned",
+							),
+						]),
+					),
+				}),
+				{ costUsd: 0.000005, inputTokens: 120 },
+			),
+		});
+		await replayFilled();
+
+		await user.clear(box());
+		await user.type(box(), "Papergrove toner{Enter}");
+
+		await waitFor(() => expect(figure("Input tokens")).toBe("120"), REPLAY);
+		expect(screen.queryByText(label("en", form))).toBeNull();
+		expect(provider.calls).toHaveLength(1);
+		expect(control("Vendor").value).toBe("papergrove");
+	});
+
+	it("gives way to a suggestion, which is a live call", async () => {
+		const { user, provider } = renderDemo({ url: "/?case=form" });
+		await replayFilled();
+
+		await user.click(
+			screen.getByRole("button", {
+				name: "lunch with Larkspur yesterday, $86.40",
+			}),
+		);
+
+		await waitFor(() => expect(provider.calls).toHaveLength(1), REPLAY);
+		expect(screen.queryByText(label("en", form))).toBeNull();
+	});
+
+	it("stops when the person sets a field before Enter, and keeps their choice", async () => {
+		const { user } = renderDemo({ url: "/?case=form" });
+
+		await user.selectOptions(control("Vendor"), "papergrove");
+		// Past the whole replay: Enter is never pressed, so nothing fills.
+		await new Promise((resolve) => setTimeout(resolve, 2_500));
+
+		expect(control("Vendor").value).toBe("papergrove");
+		expect(textbox("Amount").value).toBe("");
+		expect(screen.queryByText(label("en", form))).toBeNull();
+		expect(announced()).not.toContain("Replaying a recorded run");
+	}, 6_000);
+
+	it("stops when the person types first, and fills nothing", async () => {
+		const { user, provider } = renderDemo({ url: "/?case=form" });
+
+		await user.type(box(), "x");
+		// Past the whole replay: nothing more types in, and nothing fills.
+		await new Promise((resolve) => setTimeout(resolve, 2_500));
+
+		expect(box().value).toBe("x");
+		expect(screen.queryByText(label("en", form))).toBeNull();
+		expect(textbox("Amount").value).toBe("");
+		expect(provider.calls).toHaveLength(0);
+	}, 6_000);
 });
