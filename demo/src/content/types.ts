@@ -1,6 +1,16 @@
-import type { Candidate } from "justask";
+import type {
+	AmountField,
+	AmountRange,
+	Candidate,
+	CatalogField,
+	DateField,
+	DateRange,
+} from "justask";
 
 export type Language = "en" | "es";
+
+/** One page per flow. */
+export type Page = "search" | "filter";
 
 /** A vendor of the fictional invoicing app: the search's candidate value. */
 export type Vendor = {
@@ -22,6 +32,63 @@ export type Transaction = {
 	status: TransactionStatus;
 };
 
+/** The transactions table's filter, as the demo's filter handler declares it. */
+export type TransactionFields = {
+	vendor: CatalogField<Vendor>;
+	status: CatalogField<TransactionStatus>;
+	date: DateField;
+	amount: AmountField;
+};
+
+export type FieldName = keyof TransactionFields;
+
+/** Why a filter field is held, as the state panel explains it. */
+export type FieldHeldReason =
+	| { kind: "no-candidates" }
+	| { kind: "failed" }
+	| { kind: "tie" }
+	| { kind: "not-mentioned" }
+	| { kind: "not-available" }
+	| { kind: "below-gate"; probability: string; gate: string }
+	| { kind: "conflict" };
+
+/** The filter page's own words. */
+export type FilterCopy = {
+	transactions: string;
+	boxLabel: string;
+	placeholder: string;
+	proposed: string;
+	fields: Record<FieldName, string>;
+	/** The visible text of a proposed filter's remove button. */
+	remove: string;
+	removeLabel: (field: string) => string;
+	confirm: string;
+	empty: string;
+	applied: string;
+	clear: string;
+	showing: (count: number, total: number) => string;
+	none: string;
+	vendorColumn: string;
+	fills: string;
+	holds: string;
+	nothing: string;
+	dateRange: (range: DateRange, date: (iso: string) => string) => string;
+	amountRange: (
+		range: AmountRange,
+		amount: (value: number) => string,
+	) => string;
+	summary: (filled: number, total: number) => string;
+	filledBecause: (probability: string, gate: string) => string;
+	heldBecause: (reason: FieldHeldReason) => string;
+	start: string;
+	end: string;
+	number: (text: string) => string;
+	roles: Record<"min" | "max" | "exact", string>;
+	more: (count: number) => string;
+	gate: string;
+	questions: string;
+};
+
 /** Why a search holds its item, as the state panel explains it. */
 export type HeldReason =
 	| { kind: "none-reached-gate"; none: string; gate: string }
@@ -35,7 +102,8 @@ export type HeldReason =
 export type Copy = {
 	skip: string;
 	product: string;
-	page: string;
+	pagesLabel: string;
+	pages: Record<Page, string>;
 	languageLabel: string;
 	themeLabel: string;
 	themes: { system: string; light: string; dark: string };
@@ -67,6 +135,7 @@ export type Copy = {
 	shortlistLabel: string;
 	shortlist: (count: number, catalog: number) => string;
 	roundTrip: string;
+	filter: FilterCopy;
 };
 
 /** One language's whole demo: UI text, suggested requests and data. */
@@ -77,7 +146,10 @@ export type Content = {
 	copy: Copy;
 	vendors: Candidate<Vendor>[];
 	transactions: Transaction[];
+	/** The filter's status field reads these; the provider reads the description. */
+	statuses: Candidate<TransactionStatus>[];
 	suggestions: { oneVendor: string[]; ambiguous: string[]; nothing: string[] };
+	filterSuggestions: { fills: string[]; holds: string[]; nothing: string[] };
 };
 
 /** A catalog row: the provider reads the description, never the value. */
@@ -101,4 +173,11 @@ export function transaction(
 	status: TransactionStatus,
 ): Transaction {
 	return { vendorId, number, date, amount, status };
+}
+
+export function status(
+	id: TransactionStatus,
+	description: string,
+): Candidate<TransactionStatus> {
+	return { id, description, value: id };
 }

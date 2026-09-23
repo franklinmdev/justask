@@ -1,15 +1,16 @@
 import { SearchBox, SearchEmpty, SearchItem, useSearch } from "justask/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { searchEndpoint } from "./api.ts";
 import type { Content, Vendor } from "./content/types.ts";
 import { formats } from "./format.ts";
-import { StatePanel, type Trace } from "./state-panel.tsx";
+import { StatePanel } from "./state-panel.tsx";
+import { type Trace, timed, useSuggest } from "./trace.ts";
 
 /**
  * Not measured yet: the demo is where the pause gets measured, so the round
  * trip it shows is part of the point.
  */
-const DEBOUNCE_MS = 300;
+export const DEBOUNCE_MS = 300;
 
 /**
  * The fictional invoicing app's vendor search beside the state panel. The app
@@ -25,41 +26,17 @@ export function SearchPage({
 	const { copy } = content;
 	const [chosen, setChosen] = useState<Vendor | null>(null);
 	const [trace, setTrace] = useState<Trace | null>(null);
-	const [suggested, setSuggested] = useState<string | null>(null);
 
 	const search = useSearch<Vendor>({
 		endpoint: searchEndpoint(content.language),
 		timing: { on: "type", debounceMs: DEBOUNCE_MS },
 		onChoose: setChosen,
-		// Times each call for the panel, and drops the time of one the hook dropped.
-		fetch: async (input, init) => {
-			const started = performance.now();
-			const response = await fetchImpl(input, init);
-			if (!init?.signal?.aborted) {
-				const { request } = JSON.parse(String(init?.body)) as {
-					request: string;
-				};
-				setTrace({ request, ms: Math.round(performance.now() - started) });
-			}
-			return response;
-		},
+		fetch: timed(fetchImpl, setTrace),
 	});
-
-	// A suggestion calls at once, once the box holds it.
-	useEffect(() => {
-		if (suggested !== null && search.request === suggested) {
-			setSuggested(null);
-			search.submit();
-		}
-	});
-
-	function suggest(request: string) {
-		search.setRequest(request);
-		setSuggested(request);
-	}
+	const suggest = useSuggest(search);
 
 	return (
-		<main id="search" className="layout">
+		<main id="main" className="layout">
 			<section className="app" aria-labelledby="vendors-title">
 				<h2 id="vendors-title">{copy.vendors}</h2>
 				<SearchBox
@@ -119,7 +96,7 @@ export function SearchPage({
 	);
 }
 
-function Suggestions({
+export function Suggestions({
 	id,
 	title,
 	requests,

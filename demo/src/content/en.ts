@@ -1,13 +1,14 @@
-import { type Content, transaction as t, vendor } from "./types.ts";
+import { type Content, status, transaction as t, vendor } from "./types.ts";
 
 // Fictional vendors with invented names, made up to be no real business.
 export const english: Content = {
 	language: "en",
 	locale: "en-US",
 	copy: {
-		skip: "Skip to the search",
+		skip: "Skip to the content",
 		product: "justask demo",
-		page: "Search",
+		pagesLabel: "Pages",
+		pages: { search: "Search", filter: "Filter" },
 		languageLabel: "Language",
 		themeLabel: "Theme",
 		themes: { system: "Auto", light: "Light", dark: "Dark" },
@@ -62,6 +63,89 @@ export const english: Content = {
 		shortlistLabel: "Shortlist",
 		shortlist: (count, catalog) => `${count} of ${catalog} vendors`,
 		roundTrip: "Round trip",
+		filter: {
+			transactions: "Transactions",
+			boxLabel: "Filter the transactions",
+			placeholder: "Describe the transactions you want to see",
+			proposed: "Filters to apply",
+			fields: {
+				vendor: "Vendor",
+				status: "Status",
+				date: "Date",
+				amount: "Amount",
+			},
+			remove: "Remove",
+			removeLabel: (field) => `Remove the ${field.toLowerCase()} filter`,
+			confirm: "Apply filters",
+			empty: "Nothing in that request filters the transactions.",
+			applied: "Applied",
+			clear: "Clear filters",
+			showing: (count, total) =>
+				count === total
+					? `All ${total} transactions`
+					: `${count} of ${total} transactions`,
+			none: "No transaction matches the applied filters.",
+			vendorColumn: "Vendor",
+			fills: "Fills the filters",
+			holds: "Leaves one empty",
+			nothing: "Nothing to filter",
+			dateRange: ({ from, to }, date) => {
+				if (from && to) {
+					return from === to
+						? `on ${date(from)}`
+						: `${date(from)} to ${date(to)}`;
+				}
+				return from ? `since ${date(from)}` : `until ${date(to ?? "")}`;
+			},
+			amountRange: ({ min, max, exact, currency }, amount) => {
+				const money = (value: number) =>
+					currency && currency !== "USD"
+						? `${value} ${currency}`
+						: amount(value);
+				if (exact !== undefined) return `exactly ${money(exact)}`;
+				if (min !== undefined && max !== undefined) {
+					return `${money(min)} to ${money(max)}`;
+				}
+				return min !== undefined
+					? `${money(min)} or more`
+					: `${money(max ?? 0)} or less`;
+			},
+			summary: (filled, total) =>
+				filled === 0
+					? `No field filled, all ${total} held.`
+					: `${filled} of ${total} fields filled, the rest held.`,
+			filledBecause: (probability, gate) =>
+				`Every pick cleared the gate: the lowest was ${probability}, the gate ${gate}.`,
+			heldBecause: (reason) => {
+				switch (reason.kind) {
+					case "no-candidates":
+						return "The code found no candidates, so the provider was not asked.";
+					case "failed":
+						return "No answer came back, so the field is held.";
+					case "tie":
+						return "Two labels tied for first place, so the field is held.";
+					case "not-mentioned":
+						return "The provider says the request does not mention it.";
+					case "not-available":
+						return "The provider says the request asks for something no candidate expresses.";
+					case "below-gate":
+						return `A pick (${reason.probability}) fell below the gate (${reason.gate}), so the field is held.`;
+					case "conflict":
+						return "The picks do not add up to one filter, so the code held the field.";
+				}
+			},
+			start: "Where it starts",
+			end: "Where it ends",
+			number: (text) => `What “${text}” does`,
+			roles: {
+				min: "the minimum",
+				max: "the maximum",
+				exact: "the exact amount",
+			},
+			more: (count) => `${count} more candidates, not shown`,
+			gate: "Gate",
+			questions: "Questions in one call",
+		},
 	},
 	vendors: [
 		vendor(
@@ -130,6 +214,24 @@ export const english: Content = {
 		t("paydale", "INV-2036", "2026-09-06", 820.0, "paid"),
 		t("sureharbor", "INV-1899", "2026-07-01", 2940.0, "paid"),
 	],
+	statuses: [
+		status("paid", "paid invoices, settled in full"),
+		status("open", "open invoices, not paid yet and not yet due"),
+		status("overdue", "overdue invoices, unpaid past their due date"),
+	],
+	filterSuggestions: {
+		fills: [
+			"Larkspur invoices over $1,000",
+			"overdue invoices",
+			"what we paid in August",
+			"invoices between $200 and $1,000 from last week",
+		],
+		holds: [
+			"the cleaners' invoices from last month",
+			"invoices of around $500",
+		],
+		nothing: ["how much do we owe in total?", "who is our best vendor?"],
+	},
 	suggestions: {
 		oneVendor: [
 			"the catering people",

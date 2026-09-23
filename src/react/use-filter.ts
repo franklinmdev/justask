@@ -46,7 +46,7 @@ export type UseFilter<F extends Fields> = {
 	/**
 	 * The filters proposed for the request in the box, without the ones the
 	 * person removed. A held field is left out, exactly as one the request never
-	 * mentioned. Null when failed or not answered yet.
+	 * mentioned. Null when failed, not answered yet, or already confirmed.
 	 */
 	value: FilterValue<F> | null;
 	/** Why the last answer failed, beside `result`. */
@@ -57,7 +57,11 @@ export type UseFilter<F extends Fields> = {
 	remove: (name: keyof F & string) => void;
 	/** True when at least one proposed filter is left to confirm. */
 	ready: boolean;
-	/** Hands the proposed filters to `onConfirm`, then empties the box. */
+	/**
+	 * Hands the proposed filters to `onConfirm`. The request and its answer
+	 * stay, for the box and an inspector; the proposal is spent until the
+	 * person types again.
+	 */
 	confirm: () => void;
 };
 
@@ -81,8 +85,12 @@ export function useFilter<F extends Fields>({
 		answer: typeof answer;
 		names: string[];
 	}>({ answer: null, names: [] });
+	const [confirmed, setConfirmed] = useState<typeof answer>(null);
 
-	const proposed = current && !answer?.error ? answer?.result?.value : null;
+	const proposed =
+		current && !answer?.error && answer !== confirmed
+			? answer?.result?.value
+			: null;
 	const dropped = removed.answer === answer ? removed.names : [];
 	const value = proposed
 		? (Object.fromEntries(
@@ -105,7 +113,7 @@ export function useFilter<F extends Fields>({
 		confirm: () => {
 			if (!ready) return;
 			onConfirm(value);
-			setRequest("");
+			setConfirmed(answer);
 		},
 	};
 }

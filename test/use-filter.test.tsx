@@ -201,8 +201,10 @@ describe("useFilter and its pieces", () => {
 		await expectNoAxeViolations(container);
 	});
 
-	it("hands the filter object to the app only on Confirm, then empties the box", async () => {
-		const { onConfirm, user } = renderFilter({ provider: fakeProvider(fills) });
+	it("hands the filter object to the app only on Confirm, once, and keeps the request", async () => {
+		const { onConfirm, seen, user } = renderFilter({
+			provider: fakeProvider(fills),
+		});
 
 		await user.type(screen.getByRole("searchbox"), "acme invoices over $500");
 		await screen.findByText("Vendor: Acme Supplies");
@@ -213,9 +215,19 @@ describe("useFilter and its pieces", () => {
 			vendor: acme.value,
 			amount: { min: 500, currency: "USD" },
 		});
-		expect(screen.getByRole("searchbox").getAttribute("value")).toBe("");
+		expect(screen.getByRole("searchbox").getAttribute("value")).toBe(
+			"acme invoices over $500",
+		);
 		expect(screen.queryByRole("list")).toBeNull();
+		expect(screen.queryByText("Nothing in that request filters")).toBeNull();
 		expect(confirmButton().getAttribute("aria-disabled")).toBe("true");
+		expect(document.activeElement).toBe(confirmButton());
+		await user.click(confirmButton());
+		expect(onConfirm).toHaveBeenCalledOnce();
+		expect(seen.filter?.result?.value).toEqual({
+			vendor: acme.value,
+			amount: { min: 500, currency: "USD" },
+		});
 	});
 
 	it("leaves a held field out, exactly as one the request never mentioned", async () => {

@@ -2,9 +2,7 @@ import type { SearchResult } from "justask";
 import type { UseSearch } from "justask/react";
 import type { Content, HeldReason, Vendor } from "./content/types.ts";
 import { formats } from "./format.ts";
-
-/** The last call as the page timed it: what it asked and how long it took. */
-export type Trace = { request: string; ms: number };
+import type { Trace } from "./trace.ts";
 
 type Verdict =
 	| { kind: "idle" }
@@ -218,7 +216,7 @@ function Candidates({
 }
 
 /** A probability as a bar, with the gate marked on none's. Decorative: the figure beside it is the text. */
-function Bar({ value, gate }: { value: number; gate?: number }) {
+export function Bar({ value, gate }: { value: number; gate?: number }) {
 	return (
 		<span className="bar" aria-hidden="true">
 			<span className="bar-fill" style={{ transform: `scaleX(${value})` }} />
