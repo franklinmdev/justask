@@ -1,10 +1,16 @@
-import { type MouseEvent, useEffect, useState } from "react";
+import {
+	type KeyboardEvent,
+	type MouseEvent,
+	useEffect,
+	useState,
+} from "react";
 import { CardPage } from "./card-page.tsx";
 import { english } from "./content/en.ts";
 import { spanish } from "./content/es.ts";
-import type { Language, Page } from "./content/types.ts";
+import type { Case, Language } from "./content/types.ts";
 import { FilterPage } from "./filter-page.tsx";
 import { SearchPage } from "./search-page.tsx";
+import { HoodPlaceContext, nextTab } from "./showcase.tsx";
 import { ThemeToggle } from "./theme.tsx";
 
 const contents = { en: english, es: spanish };
@@ -14,45 +20,47 @@ const languages: { language: Language; name: string }[] = [
 	{ language: "es", name: "Español" },
 ];
 
-const pages: Page[] = ["search", "filter", "card"];
+const cases: Case[] = ["table", "form", "search"];
 
-type View = { language: Language; page: Page };
+type View = { language: Language; case: Case };
 
-/** The page and the language live in the URL, so each view is a link. */
+/** The case and the language live in the URL, so each view is a link. */
 function viewFromUrl(): View {
 	const params = new URLSearchParams(location.search);
-	const page = params.get("page");
+	const named = params.get("case");
 	return {
 		language: params.get("lang") === "es" ? "es" : "en",
-		page: page === "filter" || page === "card" ? page : "search",
+		case: named === "form" || named === "search" ? named : "table",
 	};
 }
 
-/** The defaults, search in English, stay out of the URL. */
-function hrefOf({ language, page }: View): string {
+/** The defaults, the table in English, stay out of the URL. */
+function hrefOf(view: View): string {
 	const params = new URLSearchParams();
-	if (page !== "search") params.set("page", page);
-	if (language !== "en") params.set("lang", language);
+	if (view.case !== "table") params.set("case", view.case);
+	if (view.language !== "en") params.set("lang", view.language);
 	const query = params.toString();
 	return query ? `?${query}` : location.pathname;
 }
 
 /**
- * The demo: a header with the pages, the theme and the language toggle, then
- * one flow's page. The toggle switches the UI text, the suggested requests
- * and the data, and starts the page over, since the other language is
- * another catalog.
+ * The showcase: a header with the case tabs, the theme and the language
+ * toggle, then one case with its hood. The language toggle switches the UI
+ * text, the suggested requests and the data, and starts the case over, since
+ * the other language is another catalog.
  */
 export function App({ fetch }: { fetch?: typeof globalThis.fetch }) {
 	const [view, setView] = useState(viewFromUrl);
-	const { language, page } = view;
+	const [open, setOpen] = useState(true);
+	const [shown, setShown] = useState<"app" | "hood">("app");
+	const { language, case: shownCase } = view;
 	const content = contents[language];
 	const { copy } = content;
 
 	useEffect(() => {
 		document.documentElement.lang = language;
-		document.title = `${copy.pages[page]} · ${copy.product}`;
-	}, [language, page, copy]);
+		document.title = `${copy.cases[shownCase]} · ${copy.product}`;
+	}, [language, shownCase, copy]);
 
 	useEffect(() => {
 		const sync = () => setView(viewFromUrl());
@@ -60,39 +68,61 @@ export function App({ fetch }: { fetch?: typeof globalThis.fetch }) {
 		return () => removeEventListener("popstate", sync);
 	}, []);
 
+	/**
+	 * A click adds a history entry; an arrow step replaces it, so Back goes to
+	 * the case before the keys, not through every tab they passed.
+	 */
+	function show(next: View, step = false) {
+		if (next.language === language && next.case === shownCase) return;
+		if (step) history.replaceState(null, "", hrefOf(next));
+		else history.pushState(null, "", hrefOf(next));
+		setView(next);
+	}
+
 	function go(event: MouseEvent<HTMLAnchorElement>, next: View) {
 		// A modified click opens the link as the browser would.
 		if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
 			return;
 		}
 		event.preventDefault();
-		if (next.language === language && next.page === page) return;
-		history.pushState(null, "", hrefOf(next));
-		setView(next);
+		show(next);
+	}
+
+	function step(event: KeyboardEvent<HTMLAnchorElement>) {
+		const next = nextTab(event, cases, shownCase);
+		if (next === null) return;
+		event.preventDefault();
+		show({ language, case: next }, true);
+		document.getElementById(`case-tab-${next}`)?.focus();
 	}
 
 	const shared = { content, ...(fetch && { fetch }) };
 	return (
-		<>
+		<HoodPlaceContext value={{ open, setOpen, shown, setShown }}>
 			<a className="skip" href="#main">
 				{copy.skip}
 			</a>
 			<header className="header">
 				<div className="brand">
 					<span className="product">{copy.product}</span>
-					<h1 className="visually-hidden">{copy.pages[page]}</h1>
-					<nav className="pages" aria-label={copy.pagesLabel}>
-						{pages.map((option) => (
+					<h1 className="visually-hidden">{copy.cases[shownCase]}</h1>
+					<div className="cases" role="tablist" aria-label={copy.casesLabel}>
+						{cases.map((option) => (
 							<a
 								key={option}
-								href={hrefOf({ language, page: option })}
-								aria-current={option === page ? "page" : undefined}
-								onClick={(event) => go(event, { language, page: option })}
+								id={`case-tab-${option}`}
+								href={hrefOf({ language, case: option })}
+								role="tab"
+								aria-selected={option === shownCase}
+								aria-controls="case"
+								tabIndex={option === shownCase ? 0 : -1}
+								onClick={(event) => go(event, { language, case: option })}
+								onKeyDown={step}
 							>
-								{copy.pages[option]}
+								{copy.cases[option]}
 							</a>
 						))}
-					</nav>
+					</div>
 				</div>
 				<div className="controls">
 					<ThemeToggle copy={copy} />
@@ -100,10 +130,12 @@ export function App({ fetch }: { fetch?: typeof globalThis.fetch }) {
 						{languages.map(({ language: option, name }) => (
 							<a
 								key={option}
-								href={hrefOf({ language: option, page })}
+								href={hrefOf({ language: option, case: shownCase })}
 								lang={option}
 								aria-current={option === language ? "true" : undefined}
-								onClick={(event) => go(event, { language: option, page })}
+								onClick={(event) =>
+									go(event, { language: option, case: shownCase })
+								}
 							>
 								{name}
 							</a>
@@ -111,9 +143,17 @@ export function App({ fetch }: { fetch?: typeof globalThis.fetch }) {
 					</nav>
 				</div>
 			</header>
-			{page === "search" && <SearchPage key={language} {...shared} />}
-			{page === "filter" && <FilterPage key={language} {...shared} />}
-			{page === "card" && <CardPage key={language} {...shared} />}
-		</>
+			<main id="main" className="layout">
+				<div
+					id="case"
+					role="tabpanel"
+					aria-labelledby={`case-tab-${shownCase}`}
+				>
+					{shownCase === "table" && <FilterPage key={language} {...shared} />}
+					{shownCase === "form" && <CardPage key={language} {...shared} />}
+					{shownCase === "search" && <SearchPage key={language} {...shared} />}
+				</div>
+			</main>
+		</HoodPlaceContext>
 	);
 }
