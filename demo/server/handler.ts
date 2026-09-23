@@ -59,7 +59,7 @@ export function demoSearch(content: Content): Search<Vendor> {
 /**
  * Each filter field's gate, fixed on 2026-09-22 from dev run 1 of both
  * languages by the rule the owner approved before any call (fixGate in
- * demo/eval/filter-gates.ts), and judged on the frozen eval sets only
+ * demo/eval/gates.ts), and judged on the frozen eval sets only
  * (docs/filter-eval.md).
  */
 export const FILTER_GATES = {
@@ -107,7 +107,7 @@ export function demoFilter(content: Content): Filter<TransactionFields> {
 /**
  * The intent's gate and each card field's, fixed on 2026-09-23 from dev run 1
  * of both languages by the rule the owner approved before any call (fixGate
- * in demo/eval/filter-gates.ts), and judged on the frozen eval sets only
+ * in demo/eval/gates.ts), and judged on the frozen eval sets only
  * (docs/card-eval.md).
  */
 export const CARD_GATES = {

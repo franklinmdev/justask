@@ -9,7 +9,7 @@ import {
 	scoreCardRun,
 } from "justask/eval";
 import { describe, expect, it } from "vitest";
-import { fixGate, poolFields } from "../demo/eval/filter-gates.ts";
+import { fixGate, poolFields } from "../demo/eval/gates.ts";
 import { CARD_KILL_LINES } from "../demo/eval/kill-lines.ts";
 import { CARD_GATES, demoCard, FACTS } from "../demo/server/handler.ts";
 import { english } from "../demo/src/content/en.ts";

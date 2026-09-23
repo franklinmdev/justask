@@ -54,7 +54,7 @@ errors <= 0
 
 ## Gates, from the dev runs
 
-The intent and each field get their own gate, fixed from the dev runs by the filter's rule (`fixGate` in `demo/eval/filter-gates.ts`), the two languages pooled, since the demo serves one gate per field in both. Read with no gate:
+The intent and each field get their own gate, fixed from the dev runs by the filter's rule (`fixGate` in `demo/eval/gates.ts`), the two languages pooled, since the demo serves one gate per field in both. Read with no gate:
 
 - **The intent:** a right pick is `new_record` on a card, a wrong one `new_record` on a nothing row, at its probability.
 - **A field:** read on the cards only, since on a nothing row the intent keeps it empty. A right pick fills it with the expected value; a wrong pick fills it with anything else. A field's pick is its weakest one: the tags field asks one question per tag.

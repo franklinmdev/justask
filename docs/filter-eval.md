@@ -42,7 +42,7 @@ errors <= 0
 
 ## Gates, from the dev runs
 
-Each field gets its own gate, fixed from the dev runs by a rule the owner approved before any call (`fixGate` in `demo/eval/filter-gates.ts`). The demo serves one gate per field in both languages, so the rule reads both languages' dev runs together. Read with no gate, a field's **right pick** fills it with the expected value; a **wrong pick** fills it with anything else: a wrong value, a value on a field an ambiguous row holds, or a value on a field the request never mentions. A field's pick is its weakest one.
+Each field gets its own gate, fixed from the dev runs by a rule the owner approved before any call (`fixGate` in `demo/eval/gates.ts`). The demo serves one gate per field in both languages, so the rule reads both languages' dev runs together. Read with no gate, a field's **right pick** fills it with the expected value; a **wrong pick** fills it with anything else: a wrong value, a value on a field an ambiguous row holds, or a value on a field the request never mentions. A field's pick is its weakest one.
 
 - The midpoint between the field's highest wrong pick and its lowest right pick, rounded to 0.05, when that sits above every wrong pick.
 - No wrong pick: the lowest right pick rounded down to 0.05, at most 0.9, the lab's gate.

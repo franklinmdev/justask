@@ -3,7 +3,7 @@ import { type Card, type CardField, type CardFields, INTENT } from "../card.ts";
 import type { AmountReading, DateReading, TimeReading } from "../parse.ts";
 import type { Facts, Provider, ProviderAnswer } from "../provider.ts";
 import { type CardEvalRow, isAmount, isIds } from "./card-set.ts";
-import { HELD } from "./filter-set.ts";
+import { HELD } from "./held.ts";
 import { checkKillLines, type KillLines } from "./kill-lines.ts";
 import { readRunLog, writeRunLog } from "./log.ts";
 
