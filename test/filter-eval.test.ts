@@ -449,6 +449,53 @@ describe("runFilterEval", () => {
 			["unreachable", "issued", null, "parser"],
 		]);
 	});
+
+	it("logs the pair that held a field, holds it at every gate, and reads none of its picks for the field's gate (ADR 0010)", async () => {
+		const log = join(dir, "run-1.jsonl");
+		const run = await runFilterEval({
+			...input(log),
+			filter: { ...invoiceFilter(), joiners: { or: ["or"], and: [] } },
+		});
+
+		expect(run.rows[2]?.pairs).toEqual({
+			vendor: { ids: ["acme", "northwind"], text: "Acme or Northwind" },
+		});
+		expect(run.rows[0]).not.toHaveProperty("pairs");
+		expect((await readFilterRun(log)).rows[2]?.pairs).toEqual(
+			run.rows[2]?.pairs,
+		);
+		// Its vendor picked Acme at 0.75 where it must stay held; no gate lets it through now.
+		const { leaked, fields } = scoreFilterRun(run, { gates: { vendor: 0.5 } });
+		expect(leaked).toEqual([]);
+		expect(fields.vendor).toMatchObject({ wrong: 0, highestWrong: null });
+	});
+
+	it("blames the pair for a field the code held on a filterable row, a false hold", async () => {
+		const run = await runFilterEval({
+			...input(join(dir, "run-1.jsonl")),
+			set: set([
+				{
+					id: "false-hold",
+					request: "Acme or Northwind invoices",
+					kind: "filterable",
+					expected: { vendor: "acme" },
+				},
+			]),
+			filter: { ...invoiceFilter(), joiners: { or: ["or"], and: [] } },
+		});
+
+		const { misses, fields } = scoreFilterRun(run);
+
+		expect(misses).toEqual([
+			expect.objectContaining({
+				id: "false-hold",
+				field: "vendor",
+				got: null,
+				blame: "pair",
+			}),
+		]);
+		expect(fields.vendor).toMatchObject({ filled: 0, lowestRight: null });
+	});
 });
 
 /** A saved run by hand: one filterable row whose vendor pick is `p`. */

@@ -28,7 +28,7 @@ import {
 	questionIds,
 } from "./filter.ts";
 import { checkGate } from "./gate.ts";
-import { checkJoiners, findPair } from "./named-pair.ts";
+import { checkJoiners, findPair, type NamedPair } from "./named-pair.ts";
 import { type Parser, parseRequest, type Reads } from "./parse.ts";
 import type { Pick } from "./pick.ts";
 import type {
@@ -73,6 +73,8 @@ export type SearchResult<T> = {
 	/** Every label's probability, `none` included; empty when there was no answer. */
 	probabilities: Probabilities;
 	gate: number;
+	/** The named pair that held the item whatever its pick (ADR 0011). */
+	pair?: NamedPair;
 };
 
 /** Why the provider gave no usable answer. Every field is held when present. */
@@ -128,7 +130,8 @@ export function ask(
 
 /**
  * The item fills when a candidate wins outright and none and several stay
- * below the gate (ADR 0005, 0007).
+ * below the gate (ADR 0005, 0007), and the request names no pair of
+ * candidates (ADR 0011).
  */
 async function askSearch<T>({
 	request,
@@ -138,14 +141,19 @@ async function askSearch<T>({
 	search,
 }: AskInput<T>): Promise<AskResult<T>> {
 	checkGate(search.gate, "the search's gate");
+	checkJoiners(search.joiners, "the search's");
 	const candidates = await search.shortlist(request);
 	checkShortlist(candidates, SEARCH_LABELS);
+	const pair = findPair(request, candidates, search.joiners, {
+		several: false,
+	});
 	const held: SearchResult<T> = {
 		item: null,
 		candidates,
 		pick: null,
 		probabilities: {},
 		gate: search.gate,
+		...(pair && { pair }),
 	};
 	if (candidates.length === 0) return { search: held };
 
@@ -161,7 +169,7 @@ async function askSearch<T>({
 
 	const probabilities = outcome.answer[SEARCH] ?? {};
 	const { pick, filled } = gateSearch(probabilities, search.gate);
-	const winner = candidates.find(({ id }) => id === filled);
+	const winner = pair ? undefined : candidates.find(({ id }) => id === filled);
 	return {
 		search: {
 			...held,
@@ -185,6 +193,7 @@ async function askFilter<F extends Fields>({
 	timeoutMs,
 	filter,
 }: AskFilterInput<F>): Promise<AskFilterResult<F>> {
+	checkJoiners(filter.joiners, "the filter's");
 	const names = Object.keys(filter.fields);
 	const field = (name: string) => filter.fields[name] as Field;
 	for (const name of names) {
@@ -212,7 +221,13 @@ async function askFilter<F extends Fields>({
 			} else {
 				const candidates = await declared.shortlist(request);
 				checkShortlist(candidates, MISSING);
-				plans[name] = catalogPlan(name, filter, declared, candidates);
+				plans[name] = catalogPlan(
+					name,
+					filter,
+					declared,
+					candidates,
+					findPair(request, candidates, filter.joiners, { several: false }),
+				);
 			}
 		}),
 	);
@@ -267,7 +282,7 @@ async function askCard<F extends CardFields>({
 }: AskCardInput<F>): Promise<AskCardResult<F>> {
 	checkGate(card.gate, "the card's gate");
 	checkCommands(card.commands);
-	checkJoiners(card.joiners);
+	checkJoiners(card.joiners, "the card's");
 	const names = Object.keys(card.fields);
 	const field = (name: string) => card.fields[name] as CardFields[string];
 	for (const name of names) {

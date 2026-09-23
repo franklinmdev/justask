@@ -399,6 +399,77 @@ describe("ask: filter with catalog fields", () => {
 		expect(withoutGate).toBeTypeOf("function");
 		expect(withGate).toBeTypeOf("function");
 	});
+
+	describe("a named pair (ADR 0010)", () => {
+		const joiners = { or: ["or", "o"], and: ["and", "y"] };
+		const find = (
+			request: string,
+			declared: { or: string[]; and: string[] } | null = joiners,
+		) =>
+			ask({
+				...base,
+				request,
+				provider: fakeProvider(answers({ account: "rent", status: "posted" })),
+				filter: { ...ledgerFilter(), ...(declared && { joiners: declared }) },
+			});
+
+		it("holds the field two of whose candidates are joined by a joiner, whatever its pick, and names them as written", async () => {
+			const { filter } = await find("posted rent or bank entries");
+
+			expect(filter.fields.account.pair).toEqual({
+				ids: ["rent", "bank"],
+				text: "rent or bank",
+			});
+			// Still asked, so the pick is reported.
+			expect(filter.fields.account.pick).toEqual({
+				label: "rent",
+				probability: 0.9,
+			});
+			// Only that field: the rest of the filter fills.
+			expect(filter.value).toEqual({ status: "posted" });
+			expect(filter.fields.status).not.toHaveProperty("pair");
+		});
+
+		it('holds on "and" too, since a catalog field takes one item', async () => {
+			const { filter } = await find("draft and posted rent entries");
+
+			expect(filter.fields.status.pair?.ids).toEqual(["draft", "posted"]);
+			expect(filter.value).toEqual({ account: "rent" });
+		});
+
+		it("fills as before when the filter declares no joiners", async () => {
+			const { filter } = await find("posted rent or bank entries", null);
+
+			expect(filter.fields.account).not.toHaveProperty("pair");
+			expect(filter.value).toEqual({ account: "rent", status: "posted" });
+		});
+
+		it("names the pair when the provider fails, since the code found it", async () => {
+			const result = await ask({
+				...base,
+				request: "rent or bank entries",
+				provider: failingProvider(new Error("down")),
+				filter: { ...ledgerFilter(), joiners },
+			});
+
+			expect(result.filter.fields.account.pair?.ids).toEqual(["rent", "bank"]);
+		});
+
+		it("refuses a joiner of several words before any call", async () => {
+			const provider = fakeProvider({});
+
+			await expect(
+				ask({
+					...base,
+					provider,
+					filter: { ...ledgerFilter(), joiners: { or: [""], and: [] } },
+				}),
+			).rejects.toThrow(
+				new TypeError('justask: the filter\'s joiner "" is not one word'),
+			);
+			expect(provider.calls).toHaveLength(0);
+		});
+	});
 });
 
 /**

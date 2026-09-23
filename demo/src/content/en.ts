@@ -26,6 +26,8 @@ function fieldHeldBecause(reason: FieldHeldReason): string {
 			return `A pick (${reason.probability}) fell below the gate (${reason.gate}), so the field is held.`;
 		case "conflict":
 			return "The picks do not add up to one filter, so the code held the field.";
+		case "pair":
+			return `The request names two candidates (“${reason.text}”), so the code held the field whatever the pick.`;
 	}
 }
 
@@ -86,6 +88,8 @@ export const english: Content = {
 					return `The provider picked none (${reason.none}), so nothing is shown.`;
 				case "several-picked":
 					return `The provider picked several (${reason.several}), so nothing is shown.`;
+				case "pair":
+					return `The request names two candidates (“${reason.text}”), so the code shows nothing, whatever the pick.`;
 				case "tie":
 					return "Two candidates tied for first place, so nothing is shown.";
 				case "no-candidates":
@@ -285,8 +289,6 @@ export const english: Content = {
 				switch (reason.kind) {
 					case "not-a-record":
 						return "The request asks for no new expense, so the field is held with the rest.";
-					case "pair":
-						return `The request names two candidates (“${reason.text}”), so the code held the field whatever the pick.`;
 					case "foreign-currency":
 						return `The pick names “${reason.mark}”, which is not the local currency, so the code held the field.`;
 					case "ambiguous":
@@ -503,7 +505,7 @@ export const english: Content = {
 			"the invoices",
 		],
 	},
-	cardJoiners: { or: ["or"], and: ["and"] },
+	joiners: { or: ["or"], and: ["and"] },
 
 	cardSuggestions: {
 		fills: [

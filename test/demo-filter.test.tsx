@@ -81,6 +81,11 @@ const answers: Record<string, FakeAnswers> = {
 	"overdue invoices": answer({ status: "overdue" }),
 	"invoices over 500 euros": answer({ amounts: ["min"] }),
 	"facturas vencidas": answer({ status: "overdue" }),
+	// A named pair: Nubalia wins outright, and the code holds the vendor anyway.
+	"facturas vencidas de Nubalia o de Cuentia": answer({
+		vendor: question(vendors, "nubalia"),
+		status: "overdue",
+	}),
 	// The local currency is USD, so "pesos" resolves to none: the amount is never asked.
 	"facturas de más de 500 pesos": answer({}),
 };
@@ -500,6 +505,28 @@ describe("the demo's filter page", () => {
 		expect(
 			panel("Qué pasó").getByText(
 				"1 de 4 campos completados, el resto retenido.",
+			),
+		).toBeDefined();
+		await expectNoAxeViolations(container);
+	});
+
+	it("holds the vendor when the request names two, whatever the pick, and names them (ADR 0010)", async () => {
+		const { container, user } = renderDemo({ url: "/?case=table&lang=es" });
+
+		await user.type(
+			screen.getByRole("searchbox", { name: "Filtrar las transacciones" }),
+			"facturas vencidas de Nubalia o de Cuentia",
+		);
+
+		await screen.findByRole("list", { name: "Filtros por aplicar" });
+		expect(proposed("Filtros por aplicar")).toEqual(["EstadoVencidaQuitar"]);
+		const vendor = within(
+			panel("Qué pasó").getByRole("region", { name: "Proveedor" }),
+		);
+		expect(vendor.getByText("Retenido")).toBeDefined();
+		expect(
+			vendor.getByText(
+				"La solicitud nombra dos candidatos (“Nubalia o de Cuentia”), así que el código retuvo el campo sin importar la elección.",
 			),
 		).toBeDefined();
 		await expectNoAxeViolations(container);

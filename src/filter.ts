@@ -1,3 +1,4 @@
+import type { Joiners, NamedPair } from "./named-pair.ts";
 import type {
 	AmountReading,
 	DateReading,
@@ -53,6 +54,14 @@ export type Filter<F extends Fields> = {
 	fields: F;
 	/** The host app's own parsers, run beside the built-in one; their readings win where they overlap. */
 	parsers?: Parser[];
+	/**
+	 * Words that join two items, in the filter's language, each one word:
+	 * `or` words ("or"; "o", "u") and `and` words ("and"; "y", "e"). A
+	 * request that names two items of one catalog field, and no third, with
+	 * one of these between them holds that field before its gate, whatever
+	 * its pick, since a catalog field takes one item (ADR 0010, 0011).
+	 */
+	joiners?: Joiners;
 };
 
 /** A date field's value: the first and last day it covers, YYYY-MM-DD. Either may be open. */
@@ -113,9 +122,12 @@ export type ParsedFieldResult<T> = {
 	gate: number;
 };
 
+/** A catalog field reports the named pair that held it, whatever its pick (ADR 0010, 0011). */
+export type Paired = { pair?: NamedPair };
+
 export type FieldResult<F extends Field> =
 	F extends CatalogField<infer T>
-		? CatalogFieldResult<T>
+		? CatalogFieldResult<T> & Paired
 		: F extends DateField
 			? ParsedFieldResult<DateReading>
 			: ParsedFieldResult<AmountReading>;
@@ -164,13 +176,21 @@ export function questionIds(name: string, field: Field): RegExp {
 	return new RegExp(`^${escaped}$`);
 }
 
+/** A catalog field the request names a pair of is held whatever its pick (ADR 0011). */
 export function catalogPlan(
 	name: string,
 	filter: Filter<Fields>,
 	field: CatalogField<unknown>,
 	candidates: Candidate<unknown>[],
+	pair?: NamedPair,
 ): FieldPlan {
-	const held = { candidates, pick: null, probabilities: {}, gate: field.gate };
+	const held = {
+		candidates,
+		pick: null,
+		probabilities: {},
+		gate: field.gate,
+		...(pair && { pair }),
+	};
 	return {
 		questions:
 			candidates.length > 0
@@ -182,7 +202,8 @@ export function catalogPlan(
 			const { pick, filled } = gateField(probabilities, field.gate);
 			const result = { ...held, pick, probabilities };
 			const winner = candidates.find(({ id }) => id === filled);
-			return winner ? { result, value: winner.value } : { result };
+			if (pair || !winner) return { result };
+			return { result, value: winner.value };
 		},
 	};
 }
