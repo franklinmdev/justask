@@ -232,7 +232,7 @@ Runs of 2026-09-23 with `jev-1.13.0`, gates vendor 0.6, status 0.95, date 0.85, 
 
 ## Round 3: status pairs
 
-Carried by [#75](https://github.com/franklinmdev/justask/issues/75). Rounds 1 and 2 stand as recorded. The first round with the Spanish status names and with status pairs, in both languages. The owner kept ADR 0011's rule as it is after the probes above (the negated status is tracked in [#80](https://github.com/franklinmdev/justask/issues/80)), and fixed the frame on 2026-09-23, before any row existed:
+Carried by [#75](https://github.com/franklinmdev/justask/issues/75). Rounds 1 and 2 stand as recorded. The first round with the Spanish status names and with status pairs, in both languages. The owner kept ADR 0011's rule as it is after the probes above (the status field opting out of the hold is tracked in [#80](https://github.com/franklinmdev/justask/issues/80)), and fixed the frame on 2026-09-23, before any row existed:
 
 - **Round 1's gates (vendor 0.6, status 0.95, date 0.85, amount 0.9), the same six kill lines, and no dev run**, as round 2: the hold asks the provider nothing new, and the probes measured it.
 - **The same grid as rounds 1 and 2**, row for row. The two status-ambiguous rows are status pairs, one with "or" (row 31) and one with "and" (row 32). Of the two vendor-ambiguous rows, one is a vendor pair (row 29, "and") and one is no pair (row 30, `the cleaning company`), so the round does not reward the hold alone. No row negates a status beside another, since the probes measured that.
