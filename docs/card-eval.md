@@ -10,7 +10,7 @@
 
 **Round 5 (#73): the same card fails on Spanish coverage by one field.** Under #65's latency rule, with nothing changed, English clears every kill line and Spanish covers 86 of 124 fields (0.694) against a line of 0.7, in both runs; every probe window was normal, and no warm-up call or row timed out. See Round 5: result below; rounds 1 to 4 are unchanged.
 
-**Office tag diagnosis (#77): the office tag fills when a request names a service its label lists, and almost never from the service alone, in both languages.** No wording of the label's definition fills it, a shorter label fills nothing, and adding backups fills the backups row alone. The owner chose the vendor fix, filling a gap only, carried with round 6 by [#79](https://github.com/franklinmdev/justask/issues/79); nothing has landed. See Office tag diagnosis below; rounds 1 to 5 are unchanged.
+**Office tag diagnosis (#77): the office tag fills when a request names a service its label lists, and almost never from the service alone, in both languages.** Without its list the label fills no row, whether shortened or naming what office is not, and adding backups fills the backups row alone. The owner chose the vendor fix, filling a gap only, carried with round 6 by [#79](https://github.com/franklinmdev/justask/issues/79); nothing has landed. See Office tag diagnosis below; rounds 1 to 5 are unchanged.
 
 **Latency (#65): from the next verdict run on, every run sends a fixed provider probe before and after its rows, and a run whose probes are more than twice the baseline leaves a failing latency line pending, to be measured again in a normal window.** See Latency below; round 4 stays a FAIL.
 
@@ -808,7 +808,7 @@ No gate, kill line, label or code the demo serves changed.
 
 ### Decision
 
-The owner chose fix 1 on 2026-09-23, with one change: **the card adds `office` from an office vendor only when the tags field answered `not_mentioned` or came back empty, never over a filled or held tag.** A tag the provider filled, or one a named pair or an ambiguous reading held, stays as the provider and the code left it. The fix and a fresh round 6 to judge it are carried by [#79](https://github.com/franklinmdev/justask/issues/79). The rescore above forced `office` on every card at an office vendor, so it is an upper bound for the chosen rule, not its measure; #79's runs give that.
+The owner chose fix 1 on 2026-09-23, with one change: **the card adds `office` from an office vendor only when the tags field answered `not_mentioned` or came back empty, never over a filled or held tag.** As #79 words it, a tag the provider filled, or one held below its gate, is left as it is: the rule fills gaps and never contradicts the provider. The fix and a fresh round 6 to judge it are carried by [#79](https://github.com/franklinmdev/justask/issues/79). The rescore above forced `office` on every card at an office vendor, so it is an upper bound for the chosen rule, not its measure; #79's runs give that.
 
 ### Run logs
 
