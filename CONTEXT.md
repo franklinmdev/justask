@@ -86,7 +86,7 @@ _Avoid_: Client app, consumer
 A request resolved to one item among candidates, or to none.
 
 **Filter**:
-A request resolved to the exact filter object a table in the host app already understands. Declared with a description of what one row of that table is, which every field's question reads, and its fields.
+A request resolved to the exact filter object a table in the host app already understands. Declared with its fields and a description of what one row of that table is; every field's question reads that description.
 
 **Card**:
 A request resolved to a filled record, such as an appointment, gated first by an intent question.
