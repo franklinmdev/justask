@@ -6,7 +6,7 @@
 
 **Round 3 (#57): the card fails in both languages.** The fix held every command but one, a Spanish change no list names and the label did not hold (`deje en $260 el cargo de Brisamar de ayer`, `new_record` 0.58); English fails exact and held ambiguous on tags and the named pair, which #57 did not change. See Round 3: result below; rounds 1 and 2 are unchanged.
 
-**Round 4 (#63): fixed from dev runs, sets being drafted.** A named pair holds its field in code ([ADR 0010](adr/0010-card-holds-a-named-pair.md)), and the intent names setting a value. See Round 4 below; rounds 1 to 3 are unchanged.
+**Round 4 (#63): the card fails on Spanish latency alone.** Every quality line passes in both languages and both runs, with a named pair held in code ([ADR 0010](adr/0010-card-holds-a-named-pair.md)) and the intent naming setting a value; Spanish run 1's p95 was 1,137 ms against a line of 1,000, in a provider slowdown across the whole run. The owner ruled that the FAIL stands, with latency carried by [#65](https://github.com/franklinmdev/justask/issues/65). See Round 4: result below; rounds 1 to 3 are unchanged.
 
 **Hypothesis:** on the demo's fictional vendors, the expense card turns a typed expense into the record a person means (vendor, tags, day, amount), leaves a field empty when it cannot tell, and fills nothing when the request asks for no new expense, in English and in Spanish, on Enter. The lab measured a salon appointment card; this is a new measurement.
 
@@ -524,3 +524,75 @@ Files in `demo/eval/`, drafted against every set in `demo/eval/` (probes include
 - **nothing:** a question about spending, a delete, a change that sets a value, a thank-you, a question about tags, and a send. The code holds the delete in both languages (`erase the Fixbright expense`, `elimine el gasto`); no list holds the change (`set the Larkspur lunch from Monday to $140`, `deje el almuerzo de Cazuela Azul del lunes en $140`) or the send (`share Glasswell's receipt`, `compártale el recibo`), which the label alone must hold. Checked with no call: the code holds no round 4 record, only the two pair rows' vendors and the delete.
 - The same checks as rounds 1 to 3 hold: no request repeats any other set, probe or suggestion, every expected day and amount is one the parser builds on Wednesday 2026-09-23, and every held one is held by the parser's reading or by two candidates.
 - Kill lines, measures and procedure as round 1, at the gates from dev run 5 (above). Run 1 gives the verdict; run 2 reports flips only.
+
+## Round 4: result
+
+**Verdict: FAIL.** English clears every kill line; Spanish fails p95 alone. Runs of 2026-09-23 with `jev-1.13.0`, gates intent 0.45, vendor 0.7, tags 0.4, spent_on 0.8, total 0.9 (dev run 5, above), both fixes of ADR 0010, the frozen round 4 sets and the same kill lines, today fixed at Wednesday 2026-09-23. The owner ruled on 2026-09-23 that the FAIL stands as the procedure reads it, run 1 deciding, and that latency is carried by [#65](https://github.com/franklinmdev/justask/issues/65); reading the latency line away after the result would change a frozen verdict.
+
+### Run 1: the verdict
+
+| Measure | Kill line | English | Spanish |
+|---|---|---|---|
+| exact | at least 0.9 | 0.917 (33 of 36 cards) | 0.938 (30 of 32 cards) |
+| coverage | at least 0.7 | 0.831 (103 of 124 fields) | 0.71 (88 of 124 fields) |
+| invented | at most 0 | 0 | 0 |
+| held ambiguous | at least 0.75 | 0.875 (7 of 8) | 0.875 (7 of 8) |
+| p95 | at most 1000 ms | 369 ms | **1,137 ms** |
+| errors | at most 0 | 0 | 0 |
+| cost per call | | $0.0000872 | $0.0000924 |
+
+Per field, filled of expected: vendor 25 and 19 of 27; tags 26 of 34 English (three wrong), 19 of 34 Spanish (two wrong); day 20 and 21 of 30; amount 32 and 29 of 33. The intent passed all 36 English cards and 32 Spanish ones, and no nothing row in either language.
+
+### The latency
+
+| Run | Median | p95 |
+|---|---|---|
+| Spanish, run 1 | 696 ms | 1,137 ms |
+| Spanish, run 2 | 243 ms | 395 ms |
+| English, run 1 | 225 ms | 369 ms |
+| English, run 2 | 773 ms | 1,396 ms |
+| Spanish, round 3 run 1 | 243 ms | 334 ms |
+
+The slowdown is the provider's, across whole runs, not the change's: the same set ran at a median near 240 ms in one run and near 700 ms in the other, and English met it in run 2. The card asks the same questions as round 3, and a call cost the same ($0.0000924 against $0.0000920). The kill line reads the provider's latency and the card's together, and a verdict run in a slow window fails on it.
+
+### What #63 set out to fix
+
+| Row | English | Held by | Spanish | Held by |
+|---|---|---|---|---|
+| 29, an "and" pair | `Fixbright and Cloudberth` | the pair (fixbright 0.55, 0.57) | `Tecnoria y Nubalia` | the pair (`not_available` 0.49, 0.51) |
+| 30, an "or" pair | `Beanhaven or Larkspur` | the pair (`not_available` 0.37, 0.33) | `Cafetal o Cazuela Azul` | the pair (cazuela 0.37, 0.40) |
+| 23, a third vendor beside a pair | `Larkspur lunch for the Paydale or Sureharbor meeting` | not held: larkspur 1.00 | `... con Serena o con Cobertura Plena` | not held: cazuela 0.98, 0.99 |
+| 39, sets a value | `set the Larkspur lunch from Monday to $140` | `new_record` 0.00 | `deje el almuerzo de Cazuela Azul del lunes en $140` | `new_record` 0.09, 0.06 |
+
+- **The pair held in all four runs, and this round did not need it.** Three of the four pair rows picked below every vendor gate the card has had; `Fixbright and Cloudberth` at 0.55 and 0.57 would have leaked at round 3's vendor gate of 0.5, and the new gate of 0.7 held it too. Round 4 shows the hold costs nothing: row 23, the one record it could have held, filled right in every run. The pair probes remain the evidence that it is needed.
+- **Setting a value no longer reads as a new record.** Round 3's `deje en $260 el cargo` read 0.58 and 0.64; round 4's Spanish twin read 0.09 and 0.06, and every nothing row stayed at 0.09 or below. There is no run without the new label on this row, so the round shows the leak gone, not which change removed it.
+
+### Filled and wrong
+
+| Row | Request | Field | Expected | Got | Pick |
+|---|---|---|---|---|---|
+| en-r4-24 | Inkhollow posters for the client's store opening, billable to the client, $190 on September 8 | tags | office + client | client | office `not_mentioned` 0.62 |
+| es-r4-24 | carteles de Letranueva para la apertura de la tienda del cliente, facturables al cliente, ... | tags | office + client | client | office `not_mentioned` 0.63 |
+| en-r4-06 | Farwander train tickets to Philadelphia for the client workshop, $268, September 11 | tags | travel + client | travel | client `not_mentioned` 0.53 |
+| en-r4-32 | Farwander hotel, could be billable to a client, $280 yesterday | tags | held | travel | travel yes 0.44 |
+| es-r4-31 | Cafetal, $73 para la sala de descanso el martes | tags | held | meals | office `not_mentioned` 0.74 |
+
+Every correction is a tag, as in every round before: `billable to the client` still drops `office` in both languages (rounds 2, 3 and 4), and a maybe-billable or coffee-or-machine row fills the one tag it is sure of.
+
+### Run 2: flips only
+
+English: 7 flips on four rows; coverage 0.798, exact 0.941, held ambiguous 1, and p95 1,396 ms in the slow window. `a paper shredder from a warehouse club` held its intent, `the computer repair people swapped a keyboard` held its tags and amount, `Cloudberth load balancer` filled `office`, and `could be billable to a client` held its tags. Spanish: 1 flip, `boletos de tren de Rumbo Claro ...` filled its vendor (0.67 in run 1, under the gate); coverage 0.718, exact 0.938, held ambiguous 0.875, p95 395 ms. Every quality line passes in both languages in run 2 as well.
+
+### What the misses say
+
+- **The vendor's new gate costs Spanish coverage, as dev run 5 warned.** Spanish filled 19 of 27 vendors, against 21 in round 3; rescored at round 3's vendor and tags gates, with no call and no verdict, run 1 fills 20 and covers 0.726. Coverage has 0.01 of slack in Spanish run 1.
+- **The Spanish intent held four cards,** as round 3's held a few: `entrega urgente del contrato firmado con Pieveloz` (`not_available` 0.72), `redacción de un acuerdo de confidencialidad de Lindero` (`not_mentioned` 0.52), `complemento de seguro cibernético ...` (`not_mentioned` 0.65) and `hotel de Rumbo Claro, podría ser facturable a un cliente` (`not_available` 0.76). None is a nothing row read wrong; they cost coverage, not correctness.
+- **Tags remain the weakest field**: 26 and 19 of 34 filled, every wrong value on the card a tag.
+
+### Run logs
+
+- Pair probes: `demo/eval/runs/card-<en|es>-pair-<1|2>.jsonl`; dev: `demo/eval/runs/card-<en|es>-dev-5.jsonl`
+- Run 1: `demo/eval/runs/card-en-round4-1.jsonl`, `demo/eval/runs/card-es-round4-1.jsonl`
+- Run 2: `demo/eval/runs/card-en-round4-2.jsonl`, `demo/eval/runs/card-es-round4-2.jsonl`
+
+Each rescores with `scoreCardRun(await readCardRun(path), { gates })` and no call.
