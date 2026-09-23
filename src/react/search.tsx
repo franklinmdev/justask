@@ -45,7 +45,7 @@ export function SearchBox({
 	);
 }
 
-export type SearchResultsProps<T> = Omit<
+export type SearchItemProps<T> = Omit<
 	ComponentPropsWithoutRef<"div">,
 	"role" | "children"
 > & {
@@ -60,17 +60,17 @@ export type SearchResultsProps<T> = Omit<
 };
 
 /**
- * The results: the item the person meant, as a button that hands it to the
+ * The item: the one the person meant, as a button that hands it to the
  * app, or nothing. A polite live region, so the item is announced when it
  * appears, and busy while the next answer is on its way. It follows the box
  * in the DOM, so Tab moves from the box to the item.
  */
-export function SearchResults<T>({
+export function SearchItem<T>({
 	search,
 	children,
 	itemProps,
 	...props
-}: SearchResultsProps<T>) {
+}: SearchItemProps<T>) {
 	const { item } = search;
 	return (
 		<div {...props} role="status" aria-busy={search.loading}>

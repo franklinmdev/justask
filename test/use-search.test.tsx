@@ -6,7 +6,7 @@ import { type Candidate, createSearchHandler, type Provider } from "justask";
 import {
 	SearchBox,
 	SearchEmpty,
-	SearchResults,
+	SearchItem,
 	type SearchTiming,
 	type UseSearch,
 	useSearch,
@@ -71,7 +71,7 @@ function renderSearch({
 		return (
 			<main>
 				<SearchBox search={search} label="Find a vendor" />
-				<SearchResults search={search}>{(vendor) => vendor.name}</SearchResults>
+				<SearchItem search={search}>{(vendor) => vendor.name}</SearchItem>
 				<SearchEmpty search={search}>No vendor matches</SearchEmpty>
 			</main>
 		);

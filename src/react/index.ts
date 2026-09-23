@@ -3,8 +3,8 @@ export {
 	type SearchBoxProps,
 	SearchEmpty,
 	type SearchEmptyProps,
-	SearchResults,
-	type SearchResultsProps,
+	SearchItem,
+	type SearchItemProps,
 } from "./search.tsx";
 export {
 	type SearchError,
