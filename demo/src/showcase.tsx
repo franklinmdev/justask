@@ -192,6 +192,8 @@ export function CaseLayout({
 					id="hood-trace"
 					aria-labelledby="hood-tab-trace"
 					className="hood-panel"
+					// biome-ignore lint/a11y/noNoninteractiveTabindex: a tab panel is a tab stop, so keys reach it when nothing inside takes the focus (ARIA tabs pattern).
+					tabIndex={0}
 					hidden={place.view !== "trace"}
 				>
 					{hood}
@@ -201,6 +203,8 @@ export function CaseLayout({
 					id="hood-json"
 					aria-labelledby="hood-tab-json"
 					className="hood-panel"
+					// biome-ignore lint/a11y/noNoninteractiveTabindex: a tab panel is a tab stop, so keys reach it when nothing inside takes the focus (ARIA tabs pattern).
+					tabIndex={0}
 					hidden={place.view !== "json"}
 				>
 					{call.trace ? (
@@ -220,6 +224,8 @@ export function CaseLayout({
 					id="hood-code"
 					aria-labelledby="hood-tab-code"
 					className="hood-panel"
+					// biome-ignore lint/a11y/noNoninteractiveTabindex: a tab panel is a tab stop, so keys reach it when nothing inside takes the focus (ARIA tabs pattern).
+					tabIndex={0}
 					hidden={place.view !== "code"}
 				>
 					<CodeFile file={snippet.server} />

@@ -280,6 +280,11 @@ describe("the demo's showcase page", () => {
 		expect(document.activeElement).toBe(view("Code"));
 		await user.keyboard("{ArrowRight}");
 		expect(document.activeElement).toBe(view("Trace"));
+		await user.keyboard("{Tab}");
+		expect(document.activeElement).toBe(
+			under.getByRole("tabpanel", { name: "Trace" }),
+		);
+		view("Trace").focus();
 		await user.keyboard("{ArrowLeft}{Home}{ArrowRight}{ArrowRight}");
 		expect(view("Code").getAttribute("aria-selected")).toBe("true");
 		expect(view("Code").tabIndex).toBe(0);
