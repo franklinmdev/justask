@@ -18,3 +18,11 @@
 {"id": "es-d-18", "request": "deshaga el último gasto", "kind": "nothing"}
 {"id": "es-d-19", "request": "buenos días", "kind": "nothing"}
 {"id": "es-d-20", "request": "pase el gasto del taxi al viernes", "kind": "nothing"}
+{"id": "es-d-21", "request": "¿el almuerzo de Cazuela Azul del lunes fue de $96?", "kind": "nothing"}
+{"id": "es-d-22", "request": "cambie el gasto de Nubalia del 1 de agosto a $329", "kind": "nothing"}
+{"id": "es-d-23", "request": "borre el boleto de tren de $64 del viernes", "kind": "nothing"}
+{"id": "es-d-24", "request": "gracias, la entrega de Pieveloz está bien", "kind": "nothing"}
+{"id": "es-d-25", "request": "póngale la etiqueta de cliente al almuerzo de ayer", "kind": "nothing"}
+{"id": "es-d-26", "request": "divida los vuelos de Rumbo Claro entre dos clientes", "kind": "nothing"}
+{"id": "es-d-27", "request": "¿cuál es el total de Tintaverde este año?", "kind": "nothing"}
+{"id": "es-d-28", "request": "¿ya se registró la limpieza de Brisamar del lunes?", "kind": "nothing"}

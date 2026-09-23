@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { fixGate, poolFields } from "../demo/eval/filter-gates.ts";
+import { fixGate, poolFields } from "../demo/eval/gates.ts";
 
-describe("the filter's gate rule", () => {
+describe("the gate rule", () => {
 	it.each([
 		["the midpoint, rounded to 0.05", 0.9, 0.4, 0.65],
 		["no wrong pick: the lowest right one, rounded down", 0.87, null, 0.85],

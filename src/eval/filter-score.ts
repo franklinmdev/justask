@@ -8,14 +8,20 @@ import {
 	gateField,
 } from "../filter.ts";
 import { checkGate } from "../gate.ts";
+import {
+	emptyStats,
+	type FieldStats,
+	notePick,
+	weakestPick,
+} from "./field-stats.ts";
 import type { FilterRun, FilterRunRow } from "./filter-run.ts";
 import {
 	type ExpectedValue,
 	type FilterEvalKind,
-	HELD,
 	isAmountRange,
 	isDateRange,
 } from "./filter-set.ts";
+import { HELD } from "./held.ts";
 import {
 	costPerCall,
 	judge,
@@ -23,26 +29,6 @@ import {
 	measuresOf,
 	type Verdict,
 } from "./score.ts";
-
-/** One field over a run, at its gate, with what its gate is fixed from. */
-export type FieldStats = {
-	gate: number;
-	/** Rows that expect a value in this field. */
-	expected: number;
-	/** Of those, the ones the field filled at its gate. */
-	filled: number;
-	/** Of those, the ones it filled with the expected value. */
-	right: number;
-	/** Rows the field filled at its gate with anything but the expected value, or where none belongs. */
-	wrong: number;
-	/**
-	 * Read with no gate: the lowest probability behind a right value, and the
-	 * highest behind a wrong one. A field's probability is its weakest pick.
-	 * Null when there was none.
-	 */
-	lowestRight: number | null;
-	highestWrong: number | null;
-};
 
 /** A field the filter got wrong: a wrong or held value, or a value where none belongs. */
 export type FilterMiss = {
@@ -149,11 +135,7 @@ export function readField(
 	const picks = Object.values(
 		(result as { answers: Record<string, FieldAnswer> }).answers,
 	).map(({ pick }) => pick);
-	const weakest = picks.every((pick) => pick !== null)
-		? picks.reduce((a, b) =>
-				(b?.probability ?? 1) < (a?.probability ?? 1) ? b : a,
-			)
-		: null;
+	const weakest = weakestPick(picks);
 	return {
 		value: (value as DateRange | AmountRange | undefined) ?? null,
 		probability: weakest?.probability ?? null,
@@ -297,15 +279,7 @@ function fieldStats(
 		at: Record<string, { value: ExpectedValue | null }>;
 	}[],
 ): FieldStats {
-	const stats: FieldStats = {
-		gate,
-		expected: 0,
-		filled: 0,
-		right: 0,
-		wrong: 0,
-		lowestRight: null,
-		highestWrong: null,
-	};
+	const stats = emptyStats(gate);
 	for (const { row, at } of read) {
 		const expected = expectedValue(row, name);
 		const got = at[name]?.value ?? null;
@@ -317,17 +291,7 @@ function fieldStats(
 		if (got !== null && !sameValue(got, expected)) stats.wrong++;
 		const bare = readField(row, name, NO_GATE);
 		if (bare.value === null || bare.probability === null) continue;
-		if (sameValue(bare.value, expected)) {
-			stats.lowestRight = Math.min(
-				stats.lowestRight ?? bare.probability,
-				bare.probability,
-			);
-		} else {
-			stats.highestWrong = Math.max(
-				stats.highestWrong ?? bare.probability,
-				bare.probability,
-			);
-		}
+		notePick(stats, sameValue(bare.value, expected), bare.probability);
 	}
 	return stats;
 }

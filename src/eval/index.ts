@@ -19,6 +19,7 @@ export {
 	type CardExpectedValue,
 	parseCardEvalSet,
 } from "./card-set.ts";
+export type { FieldStats } from "./field-stats.ts";
 export {
 	type FilterRun,
 	type FilterRunRow,
@@ -29,7 +30,6 @@ export {
 } from "./filter-run.ts";
 export {
 	compareFilterRuns,
-	type FieldStats,
 	type FilterFlip,
 	type FilterMiss,
 	type FilterReport,
