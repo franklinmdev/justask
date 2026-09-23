@@ -9,7 +9,7 @@ export const DAYS = 30;
 /**
  * The price the calculator names, read from TypeSafe's docs on the day it was
  * built. It is shown, never used: the cost per call is what the run measured.
- * test/demo-calculator.test.tsx checks the rate against the one the Jev
+ * test/jev.test.ts checks the rate against the one the Jev
  * adapter pins, so a change on either side fails there for the owner to read.
  */
 export const PRICE = {

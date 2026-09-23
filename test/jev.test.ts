@@ -6,6 +6,7 @@ import {
 import { ask, type Question } from "justask";
 import { JEV_MODEL, jevProvider } from "justask/jev";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { PRICE } from "../demo/src/calculator.tsx";
 import { fakeJevClient, jevResult } from "./fake-provider.ts";
 
 const vendor: Question = {
@@ -125,6 +126,18 @@ describe("jevProvider", () => {
 		expect(result.inputTokens).toBe(120);
 		// 120 input tokens at $0.042 per million; output tokens are free.
 		expect(result.costUsd).toBeCloseTo(120 * 0.042e-6, 12);
+	});
+
+	it("charges the rate the demo's calculator shows, so a change on either side fails here for the owner", async () => {
+		const client = fakeJevClient(async () => ({
+			...jevResult(answers),
+			usage: { input_tokens: 1_000_000, output_tokens: 0 },
+		}));
+
+		const { costUsd } = await jevProvider({ client }).answer(input);
+
+		expect(PRICE.model).toBe(JEV_MODEL);
+		expect(costUsd).toBeCloseTo(PRICE.usdPerMillionInputTokens, 12);
 	});
 
 	it("resolves a search through ask", async () => {

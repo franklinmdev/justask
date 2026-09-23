@@ -3,19 +3,13 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import axe from "axe-core";
 import type { Provider } from "justask";
-import { jevProvider } from "justask/jev";
 import { afterEach, describe, expect, it } from "vitest";
 import { createDemoHandler } from "../demo/server/handler.ts";
 import { App } from "../demo/src/app.tsx";
 import { monthlyCost, PRICE } from "../demo/src/calculator.tsx";
 import { english } from "../demo/src/content/en.ts";
 import { spanish } from "../demo/src/content/es.ts";
-import {
-	type FakeAnswers,
-	fakeJevClient,
-	fakeProvider,
-	jevResult,
-} from "./fake-provider.ts";
+import { type FakeAnswers, fakeProvider } from "./fake-provider.ts";
 
 /** Every vendor of both sets and several at zero, so the fake answers any shortlist. */
 const nobody = {
@@ -109,31 +103,6 @@ describe("the showcase's cost calculator", () => {
 		expect(
 			monthlyCost({ users: 0, actionsPerDay: 10, costPerCall: 0.0002 }),
 		).toBe(0);
-	});
-
-	it("shows the rate the Jev adapter pins, so a change on either side fails here", async () => {
-		const client = fakeJevClient(async () => ({
-			...jevResult({ search: { acme: 1, none: 0 } }),
-			usage: { input_tokens: 1_000_000, output_tokens: 0 },
-		}));
-
-		const { costUsd } = await jevProvider({ client }).answer({
-			request: "acme",
-			facts: {},
-			questions: [
-				{
-					id: "search",
-					instruction: "Which vendor?",
-					labels: [
-						{ label: "acme", description: "Acme" },
-						{ label: "none", description: "None" },
-					],
-				},
-			],
-			signal: new AbortController().signal,
-		});
-
-		expect(costUsd).toBeCloseTo(PRICE.usdPerMillionInputTokens, 12);
 	});
 
 	it("says, before any call, that the month is priced after it", async () => {
