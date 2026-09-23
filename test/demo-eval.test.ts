@@ -18,12 +18,13 @@ describe.each([english, spanish])("the search sets in $language", (content) => {
 	const evalSet = read(`search-${content.language}.jsonl`);
 	const devSet = read(`search-${content.language}.dev.jsonl`);
 	const round2 = read(`search-${content.language}.round2.jsonl`);
+	const round3 = read(`search-${content.language}.round3.jsonl`);
 	const catalog = new Set(content.vendors.map(({ id }) => id));
 	const count = (set: EvalRow[], kind: EvalRow["kind"]) =>
 		set.filter((row) => row.kind === kind).length;
 
 	it("expect only vendors of that language's catalog", () => {
-		for (const row of [...evalSet, ...devSet, ...round2]) {
+		for (const row of [...evalSet, ...devSet, ...round2, ...round3]) {
 			if (row.expected !== null) expect(catalog).toContain(row.expected);
 		}
 	});
@@ -85,8 +86,31 @@ describe.each([english, spanish])("the search sets in $language", (content) => {
 		);
 	});
 
+	it("give the round 3 eval set every kind", () => {
+		expect(count(round3, "item")).toBe(28);
+		expect(count(round3, "nothing")).toBe(6);
+		expect(count(round3, "ambiguous")).toBe(6);
+	});
+
+	it("never repeat an earlier request or a suggestion in round 3", () => {
+		const seen = new Set(
+			[
+				...evalSet.map(({ request }) => request),
+				...devSet.map(({ request }) => request),
+				...round2.map(({ request }) => request),
+				...Object.values(content.suggestions).flat(),
+			].map(normalized),
+		);
+		for (const { request } of round3) {
+			expect(seen).not.toContain(normalized(request));
+		}
+		expect(new Set(round3.map(({ request }) => normalized(request))).size).toBe(
+			round3.length,
+		);
+	});
+
 	it("are run against the search the demo serves, on that catalog", async () => {
-		for (const { request } of [...evalSet, ...round2]) {
+		for (const { request } of [...evalSet, ...round2, ...round3]) {
 			const shortlist = await demoSearch(content).shortlist(request);
 			for (const { id } of shortlist) expect(catalog).toContain(id);
 		}
@@ -116,6 +140,14 @@ describe("the frozen search eval", () => {
 		[
 			"search-es.round2.jsonl",
 			"b09cbcdaafba5c5a5ffe32c3f24976b28ec1d56c7fe04ea820cb92a8dae0722f",
+		],
+		[
+			"search-en.round3.jsonl",
+			"3d137e989a9d7fe52b09a452a7f26fcf206d9ac73a0ec561a8dc11af91ef4c23",
+		],
+		[
+			"search-es.round3.jsonl",
+			"8cf43ad146b70d4ba66d2e46763d50a5bf848859eeea7e5b4f3f8bc605293e8c",
 		],
 	])("keeps %s as approved", (name, sha256) => {
 		const bytes = readFileSync(evalFile(name));
