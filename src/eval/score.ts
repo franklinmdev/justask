@@ -33,15 +33,16 @@ export type VerdictLine = {
 	atLeast: boolean;
 	actual: number | null;
 	pass: boolean;
-	/** The latency line of a run in a slow window: measured again in a normal one (#65). */
+	/** A latency line that failed in a slow window: measured again in a normal one (#65). */
 	pending?: true;
 };
 
 /**
- * Passes only when every line does. In a slow window the latency line is
- * pending, so the run cannot pass; its quality lines still decide a fail.
- * `latencyPending` is true when they all pass: the verdict waits on the
- * latency line, measured again in a normal window.
+ * Passes only when every line does. In a slow window a latency line that
+ * passes counts, and one that fails is pending, so the run cannot pass; its
+ * quality lines still decide a fail. `latencyPending` is true when they all
+ * pass: the verdict waits on the latency line, measured again in a normal
+ * window.
  */
 export type Verdict = {
 	pass: boolean;
@@ -252,18 +253,20 @@ export function judge(
 	const lines = MEASURES.map(({ measure, atLeast }): VerdictLine => {
 		const line = killLines[measure];
 		const actual = measures[measure];
-		if (slowWindow && measure === "p95Ms") {
-			return { measure, line, atLeast, actual, pass: false, pending: true };
-		}
 		// A line the set cannot measure fails: a set without ambiguous rows
 		// has not shown that ambiguous requests stay held.
 		const pass = actual !== null && (atLeast ? actual >= line : actual <= line);
+		// A slow provider only adds latency, so a pass in a slow window counts.
+		if (!pass && slowWindow && measure === "p95Ms") {
+			return { measure, line, atLeast, actual, pass, pending: true };
+		}
 		return { measure, line, atLeast, actual, pass };
 	});
 	return {
 		pass: lines.every(({ pass }) => pass),
 		latencyPending:
-			slowWindow && lines.every(({ pass, pending }) => pass || pending),
+			lines.some(({ pending }) => pending) &&
+			lines.every(({ pass, pending }) => pass || pending),
 		lines,
 	};
 }

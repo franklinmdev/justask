@@ -61,7 +61,7 @@ A row found wrong after a run is the owner's call, logged here; it never silentl
 
 ## Latency
 
-The owner's triage decision on [#65](https://github.com/franklinmdev/justask/issues/65), 2026-09-23, holds here as for the card: every run sends the fixed provider probe before and after its rows, and a verdict run whose probes' median is more than twice the baseline is a slow window. Its quality lines still decide; its p95 line is pending, measured again on the same frozen rows in a later window whose probes are normal. The rule, the probe and the baseline are written once, in [card-eval.md, Latency](card-eval.md#latency). Every verdict recorded here was run before probes and stands as recorded.
+The owner's triage decision on [#65](https://github.com/franklinmdev/justask/issues/65), 2026-09-23, holds here as for the card: every run sends the fixed provider probe before and after its rows, and a verdict run whose probes' median is more than twice the baseline is a slow window. Its quality lines still decide, and so does a p95 that passes its line; a p95 that fails is pending, measured again on the same frozen rows in a later window whose probes are normal. The rule, the probe and the baseline are written once, in [card-eval.md, Latency](card-eval.md#latency). Every verdict recorded here was run before probes and stands as recorded.
 
 ## Result
 

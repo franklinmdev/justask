@@ -345,6 +345,28 @@ describe("a slow window", () => {
 		expect(formatReport(normal)).toContain("## Verdict: FAIL");
 	});
 
+	// The owner's ruling on #65: a p95 that passes in a slow window counts.
+	it("counts a p95 that passes its line in a slow window, and leaves only a failing one pending", () => {
+		const slowButFast = scoreRun(probedRun([700, 800, 900], { rowMs: 400 }));
+
+		expect(slowButFast.window?.slow).toBe(true);
+		expect(slowButFast.verdict).toMatchObject({
+			pass: true,
+			latencyPending: false,
+		});
+		expect(
+			slowButFast.verdict?.lines.find(({ measure }) => measure === "p95Ms"),
+		).toEqual({
+			measure: "p95Ms",
+			line: 800,
+			atLeast: false,
+			actual: 400,
+			pass: true,
+		});
+		expect(formatReport(slowButFast)).toContain("## Verdict: PASS");
+		expect(formatReport(slowButFast)).toContain("· slow window");
+	});
+
 	it("is not judged with no baseline, nor on a run saved before probes", () => {
 		const unjudged = scoreRun(probedRun([700, 800, 900], { baselineMs: null }));
 		const { probes: _, ...old } = probedRun([700, 800, 900]);

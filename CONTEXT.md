@@ -73,7 +73,7 @@ A fixed request an eval run sends straight to the provider before its rows and a
 _Avoid_: Ping, health check, warm-up
 
 **Slow window**:
-An eval run whose provider probes' median is more than twice the baseline declared before it. Its quality lines still decide; its p95 line is measured again on the same rows in a normal window.
+An eval run whose provider probes' median is more than twice the baseline declared before it. Its quality lines still decide, and so does a p95 that passes its line; a p95 that fails is measured again on the same rows in a normal window.
 _Avoid_: Outage, bad run, flaky run
 
 **Held field**:
