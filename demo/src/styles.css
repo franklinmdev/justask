@@ -986,6 +986,13 @@ h2 {
 		height: 44px;
 		padding: 0 14px;
 	}
+
+	.filter-remove,
+	.clear,
+	.pages a {
+		min-height: 44px;
+		padding: 0 12px;
+	}
 }
 
 /* Phone: the brand keeps the first row, the theme and language toggles take the second. */
