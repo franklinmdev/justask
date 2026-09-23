@@ -226,6 +226,15 @@ describe("the frozen card eval", () => {
 			"card-es.round4.jsonl",
 			"236390a28187c5e8ef13c55fbbeb3199e9a393c048e36f48d1a30ed3f7a6edf7",
 		],
+		// #63's pair probes, approved before any call: the pair rule was chosen from their runs.
+		[
+			"card-en.pair.jsonl",
+			"2f01d4790a71f62eeea7c2b6eef5bebe8bac387acbaf251a88254b6a2d474cab",
+		],
+		[
+			"card-es.pair.jsonl",
+			"571ba0f2bdaef184a9d1e927317ac9cb75c3016d00a9db8b5ebb856bea4e1bc6",
+		],
 	])("keeps %s as approved", (name, sha256) => {
 		const bytes = readFileSync(evalFile(name));
 		expect(createHash("sha256").update(bytes).digest("hex")).toBe(sha256);
