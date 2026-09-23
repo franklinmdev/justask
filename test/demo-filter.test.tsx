@@ -624,6 +624,7 @@ describe("the demo's filter page", () => {
 		expect(
 			screen.getByText("Nothing in that request filters the transactions."),
 		).toBeDefined();
+		expect(counter()).toBeNull();
 		expect(
 			screen
 				.getByRole("button", { name: "Apply filters" })

@@ -266,7 +266,7 @@ export type Copy = {
 	recorded: (date: string) => string;
 	/** What a screen reader hears as the recorded run starts. */
 	replaying: (date: string, request: string) => string;
-	/** Beside the box: the one sentence against what the controls the answer set take by hand. */
+	/** Beside the box: one sentence against the clicks and menus that the controls the answer set take by hand. */
 	saved: (cost: Cost) => string;
 	filter: FilterCopy;
 	card: CardCopy;
