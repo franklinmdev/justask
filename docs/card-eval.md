@@ -10,6 +10,8 @@
 
 **Round 5 (#73): the same card fails on Spanish coverage by one field.** Under #65's latency rule, with nothing changed, English clears every kill line and Spanish covers 86 of 124 fields (0.694) against a line of 0.7, in both runs; every probe window was normal, and no warm-up call or row timed out. See Round 5: result below; rounds 1 to 4 are unchanged.
 
+**Office tag diagnosis (#77): the office tag fills when a request names a service its label lists, and almost never from the service alone, in both languages.** No wording of the label's definition fills it, a shorter label fills nothing, and adding backups fills the backups row alone. A proposed fix is below; none has landed. See Office tag diagnosis below; rounds 1 to 5 are unchanged.
+
 **Latency (#65): from the next verdict run on, every run sends a fixed provider probe before and after its rows, and a run whose probes are more than twice the baseline leaves a failing latency line pending, to be measured again in a normal window.** See Latency below; round 4 stays a FAIL.
 
 **Hypothesis:** on the demo's fictional vendors, the expense card turns a typed expense into the record a person means (vendor, tags, day, amount), leaves a field empty when it cannot tell, and fills nothing when the request asks for no new expense, in English and in Spanish, on Enter. The lab measured a salon appointment card; this is a new measurement.
@@ -720,3 +722,89 @@ English: no flips; coverage 0.774, exact 0.97, held ambiguous 1, p95 283 ms, pro
 - Run 2: `demo/eval/runs/card-en-round5-2.jsonl`, `demo/eval/runs/card-es-round5-2.jsonl`
 
 Each rescores with `scoreCardRun(await readCardRun(path), { gates })` and no call.
+
+## Office tag diagnosis (#77)
+
+Carried by [#77](https://github.com/franklinmdev/justask/issues/77). Rounds 1 to 5 above stand as recorded. Round 5 failed on Spanish coverage alone, and its Spanish `office` tag filled 6 of 23 cards that expect it in run 1, against 15 English, answering `not_mentioned` on couriers, payroll, legal work and backups. Two hypotheses, unverified before these runs:
+
+- **Wording:** the label's phrasing or length makes the provider skip it in Spanish.
+- **Inference:** the request names a service, never the tag, and the provider reads Spanish too literally to infer it, so no label wording would fix it.
+
+### Probe sets
+
+`demo/eval/card-es.office.jsonl` and `demo/eval/card-en.office.jsonl`, 20 records per language, every one expecting `office`, run with `card.ts run <en|es> office <n> <label>` and no verdict. They take the round 5 misses' services (courier, payroll, legal, insurance, software, hosting, HR, printing, repairs, equipment), never their text. Approved by the owner in two batches on 2026-09-23 and frozen by checksum in `test/demo-card-eval.test.ts` in the commit before the first call; no later round may repeat them.
+
+- **Rows 1 to 10 name the service by a word the label already lists** (`mensajería de Pieveloz`, `nómina de septiembre`, `asesoría legal de Lindero`; `Swiftlane courier`, `Paydale September payroll run`).
+- **Rows 11 to 20 name the same services by what was done, with no word of the label** (`entrega de Pieveloz de unos documentos`, `declaración de retenciones`, `Lindero redactó los estatutos`; `drop-off of documents`, `withholding return`, `drafted the company bylaws`). Row N + 10 shares row N's vendor and service. Row 16 is the backups row (`copias de seguridad de la base de datos`, `database backups`); row 20 names no vendor of the catalog.
+- Checked with no call: the parser builds every day and amount, no row repeats any set, suggestion or recording, and the code's command and pair holds hold none of them.
+
+### Labels
+
+Each run reads the office tag by one label (`OFFICE_LABELS` in `demo/eval/office.ts`), everything else as the demo serves it at round 4's gates (tags 0.4). The demo serves `current` alone.
+
+| Label | Spanish | What changes |
+|---|---|---|
+| `current` | `oficina: lo que mantiene el negocio en marcha, como artículos, equipos, software, hosting, reparaciones, limpieza y ventanas, imprenta, mensajería, nómina y recursos humanos, asesoría legal y seguros` | nothing, round 2's label |
+| `backups` | the same with `respaldos` after `hosting` (English `backups`) | one service added |
+| `short` | `oficina: lo que mantiene el negocio en marcha` | the list dropped |
+| `rest` | `oficina: cualquier gasto del negocio que no sea comida ni viajes` (English `office: any business expense that is not meals or travel`) | the tag named by what it is not; added after `short`'s runs showed the list is what fills the tag |
+
+### Result
+
+Runs of 2026-09-23 with `jev-1.13.0`, two per label and language, today fixed at Wednesday 2026-09-23. Every run's probes were normal (medians 208 to 309 ms against 235), and no row errored. The office tag's own question is read here, whatever the intent did: `yes` wins at or above the tags gate of 0.4.
+
+| Office filled, runs 1 and 2 | Spanish, rows 1 to 10 | Spanish, rows 11 to 20 | English, rows 1 to 10 | English, rows 11 to 20 |
+|---|---|---|---|---|
+| `current` | 9, 9 | 3, 4 | 10, 10 | 4, 5 |
+| `backups` | 9, 9 | 3, 2 | 9, 9 | 4, 4 |
+| `short` | 0, 0 | 0, 0 | 0, 0 | 0, 0 |
+| `rest` | 0, 0 | 0, 0 | 0, 0 | 0, 0 |
+
+Where office was not filled, `not_mentioned` won every time; `not_available` won no row in any run. `yes`'s mean probability under `current`: Spanish 0.59 and 0.60 on rows 1 to 10, 0.28 and 0.29 on rows 11 to 20; English 0.67 and 0.68, 0.34 and 0.34. Under `short` it was 0.01 or less on every row, and under `rest` 0.38 or less.
+
+Per row under `current`, `yes` in runs 1 and 2:
+
+| Row | Spanish | `yes` | English | `yes` |
+|---|---|---|---|---|
+| 01 | mensajería de Pieveloz para llevar los cheques al banco, $23 el lunes | 0.62, 0.63 | Swiftlane courier to take the checks to the bank, $23 on Monday | 0.63, 0.64 |
+| 02 | nómina de septiembre procesada por Serena, $140 el 15 de septiembre | 0.54, 0.55 | Paydale September payroll run, $140 on September 15 | 0.74, 0.70 |
+| 03 | asesoría legal de Lindero por una disputa con un proveedor, $300 el 10 de septiembre | 0.73, 0.76 | Clausewood legal advice on a supplier dispute, $300 on September 10 | 0.81, 0.78 |
+| 04 | seguro de responsabilidad civil de Cobertura Plena, $410 el martes | 0.52, 0.51 | Sureharbor liability insurance, $410 on Tuesday | 0.75, 0.71 |
+| 05 | software de facturación de Cuentia, $45 el viernes | 0.44, 0.47 | Tallyroot invoicing software, $45 on Friday | 0.54, 0.56 |
+| 06 | hosting del correo de Nubalia, $27 ayer | 0.75, 0.80 | Cloudberth email hosting, $27 yesterday | 0.64, 0.69 |
+| 07 | recursos humanos de Serena para contratar a un asistente, $220 el 8 de septiembre | 0.77, 0.74 | Paydale HR help hiring an assistant, $220 on September 8 | 0.82, 0.84 |
+| 08 | imprenta de Letranueva, sobres con el logo, $66 el lunes | 0.59, 0.63 | Inkhollow printing of logo envelopes, $66 on Monday | 0.65, 0.67 |
+| 09 | reparación del proyector con Tecnoria, $85 el jueves | 0.63, 0.58 | Fixbright projector repair, $85 on Thursday | 0.65, 0.68 |
+| 10 | equipos de Tintaverde: una laminadora, $38 ayer | 0.32, 0.31 | Papergrove equipment: a laminator, $38 yesterday | 0.45, 0.50 |
+| 11 | entrega de Pieveloz de unos documentos en la notaría, $21 el martes | 0.30, 0.40 | Swiftlane drop-off of documents at the notary, $21 on Tuesday | 0.39, 0.41 |
+| 12 | declaración de retenciones de agosto de Serena, $95 el 11 de septiembre | 0.02, 0.03 | Paydale August withholding return, $95 on September 11 | 0.08, 0.07 |
+| 13 | Lindero redactó los estatutos de la empresa, $520 el 2 de septiembre | 0.12, 0.12 | Clausewood drafted the company bylaws, $520 on September 2 | 0.44, 0.45 |
+| 14 | póliza contra robo de Cobertura Plena, $260 el lunes | 0.45, 0.44 | Sureharbor theft policy, $260 on Monday | 0.13, 0.13 |
+| 15 | licencias adicionales de Cuentia para dos usuarios, $58 el viernes | 0.52, 0.58 | Tallyroot extra seats for two users, $58 on Friday | 0.11, 0.12 |
+| 16 | copias de seguridad de la base de datos con Nubalia, $14 ayer | 0.38, 0.28 | Cloudberth database backups, $14 yesterday | 0.42, 0.47 |
+| 17 | verificación de antecedentes de un candidato con Serena, $48 el lunes | 0.01, 0.01 | Paydale background check on a candidate, $48 on Monday | 0.32, 0.27 |
+| 18 | calcomanías con el logo para la vitrina de Letranueva, $72 el martes | 0.45, 0.52 | Inkhollow logo decals for the shop window, $72 on Tuesday | 0.58, 0.60 |
+| 19 | Tecnoria cambió la batería de una laptop, $110 el jueves | 0.36, 0.34 | Fixbright swapped a laptop battery, $110 on Thursday | 0.54, 0.49 |
+| 20 | un organizador de cables de una ferretería, $17 el viernes | 0.14, 0.17 | a cable organizer from a hardware store, $17 on Friday | 0.39, 0.38 |
+
+`backups` moved row 16 alone: Spanish 0.68 and 0.64, English 0.73 and 0.74, though the Spanish row says `copias de seguridad` and the label `respaldos`. Every other row stayed within 0.1 of `current`.
+
+### Diagnosis
+
+- **Neither hypothesis as written. The tag fills on what its label lists, in both languages.** A service the list names fills 9 of 10 Spanish and 10 of 10 English rows; the same service named by what was done fills 2 to 4 Spanish and 4 to 5 English. The definition carries nothing on its own: `short` and `rest` fill no row in either language, the first at 0.01 or less.
+- **Wording, refuted.** The label's length is not what makes it skip: dropping the list removes every fill, in English too. No rewording of the definition was found that fills anything.
+- **Inference, supported in part.** The provider does not infer `office` from a service the label does not name, and answers `not_mentioned`, as #77 guessed. But it is not Spanish alone, and wording does fix what it names: `backups` filled its row in both languages, a Spanish synonym included. So the list fixes what it lists and nothing else.
+- **The Spanish gap is smaller here than in round 5.** On these rows Spanish trails English by about one fill per ten in each group, and the gap runs both ways row by row (`póliza` 0.45 against `policy` 0.13, `licencias` 0.52 against `seats` 0.11; `estatutos` 0.12 against `bylaws` 0.44). Round 5's Spanish misses name few listed words (`entrega`, `constancias`, `consulta`, `enmienda del contrato`), which reads as the likelier cause of its 6 against 15 than a weaker reading of the same words; these runs cannot separate the two on round 5's rows.
+
+### Proposed fix, not landed
+
+The owner decides. Two ways, each with its cost on a round 6:
+
+1. **Fill `office` from the vendor, in code (recommended).** Eleven of the fourteen vendors in each language sell office services alone (`vendor()`'s `supplies` already says what); a card whose vendor fills with one of them gets `office` too, whatever the tag's pick. In Spanish round 5 run 1 the vendor filled with one of them on 19 cards, 17 of them expecting `office`, and the other two nothing rows the intent held. Rescored with no call over every saved verdict log (rounds 1 to 5, runs 1 and 2, `office` set to `yes` wherever the vendor filled with an office vendor): Spanish round 5 coverage 0.694 to 0.774 and 0.758, exact 0.938 to 0.969 and 0.906 to 0.938; English round 5 0.774 to 0.815, exact 0.97 to 1. No run's exact or held ambiguous fell in any round, and invented cannot move, since the intent gates the card. Its cost: a record at an office vendor that bought something else would get `office` too (a lunch with the cleaning crew, named by vendor); no frozen set has one, so that cost is unmeasured. The coffee vendors (`beanhaven`, `cafetal`) sell beans and machine rental, `meals` or `office`, and stay out. It needs an ADR, like the command and pair holds.
+2. **Extend the label's list.** Each service added fills the rows that name it, as `backups` did (+0.3 on its row), and nothing else. On a round 6 of fresh rows it gains only where a row names a word added, so its effect cannot be priced from these runs, and tuning the list toward rounds 1 to 5's words fits the past sets, not the next.
+
+No gate, kill line, label or code the demo serves changed.
+
+### Run logs
+
+`demo/eval/runs/card-<en|es>-office-<current|backups|short|rest>-<1|2>.jsonl`. `node --conditions=source demo/eval/card.ts office <en|es> <label> <n>` prints a run's office picks with no call.
