@@ -9,14 +9,21 @@ export {
 	type SearchResult,
 } from "./ask.ts";
 export type {
+	AmountField,
+	AmountRange,
 	CatalogField,
+	CatalogFieldResult,
+	DateField,
+	DateRange,
 	Field,
+	FieldAnswer,
 	FieldResult,
 	Fields,
 	FieldValue,
 	Filter,
 	FilterResult,
 	FilterValue,
+	ParsedFieldResult,
 } from "./filter.ts";
 export { fuzzyShortlist } from "./fuzzy-shortlist.ts";
 export {
@@ -27,6 +34,14 @@ export {
 	type SearchHandlerConfig,
 	type SearchHandlerResponse,
 } from "./handler.ts";
+export {
+	type AmountReading,
+	builtInParser,
+	type DateReading,
+	type Parser,
+	type ParserInput,
+	type Readings,
+} from "./parse.ts";
 export type {
 	Facts,
 	Label,

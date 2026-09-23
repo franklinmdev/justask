@@ -1,13 +1,24 @@
 import {
-	catalogQuestion,
-	type FieldResult,
+	amountPlan,
+	catalogPlan,
+	datePlan,
+	describeAmount,
+	describeDate,
+	type Field,
+	type FieldPlan,
 	type Fields,
 	type Filter,
 	type FilterResult,
-	gateField,
 	MISSING,
+	questionIds,
 } from "./filter.ts";
 import { checkGate } from "./gate.ts";
+import {
+	type AmountReading,
+	type DateReading,
+	type Parser,
+	parseRequest,
+} from "./parse.ts";
 import type { Pick } from "./pick.ts";
 import type {
 	Facts,
@@ -128,9 +139,9 @@ async function askSearch<T>({
 }
 
 /**
- * One question per field, all in one call. A field fills when its pick is a
- * candidate that clears the field's own gate; a field with no candidates is
- * held without a question, and none at all means no call.
+ * All fields' questions in one call. A catalog field's candidates come from
+ * its shortlist, a date or amount field's from the parsers. A field with no
+ * candidates is held without a question, and none at all means no call.
  */
 async function askFilter<F extends Fields>({
 	request,
@@ -140,33 +151,46 @@ async function askFilter<F extends Fields>({
 	filter,
 }: AskFilterInput<F>): Promise<AskFilterResult<F>> {
 	const names = Object.keys(filter.fields);
+	const field = (name: string) => filter.fields[name] as Field;
 	for (const name of names) {
-		const { gate } = filter.fields[name] as Fields[string];
-		checkGate(gate, `the gate of field "${name}"`);
+		checkGate(field(name).gate, `the gate of field "${name}"`);
+		const ids = questionIds(name, field(name));
+		const clash = names.find((other) => other !== name && ids.test(other));
+		if (clash) {
+			throw new TypeError(
+				`justask: field "${clash}" takes the id of one of field "${name}"'s questions; rename one of them`,
+			);
+		}
 	}
-	const fields: Record<string, FieldResult<unknown>> = {};
+	const parsed = names.some((name) => field(name).kind !== "catalog")
+		? readCandidates(request, facts, filter.parsers ?? [])
+		: { dates: [], amounts: [] };
+
+	const plans: Record<string, FieldPlan> = {};
 	await Promise.all(
 		names.map(async (name) => {
-			const field = filter.fields[name] as Fields[string];
-			const candidates = await field.shortlist(request);
-			checkShortlist(candidates, MISSING);
-			fields[name] = {
-				candidates,
-				pick: null,
-				probabilities: {},
-				gate: field.gate,
-			};
+			const declared = field(name);
+			if (declared.kind === "date") {
+				plans[name] = datePlan(name, filter, declared, parsed.dates);
+			} else if (declared.kind === "amount") {
+				plans[name] = amountPlan(name, filter, declared, parsed.amounts);
+			} else {
+				const candidates = await declared.shortlist(request);
+				checkShortlist(candidates, MISSING);
+				plans[name] = catalogPlan(name, filter, declared, candidates);
+			}
 		}),
 	);
-	const held = () => ({ value: {}, fields }) as FilterResult<F>;
+	const planOf = (name: string) => plans[name] as FieldPlan;
+	const held = () =>
+		({
+			value: {},
+			fields: Object.fromEntries(
+				names.map((name) => [name, planOf(name).held]),
+			),
+		}) as FilterResult<F>;
 
-	const questions = names.flatMap((name) => {
-		const { candidates = [] } = fields[name] ?? {};
-		const field = filter.fields[name] as Fields[string];
-		return candidates.length > 0
-			? [catalogQuestion(name, filter, field, candidates)]
-			: [];
-	});
+	const questions = names.flatMap((name) => planOf(name).questions);
 	if (questions.length === 0) return { filter: held() };
 
 	const outcome = await answer(
@@ -177,17 +201,51 @@ async function askFilter<F extends Fields>({
 	if ("error" in outcome) return { filter: held(), error: outcome.error };
 
 	const value: Record<string, unknown> = {};
-	for (const { id } of questions) {
-		const result = fields[id] as FieldResult<unknown>;
-		const probabilities = outcome.answer[id] ?? {};
-		const { pick, filled } = gateField(probabilities, result.gate);
-		const winner = result.candidates.find(
-			(candidate) => candidate.id === filled,
-		);
-		fields[id] = { ...result, pick, probabilities };
-		if (winner) value[id] = winner.value;
+	const fields: Record<string, unknown> = {};
+	for (const name of names) {
+		const plan = planOf(name);
+		if (plan.questions.length === 0) {
+			fields[name] = plan.held;
+			continue;
+		}
+		const read = plan.read(outcome.answer);
+		fields[name] = read.result;
+		if ("value" in read) value[name] = read.value;
 	}
 	return { filter: { value, fields } as FilterResult<F> };
+}
+
+/**
+ * The parsers' readings as candidates: dates d0, d1..., amounts a0, a1..., in
+ * the order they appear in the request.
+ */
+function readCandidates(
+	request: string,
+	facts: Facts,
+	parsers: readonly Parser[],
+): {
+	dates: Candidate<DateReading>[];
+	amounts: Candidate<AmountReading>[];
+} {
+	const today = /\d{4}-\d{2}-\d{2}/.exec(facts.today ?? "")?.[0];
+	if (!today) {
+		throw new TypeError(
+			'justask: a date or amount field needs the "today" fact, with today\'s date as YYYY-MM-DD',
+		);
+	}
+	const { dates, amounts } = parseRequest(request, { today, facts }, parsers);
+	return {
+		dates: dates.map((value, i) => ({
+			id: `d${i}`,
+			description: describeDate(value),
+			value,
+		})),
+		amounts: amounts.map((value, i) => ({
+			id: `a${i}`,
+			description: describeAmount(value),
+			value,
+		})),
+	};
 }
 
 async function answer(
