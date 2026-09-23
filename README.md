@@ -15,6 +15,7 @@ Private and unpublished. `package.json` sets `"private": true`, so npm refuses t
 | `justask` | The core, no UI: `ask`, the server handler and the provider contract |
 | `justask/react` | The React layer (hooks and unstyled pieces) |
 | `justask/jev` | The Jev provider adapter |
+| `justask/eval` | The eval function, Node only: measures a gate on an eval set |
 
 ## Server handler
 
@@ -105,6 +106,45 @@ app.post("/api/justask", (req, res, next) => {
   mount(req, res).catch(next);
 });
 ```
+
+## Measuring a gate
+
+Every gate is declared with no default, so it has to come from measurement. `justask/eval` runs an eval set through the real pipeline, with the real provider, and scores it the way the lab did. It runs by hand, never in CI, because every row is a paid call.
+
+An eval set is JSONL, one request per line with the result a person expects. `item` rows name the candidate id they mean. `nothing` rows have no item to find. `ambiguous` rows could mean more than one candidate, so their item must stay held:
+
+```jsonl
+{"id": "s01", "request": "invoices from Acme", "kind": "item", "expected": "acme"}
+{"id": "s02", "request": "what is my balance?", "kind": "nothing"}
+{"id": "s03", "request": "the Acme or Northwind bills", "kind": "ambiguous"}
+```
+
+Write the kill lines before the first run. The run log saves them with the gate, so the verdict cannot be tuned after you see the numbers:
+
+```ts
+import { readFile } from "node:fs/promises";
+import { formatReport, parseEvalSet, runEval, scoreRun } from "justask/eval";
+
+const run = await runEval({
+  set: parseEvalSet(await readFile("eval/search.jsonl", "utf8")),
+  search, // the same declaration the handler uses, with the gate under test
+  provider,
+  facts: { today: "Today is Tuesday 2026-09-22." }, // fixed, so every run reads the same day
+  timeoutMs: 2_000,
+  killLines: { exact: 0.9, coverage: 0.7, invented: 0, heldAmbiguous: 0.75, p95Ms: 800, errors: 0 },
+  log: "eval/runs/search-1.jsonl", // refuses to overwrite a saved run
+});
+console.log(formatReport(scoreRun(run)));
+```
+
+The report gives exact (filled items that are the expected one), coverage (item rows that filled), invented (nothing rows that got an item), held ambiguous, p95 latency, errors and cost per call, then checks each kill line. `exact`, `coverage` and `heldAmbiguous` must be at least their line, and the other three at most theirs. A line the set cannot measure fails; for example, a set with no ambiguous rows fails `heldAmbiguous`. Misses name whether the expected item never reached the shortlist or the provider picked wrong.
+
+The saved log is enough for everything else, with no provider call:
+
+- `scoreRun(await readRun(log), { gate: 0.3 })` rescores at another gate. A gate chosen after seeing the run gives no verdict, because it would be judged on the rows it was tuned on.
+- `compareRuns(first, second)` lists only the rows whose item flipped in a second run of the same set. The verdict stays with the first run; `formatReport(scoreRun(second), flips)` prints the second run's measures and its flips, with no verdict of its own.
+
+Keep a separate dev set for tuning descriptions and shortlists, and never let it decide a verdict.
 
 ## Development
 

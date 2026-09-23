@@ -1,3 +1,4 @@
+import type { Pick } from "./pick.ts";
 import type {
 	Facts,
 	Probabilities,
@@ -8,10 +9,12 @@ import type {
 import {
 	type Candidate,
 	checkShortlist,
-	NONE,
+	gateSearch,
 	type Search,
 	searchQuestion,
 } from "./search.ts";
+
+export type { Pick } from "./pick.ts";
 
 export type AskInput<T> = {
 	request: string;
@@ -20,12 +23,6 @@ export type AskInput<T> = {
 	/** How long the provider call may take before everything is held. No default. */
 	timeoutMs: number;
 	search: Search<T>;
-};
-
-/** The label the provider chose for one question, with its probability. */
-export type Pick = {
-	label: string;
-	probability: number;
 };
 
 export type SearchResult<T> = {
@@ -84,14 +81,8 @@ export async function ask<T>({
 	if ("error" in outcome) return { search: held, error: outcome.error };
 
 	const probabilities = outcome.answer[SEARCH] ?? {};
-	const pick = readPick(probabilities);
-	// The gate reads none, not the winner (ADR 0005): near-duplicate candidates
-	// split the winner's probability, while none stays low whenever one fits.
-	const none = probabilities[NONE] ?? 1;
-	const winner =
-		pick && pick.label !== NONE && none < search.gate
-			? candidates.find(({ id }) => id === pick.label)
-			: undefined;
+	const { pick, filled } = gateSearch(probabilities, search.gate);
+	const winner = candidates.find(({ id }) => id === filled);
 	return {
 		search: {
 			...held,
@@ -125,11 +116,11 @@ async function answer(
 	const call = Promise.resolve()
 		.then(() => provider.answer({ ...input, signal: controller.signal }))
 		.then(
-			(answer) => {
-				const breach = contractBreach(input.questions, answer);
+			({ answers }) => {
+				const breach = contractBreach(input.questions, answers);
 				return breach
 					? { error: providerError(new Error(breach)) }
-					: { answer };
+					: { answer: answers };
 			},
 			(cause: unknown) => ({ error: providerError(cause) }),
 		);
@@ -175,19 +166,4 @@ function contractBreach(
 		}
 	}
 	return null;
-}
-
-/** The label with the highest probability, or null on a tie, so key order never decides. */
-function readPick(probabilities: Probabilities): Pick | null {
-	let pick: Pick | null = null;
-	let tied = false;
-	for (const [label, probability] of Object.entries(probabilities)) {
-		if (!pick || probability > pick.probability) {
-			pick = { label, probability };
-			tied = false;
-		} else if (probability === pick.probability) {
-			tied = true;
-		}
-	}
-	return tied ? null : pick;
 }

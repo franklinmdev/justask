@@ -10,6 +10,7 @@ import type {
 	Provider,
 	ProviderAnswer,
 	ProviderInput,
+	ProviderResult,
 } from "justask";
 import type { JevClient } from "justask/jev";
 
@@ -20,8 +21,13 @@ export type FakeAnswers = Record<string, Probabilities>;
  * The single test seam: a provider with no network and no cost that answers
  * every question from fixed probabilities. It throws when a question or one of
  * its labels has no fixture, so a test cannot pass on an answer it never set.
+ * Pass a function to answer each request differently, as over an eval set.
+ * `costUsd`, when given, is reported as each call's cost.
  */
-export function fakeProvider(answers: FakeAnswers): Provider & {
+export function fakeProvider(
+	fixtures: FakeAnswers | ((request: string) => FakeAnswers),
+	{ costUsd }: { costUsd?: number } = {},
+): Provider & {
 	calls: Parameters<Provider["answer"]>[0][];
 } {
 	const calls: Parameters<Provider["answer"]>[0][] = [];
@@ -29,6 +35,8 @@ export function fakeProvider(answers: FakeAnswers): Provider & {
 		calls,
 		async answer(input) {
 			calls.push(input);
+			const answers =
+				typeof fixtures === "function" ? fixtures(input.request) : fixtures;
 			const answer: ProviderAnswer = {};
 			for (const question of input.questions) {
 				const fixture = answers[question.id];
@@ -49,7 +57,9 @@ export function fakeProvider(answers: FakeAnswers): Provider & {
 				}
 				answer[question.id] = probabilities;
 			}
-			return answer;
+			return costUsd === undefined
+				? { answers: answer }
+				: { answers: answer, costUsd };
 		},
 	};
 }
@@ -69,7 +79,7 @@ function recording(answer: Provider["answer"]): RecordingProvider {
 
 /** Returns `answer` as is, unchecked, for answers that break the contract or tie. */
 export function rawProvider(answer: ProviderAnswer): RecordingProvider {
-	return recording(async () => answer);
+	return recording(async (): Promise<ProviderResult> => ({ answers: answer }));
 }
 
 /** Rejects with `cause`, or throws it before returning a promise when `synchronous`. */
