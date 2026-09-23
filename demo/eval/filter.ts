@@ -27,6 +27,7 @@ import { contents, demoFilter, FACTS, TIMEOUT_MS } from "../server/handler.ts";
 import type { Language } from "../src/content/types.ts";
 import { fixGate, poolFields } from "./gates.ts";
 import { FILTER_KILL_LINES } from "./kill-lines.ts";
+import { needBaseline, probe } from "./probe.ts";
 
 /** Fixed, so every run reads the same day. */
 const TODAY = "Today is Tuesday 2026-09-22 (martes 22 de septiembre de 2026).";
@@ -51,6 +52,7 @@ if (command === "run") {
 	const [language, set, n] = rest;
 	const content = contents[language as Language];
 	if (!content || !isSet(set) || !n) usage();
+	if (set !== "dev") needBaseline();
 	loadKeyEnv(process.cwd());
 	const run = await runFilterEval({
 		set: parseFilterEvalSet(
@@ -62,6 +64,7 @@ if (command === "run") {
 		timeoutMs: TIMEOUT_MS,
 		killLines: FILTER_KILL_LINES,
 		log: runLogPath(content.language, set, n),
+		probe: probe(),
 	});
 	const report = scoreFilterRun(run);
 	console.log(
