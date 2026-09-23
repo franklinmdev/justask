@@ -30,8 +30,12 @@ function answer(probabilities: Record<string, number>): FakeAnswers {
 }
 
 const answers: Record<string, FakeAnswers> = {
-	"the catering people": answer({ northwind: 0.94, acme: 0.03, none: 0.01 }),
-	"the cleaners": answer({ southridge: 0.21, wideworld: 0.15, none: 0.61 }),
+	"the catering people": answer({
+		larkspur: 0.94,
+		papergrove: 0.03,
+		none: 0.01,
+	}),
+	"the cleaners": answer({ brightmop: 0.21, glasswell: 0.15, none: 0.61 }),
 	"los del catering": answer({ cazuela: 0.92, none: 0.02 }),
 };
 
@@ -87,7 +91,7 @@ describe("the demo's search page", () => {
 		);
 
 		expect(
-			await screen.findByRole("button", { name: /Northwind Traders/ }),
+			await screen.findByRole("button", { name: /Larkspur Catering/ }),
 		).toBeDefined();
 		expect(screen.getByRole("searchbox").getAttribute("value")).toBe(
 			"the catering people",
@@ -96,10 +100,10 @@ describe("the demo's search page", () => {
 		expect(state.getByText("Filled")).toBeDefined();
 		expect(
 			state.getByText(
-				"Northwind Traders won, and none (0.01) stayed below the gate (0.50).",
+				"Larkspur Catering won, and none (0.01) stayed below the gate (0.50).",
 			),
 		).toBeDefined();
-		const row = state.getByRole("row", { name: /Northwind Traders/ });
+		const row = state.getByRole("row", { name: /Larkspur Catering/ });
 		expect(within(row).getByText("0.94")).toBeDefined();
 		expect(within(row).getByText("pick")).toBeDefined();
 		expect(state.getByRole("row", { name: /none/ })).toBeDefined();
@@ -124,7 +128,7 @@ describe("the demo's search page", () => {
 			),
 		).toBeDefined();
 		expect(
-			screen.queryByRole("button", { name: /Southridge Cleaning/ }),
+			screen.queryByRole("button", { name: /Brightmop Cleaning/ }),
 		).toBeNull();
 		await expectNoAxeViolations(container);
 	});
@@ -149,11 +153,11 @@ describe("the demo's search page", () => {
 			screen.getByRole("button", { name: "the catering people" }),
 		);
 		await user.click(
-			await screen.findByRole("button", { name: /Northwind Traders/ }),
+			await screen.findByRole("button", { name: /Larkspur Catering/ }),
 		);
 
 		const table = screen.getByRole("table", {
-			name: "Transactions with Northwind Traders",
+			name: "Transactions with Larkspur Catering",
 		});
 		expect(within(table).getAllByRole("row").length).toBeGreaterThan(1);
 	});
@@ -177,7 +181,7 @@ describe("the demo's search page", () => {
 			({ label }) => label,
 		);
 		expect(labels).toContain("cazuela");
-		expect(labels).not.toContain("northwind");
+		expect(labels).not.toContain("larkspur");
 		await expectNoAxeViolations(container);
 	});
 
