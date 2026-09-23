@@ -55,6 +55,28 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 		read(`filter-${content.language}.round3.jsonl`),
 	);
 	const filter = demoFilter(content);
+	const everyRow = [...devSet, ...evalSet, ...round2, ...pairSet, ...round3];
+	/** The fields the code holds on a named pair; it finds the pair before any answer, so a failing provider still reports it. */
+	const pairHeld = async (request: string) => {
+		const { filter: result } = await ask({
+			request,
+			facts: { ...FACTS, today: TODAY },
+			provider: failingProvider(new Error("no call")),
+			timeoutMs: 1_000,
+			filter,
+		});
+		return Object.entries(result.fields)
+			.filter(([, field]) => "pair" in field && field.pair)
+			.map(([name]) => name);
+	};
+	/** Each row's held fields, as "<row id> <field>". */
+	const pairHeldIn = async (set: FilterEvalRow[]) => {
+		const held: string[] = [];
+		for (const { id, request } of set) {
+			for (const name of await pairHeld(request)) held.push(`${id} ${name}`);
+		}
+		return held;
+	};
 	const rows = (set: FilterEvalRow[], kind: FilterEvalKind) =>
 		set.filter((row) => row.kind === kind);
 	const tally = (set: FilterEvalRow[], field: FieldName) => {
@@ -69,13 +91,7 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 	it("expect only fields of the demo's filter, and values of that language's catalogs", () => {
 		const vendors = new Set(content.vendors.map(({ id }) => id));
 		const statuses = new Set(content.statuses.map(({ id }) => id));
-		for (const row of [
-			...evalSet,
-			...devSet,
-			...round2,
-			...pairSet,
-			...round3,
-		]) {
+		for (const row of everyRow) {
 			for (const [field, value] of Object.entries(row.expected)) {
 				expect(Object.keys(filter.fields)).toContain(field);
 				if (value === "held") continue;
@@ -165,13 +181,7 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 			].map(normalized),
 		);
 		const repeated: string[] = [];
-		for (const { id, request } of [
-			...devSet,
-			...evalSet,
-			...round2,
-			...pairSet,
-			...round3,
-		]) {
+		for (const { id, request } of everyRow) {
 			if (seen.has(normalized(request))) repeated.push(id);
 			seen.add(normalized(request));
 		}
@@ -182,20 +192,7 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 	});
 
 	it("hold a named pair in round 2 only on the vendor of its two pair rows (ADR 0011)", async () => {
-		// The code finds the pair before any answer, so a failing provider still reports it.
-		const held: string[] = [];
-		for (const { id, request } of round2) {
-			const { filter: result } = await ask({
-				request,
-				facts: { ...FACTS, today: TODAY },
-				provider: failingProvider(new Error("no call")),
-				timeoutMs: 1_000,
-				filter,
-			});
-			for (const [name, field] of Object.entries(result.fields)) {
-				if ("pair" in field && field.pair) held.push(`${id} ${name}`);
-			}
-		}
+		const held = await pairHeldIn(round2);
 		expect(held).toEqual([
 			`${content.language}-r2-a29 vendor`,
 			`${content.language}-r2-a30 vendor`,
@@ -203,20 +200,7 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 	});
 
 	it("hold a named pair in round 3 only on its vendor pair and its two status pairs (#75)", async () => {
-		// The code finds the pair before any answer, so a failing provider still reports it.
-		const held: string[] = [];
-		for (const { id, request } of round3) {
-			const { filter: result } = await ask({
-				request,
-				facts: { ...FACTS, today: TODAY },
-				provider: failingProvider(new Error("no call")),
-				timeoutMs: 1_000,
-				filter,
-			});
-			for (const [name, field] of Object.entries(result.fields)) {
-				if ("pair" in field && field.pair) held.push(`${id} ${name}`);
-			}
-		}
+		const held = await pairHeldIn(round3);
 		expect(held).toEqual([
 			`${content.language}-r3-a29 vendor`,
 			`${content.language}-r3-a31 status`,
@@ -225,31 +209,18 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 	});
 
 	it("hold a named pair on the probes' status pairs, vendor pairs and negated statuses alone (#75)", async () => {
-		// The code finds the pair before any answer, so a failing provider still reports it.
-		const held: string[] = [];
-		for (const { id, request } of pairSet) {
-			const { filter: result } = await ask({
-				request,
-				facts: { ...FACTS, today: TODAY },
-				provider: failingProvider(new Error("no call")),
-				timeoutMs: 1_000,
-				filter,
-			});
-			for (const [name, field] of Object.entries(result.fields)) {
-				if ("pair" in field && field.pair) held.push(`${id} ${name}`);
-			}
-		}
-		const p = `${content.language}-p`;
+		const held = await pairHeldIn(pairSet);
+		const probe = `${content.language}-p`;
 		expect(held).toEqual([
-			`${p}-01 status`,
-			`${p}-02 status`,
-			`${p}-03 status`,
-			`${p}-04 status`,
-			`${p}-05 vendor`,
-			`${p}-06 vendor`,
+			`${probe}-01 status`,
+			`${probe}-02 status`,
+			`${probe}-03 status`,
+			`${probe}-04 status`,
+			`${probe}-05 vendor`,
+			`${probe}-06 vendor`,
 			// A negated status beside another: a false hold the probes measure.
-			`${p}-07 status`,
-			`${p}-08 status`,
+			`${probe}-07 status`,
+			`${probe}-08 status`,
 		]);
 	});
 
@@ -276,32 +247,15 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 			held: ["vendor"],
 		},
 	])(
-		"hold the status of a named pair of statuses, as $en is written in each language (#75)",
+		"hold only the field a named pair names, as $en is written in each language (#75)",
 		async (row) => {
 			const request = content.language === "es" ? row.es : row.en;
-			// The code finds the pair before any answer, so a failing provider still reports it.
-			const { filter: result } = await ask({
-				request,
-				facts: { ...FACTS, today: TODAY },
-				provider: failingProvider(new Error("no call")),
-				timeoutMs: 1_000,
-				filter,
-			});
-			const held = Object.entries(result.fields)
-				.filter(([, field]) => "pair" in field && field.pair)
-				.map(([name]) => name);
-			expect(held).toEqual(row.held);
+			expect(await pairHeld(request)).toEqual(row.held);
 		},
 	);
 
 	it("expect only dates and amounts the parser can build, on the day the runs are fixed at", () => {
-		for (const row of [
-			...devSet,
-			...evalSet,
-			...round2,
-			...pairSet,
-			...round3,
-		]) {
+		for (const row of everyRow) {
 			const { dates: read = [], amounts = [] } = builtInParser(row.request, {
 				today: TODAY,
 				facts: FACTS,

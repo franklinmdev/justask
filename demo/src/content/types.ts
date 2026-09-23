@@ -363,9 +363,10 @@ export function tag(id: Tag, description: string): Candidate<Tag> {
 }
 
 /**
- * A payment status. Its names are the words a request in another language
- * than the ids' names it by, which the pair hold reads beside the id, a clear
- * typo too (ADR 0011); the provider reads the description, never the names.
+ * A payment status. Its names are the words a request names it by when the
+ * language is not the ids' English, which the pair hold reads beside the id,
+ * a clear typo too (ADR 0011). The provider reads the id and the
+ * description, never the names.
  */
 export function status(
 	id: TransactionStatus,
