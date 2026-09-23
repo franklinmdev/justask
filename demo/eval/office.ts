@@ -6,7 +6,7 @@ import type { Content, Language } from "../src/content/types.ts";
 const OFFICE = "office";
 const QUESTION = `tags_${OFFICE}`;
 
-const served = (content: Content) => {
+const servedLabel = (content: Content) => {
 	const label = content.tags.find(({ id }) => id === OFFICE)?.description;
 	if (label === undefined) throw new Error("the demo serves no office tag");
 	return label;
@@ -21,14 +21,14 @@ const served = (content: Content) => {
  */
 export const OFFICE_LABELS: Record<Language, Record<string, string>> = {
 	en: {
-		current: served(english),
+		current: servedLabel(english),
 		backups:
 			"office: what keeps the business running, such as supplies, equipment, software, hosting, backups, repairs, cleaning and window washing, printing, couriers, payroll and HR, legal advice and insurance",
 		short: "office: what keeps the business running",
 		rest: "office: any business expense that is not meals or travel",
 	},
 	es: {
-		current: served(spanish),
+		current: servedLabel(spanish),
 		backups:
 			"oficina: lo que mantiene el negocio en marcha, como artículos, equipos, software, hosting, respaldos, reparaciones, limpieza y ventanas, imprenta, mensajería, nómina y recursos humanos, asesoría legal y seguros",
 		short: "oficina: lo que mantiene el negocio en marcha",
