@@ -42,6 +42,13 @@ export const spanish: Content = {
 		hood: "Bajo el capó",
 		hoodViews: "Vistas",
 		trace: "Traza",
+		json: "JSON",
+		code: "Código",
+		strip: "Esta llamada",
+		stripIdle:
+			"La latencia, los tokens y el costo aparecen después de la primera llamada.",
+		notReported: "No informado",
+		jsonIdle: "El resultado aparece aquí después de la primera llamada.",
 		showLabel: "Mostrar",
 		app: "Aplicación",
 		languageLabel: "Idioma",
@@ -100,7 +107,7 @@ export const spanish: Content = {
 		gate: "Umbral sobre none y several",
 		shortlistLabel: "Lista corta",
 		shortlist: (count, catalog) => `${count} de ${catalog} proveedores`,
-		roundTrip: "Ida y vuelta",
+		latency: "Latencia",
 		inputTokens: "Tokens de entrada",
 		cost: "Costo",
 		filter: {
@@ -118,8 +125,6 @@ export const spanish: Content = {
 			removeLabel: (field) => `Quitar el filtro de ${field.toLowerCase()}`,
 			removed: (field) => `Se quitó: ${field.toLowerCase()}`,
 			confirm: "Aplicar filtros",
-			heldHint:
-				"Un campo retenido queda fuera de los filtros. Una aplicación real lo completa con los controles de su propia tabla.",
 			empty: "Nada en esa solicitud filtra las transacciones.",
 			applied: "Aplicados",
 			clear: "Quitar filtros",
@@ -127,6 +132,24 @@ export const spanish: Content = {
 				count === total
 					? `Las ${total} transacciones`
 					: `${count} de ${total} transacciones`,
+			controls: {
+				allVendors: "Todos",
+				allStatuses: "Todos",
+				from: "Fecha de inicio",
+				to: "Fecha de fin",
+				fromEmpty: "Inicio",
+				toEmpty: "Fin",
+				min: "Monto mínimo",
+				max: "Monto máximo",
+				minEmpty: "Mín.",
+				maxEmpty: "Máx.",
+				calendar: {
+					label: "Elija el día",
+					previous: "Mes anterior",
+					next: "Mes siguiente",
+					clear: "Borrar",
+				},
+			},
 			none: "Ninguna transacción cumple los filtros aplicados.",
 			vendorColumn: "Proveedor",
 			fills: "Completa los filtros",

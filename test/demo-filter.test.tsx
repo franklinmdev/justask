@@ -72,6 +72,8 @@ const answers: Record<string, FakeAnswers> = {
 		date: "d0",
 	}),
 	"how much do we owe in total?": answer({}),
+	"overdue invoices": answer({ status: "overdue" }),
+	"invoices over 500 euros": answer({ amounts: ["min"] }),
 	"facturas vencidas": answer({ status: "overdue" }),
 	// The local currency is USD, so "pesos" resolves to none: the amount is never asked.
 	"facturas de más de 500 pesos": answer({}),
@@ -137,6 +139,16 @@ function rows(name = "Transactions") {
 	return table ? within(table).getAllByRole("row").length - 1 : 0;
 }
 
+/** A select among the table's own filter controls, by its label. */
+function select(name: string) {
+	return screen.getByRole("combobox", { name }) as HTMLSelectElement;
+}
+
+/** One bound of the table's amount range, by its label. */
+function amountBox(name: string) {
+	return screen.getByRole("textbox", { name }) as HTMLInputElement;
+}
+
 function waitForProposal() {
 	return screen.findByRole("list", { name: "Filters to apply" });
 }
@@ -193,32 +205,32 @@ describe("the demo's filter page", () => {
 		expect(proposed()).toEqual([]);
 	});
 
-	it("shows the call's input tokens and cost beside the round trip, when the provider reports them", async () => {
+	it("shows the call's latency, input tokens and cost in the hood's strip, when the provider reports them", async () => {
 		const { user } = renderDemo({ provider: priced });
 
 		await user.click(
 			screen.getByRole("button", { name: "Larkspur invoices over $1,000" }),
 		);
 
-		const state = panel();
+		const state = panel("This call");
 		expect(await figure(state, "Input tokens")).toBe("120");
 		expect(await figure(state, "Cost")).toBe("$0.000005");
 	});
 
-	it("shows neither tokens nor cost when the provider does not report them", async () => {
+	it("says in the strip when the provider did not report tokens or cost", async () => {
 		const { user } = renderDemo();
 
 		await user.click(
 			screen.getByRole("button", { name: "Larkspur invoices over $1,000" }),
 		);
 
-		const state = panel();
-		await figure(state, "Round trip");
-		expect(state.queryByText("Input tokens")).toBeNull();
-		expect(state.queryByText("Cost")).toBeNull();
+		const state = panel("This call");
+		expect(await figure(state, "Latency")).toMatch(/^\d+ ms$/);
+		expect(await figure(state, "Input tokens")).toBe("Not reported");
+		expect(await figure(state, "Cost")).toBe("Not reported");
 	});
 
-	it("shows the tokens and cost in Spanish", async () => {
+	it("shows the strip in Spanish", async () => {
 		const { user } = renderDemo({
 			provider: priced,
 			url: "/?case=table&lang=es",
@@ -226,7 +238,7 @@ describe("the demo's filter page", () => {
 
 		await user.click(screen.getByRole("button", { name: "facturas vencidas" }));
 
-		const state = panel("Qué pasó");
+		const state = panel("Esta llamada");
 		expect(await figure(state, "Tokens de entrada")).toBe("120");
 		expect(await figure(state, "Costo")).toBe("0,000005\u00a0US$");
 	});
@@ -242,12 +254,6 @@ describe("the demo's filter page", () => {
 
 		await waitForProposal();
 		expect(proposed()).toEqual(["DateAug 1, 2026 to Aug 31, 2026Remove"]);
-		// The demo's table has no filter controls of its own, so it says who fills a held field.
-		expect(
-			screen.getByText(
-				"A held field stays out of the filters. A real app fills it with its own table controls.",
-			),
-		).toBeDefined();
 		const vendor = within(panel().getByRole("region", { name: "Vendor" }));
 		expect(vendor.getByText("Held")).toBeDefined();
 		expect(
@@ -275,6 +281,145 @@ describe("the demo's filter page", () => {
 			date.startsWith("2026-08"),
 		);
 		expect(rows()).toBe(august.length);
+	});
+
+	it("sets the table's controls from Apply, leaves a held field's control as it was, and lets the person fill it", async () => {
+		const { container, user } = renderDemo();
+		const august = english.transactions.filter(({ date }) =>
+			date.startsWith("2026-08"),
+		);
+
+		await user.click(
+			screen.getByRole("button", {
+				name: "the cleaners' invoices from last month",
+			}),
+		);
+		await waitForProposal();
+		await user.click(screen.getByRole("button", { name: "Apply filters" }));
+
+		// The date filled; the vendor was held, so its control still shows every vendor.
+		expect(
+			screen.getByRole("button", { name: "Start date Aug 1" }),
+		).toBeDefined();
+		expect(
+			screen.getByRole("button", { name: "End date Aug 31" }),
+		).toBeDefined();
+		expect(select("Vendor").value).toBe("");
+		expect(rows()).toBe(august.length);
+
+		// The person fills the held vendor with the table's own control.
+		await user.selectOptions(select("Vendor"), "Brightmop Cleaning");
+		const brightmop = august.filter(({ vendorId }) => vendorId === "brightmop");
+		expect(rows()).toBe(brightmop.length);
+
+		// A second request fills only the status: the vendor and the date stay.
+		await user.click(screen.getByRole("button", { name: "overdue invoices" }));
+		await waitForProposal();
+		await user.click(screen.getByRole("button", { name: "Apply filters" }));
+
+		expect(select("Status").value).toBe("overdue");
+		expect(select("Vendor").value).toBe("brightmop");
+		expect(
+			screen.getByRole("button", { name: "Start date Aug 1" }),
+		).toBeDefined();
+		expect(rows()).toBe(
+			brightmop.filter(({ status }) => status === "overdue").length,
+		);
+		await expectNoAxeViolations(container);
+	});
+
+	it("lets the person change an applied amount and pick a day from the calendar, by keyboard", async () => {
+		const { container, user } = renderDemo();
+		const larkspur = english.transactions.filter(
+			({ vendorId }) => vendorId === "larkspur",
+		);
+
+		await user.click(
+			screen.getByRole("button", { name: "Larkspur invoices over $1,000" }),
+		);
+		await waitForProposal();
+		await user.click(screen.getByRole("button", { name: "Apply filters" }));
+
+		expect(select("Vendor").value).toBe("larkspur");
+		const min = screen.getByRole("textbox", { name: "Minimum amount" });
+		const max = screen.getByRole("textbox", { name: "Maximum amount" });
+		expect((min as HTMLInputElement).value).toBe("1000");
+		expect((max as HTMLInputElement).value).toBe("");
+		expect(rows()).toBe(2);
+
+		await user.clear(min);
+		await user.type(min, "500");
+		const overFive = larkspur.filter(({ amount }) => amount >= 500);
+		expect(rows()).toBe(overFive.length);
+
+		// No native date input: the date range opens a calendar on today, the 22nd of September.
+		expect(container.querySelector('input[type="date"]')).toBeNull();
+		await user.click(screen.getByRole("button", { name: "Start date Start" }));
+		expect(
+			screen.getByRole("dialog", { name: "Choose the day" }),
+		).toBeDefined();
+		await user.keyboard("{PageUp}{Enter}");
+
+		expect(screen.queryByRole("dialog")).toBeNull();
+		expect(
+			screen.getByRole("button", { name: "Start date Aug 22" }),
+		).toBeDefined();
+		expect(rows()).toBe(
+			overFive.filter(({ date }) => date >= "2026-08-22").length,
+		);
+		await expectNoAxeViolations(container);
+
+		await user.click(screen.getByRole("button", { name: "Clear filters" }));
+		expect(rows()).toBe(english.transactions.length);
+		expect(select("Vendor").value).toBe("");
+		expect(amountBox("Minimum amount").value).toBe("");
+		expect(
+			screen.getByRole("button", { name: "Start date Start" }),
+		).toBeDefined();
+	});
+
+	it("keeps no row for an amount in another currency, until the person types a bound in the table's own", async () => {
+		const { user } = renderDemo();
+
+		await user.type(
+			screen.getByRole("searchbox", { name: "Filter the transactions" }),
+			"invoices over 500 euros",
+		);
+		await waitForProposal();
+		await user.click(screen.getByRole("button", { name: "Apply filters" }));
+
+		expect(screen.getByText("EUR")).toBeDefined();
+		expect(rows()).toBe(0);
+
+		// The person keeps the minimum and types a maximum: both read in the table's own currency.
+		await user.type(
+			screen.getByRole("textbox", { name: "Maximum amount" }),
+			"1000",
+		);
+
+		expect(screen.queryByText("EUR")).toBeNull();
+		expect(rows()).toBe(
+			english.transactions.filter(
+				({ amount }) => amount >= 500 && amount <= 1000,
+			).length,
+		);
+	});
+
+	it("reads a bound typed with spaced thousands, and empties a box Clear filters reaches, whatever it holds", async () => {
+		const { user } = renderDemo();
+
+		await user.type(amountBox("Minimum amount"), "1 000");
+		expect(rows()).toBe(
+			english.transactions.filter(({ amount }) => amount >= 1000).length,
+		);
+
+		// Text that reads as no number sets no bound, and Clear filters takes it off the box too.
+		await user.type(amountBox("Maximum amount"), "1.2.3");
+		await user.click(screen.getByRole("button", { name: "Clear filters" }));
+
+		expect(rows()).toBe(english.transactions.length);
+		expect(amountBox("Minimum amount").value).toBe("");
+		expect(amountBox("Maximum amount").value).toBe("");
 	});
 
 	it("fills nothing from a request with nothing to filter, and offers nothing to apply", async () => {
@@ -338,6 +483,7 @@ describe("the demo's filter page", () => {
 		expect(rows("Transacciones")).toBe(
 			spanish.transactions.filter(({ status }) => status === "overdue").length,
 		);
+		expect(select("Estado").value).toBe("overdue");
 		// The panel still reads the answer that was applied.
 		expect(
 			panel("Qué pasó").getByText(

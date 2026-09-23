@@ -40,7 +40,7 @@ export const FACTS: Facts = { local_currency: LOCAL_CURRENCY };
  * vendors, so the last four were reachable only by a shared word: 5 of the 16
  * dev item rows never reached the provider (docs/search-eval.md).
  */
-const SHORTLIST_LIMIT = 14;
+export const SHORTLIST_LIMIT = 14;
 
 export const contents: Record<Language, Content> = {
 	en: english,

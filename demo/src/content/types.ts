@@ -87,6 +87,14 @@ export type IntentReason =
 	| { kind: "failed" }
 	| { kind: "command"; verb: string; reference: string };
 
+/** A calendar popover's words: its name, the month steps and the clear button. */
+export type CalendarCopy = {
+	label: string;
+	previous: string;
+	next: string;
+	clear: string;
+};
+
 /** The card page's own words. */
 export type CardCopy = {
 	title: string;
@@ -102,12 +110,7 @@ export type CardCopy = {
 	/** What the page says when the answer failed: the card stays as it was. */
 	unanswered: string;
 	pickDay: string;
-	calendar: {
-		label: string;
-		previous: string;
-		next: string;
-		clear: string;
-	};
+	calendar: CalendarCopy;
 	confirm: string;
 	saved: string;
 	undo: string;
@@ -142,12 +145,26 @@ export type FilterCopy = {
 	/** What a screen reader hears once a proposed filter is removed. */
 	removed: (field: string) => string;
 	confirm: string;
-	/** Says who fills a held field, since the demo's table has no controls of its own. */
-	heldHint: string;
 	empty: string;
 	applied: string;
 	clear: string;
 	showing: (count: number, total: number) => string;
+	/** The table's own filter controls, which Apply sets and the person can change. */
+	controls: {
+		allVendors: string;
+		allStatuses: string;
+		/** The date range's two days: each one's name, and what its button shows while empty. */
+		from: string;
+		to: string;
+		fromEmpty: string;
+		toEmpty: string;
+		/** The amount range's two bounds: each one's name, and its placeholder. */
+		min: string;
+		max: string;
+		minEmpty: string;
+		maxEmpty: string;
+		calendar: CalendarCopy;
+	};
 	none: string;
 	vendorColumn: string;
 	fills: string;
@@ -191,6 +208,13 @@ export type Copy = {
 	hood: string;
 	hoodViews: string;
 	trace: string;
+	json: string;
+	code: string;
+	/** The strip over the hood's tabs: what the displayed call took and used. */
+	strip: string;
+	stripIdle: string;
+	notReported: string;
+	jsonIdle: string;
 	showLabel: string;
 	app: string;
 	languageLabel: string;
@@ -227,7 +251,7 @@ export type Copy = {
 	gate: string;
 	shortlistLabel: string;
 	shortlist: (count: number, catalog: number) => string;
-	roundTrip: string;
+	latency: string;
 	inputTokens: string;
 	cost: string;
 	filter: FilterCopy;

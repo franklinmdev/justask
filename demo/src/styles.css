@@ -132,6 +132,7 @@ dd {
 /* The label style: small, muted and spaced, shared by every label-like element. */
 .label,
 .facts dt,
+.strip dt,
 .transactions th,
 .candidates caption,
 .filter-name,
@@ -373,6 +374,76 @@ dd {
 	border-bottom: 1px solid var(--border);
 }
 
+.hood-panel {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	min-width: 0;
+}
+
+.hood-panel[hidden] {
+	display: none;
+}
+
+/* The strip: the displayed call's figures, always over the hood's tabs. */
+.strip {
+	padding: 10px 12px;
+	border: 1px solid var(--border);
+	border-radius: 0.25rem;
+	background: var(--surface);
+	transition: opacity 150ms ease-out;
+}
+
+.strip[data-stale],
+.code-file[data-stale] {
+	opacity: 0.55;
+}
+
+.strip-figures {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 12px;
+}
+
+.strip dt {
+	margin-bottom: 2px;
+	line-height: 1.2;
+}
+
+/* A figure the provider left out reads as words, never as a zero. */
+.unreported {
+	color: var(--muted);
+	font-size: 0.8125rem;
+}
+
+/* A file of code or JSON: it scrolls inside itself, so the page never widens. */
+.code-file {
+	min-width: 0;
+	margin: 0;
+	border: 1px solid var(--border);
+	border-radius: 0.25rem;
+	background: var(--surface);
+	transition: opacity 150ms ease-out;
+}
+
+.code-file figcaption {
+	padding: 6px 12px;
+	border-bottom: 1px solid var(--border);
+	color: var(--muted);
+	font-size: 0.75rem;
+}
+
+.code-file pre {
+	max-height: 32rem;
+	margin: 0;
+	padding: 12px;
+	overflow: auto;
+	font-family: var(--mono);
+	font-size: 0.75rem;
+	line-height: 1.5;
+	tab-size: 2;
+}
+
 @media (min-width: 1100px) {
 	.case[data-hood="shown"] {
 		grid-template-columns: minmax(0, 58fr) minmax(0, 42fr);
@@ -550,7 +621,7 @@ h2 {
 	color: var(--muted);
 }
 
-/* The proposed filters, Confirm and the applied filters */
+/* The proposed filters, Confirm and the table's own filter controls */
 
 /*
  * With nothing proposed, the list's region is empty and the removal region is
@@ -561,8 +632,7 @@ h2 {
 	margin-top: -12px;
 }
 
-.proposed ul,
-.applied-list {
+.proposed ul {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 6px;
@@ -585,12 +655,6 @@ h2 {
 .proposed .filter {
 	/* The signature motion: a filled field settling in. */
 	animation: settle 150ms var(--ease-out);
-}
-
-.applied-list .filter {
-	padding-right: 10px;
-	background: var(--surface);
-	border-color: var(--border);
 }
 
 /* The piece wraps what the page renders in a span: the name and the value. */
@@ -676,6 +740,36 @@ h2 {
 
 .applied-count {
 	color: var(--muted);
+}
+
+/* The table's own controls: four in a row, two by two on a phone. */
+.table-filters {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 12px;
+}
+
+.table-filter {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+/* A legend sits outside the flex gap, so it carries the gap itself. */
+.table-filter legend {
+	margin-bottom: 6px;
+	padding: 0;
+}
+
+/* A range's two ends side by side: from and to, min and max. */
+.range {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+	gap: 4px;
 }
 
 .transactions .vendor {
@@ -822,6 +916,13 @@ h2 {
 .day-trigger[data-empty],
 .control:has(option[value=""]:checked) {
 	color: var(--muted);
+}
+
+/* In a range the day shares its row with the other end, so a long one is cut. */
+.range .day-trigger {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .calendar {
@@ -1513,6 +1614,10 @@ h2 {
 	.controls {
 		width: 100%;
 		justify-content: space-between;
+	}
+
+	.table-filters {
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 	}
 
 	/* The card's fields stack, one per row. */

@@ -13,7 +13,7 @@ import { cardEndpoint } from "./api.ts";
 import { CardPanel } from "./card-panel.tsx";
 import type { Content, ExpenseFields, ExpenseName } from "./content/types.ts";
 import { DayPicker } from "./day-picker.tsx";
-import { formats, LOCAL_CURRENCY } from "./format.ts";
+import { formats, LOCAL_CURRENCY, parseAmount } from "./format.ts";
 import { Suggestions } from "./parts.tsx";
 import { CaseLayout } from "./showcase.tsx";
 import { type Trace, timed, useSuggest } from "./trace.ts";
@@ -81,6 +81,8 @@ export function CardPage({
 	return (
 		<CaseLayout
 			content={content}
+			shownCase="form"
+			call={{ trace, result: card.result, loading: card.loading }}
 			labelledBy="card-title"
 			hood={<CardPanel content={content} card={card} trace={trace} />}
 		>
@@ -286,20 +288,6 @@ function answerKey(result: object | null): number {
 		answerIds.set(result, id);
 	}
 	return id;
-}
-
-/**
- * The number the person typed: a comma before one or two final digits is a
- * decimal comma, any other comma groups thousands.
- */
-function parseAmount(text: string): number | undefined {
-	const plain = text.trim();
-	if (plain === "") return undefined;
-	const decimal = /^[^.]*,\d{1,2}$/.test(plain)
-		? plain.replace(",", ".")
-		: plain.replace(/,/g, "");
-	const number = Number(decimal);
-	return Number.isFinite(number) ? number : undefined;
 }
 
 /** How an amount shows in its box: two decimals, as money is written. */
