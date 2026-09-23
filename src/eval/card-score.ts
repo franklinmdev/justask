@@ -2,6 +2,7 @@ import {
 	type CardField,
 	type Card as CardShape,
 	cardPlan,
+	fillGap,
 	INTENT,
 	NEW_RECORD,
 	NO_READINGS,
@@ -55,9 +56,10 @@ export type CardMiss = {
 	 * `shortlist` or `parser` when no candidate could build the expected value,
 	 * so no pick could have been right; `command` when the card's command
 	 * words held the intent (ADR 0009); `pair` when a named pair held the
-	 * field (ADR 0010); `provider` otherwise.
+	 * field (ADR 0010); `implied` when another field's item filled it (ADR
+	 * 0012); `provider` otherwise.
 	 */
-	blame: "shortlist" | "parser" | "command" | "pair" | "provider";
+	blame: "shortlist" | "parser" | "command" | "pair" | "implied" | "provider";
 };
 
 export type CardReport = {
@@ -119,6 +121,8 @@ type FieldReading = {
 	value: CardExpectedValue | null;
 	probability: number | null;
 	label: string | null;
+	/** The other field's item that filled this one's gap (ADR 0012). */
+	implied?: string;
 };
 
 const UNASKED: FieldReading = { value: null, probability: null, label: null };
@@ -230,7 +234,11 @@ function expectedValue(
 	return value === undefined || value === HELD ? null : value;
 }
 
-/** The card at its gates: each field's reading, emptied when the intent holds the card. */
+/**
+ * The card at its gates: each field's reading, then what a filled item
+ * implies for another field's gap, as `ask` fills it; every field emptied
+ * when the intent holds the card.
+ */
 function readCard(row: CardRunRow, gates: Record<string, number>) {
 	const intent = readRowIntent(row, gates[INTENT] as number);
 	const at: Record<string, FieldReading> = {};
@@ -239,7 +247,42 @@ function readCard(row: CardRunRow, gates: Record<string, number>) {
 		const reading = readField(row, name, gate);
 		at[name] = intent.passes ? reading : { ...reading, value: null };
 	}
+	if (intent.passes) readImplied(row, at);
 	return { intent, at };
+}
+
+/** Fills, in field order, a gap another field's filled item implies a value for (ADR 0012). */
+function readImplied(row: CardRunRow, at: Record<string, FieldReading>): void {
+	for (const [name, reading] of Object.entries(at)) {
+		const logged = row.fields[name];
+		if (logged?.kind !== "catalog" || typeof reading.value !== "string") {
+			continue;
+		}
+		const item = logged.candidates.find(({ id }) => id === reading.value);
+		for (const [target, ids] of Object.entries(item?.implies ?? {})) {
+			const own = at[target];
+			const several = row.fields[target];
+			if (!item || !own || own.value !== null || several?.kind !== "several") {
+				continue;
+			}
+			const answers: Record<string, FieldAnswer> = {};
+			for (const { id } of several.candidates) {
+				const probabilities = row.answers[`${target}_${id}`] ?? {};
+				answers[id] = { pick: readPick(probabilities), probabilities };
+			}
+			const filled = fillGap(
+				several.candidates.map(({ id }) => ({
+					id,
+					description: "",
+					value: id,
+				})),
+				answers,
+				ids,
+				row.pairs?.[target],
+			);
+			if (filled) at[target] = { ...own, value: filled, implied: item.id };
+		}
+	}
 }
 
 /**
@@ -337,7 +380,7 @@ export function scoreCardRun(
 				got,
 				probability: at[name]?.probability ?? null,
 				label: at[name]?.label ?? null,
-				blame: blame(row, name, expected),
+				blame: at[name]?.implied ? "implied" : blame(row, name, expected),
 			});
 		}
 	}

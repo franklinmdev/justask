@@ -152,7 +152,7 @@ export type CardValue<F extends CardFields> = {
  */
 export type CardFieldResult<F extends CardField> =
 	F extends SeveralCatalogField<infer T>
-		? ParsedFieldResult<T> & Paired
+		? ParsedFieldResult<T> & Paired & Implied
 		: F extends CatalogField<infer T>
 			? CatalogFieldResult<T> & Paired
 			: F extends CardDateField
@@ -160,6 +160,12 @@ export type CardFieldResult<F extends CardField> =
 				: F extends TimeField
 					? CatalogFieldResult<TimeReading>
 					: CatalogFieldResult<AmountReading>;
+
+/** A field filled from another field's item, where its own questions left a gap (ADR 0012). */
+export type Implied = {
+	/** The field whose filled item implied the value, and that item's id. */
+	implied?: { field: string; id: string };
+};
 
 /** The intent question's answer and gate. */
 export type IntentResult = {
@@ -503,4 +509,65 @@ function itemQuestion(
 			),
 		],
 	};
+}
+
+/**
+ * Refuses an item that implies a value for a field the card does not declare,
+ * or for one other than a catalog field where several items may apply, or an
+ * item of such a field that implies one: the gap rule reads one yes-or-no
+ * question per item, and a filled item of a field that takes one (ADR 0012).
+ */
+export function checkImplies(
+	name: string,
+	field: CardField,
+	candidates: Candidate<unknown>[],
+	fields: CardFields,
+): void {
+	for (const { id, implies } of candidates) {
+		if (!implies) continue;
+		if (field.kind === "catalog" && "several" in field) {
+			throw new TypeError(
+				`justask: item "${id}" of field "${name}" implies a value, but only an item of a field that takes one can`,
+			);
+		}
+		for (const target of Object.keys(implies)) {
+			const declared = fields[target];
+			if (!declared) {
+				throw new TypeError(
+					`justask: item "${id}" implies a value for field "${target}", which the card does not declare`,
+				);
+			}
+			if (!(declared.kind === "catalog" && "several" in declared)) {
+				throw new TypeError(
+					`justask: item "${id}" implies a value for field "${target}", which is not a catalog field where several items may apply`,
+				);
+			}
+		}
+	}
+}
+
+/**
+ * The implied items' values for a field where several items may apply, only
+ * where its own questions left a gap (ADR 0012): no named pair held it, every
+ * implied item answered `not_mentioned` or `yes` at any probability, and
+ * every other item `not_mentioned`. It never fills over a `not_available`, a
+ * tie, or another item the provider filled or held. Undefined when there is
+ * no gap, or the field's shortlist holds none of the implied items.
+ */
+export function fillGap<T>(
+	candidates: Candidate<T>[],
+	answers: Record<string, FieldAnswer>,
+	implied: readonly string[],
+	pair?: NamedPair,
+): T[] | undefined {
+	if (pair) return undefined;
+	const gap = candidates.every(({ id }) => {
+		const label = answers[id]?.pick?.label;
+		return label === NOT_MENTIONED || (implied.includes(id) && label === YES);
+	});
+	if (!gap) return undefined;
+	const values = candidates
+		.filter(({ id }) => implied.includes(id))
+		.map(({ value }) => value);
+	return values.length > 0 ? values : undefined;
 }

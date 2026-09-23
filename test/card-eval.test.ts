@@ -651,6 +651,88 @@ describe("runCardEval", () => {
 		expect(fields.vendor).toMatchObject({ filled: 0, lowestRight: null });
 	});
 
+	it("logs what an item implies, fills the gap at any gate as ask does, and blames the item for a wrong fill (ADR 0012)", async () => {
+		const caterer: Candidate<Vendor> = {
+			...(vendors[0] as Candidate<Vendor>),
+			implies: { tags: ["meals"] },
+		};
+		const card = expenseCard();
+		const gap = (vendorP: number) => ({
+			intent: answer(intentLabels, "new_record", 0.95),
+			vendor: answer(vendorLabels, "acme", vendorP),
+			tags_meals: answer(yesLabels, "not_mentioned", 0.9),
+			tags_travel: answer(yesLabels, "not_mentioned", 0.9),
+			total: answer(amountLabels, "a0", 0.95),
+		});
+		const run = await runCardEval({
+			...input(
+				join(dir, "run-1.jsonl"),
+				fakeProvider((request) => gap(request.includes("taxi") ? 0.85 : 0.9)),
+			),
+			set: set([
+				{
+					id: "order",
+					request: "acme order, $18",
+					kind: "record",
+					expected: {
+						vendor: "acme",
+						tags: ["meals"],
+						total: { value: 18, currency: "USD" },
+					},
+				},
+				{
+					id: "taxi",
+					request: "acme taxi, $30",
+					kind: "record",
+					expected: {
+						vendor: "acme",
+						tags: ["travel"],
+						total: { value: 30, currency: "USD" },
+					},
+				},
+			]),
+			card: {
+				...card,
+				fields: {
+					...card.fields,
+					vendor: {
+						...card.fields.vendor,
+						shortlist: () => [caterer, vendors[1] as Candidate<Vendor>],
+					},
+				},
+			},
+		});
+
+		expect(run.rows[0]?.fields.vendor?.candidates[0]).toEqual({
+			id: "acme",
+			description: "Acme Office Supply",
+			implies: { tags: ["meals"] },
+		});
+		const saved = await readCardRun(join(dir, "run-1.jsonl"));
+		const { fields, misses } = scoreCardRun(saved);
+		expect(fields.tags).toMatchObject({
+			expected: 2,
+			filled: 2,
+			right: 1,
+			wrong: 1,
+		});
+		expect(misses).toEqual([
+			expect.objectContaining({
+				id: "taxi",
+				field: "tags",
+				got: ["meals"],
+				blame: "implied",
+			}),
+		]);
+		// Above the taxi's vendor pick, its vendor holds, and so do its tags.
+		const tighter = scoreCardRun(saved, { gates: { vendor: 0.88 } });
+		expect(tighter.fields.tags).toMatchObject({
+			filled: 1,
+			right: 1,
+			wrong: 0,
+		});
+	});
+
 	it("names a card held by its intent as the intent's miss alone", async () => {
 		const run = await runCardEval(input(join(dir, "run-1.jsonl")));
 

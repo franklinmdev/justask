@@ -6,6 +6,8 @@ import {
 	cardPlan,
 	cardQuestionIds,
 	checkCommands,
+	checkImplies,
+	fillGap,
 	findCommand,
 	INTENT,
 	intentQuestion,
@@ -14,6 +16,7 @@ import {
 } from "./card.ts";
 import {
 	amountPlan,
+	type CatalogFieldResult,
 	catalogPlan,
 	datePlan,
 	describeAmount,
@@ -25,6 +28,8 @@ import {
 	type Filter,
 	type FilterResult,
 	MISSING,
+	type Paired,
+	type ParsedFieldResult,
 	questionIds,
 } from "./filter.ts";
 import { checkGate } from "./gate.ts";
@@ -314,6 +319,7 @@ async function askCard<F extends CardFields>({
 			if (declared.kind === "catalog") {
 				const candidates = await declared.shortlist(request);
 				checkShortlist(candidates, MISSING);
+				checkImplies(name, declared, candidates, card.fields);
 				plans[name] = cardPlan(
 					name,
 					card,
@@ -373,10 +379,38 @@ async function askCard<F extends CardFields>({
 		fields[name] = read.result;
 		if (intent.passes && "value" in read) value[name] = read.value;
 	}
+	if (intent.passes) fillImplied(names, fields, value);
 	return {
 		card: { intent: intent.result, value, fields } as CardResult<F>,
 		...outcome.usage,
 	};
+}
+
+/**
+ * Fills, in field order, what each filled item of a field that takes one
+ * implies for another field, where that field's questions left a gap (ADR
+ * 0012). The first item to fill a field wins.
+ */
+function fillImplied(
+	names: string[],
+	fields: Record<string, unknown>,
+	value: Record<string, unknown>,
+): void {
+	for (const name of names) {
+		if (!(name in value)) continue;
+		// A field where several items may apply has no single pick, and its
+		// items imply nothing (checkImplies).
+		const { candidates, pick } = fields[name] as CatalogFieldResult<unknown>;
+		const winner = candidates.find(({ id }) => id === pick?.label);
+		for (const [target, ids] of Object.entries(winner?.implies ?? {})) {
+			if (!winner || target in value) continue;
+			const held = fields[target] as ParsedFieldResult<unknown> & Paired;
+			const filled = fillGap(held.candidates, held.answers, ids, held.pair);
+			if (!filled) continue;
+			value[target] = filled;
+			fields[target] = { ...held, implied: { field: name, id: winner.id } };
+		}
+	}
 }
 
 /**
