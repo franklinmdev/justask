@@ -1,12 +1,13 @@
 // The demo's search eval, by hand with the key in .env, never in CI: every
 // row is a real Jev call.
 //
-//   node --conditions=source demo/eval/search.ts run <en|es> <eval|dev> <n>
-//   node --conditions=source demo/eval/search.ts compare <en|es> <first n> <second n>
+//   node --conditions=source demo/eval/search.ts run <en|es> <eval|round2|dev> <n>
+//   node --conditions=source demo/eval/search.ts compare <en|es> <eval|round2> <first n> <second n>
 //
-// `run` writes demo/eval/runs/search-<language>[-dev]-<n>.jsonl, which it
-// never overwrites, and prints its report. A dev run gets no verdict: it tunes,
-// it never decides. `compare` reads two saved eval runs and prints the second
+// `run` writes demo/eval/runs/search-<language>[-round2|-dev]-<n>.jsonl, which
+// it never overwrites, and prints its report. `eval` is round 1's set, `round2`
+// the fresh set of round 2. A dev run gets no verdict: it tunes, it never
+// decides. `compare` reads two saved runs of one set and prints the second
 // one's measures and flips, with no call.
 
 import { readFile } from "node:fs/promises";
@@ -26,12 +27,21 @@ import { KILL_LINES } from "./kill-lines.ts";
 /** Fixed, so every run reads the same day. */
 const TODAY = "Today is Tuesday 2026-09-22 (martes 22 de septiembre de 2026).";
 
-type SetKind = "eval" | "dev";
+/** Each set's file suffix and run log suffix. */
+const SETS = {
+	eval: { file: "", log: "" },
+	round2: { file: ".round2", log: "-round2" },
+	dev: { file: ".dev", log: "-dev" },
+} as const;
+type SetKind = keyof typeof SETS;
+const isSet = (set: string | undefined): set is SetKind =>
+	set !== undefined && Object.hasOwn(SETS, set);
+
 const here = (path: string) => new URL(path, import.meta.url).pathname;
 const setPath = (language: Language, set: SetKind) =>
-	here(`search-${language}${set === "dev" ? ".dev" : ""}.jsonl`);
+	here(`search-${language}${SETS[set].file}.jsonl`);
 const runLogPath = (language: Language, set: SetKind, n: string) =>
-	here(`runs/search-${language}${set === "dev" ? "-dev" : ""}-${n}.jsonl`);
+	here(`runs/search-${language}${SETS[set].log}-${n}.jsonl`);
 
 const [command, language, ...rest] = process.argv.slice(2);
 const content = contents[language as Language];
@@ -39,7 +49,7 @@ if (!content) usage();
 
 if (command === "run") {
 	const [set, n] = rest;
-	if ((set !== "eval" && set !== "dev") || !n) usage();
+	if (!isSet(set) || !n) usage();
 	try {
 		process.loadEnvFile(".env");
 	} catch {
@@ -59,10 +69,10 @@ if (command === "run") {
 		formatReport(set === "dev" ? { ...report, verdict: null } : report),
 	);
 } else if (command === "compare") {
-	const [first, second] = rest;
-	if (!first || !second) usage();
-	const before = await readRun(runLogPath(content.language, "eval", first));
-	const after = await readRun(runLogPath(content.language, "eval", second));
+	const [set, first, second] = rest;
+	if (!isSet(set) || set === "dev" || !first || !second) usage();
+	const before = await readRun(runLogPath(content.language, set, first));
+	const after = await readRun(runLogPath(content.language, set, second));
 	console.log(formatReport(scoreRun(after), compareRuns(before, after)));
 } else {
 	usage();
@@ -70,7 +80,7 @@ if (command === "run") {
 
 function usage(): never {
 	console.error(
-		"usage: search.ts run <en|es> <eval|dev> <n> | compare <en|es> <first n> <second n>",
+		"usage: search.ts run <en|es> <eval|round2|dev> <n> | compare <en|es> <eval|round2> <first n> <second n>",
 	);
 	process.exit(1);
 }

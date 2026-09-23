@@ -216,7 +216,7 @@ pnpm demo              # http://localhost:5173
 
 Vite serves the page and mounts the handlers as dev middleware, one route per flow and language (`/api/search/en`, `/api/filter/es` and so on), each with its own catalog. Both languages' local currency is USD. The key is read from `.env` on the server side and never reaches the browser bundle. Every search or filter request is one real, paid Jev call. Without a key the page still runs, and every request fails and is held.
 
-The demo's gate (0.2) was fixed from its dev sets and measured on its search eval sets, with the verdict and misses in `docs/search-eval.md`. Its timeout (2 s) and typing pause (300 ms) are not measured yet. `node --conditions=source demo/eval/search.ts` runs those sets by hand with the key in `.env`, never in CI. The filter's fields all take the lab's filter gate, 0.9, until the filter eval set measures one per field.
+The demo's gate (0.15) was fixed by the owner before round 2 and measured on that round's fresh search eval sets. It failed there, as round 1's gate did, on Spanish requests that could mean two vendors; both rounds' verdicts and misses are in `docs/search-eval.md`. Its timeout (2 s) and typing pause (300 ms) are not measured yet. `node --conditions=source demo/eval/search.ts` runs those sets by hand with the key in `.env`, never in CI. The filter's fields all take the lab's filter gate, 0.9, until the filter eval set measures one per field.
 
 ## Development
 

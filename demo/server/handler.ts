@@ -19,12 +19,11 @@ import type {
 } from "../src/content/types.ts";
 
 /**
- * Fixed from the dev runs before the scored run, by the rule in
- * docs/search-eval.md: the midpoint between the highest none on a dev item
- * that filled right (0.17) and the lowest on a dev row with no single vendor
- * (0.23).
+ * Fixed by the owner for round 2, before its rows existed: round 1 failed at
+ * 0.2, and 0.15 cleared every kill line on a rescore of round 1's run 1.
+ * Judged on round 2's fresh sets only (docs/search-eval.md).
  */
-export const GATE = 0.2;
+export const GATE = 0.15;
 
 /** The lab's search p95 was under 650 ms; this leaves room for a slow call. */
 export const TIMEOUT_MS = 2_000;
