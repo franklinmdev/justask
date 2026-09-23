@@ -87,6 +87,24 @@ describe("createCardHandler", () => {
 		expect(body.card.fields.vendor.candidates).toEqual([northwind]);
 	});
 
+	it("reports the call's cost in US dollars and its input tokens when the provider does", async () => {
+		const response = await handler({
+			provider: fakeProvider(picks, { costUsd: 0.000005, inputTokens: 120 }),
+		})(post(asked));
+
+		const body = await response.json();
+		expect(body.costUsd).toBe(0.000005);
+		expect(body.inputTokens).toBe(120);
+	});
+
+	it("leaves cost and tokens out, never zero, when the provider reports neither", async () => {
+		const body = await (await handler()(post(asked))).json();
+
+		expect(body.card).toBeDefined();
+		expect(body).not.toHaveProperty("costUsd");
+		expect(body).not.toHaveProperty("inputTokens");
+	});
+
 	it("reads yesterday from today in the browser's time zone", async () => {
 		// 22:30 on 21 September in Santo Domingo is already 22 September in UTC.
 		vi.setSystemTime(new Date("2026-09-22T02:30:00Z"));

@@ -94,6 +94,24 @@ describe("createFilterHandler", () => {
 		]);
 	});
 
+	it("reports the call's cost in US dollars and its input tokens when the provider does", async () => {
+		const response = await handler({
+			provider: fakeProvider(picks, { costUsd: 0.000005, inputTokens: 120 }),
+		})(post(asked));
+
+		const body = await response.json();
+		expect(body.costUsd).toBe(0.000005);
+		expect(body.inputTokens).toBe(120);
+	});
+
+	it("leaves cost and tokens out, never zero, when the provider reports neither", async () => {
+		const body = await (await handler()(post(asked))).json();
+
+		expect(body.filter).toBeDefined();
+		expect(body).not.toHaveProperty("costUsd");
+		expect(body).not.toHaveProperty("inputTokens");
+	});
+
 	it("reads last month from today in the browser's time zone", async () => {
 		// 22:30 on 31 August in Santo Domingo is already 1 September in UTC.
 		vi.setSystemTime(new Date("2026-09-01T02:30:00Z"));
