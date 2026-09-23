@@ -20,6 +20,7 @@ import {
 	scoreRun,
 } from "justask/eval";
 import { jevProvider } from "justask/jev";
+import { loadKeyEnv } from "../../scripts/load-env.ts";
 import { contents, demoSearch, FACTS, TIMEOUT_MS } from "../server/handler.ts";
 import type { Language } from "../src/content/types.ts";
 import { KILL_LINES } from "./kill-lines.ts";
@@ -51,11 +52,7 @@ if (!content) usage();
 if (command === "run") {
 	const [set, n] = rest;
 	if (!isSet(set) || !n) usage();
-	try {
-		process.loadEnvFile(".env");
-	} catch {
-		// Fine when TYPESAFE_API_KEY is already in the environment.
-	}
+	loadKeyEnv(process.cwd());
 	const run = await runEval({
 		set: parseEvalSet(await readFile(setPath(content.language, set), "utf8")),
 		search: demoSearch(content),
