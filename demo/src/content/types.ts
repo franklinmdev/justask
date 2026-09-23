@@ -11,7 +11,6 @@ import type {
 
 export type Language = "en" | "es";
 
-/** One page per flow. */
 /** The showcase's cases, in the order the tabs show them. */
 export type Case = "table" | "form" | "search";
 

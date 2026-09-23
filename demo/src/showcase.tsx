@@ -69,7 +69,7 @@ export function nextTab<T>(
  * first. What is out of view is hidden, not unmounted, so the app keeps what
  * the person typed.
  */
-export function Case({
+export function CaseLayout({
 	content,
 	labelledBy,
 	hood,

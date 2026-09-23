@@ -18,7 +18,7 @@ import type {
 import { FilterPanel } from "./filter-panel.tsx";
 import { formats, LOCAL_CURRENCY } from "./format.ts";
 import { DEBOUNCE_MS, Suggestions } from "./parts.tsx";
-import { Case } from "./showcase.tsx";
+import { CaseLayout } from "./showcase.tsx";
 import { type Trace, timed, useSuggest } from "./trace.ts";
 
 type Applied = FilterValue<TransactionFields>;
@@ -106,7 +106,7 @@ export function FilterPage({
 	const rows = content.transactions.filter((row) => matches(row, applied));
 
 	return (
-		<Case
+		<CaseLayout
 			content={content}
 			labelledBy="transactions-title"
 			hood={<FilterPanel content={content} filter={filter} trace={trace} />}
@@ -202,7 +202,7 @@ export function FilterPage({
 				</div>
 				<Transactions content={content} rows={rows} />
 			</section>
-		</Case>
+		</CaseLayout>
 	);
 }
 

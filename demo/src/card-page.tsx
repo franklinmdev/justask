@@ -15,7 +15,7 @@ import type { Content, ExpenseFields, ExpenseName } from "./content/types.ts";
 import { DayPicker } from "./day-picker.tsx";
 import { formats, LOCAL_CURRENCY } from "./format.ts";
 import { Suggestions } from "./parts.tsx";
-import { Case } from "./showcase.tsx";
+import { CaseLayout } from "./showcase.tsx";
 import { type Trace, timed, useSuggest } from "./trace.ts";
 
 type Expense = CardValue<ExpenseFields> & { id: number };
@@ -79,7 +79,7 @@ export function CardPage({
 	);
 
 	return (
-		<Case
+		<CaseLayout
 			content={content}
 			labelledBy="card-title"
 			hood={<CardPanel content={content} card={card} trace={trace} />}
@@ -238,7 +238,7 @@ export function CardPage({
 					</ul>
 				)}
 			</section>
-		</Case>
+		</CaseLayout>
 	);
 }
 

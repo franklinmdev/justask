@@ -4,7 +4,7 @@ import { searchEndpoint } from "./api.ts";
 import type { Content, Vendor } from "./content/types.ts";
 import { formats } from "./format.ts";
 import { DEBOUNCE_MS, Suggestions } from "./parts.tsx";
-import { Case } from "./showcase.tsx";
+import { CaseLayout } from "./showcase.tsx";
 import { StatePanel } from "./state-panel.tsx";
 import { type Trace, timed, useSuggest } from "./trace.ts";
 
@@ -33,7 +33,7 @@ export function SearchPage({
 	const suggest = useSuggest(search);
 
 	return (
-		<Case
+		<CaseLayout
 			content={content}
 			labelledBy="vendors-title"
 			hood={<StatePanel content={content} search={search} trace={trace} />}
@@ -85,7 +85,7 @@ export function SearchPage({
 					onPick={suggest}
 				/>
 			</section>
-		</Case>
+		</CaseLayout>
 	);
 }
 
