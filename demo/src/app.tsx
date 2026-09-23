@@ -3,6 +3,7 @@ import { english } from "./content/en.ts";
 import { spanish } from "./content/es.ts";
 import type { Language } from "./content/types.ts";
 import { SearchPage } from "./search-page.tsx";
+import { ThemeToggle } from "./theme.tsx";
 
 const contents = { en: english, es: spanish };
 
@@ -63,19 +64,22 @@ export function App({ fetch }: { fetch?: typeof globalThis.fetch }) {
 					</span>
 					<h1>{copy.page}</h1>
 				</div>
-				<nav className="languages" aria-label={copy.languageLabel}>
-					{languages.map(({ language: option, name }) => (
-						<a
-							key={option}
-							href={`?lang=${option}`}
-							lang={option}
-							aria-current={option === language ? "true" : undefined}
-							onClick={(event) => switchTo(event, option)}
-						>
-							{name}
-						</a>
-					))}
-				</nav>
+				<div className="controls">
+					<ThemeToggle copy={copy} />
+					<nav className="languages" aria-label={copy.languageLabel}>
+						{languages.map(({ language: option, name }) => (
+							<a
+								key={option}
+								href={`?lang=${option}`}
+								lang={option}
+								aria-current={option === language ? "true" : undefined}
+								onClick={(event) => switchTo(event, option)}
+							>
+								{name}
+							</a>
+						))}
+					</nav>
+				</div>
 			</header>
 			<SearchPage key={language} content={content} {...(fetch && { fetch })} />
 		</>

@@ -37,6 +37,8 @@ export type Copy = {
 	product: string;
 	page: string;
 	languageLabel: string;
+	themeLabel: string;
+	themes: { system: string; light: string; dark: string };
 	vendors: string;
 	boxLabel: string;
 	placeholder: string;

@@ -29,7 +29,8 @@
 }
 
 @media (prefers-color-scheme: dark) {
-	:root {
+	:root:not([data-theme="light"]) {
+		color-scheme: dark;
 		--bg: oklch(0.15 0 0);
 		--surface: oklch(0.2 0 0);
 		--surface-strong: oklch(0.25 0 0);
@@ -46,6 +47,29 @@
 		--bar-none: oklch(0.68 0 0);
 		--destructive: oklch(0.7 0.16 27);
 	}
+}
+
+:root[data-theme="dark"] {
+	color-scheme: dark;
+	--bg: oklch(0.15 0 0);
+	--surface: oklch(0.2 0 0);
+	--surface-strong: oklch(0.25 0 0);
+	--border: oklch(1 0 0 / 0.1);
+	--border-strong: oklch(1 0 0 / 0.18);
+	--text: oklch(0.93 0 0);
+	--muted: oklch(0.68 0 0);
+	--primary: oklch(0.68 0.15 255);
+	--primary-text: oklch(0.76 0.12 255);
+	--on-primary: oklch(0.15 0 0);
+	--ring: oklch(0.68 0.15 255 / 0.35);
+	--track: oklch(1 0 0 / 0.08);
+	--bar: oklch(0.68 0.15 255 / 0.4);
+	--bar-none: oklch(0.68 0 0);
+	--destructive: oklch(0.7 0.16 27);
+}
+
+:root[data-theme="light"] {
+	color-scheme: light;
 }
 
 *,
@@ -162,13 +186,15 @@ dd {
 	color: var(--muted);
 }
 
-.languages {
+.languages,
+.themes {
 	display: flex;
 	border: 1px solid var(--border);
 	border-radius: 0.125rem;
 }
 
-.languages a {
+.languages a,
+.themes button {
 	display: inline-flex;
 	align-items: center;
 	height: 28px;
@@ -183,17 +209,40 @@ dd {
 		color 120ms ease-out;
 }
 
-.languages a + a {
+.controls {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.themes {
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+}
+
+.themes button {
+	margin: 0;
+	border: 0;
+	background: transparent;
+	font-family: inherit;
+	cursor: pointer;
+}
+
+.languages a + a,
+.themes button + button {
 	border-left: 1px solid var(--border);
 }
 
-.languages a[aria-current="true"] {
+.languages a[aria-current="true"],
+.themes button[aria-pressed="true"] {
 	background: var(--surface-strong);
 	color: var(--text);
 }
 
 @media (hover: hover) {
-	.languages a:not([aria-current="true"]):hover {
+	.languages a:not([aria-current="true"]):hover,
+	.themes button:not([aria-pressed="true"]):hover {
 		background: var(--surface);
 		color: var(--text);
 	}
@@ -669,6 +718,11 @@ h2 {
 		padding: 0 16px;
 	}
 
+	.languages a,
+	.themes button {
+		padding: 0 8px;
+	}
+
 	.panel {
 		position: static;
 	}
@@ -692,5 +746,21 @@ h2 {
 	.languages a {
 		height: 44px;
 		padding: 0 14px;
+	}
+}
+
+/* Phone: the brand keeps the first row, the theme and language toggles take the second. */
+@media (max-width: 560px) {
+	.header {
+		flex-wrap: wrap;
+		height: auto;
+		min-height: 56px;
+		padding-block: 10px;
+		row-gap: 10px;
+	}
+
+	.controls {
+		width: 100%;
+		justify-content: space-between;
 	}
 }

@@ -10,6 +10,8 @@ export const spanish: Content = {
 		product: "justask demo",
 		page: "Búsqueda",
 		languageLabel: "Idioma",
+		themeLabel: "Tema",
+		themes: { system: "Auto", light: "Claro", dark: "Oscuro" },
 		vendors: "Proveedores",
 		boxLabel: "Buscar un proveedor",
 		placeholder: "Describa el proveedor con sus palabras",

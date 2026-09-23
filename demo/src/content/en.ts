@@ -9,6 +9,8 @@ export const english: Content = {
 		product: "justask demo",
 		page: "Search",
 		languageLabel: "Language",
+		themeLabel: "Theme",
+		themes: { system: "Auto", light: "Light", dark: "Dark" },
 		vendors: "Vendors",
 		boxLabel: "Find a vendor",
 		placeholder: "Describe the vendor in your own words",
