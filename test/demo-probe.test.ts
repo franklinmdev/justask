@@ -38,9 +38,10 @@ describe("the frozen provider probe", () => {
 		expect(PROBE_WARM_UP).toBe(3);
 	});
 
-	// Null until the first normal runs measure it; written before a verdict run.
+	// Seeded on the owner's ruling (#65), 2026-09-23: the measured probes of
+	// search dev runs 5 and 6 (English), whose rows' medians were normal.
 	it("keeps the baseline as written", () => {
-		expect(PROBE_BASELINE_MS).toBeNull();
+		expect(PROBE_BASELINE_MS).toBe(235);
 		expect(probe()).toEqual({
 			input: PROBE,
 			warmUp: 3,

@@ -70,7 +70,21 @@ The owner's triage decision on [#65](https://github.com/franklinmdev/justask/iss
 - **Slow window.** A run whose probes' median is more than twice its baseline, or whose every probe failed, is marked a slow window, in its report's measures. Its quality lines (exact, coverage, invented, held ambiguous, errors) still decide: any of them failing is a FAIL. A p95 that passes its line counts, since a slow provider only adds latency (the owner's ruling on #65, 2026-09-23). A p95 that fails is pending, and when every quality line passes the report's verdict reads `LATENCY PENDING`. Only that latency line is measured again: a later run of the same frozen rows, with nothing else changed, in a window whose probes are normal, under the next free run number (run 3 when run 2 took the flips). Read two lines of its report and nothing else: `Probes` must say `normal`, and the p95 in `Measures` decides the latency line against its kill line. Its verdict table decides nothing, even where it prints FAIL on a quality line; record the result beside run 1's. A remeasure run in a slow window decides nothing either; wait and run again.
 - **Round 4 stays a FAIL** as recorded. Every log saved before this rule has no probes and scores as it did.
 
-No run has sent probes yet, so no run is known normal against a baseline: the owner names the runs the first baseline is read from, before the next verdict run.
+### Baseline: 235 ms, from search dev runs 5 and 6
+
+The owner ruled on 2026-09-23 (#65) that the first baseline is seeded from two search dev runs back to back, accepted only if the rows' median latency in both logs is near the normal history, about 240 ms (card round 3 run 1: 243 ms; round 4's normal runs: 224 and 240 ms; the slow ones: 693 and 726 ms). The row median is taken over rows answered by a call.
+
+| Run | Rows' median | Row errors | Warm-up (discarded) | Measured probes, before · after |
+|---|---|---|---|---|
+| Search `en` dev 3 | 444 ms (769 ms over all rows) | 4 timeouts | none yet | 1,236, 2,003 timeout, 2,001 timeout · 1,443, 445, 259 |
+| Search `en` dev 4 | 318 ms | 0 | none yet | 1,312, 1,392, 367 · 249, 415, 359 |
+| Search `en` dev 5 | 226 ms | 0 | 2,004, 2,002, 2,001, all timeouts | 336, 427, 306 · 227 provider error, 446, 176 |
+| Search `en` dev 6 | 273 ms | 0 | 414, 217, 317 | 228, 261, 202 · 235, 231, 223 |
+
+- **Dev runs 3 and 4 were rejected.** Dev run 3's rows sat far above the history, and both runs' first calls were a cold start. That led to the warm-up (above). Their logs are kept, and they seed nothing.
+- **Dev runs 5 and 6 were accepted**, both near the history. Dev run 5's warm-up took the cold start on its own: all three calls timed out, and no row did. `node --conditions=source demo/eval/baseline.ts demo/eval/runs/search-en-dev-5.jsonl demo/eval/runs/search-en-dev-6.jsonl` gives 235 ms over the 11 measured probes left: the warm-up is left out, and so is the one probe that failed fast. `PROBE_BASELINE_MS` is 235, frozen by value in `test/demo-probe.test.ts`, so a run is a slow window when its probes' median is above 470 ms.
+
+Run logs: `demo/eval/runs/search-en-dev-3.jsonl` to `search-en-dev-6.jsonl`.
 
 ## Gates, from the dev runs
 

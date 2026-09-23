@@ -34,11 +34,12 @@ export const PROBE_WARM_UP = 3;
 
 /**
  * The probes' median from the most recent normal runs, written here before
- * a verdict run and frozen by value in test/demo-probe.test.ts. Null until
- * the first is measured: a dev run may run without it, a verdict run may
- * not. How it is measured: docs/card-eval.md, Latency.
+ * a verdict run and frozen by value in test/demo-probe.test.ts. A verdict
+ * run is refused while it is null. Seeded from the measured probes of
+ * search dev runs 5 and 6 (English), 2026-09-23; how it was measured:
+ * docs/card-eval.md, Latency.
  */
-export const PROBE_BASELINE_MS: number | null = null;
+export const PROBE_BASELINE_MS: number | null = 235;
 
 /** The probe a run sends, under the baseline declared before it. */
 export const probe = (): Probe => ({
