@@ -258,7 +258,7 @@ export function costPerCall(
 	return total / calls.length;
 }
 
-function ratio(part: number, whole: number): number | null {
+export function ratio(part: number, whole: number): number | null {
 	return whole === 0 ? null : part / whole;
 }
 
