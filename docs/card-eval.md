@@ -110,7 +110,12 @@ A row found wrong after a run is the owner's call, logged here; it never silentl
 
 ## Result
 
-**Verdict: PASS.** Both languages clear every kill line in run 1. Whether it closes delivery 3 is the owner's call.
+**Verdict: PASS.** Both languages clear every kill line in run 1. The owner ruled on 2026-09-23 that it closes delivery 3, recorded as the thinnest of the three verdicts:
+
+- **The intent's gate of 0.45 rests on 4 dev nothing rows per language.** None picked `new_record`, so the rule had no wrong pick to keep out; the eval set's 6 nothing rows per language held, but nothing measures the margin.
+- **Spanish held ambiguous sits exactly on its line**, 0.75 (6 of 8) in both runs: one more leak and it fails.
+
+Both, with the tag descriptions and the four remaining review findings, are carried by [#44](https://github.com/franklinmdev/justask/issues/44), judged on a fresh round 2.
 
 Runs of 2026-09-23 with `jev-1.13.0`, gates intent 0.45, vendor 0.5, tags 0.5, spent_on 0.8, total 0.9 (from dev run 1, above), the frozen sets and kill lines, today fixed at Wednesday 2026-09-23.
 
