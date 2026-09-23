@@ -8,37 +8,47 @@ import {
 	type FilledBy,
 	useCard,
 } from "justask/react";
-import { type ReactNode, useRef, useState } from "react";
+import { type CSSProperties, type ReactNode, useRef, useState } from "react";
 import { cardEndpoint } from "./api.ts";
 import { CardPanel } from "./card-panel.tsx";
 import type { Content, ExpenseFields, ExpenseName } from "./content/types.ts";
 import { DayPicker } from "./day-picker.tsx";
 import { formats, LOCAL_CURRENCY, parseAmount } from "./format.ts";
-import { Saved, Suggestions } from "./parts.tsx";
+import { RecordedLabel, Saved, Suggestions } from "./parts.tsx";
+import { dayOf, type FormRecording } from "./recording.ts";
+import { useReplay } from "./replay.ts";
 import { costOf, formControls } from "./saved.ts";
 import { CaseLayout } from "./showcase.tsx";
-import { type Trace, timed, useSuggest } from "./trace.ts";
+import { useSuggest } from "./trace.ts";
 
 type Expense = CardValue<ExpenseFields> & { id: number };
+
+/** The card's fields in the order they show, which an answer fills them in. */
+const fieldOrder: ExpenseName[] = ["vendor", "tags", "spent_on", "total"];
 
 /**
  * The fictional invoicing app's new-expense card, filled from a request,
  * beside the state panel. The person fills what was held, or changes what
  * was filled, and saves; the page keeps saved expenses in memory and takes
- * the last one back on Undo, as a host app's own storage would.
+ * the last one back on Undo, as a host app's own storage would. The fields an
+ * answer fills settle in field order. With a recording, the case opens on it
+ * replayed: the sentence, Enter, then the fields; saving stays the person's.
  */
 export function CardPage({
 	content,
+	recording = null,
 	fetch: fetchImpl = fetch,
 }: {
 	content: Content;
+	recording?: FormRecording | null;
 	fetch?: typeof fetch;
 }) {
 	const { copy } = content;
 	const format = formats(content.locale);
 	const [expenses, setExpenses] = useState<Expense[]>([]);
-	const [trace, setTrace] = useState<Trace | null>(null);
 	const nextId = useRef(1);
+	const replay = useReplay({ recording, fetch: fetchImpl, enter: true });
+	const { trace } = replay;
 
 	const card = useCard<ExpenseFields>({
 		endpoint: cardEndpoint(content.language),
@@ -46,9 +56,28 @@ export function CardPage({
 			const id = nextId.current++;
 			setExpenses((saved) => [{ ...value, id }, ...saved]);
 		},
-		fetch: timed(fetchImpl, setTrace),
+		fetch: replay.fetch,
 	});
-	const suggest = useSuggest(card);
+	replay.follow(card);
+	const box = replay.take(card);
+	const suggest = useSuggest(box);
+	// A field the person sets ends the replay, so its answer never writes over their choice.
+	const fields: typeof card = {
+		...card,
+		set: (name, value) => {
+			replay.stop();
+			card.set(name, value);
+		},
+	};
+	// The fields the answer filled, each settling in after the one before it.
+	const filled = fieldOrder.filter((name) => card.filledBy(name) === "answer");
+	const settle = (name: ExpenseName) =>
+		filled.includes(name)
+			? {
+					"data-settle": "",
+					style: { "--settle-at": filled.indexOf(name) } as CSSProperties,
+				}
+			: {};
 
 	function undo() {
 		setExpenses((saved) => saved.slice(1));
@@ -87,9 +116,19 @@ export function CardPage({
 			labelledBy="card-title"
 			hood={<CardPanel content={content} card={card} trace={trace} />}
 		>
-			<h2 id="card-title">{copy.card.title}</h2>
+			<div className="case-head">
+				<h2 id="card-title">{copy.card.title}</h2>
+				{recording && replay.recorded && (
+					<RecordedLabel content={content} recording={recording} />
+				)}
+			</div>
+			<p className="visually-hidden" role="status">
+				{recording && replay.started
+					? copy.replaying(format.date(dayOf(recording)), recording.request)
+					: ""}
+			</p>
 			<CardBox
-				card={card}
+				card={box}
 				id="card-box"
 				label={copy.card.boxLabel}
 				placeholder={copy.card.placeholder}
@@ -115,7 +154,12 @@ export function CardPage({
 			/>
 
 			<div className="card">
-				<CardEntry card={card} name="vendor" className="entry">
+				<CardEntry
+					card={fields}
+					name="vendor"
+					className="entry"
+					{...settle("vendor")}
+				>
 					{({ value, set, filledBy }) => (
 						<>
 							{head("vendor", filledBy, "card-vendor")}
@@ -140,7 +184,12 @@ export function CardPage({
 						</>
 					)}
 				</CardEntry>
-				<CardEntry card={card} name="tags" className="entry">
+				<CardEntry
+					card={fields}
+					name="tags"
+					className="entry"
+					{...settle("tags")}
+				>
 					{({ value = [], set, filledBy }) => (
 						<fieldset className="tags" aria-labelledby={label("tags")}>
 							{head("tags", filledBy)}
@@ -164,7 +213,12 @@ export function CardPage({
 						</fieldset>
 					)}
 				</CardEntry>
-				<CardEntry card={card} name="spent_on" className="entry">
+				<CardEntry
+					card={fields}
+					name="spent_on"
+					className="entry"
+					{...settle("spent_on")}
+				>
 					{({ value, set, filledBy }) => (
 						<>
 							{head("spent_on", filledBy)}
@@ -179,7 +233,12 @@ export function CardPage({
 						</>
 					)}
 				</CardEntry>
-				<CardEntry card={card} name="total" className="entry">
+				<CardEntry
+					card={fields}
+					name="total"
+					className="entry"
+					{...settle("total")}
+				>
 					{({ value, set, filledBy }) => (
 						<>
 							{head("total", filledBy, "card-total")}

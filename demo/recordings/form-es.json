@@ -1,0 +1,324 @@
+{
+	"set": "card-es.round4.jsonl",
+	"row": "es-r4-34",
+	"recordedAt": "2026-09-23T20:18:34.432Z",
+	"timeZone": "America/La_Paz",
+	"request": "tarjetas de presentación de Letranueva en agosto, $130",
+	"latencyMs": 607,
+	"response": {
+		"card": {
+			"intent": {
+				"pick": {
+					"label": "new_record",
+					"probability": 0.84
+				},
+				"probabilities": {
+					"not_mentioned": 0.09,
+					"not_available": 0.07,
+					"new_record": 0.84
+				},
+				"gate": 0.45
+			},
+			"value": {
+				"vendor": {
+					"id": "letranueva",
+					"name": "Imprenta Letranueva",
+					"supplies": "tarjetas de presentación, volantes y letreros"
+				},
+				"tags": ["office"],
+				"total": {
+					"value": 130,
+					"currency": "USD"
+				}
+			},
+			"fields": {
+				"vendor": {
+					"candidates": [
+						{
+							"id": "tintaverde",
+							"description": "Papelería Tintaverde, papel, tóner y artículos de oficina",
+							"value": {
+								"id": "tintaverde",
+								"name": "Papelería Tintaverde",
+								"supplies": "papel, tóner y artículos de oficina"
+							},
+							"names": ["Tintaverde"]
+						},
+						{
+							"id": "cazuela",
+							"description": "Banquetes Cazuela Azul, catering y almuerzos para la oficina",
+							"value": {
+								"id": "cazuela",
+								"name": "Banquetes Cazuela Azul",
+								"supplies": "catering y almuerzos para la oficina"
+							},
+							"names": ["Cazuela Azul"]
+						},
+						{
+							"id": "nubalia",
+							"description": "Nubalia Hosting, alojamiento de páginas web y servidores en la nube",
+							"value": {
+								"id": "nubalia",
+								"name": "Nubalia Hosting",
+								"supplies": "alojamiento de páginas web y servidores en la nube"
+							},
+							"names": ["Nubalia"]
+						},
+						{
+							"id": "brisamar",
+							"description": "Limpiezas Brisamar, limpieza nocturna de oficinas",
+							"value": {
+								"id": "brisamar",
+								"name": "Limpiezas Brisamar",
+								"supplies": "limpieza nocturna de oficinas"
+							},
+							"names": ["Brisamar"]
+						},
+						{
+							"id": "relucir",
+							"description": "Relucir Servicios de Limpieza, limpieza de oficinas y de ventanas",
+							"value": {
+								"id": "relucir",
+								"name": "Relucir Servicios de Limpieza",
+								"supplies": "limpieza de oficinas y de ventanas"
+							},
+							"names": ["Relucir"]
+						},
+						{
+							"id": "letranueva",
+							"description": "Imprenta Letranueva, tarjetas de presentación, volantes y letreros",
+							"value": {
+								"id": "letranueva",
+								"name": "Imprenta Letranueva",
+								"supplies": "tarjetas de presentación, volantes y letreros"
+							},
+							"names": ["Letranueva"]
+						},
+						{
+							"id": "rumboclaro",
+							"description": "Viajes Rumbo Claro, vuelos y hoteles para viajes de trabajo",
+							"value": {
+								"id": "rumboclaro",
+								"name": "Viajes Rumbo Claro",
+								"supplies": "vuelos y hoteles para viajes de trabajo"
+							},
+							"names": ["Rumbo Claro"]
+						},
+						{
+							"id": "cuentia",
+							"description": "Cuentia Software, licencias de software contable",
+							"value": {
+								"id": "cuentia",
+								"name": "Cuentia Software",
+								"supplies": "licencias de software contable"
+							},
+							"names": ["Cuentia"]
+						},
+						{
+							"id": "cafetal",
+							"description": "Café del Cafetal Alto, café en grano y alquiler de cafeteras",
+							"value": {
+								"id": "cafetal",
+								"name": "Café del Cafetal Alto",
+								"supplies": "café en grano y alquiler de cafeteras"
+							},
+							"names": ["Cafetal"]
+						},
+						{
+							"id": "pieveloz",
+							"description": "Mensajería Pieveloz, mensajería el mismo día",
+							"value": {
+								"id": "pieveloz",
+								"name": "Mensajería Pieveloz",
+								"supplies": "mensajería el mismo día"
+							},
+							"names": ["Pieveloz"]
+						},
+						{
+							"id": "lindero",
+							"description": "Bufete Lindero, revisión de contratos y asesoría legal",
+							"value": {
+								"id": "lindero",
+								"name": "Bufete Lindero",
+								"supplies": "revisión de contratos y asesoría legal"
+							},
+							"names": ["Lindero"]
+						},
+						{
+							"id": "tecnoria",
+							"description": "Tecnoria Soporte, reparación de computadoras y soporte técnico",
+							"value": {
+								"id": "tecnoria",
+								"name": "Tecnoria Soporte",
+								"supplies": "reparación de computadoras y soporte técnico"
+							},
+							"names": ["Tecnoria"]
+						},
+						{
+							"id": "serena",
+							"description": "Nómina Serena, nómina y recursos humanos",
+							"value": {
+								"id": "serena",
+								"name": "Nómina Serena",
+								"supplies": "nómina y recursos humanos"
+							},
+							"names": ["Serena"]
+						},
+						{
+							"id": "coberplena",
+							"description": "Seguros Cobertura Plena, seguros para empresas",
+							"value": {
+								"id": "coberplena",
+								"name": "Seguros Cobertura Plena",
+								"supplies": "seguros para empresas"
+							},
+							"names": ["Cobertura Plena"]
+						}
+					],
+					"pick": {
+						"label": "letranueva",
+						"probability": 0.99
+					},
+					"probabilities": {
+						"relucir": 0,
+						"cafetal": 0,
+						"nubalia": 0,
+						"coberplena": 0,
+						"tecnoria": 0,
+						"not_mentioned": 0.01,
+						"not_available": 0,
+						"brisamar": 0,
+						"pieveloz": 0,
+						"cuentia": 0,
+						"tintaverde": 0,
+						"letranueva": 0.99,
+						"rumboclaro": 0,
+						"serena": 0,
+						"cazuela": 0,
+						"lindero": 0
+					},
+					"gate": 0.7
+				},
+				"tags": {
+					"candidates": [
+						{
+							"id": "meals",
+							"description": "comidas: comida y bebida, como almuerzo, cena, café, meriendas y catering",
+							"value": "meals"
+						},
+						{
+							"id": "travel",
+							"description": "viajes: vuelos, hoteles, taxis y trenes",
+							"value": "travel"
+						},
+						{
+							"id": "office",
+							"description": "oficina: lo que mantiene el negocio en marcha, como artículos, equipos, software, hosting, reparaciones, limpieza y ventanas, imprenta, mensajería, nómina y recursos humanos, asesoría legal y seguros",
+							"value": "office"
+						},
+						{
+							"id": "client",
+							"description": "facturable a un cliente, o gastado con un cliente, cuando la solicitud lo dice con certeza, no cuando dice quizás",
+							"value": "client"
+						}
+					],
+					"answers": {
+						"meals": {
+							"pick": {
+								"label": "not_mentioned",
+								"probability": 1
+							},
+							"probabilities": {
+								"not_mentioned": 1,
+								"not_available": 0,
+								"yes": 0
+							}
+						},
+						"travel": {
+							"pick": {
+								"label": "not_mentioned",
+								"probability": 1
+							},
+							"probabilities": {
+								"not_mentioned": 1,
+								"not_available": 0,
+								"yes": 0
+							}
+						},
+						"office": {
+							"pick": {
+								"label": "yes",
+								"probability": 0.4
+							},
+							"probabilities": {
+								"not_mentioned": 0.32,
+								"not_available": 0.28,
+								"yes": 0.4
+							}
+						},
+						"client": {
+							"pick": {
+								"label": "not_mentioned",
+								"probability": 0.95
+							},
+							"probabilities": {
+								"not_mentioned": 0.95,
+								"not_available": 0.04,
+								"yes": 0.01
+							}
+						}
+					},
+					"gate": 0.4
+				},
+				"spent_on": {
+					"candidates": [
+						{
+							"id": "d0",
+							"description": "\"agosto\": Sat 2026-08-01 to Mon 2026-08-31, both included",
+							"value": {
+								"text": "agosto",
+								"from": "2026-08-01",
+								"to": "2026-08-31"
+							}
+						}
+					],
+					"pick": {
+						"label": "d0",
+						"probability": 0.97
+					},
+					"probabilities": {
+						"d0": 0.97,
+						"not_mentioned": 0.03,
+						"not_available": 0
+					},
+					"gate": 0.8
+				},
+				"total": {
+					"candidates": [
+						{
+							"id": "a0",
+							"description": "\"$130\": 130 USD (US Dollar)",
+							"value": {
+								"text": "$130",
+								"value": 130,
+								"currency": "USD"
+							}
+						}
+					],
+					"pick": {
+						"label": "a0",
+						"probability": 1
+					},
+					"probabilities": {
+						"not_mentioned": 0,
+						"a0": 1,
+						"not_available": 0
+					},
+					"gate": 0.9
+				}
+			}
+		},
+		"costUsd": 0.00009487800000000001,
+		"inputTokens": 2259
+	}
+}

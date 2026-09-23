@@ -841,9 +841,13 @@ h2 {
 	grid-column: 1 / -1;
 }
 
-/* The signature motion: a field the answer filled settling in. */
-.entry[data-filled-by="answer"] {
-	animation: settle 150ms var(--ease-out);
+/*
+ * The signature motion: each field the answer filled settles in after the
+ * one before it, in field order. Held until its turn, so it never shows early.
+ */
+.entry[data-settle] {
+	animation: settle 150ms var(--ease-out) backwards;
+	animation-delay: calc(var(--settle-at) * 120ms);
 }
 
 .entry-head {

@@ -48,8 +48,8 @@ function hrefOf(view: View): string {
  * The showcase: a header with the case tabs, the theme and the language
  * toggle, then one case with its hood. The language toggle switches the UI
  * text, the suggested requests and the data, and starts the case over, since
- * the other language is another catalog. The Table and Search cases open on
- * their recorded runs; with `recordings` null every case opens idle.
+ * the other language is another catalog. Every case opens on its recorded
+ * run; with `recordings` null every case opens idle.
  */
 export function App({
 	fetch,
@@ -174,7 +174,13 @@ export function App({
 							{...shared}
 						/>
 					)}
-					{shownCase === "form" && <CardPage key={language} {...shared} />}
+					{shownCase === "form" && (
+						<CardPage
+							key={language}
+							recording={recordings?.form[language] ?? null}
+							{...shared}
+						/>
+					)}
 					{shownCase === "search" && (
 						<SearchPage
 							key={language}
