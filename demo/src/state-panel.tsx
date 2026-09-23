@@ -35,7 +35,7 @@ function verdictOf(
 	if (result.item) {
 		return { kind: "filled", name: result.item.name, none, several };
 	}
-	// The code holds a named pair before the gate is read (ADR 0010).
+	// The code holds a named pair before the gate is read (ADR 0011).
 	if (result.pair) {
 		return { kind: "held", reason: { kind: "pair", text: result.pair.text } };
 	}

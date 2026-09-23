@@ -49,7 +49,7 @@ export const contents: Record<Language, Content> = {
 
 /**
  * The search the demo serves in one language, which its eval sets measure. A
- * request that names two vendors is held in code (ADR 0010).
+ * request that names two vendors is held in code (ADR 0011).
  */
 export function demoSearch(content: Content): Search<Vendor> {
 	return {
@@ -76,7 +76,7 @@ export const FILTER_GATES = {
 /**
  * The transactions table's filter in one language. The vendor field reads the
  * whole catalog, and the status field its three statuses; a request that
- * names two of either holds that field in code (ADR 0010).
+ * names two of either holds that field in code (ADR 0011).
  */
 export function demoFilter(content: Content): Filter<TransactionFields> {
 	return {

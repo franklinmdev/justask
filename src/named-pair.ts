@@ -10,9 +10,9 @@ export type NamedPair = {
 
 /**
  * A card's, a search's or a filter's words that join two items, in its
- * language, each one word. "or"
- * words offer a choice, which no catalog field can fill; "and" words name
- * both, which only a field that takes one item cannot fill.
+ * language, each one word. "or" words offer a choice, which no catalog field
+ * can fill; "and" words name both, which only a field that takes one item
+ * cannot fill.
  */
 export type Joiners = { or: string[]; and: string[] };
 

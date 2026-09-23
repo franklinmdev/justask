@@ -59,7 +59,7 @@ export type Filter<F extends Fields> = {
 	 * `or` words ("or"; "o", "u") and `and` words ("and"; "y", "e"). A
 	 * request that names two items of one catalog field, and no third, with
 	 * one of these between them holds that field before its gate, whatever
-	 * its pick, since a catalog field takes one item (ADR 0010).
+	 * its pick, since a catalog field takes one item (ADR 0010, 0011).
 	 */
 	joiners?: Joiners;
 };
@@ -122,7 +122,7 @@ export type ParsedFieldResult<T> = {
 	gate: number;
 };
 
-/** A catalog field reports the named pair that held it, whatever its pick (ADR 0010). */
+/** A catalog field reports the named pair that held it, whatever its pick (ADR 0010, 0011). */
 export type Paired = { pair?: NamedPair };
 
 export type FieldResult<F extends Field> =
@@ -176,7 +176,7 @@ export function questionIds(name: string, field: Field): RegExp {
 	return new RegExp(`^${escaped}$`);
 }
 
-/** A catalog field the request names a pair of is held whatever its pick (ADR 0010). */
+/** A catalog field the request names a pair of is held whatever its pick (ADR 0011). */
 export function catalogPlan(
 	name: string,
 	filter: Filter<Fields>,
@@ -201,8 +201,9 @@ export function catalogPlan(
 			const probabilities = answer[name] ?? {};
 			const { pick, filled } = gateField(probabilities, field.gate);
 			const result = { ...held, pick, probabilities };
-			const winner = !pair && candidates.find(({ id }) => id === filled);
-			return winner ? { result, value: winner.value } : { result };
+			const winner = candidates.find(({ id }) => id === filled);
+			if (pair || !winner) return { result };
+			return { result, value: winner.value };
 		},
 	};
 }

@@ -73,7 +73,7 @@ export type SearchResult<T> = {
 	/** Every label's probability, `none` included; empty when there was no answer. */
 	probabilities: Probabilities;
 	gate: number;
-	/** The named pair that held the item whatever its pick (ADR 0010). */
+	/** The named pair that held the item whatever its pick (ADR 0011). */
 	pair?: NamedPair;
 };
 
@@ -131,7 +131,7 @@ export function ask(
 /**
  * The item fills when a candidate wins outright and none and several stay
  * below the gate (ADR 0005, 0007), and the request names no pair of
- * candidates (ADR 0010).
+ * candidates (ADR 0011).
  */
 async function askSearch<T>({
 	request,
@@ -169,7 +169,7 @@ async function askSearch<T>({
 
 	const probabilities = outcome.answer[SEARCH] ?? {};
 	const { pick, filled } = gateSearch(probabilities, search.gate);
-	const winner = !pair && candidates.find(({ id }) => id === filled);
+	const winner = pair ? undefined : candidates.find(({ id }) => id === filled);
 	return {
 		search: {
 			...held,

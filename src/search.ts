@@ -37,7 +37,7 @@ export type Search<T> = {
 	 * `or` words ("or"; "o", "u") and `and` words ("and"; "y", "e"). A
 	 * request that names two candidates, and no third, with one of these
 	 * between them holds the item whatever its pick, since the search takes
-	 * one (ADR 0010).
+	 * one (ADR 0011).
 	 */
 	joiners?: Joiners;
 };

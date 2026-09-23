@@ -8,9 +8,9 @@
 // `run` writes demo/eval/runs/filter-<language>[-round2|-dev]-<n>.jsonl, which
 // it never overwrites, and prints its report. `eval` is round 1's set,
 // `round2` the fresh set of round 2, the first with the named-pair hold
-// (ADR 0011). A dev run gets no verdict: it
-// tunes, it never decides. `compare` reads two saved eval runs and prints the
-// second one's measures and flips, with no call. `gates` reads dev run <n> of
+// (ADR 0011). A dev run gets no verdict: it tunes, it never decides. `compare`
+// reads two saved runs of one set and prints the second one's measures and
+// flips, with no call. `gates` reads dev run <n> of
 // both languages and prints each field's gate by the rule in gates.ts,
 // with no call.
 
