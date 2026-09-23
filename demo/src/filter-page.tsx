@@ -267,6 +267,7 @@ export function FilterPage({
 							type="button"
 							className="clear"
 							onClick={() => {
+								replay.stop();
 								setApplied({});
 								setCleared((count) => count + 1);
 							}}
@@ -279,7 +280,11 @@ export function FilterPage({
 					key={cleared}
 					content={content}
 					value={applied}
-					onChange={setApplied}
+					onChange={(value) => {
+						// The person's choice stands: the replay never presses Apply over it.
+						replay.stop();
+						setApplied(value);
+					}}
 					settling={settling}
 				/>
 				<Transactions content={content} rows={rows} />

@@ -257,6 +257,19 @@ describe("the Table case's recorded run", () => {
 		expect(provider.calls).toHaveLength(0);
 	});
 
+	it("stops when the person sets a table control before the press, and keeps their choice", async () => {
+		const { user } = renderDemo();
+		// The proposal is up; Apply is pressed the better part of a second later.
+		await screen.findByRole("list", { name: "Filters to apply" }, REPLAY);
+
+		await user.selectOptions(control("Status"), "paid");
+		await new Promise((resolve) => setTimeout(resolve, 1_500));
+
+		expect(control("Status").value).toBe("paid");
+		expect(control("Vendor").value).toBe("");
+		expect(announced()).not.toContain("Replaying a recorded run");
+	}, 8_000);
+
 	it("stops when the person types first, and applies nothing", async () => {
 		const { user, provider } = renderDemo();
 		const box = searchbox("Filter the transactions");

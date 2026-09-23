@@ -45,13 +45,15 @@ export type Replay = {
 	fetch: typeof fetch;
 	/** The flow for the box and the suggestions: anything the person types or picks ends the replay. */
 	take: <F extends Flow>(flow: F) => F;
+	/** Ends the replay, for anything else the person does, such as setting a control. */
+	stop: () => void;
 	/** The trace of the call on display, recorded or live. */
 	trace: Trace | null;
 	/** True while the display is the recording's, so it is labelled with its date. */
 	recorded: boolean;
 	/** True while the replay presses Confirm, so it looks pressed. */
 	pressing: boolean;
-	/** True once the sentence has started typing in, so the replay is announced. */
+	/** True from the sentence's first character until the person takes over, so the replay is announced. */
 	started: boolean;
 };
 
@@ -124,12 +126,13 @@ export function useReplay({
 	});
 
 	/**
-	 * The person took the box: the replay ends, and the label goes with it,
-	 * since the box no longer holds the recorded sentence, even when an empty
-	 * box makes no call to replace the rest.
+	 * The person took over: the replay ends, and the label and its
+	 * announcement go with it, even when an empty box makes no call to
+	 * replace the rest.
 	 */
 	function stop() {
 		setRecorded(false);
+		setStarted(false);
 		if (stopped.current) return;
 		stopped.current = true;
 		for (const timer of timers.current) clearTimeout(timer);
@@ -169,6 +172,7 @@ export function useReplay({
 				taken.setRequest(request);
 			},
 		}),
+		stop,
 		trace,
 		recorded,
 		pressing,
