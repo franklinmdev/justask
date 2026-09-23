@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
-import { builtInParser } from "justask";
+import { ask, builtInParser } from "justask";
 import {
 	type FilterEvalKind,
 	type FilterEvalRow,
@@ -15,6 +15,7 @@ import { demoFilter, FACTS, FILTER_GATES } from "../demo/server/handler.ts";
 import { english } from "../demo/src/content/en.ts";
 import { spanish } from "../demo/src/content/es.ts";
 import type { FieldName } from "../demo/src/content/types.ts";
+import { failingProvider } from "./fake-provider.ts";
 
 const evalFile = (name: string) =>
 	new URL(`../demo/eval/${name}`, import.meta.url);
@@ -44,6 +45,9 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 	const devSet = parseFilterEvalSet(
 		read(`filter-${content.language}.dev.jsonl`),
 	);
+	const round2 = parseFilterEvalSet(
+		read(`filter-${content.language}.round2.jsonl`),
+	);
 	const filter = demoFilter(content);
 	const rows = (set: FilterEvalRow[], kind: FilterEvalKind) =>
 		set.filter((row) => row.kind === kind);
@@ -59,7 +63,7 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 	it("expect only fields of the demo's filter, and values of that language's catalogs", () => {
 		const vendors = new Set(content.vendors.map(({ id }) => id));
 		const statuses = new Set(content.statuses.map(({ id }) => id));
-		for (const row of [...evalSet, ...devSet]) {
+		for (const row of [...evalSet, ...devSet, ...round2]) {
 			for (const [field, value] of Object.entries(row.expected)) {
 				expect(Object.keys(filter.fields)).toContain(field);
 				if (value === "held") continue;
@@ -69,12 +73,15 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 		}
 	});
 
-	it("split the eval set's rows evenly across fields and values", () => {
-		const filterable = rows(evalSet, "filterable");
-		const ambiguous = rows(evalSet, "ambiguous");
+	it.each([
+		["eval", evalSet],
+		["round 2", round2],
+	])("split the %s set's rows evenly across fields and values", (_, set) => {
+		const filterable = rows(set, "filterable");
+		const ambiguous = rows(set, "ambiguous");
 		expect(filterable).toHaveLength(28);
 		expect(ambiguous).toHaveLength(8);
-		expect(rows(evalSet, "nothing")).toHaveLength(6);
+		expect(rows(set, "nothing")).toHaveLength(6);
 		for (const field of FIELDS) {
 			expect(filterable.filter((row) => field in row.expected)).toHaveLength(
 				14,
@@ -141,16 +148,38 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 				...others,
 				...Object.values(content.suggestions).flat(),
 				...Object.values(content.filterSuggestions).flat(),
+				...Object.values(content.cardSuggestions).flat(),
 			].map(normalized),
 		);
-		for (const { request } of [...devSet, ...evalSet]) {
+		for (const { request } of [...devSet, ...evalSet, ...round2]) {
 			expect(seen).not.toContain(normalized(request));
 			seen.add(normalized(request));
 		}
 	});
 
+	it("hold a named pair in round 2 only on the vendor of its two pair rows (ADR 0011)", async () => {
+		// The code finds the pair before any answer, so a failing provider still reports it.
+		const held: string[] = [];
+		for (const { id, request } of round2) {
+			const { filter: result } = await ask({
+				request,
+				facts: { ...FACTS, today: TODAY },
+				provider: failingProvider(new Error("no call")),
+				timeoutMs: 1_000,
+				filter,
+			});
+			for (const [name, field] of Object.entries(result.fields)) {
+				if ("pair" in field && field.pair) held.push(`${id} ${name}`);
+			}
+		}
+		expect(held).toEqual([
+			`${content.language}-r2-a29 vendor`,
+			`${content.language}-r2-a30 vendor`,
+		]);
+	});
+
 	it("expect only dates and amounts the parser can build, on the day the runs are fixed at", () => {
-		for (const row of [...devSet, ...evalSet]) {
+		for (const row of [...devSet, ...evalSet, ...round2]) {
 			const { dates: read = [], amounts = [] } = builtInParser(row.request, {
 				today: TODAY,
 				facts: FACTS,
@@ -204,6 +233,15 @@ describe("the frozen filter eval", () => {
 		[
 			"filter-es.jsonl",
 			"f108351bbbcf5a28d4ef6d8a8aa72d28c65c76a3be6067017b60e073d414479f",
+		],
+		// Round 2 (#68), approved in five batches on 2026-09-23, before any call.
+		[
+			"filter-en.round2.jsonl",
+			"a6d950e5db531edeadb6d964e7f9f6da9b01cebfe3474d9ad4f37070ba8fcada",
+		],
+		[
+			"filter-es.round2.jsonl",
+			"37de9852985225b7af0bba01f82721de1f31055c10b4720481092fb27f016063",
 		],
 	])("keeps %s as approved", (name, sha256) => {
 		const bytes = readFileSync(evalFile(name));

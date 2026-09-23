@@ -83,7 +83,7 @@ By hand with the key in `.env`, never in CI; every row is a paid call.
 1. After #39 is in main and merged into this branch: dev runs, `node --conditions=source demo/eval/filter.ts run <en|es> dev <n>`. They print no verdict.
 2. `node --conditions=source demo/eval/filter.ts gates <n>` prints each field's gate by the rule; write them into the demo.
 3. From #65 on, write the probe baseline into the demo, as Latency below says. Run 1 per language gives the verdict: `run <en|es> eval 1`.
-4. Run 2 per language reports flips only: `run <en|es> eval 2`, then `compare <en|es> 1 2`.
+4. Run 2 per language reports flips only: `run <en|es> eval 2`, then `compare <en|es> eval 1 2`.
 5. Record here the verdict, the numbers, the misses and the run logs' paths (`demo/eval/runs/`, committed so anyone can rescore them with no call).
 
 A row found wrong after a run is the owner's call, logged here; it never silently changes the set.
@@ -144,3 +144,27 @@ English: two flips, both held in run 1 and filled right in run 2, both on a gate
 - Run 2: `demo/eval/runs/filter-en-2.jsonl`, `demo/eval/runs/filter-es-2.jsonl`
 
 Each rescores with `scoreFilterRun(await readFilterRun(path), { gates })` and no call.
+
+## Round 2: the named-pair hold
+
+Carried by [#68](https://github.com/franklinmdev/justask/issues/68). Round 1 above stands as recorded. The filter now holds a named pair in code before a catalog field's gate ([ADR 0011](adr/0011-search-and-filter-hold-a-named-pair.md)): two vendors, or two statuses by their ids, joined by a word from the language's `joiners` (`or`, `and`; `o`, `u`, `y`, `e`), with no third one named. Round 1's one leak was such a pair (`facturas de Nubalia o de Cuentia de julio`, 0.61).
+
+The owner fixed the frame on 2026-09-23, before any row existed:
+
+- **Round 1's gates (vendor 0.6, status 0.95, date 0.85, amount 0.9) and the same six kill lines, and no dev run.** The hold asks the provider nothing new, and no dev row names a pair, so a dev run would measure only noise (checked with no call: the rule holds no dev row).
+- **The same grid as round 1:** 28 filterable, 8 ambiguous, 6 nothing per language; each field in 14 filterable rows in the same one-, two- and three-field combinations, row for row; each vendor once; status paid 5, open 5, overdue 4; amount minimum 4, maximum 4, exact 3, range 3.
+
+### Round 2 sets
+
+Files in `demo/eval/`, drafted against every set in `demo/eval/` and all the demo's suggestions, approved by the owner in five batches on 2026-09-23 (rows 1 to 10, 11 to 20, 21 to 30, 31 to 40, 41 and 42, English beside Spanish), copied in unchanged (sha256 checked against the approved drafts) and frozen by checksum in `test/demo-filter-eval.test.ts` in the commit before the first round 2 call. Run logs `demo/eval/runs/filter-<language>-round2-<n>.jsonl`.
+
+| File | Rows | filterable | ambiguous | nothing |
+|---|---|---|---|---|
+| `filter-en.round2.jsonl` | 42 | 28 | 8 | 6 |
+| `filter-es.round2.jsonl` | 42 | 28 | 8 | 6 |
+
+- **filterable:** vendors by name, typo (`brightmopp`, `brisamarr`) or a paraphrase only one vendor fits (`the print shop`, `our insurer`, `the travel agency`). **Row 19 names a third vendor beside an "or" pair** (`overdue Swiftlane invoices for runs to Clausewood or Paydale`, `facturas vencidas de Pieveloz por envíos a Lindero o a Serena`): the rule holds no pair there, and the courier is expected. The open status is written as unpaid and not yet due, as in round 1.
+- **ambiguous, two per field:** vendor, row 29 an "or" pair (`Inkhollow or Papergrove invoices from March`) and row 30 an "and" pair (`Beanhaven and Larkspur invoices over $200`), whose other field still fills; status `we haven't settled`, `still outstanding`; date `mid-August`, `April or May`; amount `around $300`, `over $500 or under $50`.
+- **nothing:** a vendor the catalog lacks (the phone company), undoing a payment, today's date, 50 rows per page, a sort by amount, a thank-you.
+- Checked with no call, and pinned in `test/demo-filter-eval.test.ts`: the code holds the vendor of rows 29 and 30 in both languages, and no other field of any row. Every expected date and amount is one the parser builds on Tuesday 2026-09-22 (`invoices from May` read no date, so row 32 says `dated in May`, before approval).
+- Procedure as round 1, with the probe baseline in `demo/eval/probe.ts`: run 1 gives the verdict (`filter.ts run <en|es> round2 1`), run 2 reports flips only (`compare <en|es> round2 1 2`).
