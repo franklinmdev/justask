@@ -270,6 +270,35 @@ export type Copy = {
 	saved: (cost: Cost) => string;
 	filter: FilterCopy;
 	card: CardCopy;
+	calculator: CalculatorCopy;
+};
+
+/** The cost calculator below the case: one call scaled to a month. */
+export type CalculatorCopy = {
+	title: string;
+	users: string;
+	actions: string;
+	costPerCall: string;
+	perMonth: string;
+	/** In the cost per call's place before any call. */
+	noCall: string;
+	/** In the month's place while it cannot be priced. */
+	notPriced: string;
+	idle: string;
+	unpriced: string;
+	invalid: string;
+	/** Users, actions a day and the cost per call, formatted, times the days. */
+	formula: (
+		users: string,
+		actions: string,
+		cost: string,
+		days: number,
+	) => string;
+	measured: string;
+	/** The model's price per million input tokens, formatted. */
+	rate: (model: string, rate: string) => string;
+	readFrom: string;
+	readOn: (date: string) => string;
 };
 
 /** One language's whole demo: UI text, suggested requests and data. */
