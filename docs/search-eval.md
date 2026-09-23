@@ -1,6 +1,6 @@
 # Search eval: sets, kill lines and verdict
 
-**Status: round 3 run, verdict PASS at the line's minimum on held ambiguous (0.833 against 0.75 in both languages); rounds 1 and 2 failed it in Spanish at 0.667.** Approved by the owner on 2026-09-22 (#13), with the shortlist raised to 14; the eval sets, the kill lines and the gate rule were frozen then, before any provider call.
+**Status: round 3 run, verdict PASS with no slack on held ambiguous (5 of 6, 0.833 against 0.75, in both languages); rounds 1 and 2 failed it in Spanish at 0.667.** Approved by the owner on 2026-09-22 (#13), with the shortlist raised to 14; the eval sets, the kill lines and the gate rule were frozen then, before any provider call.
 
 **Hypothesis:** on the demo's fictional invoicing data, the search shows the vendor a request means, or nothing, in English and in Spanish, as the person types.
 
