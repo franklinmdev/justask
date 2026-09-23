@@ -1,0 +1,12 @@
+{"id":"es-dev01","request":"cartuchos de tóner","kind":"item","expected":"tintaverde"}
+{"id":"es-dev02","request":"el banquete de fin de año","kind":"item","expected":"cazuela"}
+{"id":"es-dev03","request":"la renovación del hosting","kind":"item","expected":"nubalia"}
+{"id":"es-dev04","request":"el letrero de la entrada","kind":"item","expected":"letranueva"}
+{"id":"es-dev05","request":"quien revisó el acuerdo de confidencialidad","kind":"item","expected":"lindero"}
+{"id":"es-dev06","request":"el pago de salarios","kind":"item","expected":"serena"}
+{"id":"es-dev07","request":"el seguro del local","kind":"item","expected":"coberplena"}
+{"id":"es-dev08","request":"el taller que repara computadoras","kind":"item","expected":"tecnoria"}
+{"id":"es-dev09","request":"el jardinero","kind":"nothing"}
+{"id":"es-dev10","request":"hola","kind":"nothing"}
+{"id":"es-dev11","request":"la factura de la limpieza","kind":"ambiguous"}
+{"id":"es-dev12","request":"el hosting o el programa contable","kind":"ambiguous"}

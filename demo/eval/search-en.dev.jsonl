@@ -1,0 +1,12 @@
+{"id":"en-dev01","request":"toner cartridges","kind":"item","expected":"papergrove"}
+{"id":"en-dev02","request":"the caterer","kind":"item","expected":"larkspur"}
+{"id":"en-dev03","request":"web hosting renewal","kind":"item","expected":"cloudberth"}
+{"id":"en-dev04","request":"the sign for the front door","kind":"item","expected":"inkhollow"}
+{"id":"en-dev05","request":"the attorneys","kind":"item","expected":"clausewood"}
+{"id":"en-dev06","request":"salary processing","kind":"item","expected":"paydale"}
+{"id":"en-dev07","request":"liability coverage","kind":"item","expected":"sureharbor"}
+{"id":"en-dev08","request":"the computer repair shop","kind":"item","expected":"fixbright"}
+{"id":"en-dev09","request":"the gardener","kind":"nothing"}
+{"id":"en-dev10","request":"hi there","kind":"nothing"}
+{"id":"en-dev11","request":"the cleaning bill","kind":"ambiguous"}
+{"id":"en-dev12","request":"the hosting or the software invoice","kind":"ambiguous"}
