@@ -20,8 +20,7 @@ import {
 	costPerCall,
 	judge,
 	type Measures,
-	percentile,
-	ratio,
+	measuresOf,
 	type Verdict,
 } from "./score.ts";
 
@@ -222,17 +221,14 @@ export function scoreFilterRun(
 		),
 	);
 
-	const measures: Measures = {
-		exact: ratio(exact.length, covered.length),
-		coverage: ratio(covered.length, filterable.length),
+	const measures = measuresOf(run.rows, {
+		right: exact.length,
+		covered: covered.length,
+		expected: filterable.length,
 		invented: invented.length,
-		heldAmbiguous: ratio(ambiguous.length - leaked.length, ambiguous.length),
-		p95Ms: percentile(
-			answered.map(({ latencyMs }) => latencyMs),
-			95,
-		),
-		errors: run.rows.length - answered.length,
-	};
+		ambiguous: ambiguous.length,
+		held: ambiguous.length - leaked.length,
+	});
 
 	const fields = Object.fromEntries(
 		names.map((name) => [name, fieldStats(name, gates[name] as number, read)]),

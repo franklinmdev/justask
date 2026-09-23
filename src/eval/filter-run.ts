@@ -1,5 +1,3 @@
-import { mkdir, open, readFile } from "node:fs/promises";
-import { dirname } from "node:path";
 import { ask } from "../ask.ts";
 import type { Field, Fields, Filter } from "../filter.ts";
 import type { AmountReading, DateReading } from "../parse.ts";
@@ -11,6 +9,7 @@ import {
 	isDateRange,
 } from "./filter-set.ts";
 import { checkKillLines, type KillLines } from "./kill-lines.ts";
+import { readRunLog, writeRunLog } from "./log.ts";
 
 /**
  * A field's candidates as the provider read them. A date or amount
@@ -87,43 +86,15 @@ export async function runFilterEval<F extends Fields>({
 }: RunFilterEvalInput<F>): Promise<FilterRun> {
 	checkKillLines(killLines);
 	checkSet(set, filter);
-	await mkdir(dirname(log), { recursive: true });
-	const file = await open(log, "wx").catch((error: unknown) => {
-		if ((error as NodeJS.ErrnoException).code === "EEXIST") {
-			throw new Error(
-				`justask: the run log ${log} exists already; a saved run is never overwritten`,
-			);
-		}
-		throw error;
-	});
-	try {
-		const run: FilterRun = {
-			startedAt: new Date().toISOString(),
-			gates: Object.fromEntries(
-				Object.entries(filter.fields).map(([name, field]) => [
-					name,
-					(field as Field).gate,
-				]),
-			),
-			killLines,
-			rows: [],
-		};
-		const { rows: _, ...header } = run;
-		await file.write(`${JSON.stringify(header)}\n`);
-		for (const row of set) {
-			const answered = await runRow(row, {
-				filter,
-				provider,
-				facts,
-				timeoutMs,
-			});
-			run.rows.push(answered);
-			await file.write(`${JSON.stringify(answered)}\n`);
-		}
-		return run;
-	} finally {
-		await file.close();
-	}
+	const gates = Object.fromEntries(
+		Object.entries(filter.fields).map(([name, field]) => [
+			name,
+			(field as Field).gate,
+		]),
+	);
+	return writeRunLog(log, { gates, killLines }, set, (row) =>
+		runRow(row, { filter, provider, facts, timeoutMs }),
+	);
 }
 
 /** Every expected field exists in the filter and takes that kind of value, checked before any call. */
@@ -208,14 +179,11 @@ async function runRow<F extends Fields>(
 
 /** Reads a run log written by `runFilterEval`, to rescore or compare it with no provider call. */
 export async function readFilterRun(log: string): Promise<FilterRun> {
-	const [header, ...rows] = (await readFile(log, "utf8"))
-		.split("\n")
-		.filter((line) => line.trim())
-		.map((line) => JSON.parse(line));
+	const { header, rows } = await readRunLog(log);
 	if (typeof header?.gates !== "object" || !header.killLines) {
 		throw new Error(
 			`justask: ${log} is not a run log written by runFilterEval`,
 		);
 	}
-	return { ...header, rows };
+	return { ...header, rows } as FilterRun;
 }
