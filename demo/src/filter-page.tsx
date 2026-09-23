@@ -162,7 +162,7 @@ export function FilterPage({
 						<h3 id="applied-title" className="label">
 							{copy.filter.applied}
 						</h3>
-						<p className="applied-count data" role="status">
+						<p className="applied-count" role="status">
 							{copy.filter.showing(rows.length, content.transactions.length)}
 						</p>
 						{appliedNames.length > 0 && (

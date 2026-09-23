@@ -492,6 +492,13 @@ h2 {
 	border-color: var(--border);
 }
 
+/* The piece wraps what the page renders in a span: the name and the value. */
+.filter > span:first-child {
+	display: inline-flex;
+	align-items: baseline;
+	gap: 6px;
+}
+
 .filter-name {
 	color: var(--muted);
 	font-size: 0.75rem;
@@ -988,7 +995,7 @@ h2 {
 
 	/*
 	 * The five-column transactions become a card list: vendor and amount on
-	 * the first line, invoice, date and status on the second.
+	 * the first line, date and status on the second, the invoice last.
 	 */
 	.transactions.all thead {
 		position: absolute;
@@ -1003,7 +1010,8 @@ h2 {
 		grid-template-columns: minmax(0, 1fr) auto;
 		grid-template-areas:
 			"vendor amount"
-			"meta status";
+			"date status"
+			"invoice invoice";
 		gap: 2px 12px;
 		padding: 10px 0;
 		border-bottom: 1px solid var(--border);
@@ -1020,7 +1028,7 @@ h2 {
 	}
 
 	.transactions.all td:nth-child(1) {
-		grid-area: meta;
+		grid-area: invoice;
 		color: var(--muted);
 	}
 
@@ -1031,7 +1039,7 @@ h2 {
 	}
 
 	.transactions.all td:nth-child(3) {
-		display: none;
+		grid-area: date;
 	}
 
 	.transactions.all td:nth-child(4) {
