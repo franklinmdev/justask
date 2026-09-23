@@ -1363,7 +1363,8 @@ h2 {
 
 /* Narrower than a desktop: the switch picks the app or the hood. */
 
-@media (max-width: 1099px) {
+/* The range form leaves no gap at a fractional width, such as 1099.5px under zoom. */
+@media (width < 1100px) {
 	.layout {
 		padding: 16px;
 	}
