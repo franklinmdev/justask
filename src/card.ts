@@ -9,6 +9,7 @@ import {
 	NOT_MENTIONED,
 	type ParsedFieldResult,
 } from "./filter.ts";
+import type { NamedPair } from "./named-pair.ts";
 import type {
 	AmountReading,
 	DateReading,
@@ -93,6 +94,13 @@ export type Card<F extends CardFields> = {
 	 * the intent's gate, whatever its pick (ADR 0009).
 	 */
 	commands?: CardCommands;
+	/**
+	 * Words that offer a choice, in the card's language, each one word: "or";
+	 * "o", "u". A request that names two items of one catalog field with one
+	 * of these between them holds that field before its gate, whatever its
+	 * pick (ADR 0010).
+	 */
+	joiners?: string[];
 };
 
 /** A card's command words: "quite", "envíe"; "el gasto", "la factura". */
@@ -141,14 +149,17 @@ export type CardValue<F extends CardFields> = {
  */
 export type CardFieldResult<F extends CardField> =
 	F extends SeveralCatalogField<infer T>
-		? ParsedFieldResult<T>
+		? ParsedFieldResult<T> & Paired
 		: F extends CatalogField<infer T>
-			? CatalogFieldResult<T>
+			? CatalogFieldResult<T> & Paired
 			: F extends CardDateField
 				? CatalogFieldResult<DateReading>
 				: F extends TimeField
 					? CatalogFieldResult<TimeReading>
 					: CatalogFieldResult<AmountReading>;
+
+/** A catalog field on a card reports the named pair that held it, whatever its pick. */
+type Paired = { pair?: NamedPair };
 
 /** The intent question's answer and gate. */
 export type IntentResult = {
@@ -269,7 +280,7 @@ export function intentQuestion(card: Card<CardFields>): Question {
 			},
 			{
 				label: NOT_AVAILABLE,
-				description: `It is about a ${card.description} but does not add a new one: it changes, cancels, deletes, sends or forwards one, or asks a question`,
+				description: `It is about a ${card.description} but does not add a new one: it changes, cancels, deletes, sends or forwards one, sets one to a new value, or asks a question`,
 			},
 		],
 	};
@@ -302,8 +313,15 @@ function choicePlan<T>(
 	gate: number,
 	fill: (value: T) => unknown,
 	ambiguous: (value: T) => boolean = () => false,
+	pair?: NamedPair,
 ): FieldPlan {
-	const held = { candidates, pick: null, probabilities: {}, gate };
+	const held = {
+		candidates,
+		pick: null,
+		probabilities: {},
+		gate,
+		...(pair && { pair }),
+	};
 	return {
 		questions: question ? [question] : [],
 		held,
@@ -312,7 +330,9 @@ function choicePlan<T>(
 			const pick = readPick(probabilities);
 			const result = { ...held, pick, probabilities };
 			const winner = candidates.find(({ id }) => id === pick?.label);
-			if (!winner || !pick || ambiguous(winner.value)) return { result };
+			if (pair || !winner || !pick || ambiguous(winner.value)) {
+				return { result };
+			}
 			if (pick.probability < gate) return { result };
 			const value = fill(winner.value);
 			return value === undefined ? { result } : { result, value };
@@ -320,16 +340,21 @@ function choicePlan<T>(
 	};
 }
 
-/** A card field's questions, and how to build its value from the provider's picks. */
+/**
+ * A card field's questions, and how to build its value from the provider's
+ * picks. A catalog field the request names a pair of is held whatever its
+ * picks (ADR 0010).
+ */
 export function cardPlan(
 	name: string,
 	card: Card<CardFields>,
 	field: CardField,
 	catalog: Candidate<unknown>[],
 	readings: CandidateReadings,
+	pair?: NamedPair,
 ): FieldPlan {
 	if (field.kind === "catalog" && "several" in field) {
-		return severalPlan(name, card, field, catalog);
+		return severalPlan(name, card, field, catalog, pair);
 	}
 	const ask = <T>(candidates: Candidate<T>[], rules: string) =>
 		candidates.length > 0
@@ -337,7 +362,15 @@ export function cardPlan(
 			: null;
 	switch (field.kind) {
 		case "catalog":
-			return choicePlan(name, ask(catalog, ""), catalog, field.gate, (v) => v);
+			return choicePlan(
+				name,
+				ask(catalog, ""),
+				catalog,
+				field.gate,
+				(v) => v,
+				undefined,
+				pair,
+			);
 		case "date":
 			return choicePlan(
 				name,
@@ -389,8 +422,14 @@ function severalPlan(
 	card: Card<CardFields>,
 	field: SeveralCatalogField<unknown>,
 	candidates: Candidate<unknown>[],
+	pair?: NamedPair,
 ): FieldPlan {
-	const held = { candidates, answers: {}, gate: field.gate };
+	const held = {
+		candidates,
+		answers: {},
+		gate: field.gate,
+		...(pair && { pair }),
+	};
 	return {
 		questions: candidates.map((candidate) =>
 			itemQuestion(`${name}_${candidate.id}`, card, field, candidate),
@@ -403,7 +442,9 @@ function severalPlan(
 				answers[id] = { pick: readPick(probabilities), probabilities };
 			}
 			const result = { ...held, answers };
-			if (!clearsGate(Object.values(answers), field.gate)) return { result };
+			if (pair || !clearsGate(Object.values(answers), field.gate)) {
+				return { result };
+			}
 			const value = candidates
 				.filter(({ id }) => answers[id]?.pick?.label === YES)
 				.map(({ value }) => value);

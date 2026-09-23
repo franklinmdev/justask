@@ -75,7 +75,8 @@ export type CardHeldReason =
 	| { kind: "not-a-record" }
 	| { kind: "foreign-currency"; mark: string }
 	| { kind: "ambiguous"; text: string }
-	| { kind: "period"; text: string };
+	| { kind: "period"; text: string }
+	| { kind: "pair"; text: string };
 
 /** Why the intent question let the fields fill, or held them all. */
 export type IntentReason =
@@ -279,18 +280,23 @@ export type Content = {
 	 * "quite" is a Spanish command and an English word.
 	 */
 	cardCommands: CardCommands;
+	/** The words that offer a choice between two items: "or"; "o", "u" (ADR 0010). */
+	cardJoiners: string[];
 };
 
 /** A catalog row: the provider reads the description, never the value. */
+/** A vendor of the catalog; its brand is the word or two a request names it by (ADR 0010). */
 export function vendor(
 	id: string,
 	name: string,
 	supplies: string,
+	brand: string,
 ): Candidate<Vendor> {
 	return {
 		id,
 		description: `${name}, ${supplies}`,
 		value: { id, name, supplies },
+		names: [brand],
 	};
 }
 

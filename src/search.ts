@@ -8,6 +8,12 @@ export type Candidate<T> = {
 	/** What the provider reads about this row. */
 	description: string;
 	value: T;
+	/**
+	 * Other words a request names this row by, such as a brand. A card's
+	 * pair hold reads them, exactly or with a clear typo, beside the id,
+	 * which it reads exactly (ADR 0010).
+	 */
+	names?: string[];
 };
 
 /** Returns the few catalog candidates for one request, from the host app's own catalog. */

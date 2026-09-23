@@ -91,6 +91,13 @@ const answers: Record<string, FakeAnswers> = {
 		tagged: ["meals"],
 		amount: "a0",
 	}),
+	// A named pair, its vendor picked above the gate: the code holds it.
+	"Tallyroot or Cloudberth, $75 yesterday": answer({
+		vendor: question(vendors, "tallyroot"),
+		tagged: ["office"],
+		day: "d0",
+		amount: "a0",
+	}),
 	"almuerzo con Cazuela Azul ayer, $86.40": answer({
 		vendor: question(vendors, "cazuela"),
 		tagged: ["meals"],
@@ -401,6 +408,25 @@ describe("the demo's card page", () => {
 			),
 		).toBeDefined();
 		expect(save("Guardar gasto").getAttribute("aria-disabled")).toBe("true");
+		await expectNoAxeViolations(container);
+	});
+
+	it("holds the vendor on a named pair, whatever its pick, says which words, and fills the rest", async () => {
+		const { container, user } = renderDemo();
+
+		await user.type(
+			screen.getByRole("searchbox", { name: "Describe the expense" }),
+			"Tallyroot or Cloudberth, $75 yesterday{Enter}",
+		);
+		await screen.findByText(/^Filled:/);
+
+		expect(vendor().value).toBe("");
+		expect(amount().value).toBe("75.00");
+		expect(
+			within(panel().getByRole("region", { name: "Vendor" })).getByText(
+				"The request names “Tallyroot or Cloudberth”, a choice of two, so the code held the field whatever the pick.",
+			),
+		).toBeDefined();
 		await expectNoAxeViolations(container);
 	});
 

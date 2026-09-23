@@ -28,6 +28,7 @@ import {
 	questionIds,
 } from "./filter.ts";
 import { checkGate } from "./gate.ts";
+import { checkJoiners, findPair } from "./named-pair.ts";
 import { type Parser, parseRequest, type Reads } from "./parse.ts";
 import type { Pick } from "./pick.ts";
 import type {
@@ -266,6 +267,7 @@ async function askCard<F extends CardFields>({
 }: AskCardInput<F>): Promise<AskCardResult<F>> {
 	checkGate(card.gate, "the card's gate");
 	checkCommands(card.commands);
+	checkJoiners(card.joiners);
 	const names = Object.keys(card.fields);
 	const field = (name: string) => card.fields[name] as CardFields[string];
 	for (const name of names) {
@@ -297,7 +299,14 @@ async function askCard<F extends CardFields>({
 			if (declared.kind === "catalog") {
 				const candidates = await declared.shortlist(request);
 				checkShortlist(candidates, MISSING);
-				plans[name] = cardPlan(name, card, declared, candidates, NO_READINGS);
+				plans[name] = cardPlan(
+					name,
+					card,
+					declared,
+					candidates,
+					NO_READINGS,
+					findPair(request, candidates, card.joiners),
+				);
 			} else {
 				const readings = readingsFor(
 					declared.kind === "date" ? declared.reads : "past",

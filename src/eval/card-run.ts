@@ -6,6 +6,7 @@ import {
 	type CardFields,
 	INTENT,
 } from "../card.ts";
+import type { NamedPair } from "../named-pair.ts";
 import type { AmountReading, DateReading, TimeReading } from "../parse.ts";
 import type { Facts, Provider, ProviderAnswer } from "../provider.ts";
 import { type CardEvalRow, isAmount, isIds } from "./card-set.ts";
@@ -35,6 +36,8 @@ export type CardRunRow = CardEvalRow & {
 	answers: ProviderAnswer;
 	/** The command that held the card before its gate (ADR 0009); absent from logs written before it. */
 	command?: CardCommand;
+	/** Per field, the named pair that held it whatever its pick (ADR 0010); absent when none did, and from logs written before it. */
+	pairs?: Record<string, NamedPair>;
 	/** The whole pipeline, parsing and shortlists included. */
 	latencyMs: number;
 	/** False when the provider was never asked. A card asks its intent on every request, so only a failure before the call leaves it false. */
@@ -164,10 +167,13 @@ async function runRow<F extends CardFields>(
 	});
 	const latencyMs = performance.now() - started;
 	const fields: Record<string, LoggedCardField> = {};
+	const pairs: Record<string, NamedPair> = {};
 	for (const [name, field] of Object.entries(card.fields)) {
-		const { candidates } = result.fields[name] as {
+		const { candidates, pair } = result.fields[name] as {
 			candidates: (Described & { value: unknown })[];
+			pair?: NamedPair;
 		};
+		if (pair) pairs[name] = pair;
 		const kind = loggedKind(field as CardField);
 		fields[name] =
 			kind === "catalog" || kind === "several"
@@ -186,6 +192,7 @@ async function runRow<F extends CardFields>(
 		fields,
 		answers: error ? {} : answers,
 		...(command && { command }),
+		...(Object.keys(pairs).length > 0 && { pairs }),
 		latencyMs,
 		called,
 		...(costUsd !== undefined && { costUsd }),

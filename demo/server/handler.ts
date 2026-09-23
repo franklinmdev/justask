@@ -129,6 +129,7 @@ export function demoCard(content: Content): Card<ExpenseFields> {
 		description: "expense the business paid",
 		gate: CARD_GATES.intent,
 		commands: content.cardCommands,
+		joiners: content.cardJoiners,
 		fields: {
 			vendor: {
 				kind: "catalog",
