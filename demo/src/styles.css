@@ -129,11 +129,20 @@ dd {
 	color: var(--muted);
 }
 
-.label {
+/* The label style: small, muted and spaced, shared by every label-like element. */
+.label,
+.facts dt,
+.transactions th,
+.candidates caption,
+.filter-name,
+.field-gate {
 	color: var(--muted);
 	font-size: 0.75rem;
 	font-weight: 500;
 	letter-spacing: 0.04em;
+}
+
+.label {
 	line-height: 1.2;
 }
 
@@ -421,10 +430,6 @@ h2 {
 
 .transactions th {
 	padding: 0 8px 6px 0;
-	color: var(--muted);
-	font-size: 0.75rem;
-	font-weight: 500;
-	letter-spacing: 0.04em;
 	text-align: left;
 	border-bottom: 1px solid var(--border);
 }
@@ -502,13 +507,6 @@ h2 {
 	display: inline-flex;
 	align-items: baseline;
 	gap: 6px;
-}
-
-.filter-name {
-	color: var(--muted);
-	font-size: 0.75rem;
-	font-weight: 500;
-	letter-spacing: 0.04em;
 }
 
 .filter-remove,
@@ -750,10 +748,6 @@ h2 {
 }
 
 .facts dt {
-	color: var(--muted);
-	font-size: 0.75rem;
-	font-weight: 500;
-	letter-spacing: 0.04em;
 	line-height: 1.2;
 	margin-bottom: 4px;
 }
@@ -899,13 +893,6 @@ h2 {
 	margin-right: auto;
 }
 
-.field-gate {
-	color: var(--muted);
-	font-size: 0.75rem;
-	font-weight: 500;
-	letter-spacing: 0.04em;
-}
-
 .field-gate .data {
 	color: var(--text);
 	font-weight: 400;
@@ -920,10 +907,6 @@ h2 {
 
 .candidates caption {
 	padding-bottom: 4px;
-	color: var(--muted);
-	font-size: 0.75rem;
-	font-weight: 500;
-	letter-spacing: 0.04em;
 	text-align: left;
 }
 
