@@ -11,6 +11,7 @@ The package's React pieces ship unstyled, so these slots bind the demo and any s
 
 ## Overrides
 - Stack notes (Tailwind, shadcn, an icon set): the demo uses plain CSS on class names and no icons. Reason: it shows the package's unstyled pieces styled the way any host app would style them, and one page needs no component library.
+- No icons, but two: the card page's calendar steps between months with two authored SVG chevrons. Reason: a 32px step in a 264px popover has no room for "Previous month", and the arrows are the convention every calendar teaches; the buttons carry the words as their accessible names.
 - App shell (icon-rail sidebar, command palette): the demo has a 56px header with the language toggle, and nothing else. Reason: one page per flow and one text box; a palette would compete with the box the demo exists to show.
 - Tables on mobile stay tables: the chosen vendor's transactions (four columns) and the panel's candidates (two). Reason: both fit a 375px screen without scrolling, checked at 390, and neither has row actions a card list would carry. The filter page's five-column transactions do become a card list under 560px, as the invariant says.
 - Page title: the header's page links name the pages beside the product name, the current one underlined in the accent, and the h1 is visually hidden. Reason: the demo's pages are one flow each, the link already shows the page name, and the app and panel headings below carry the hierarchy.

@@ -21,7 +21,7 @@ Private and unpublished. `package.json` sets `"private": true`, so npm refuses t
 
 `createSearchHandler` returns a function from a standard `Request` to a standard `Response`, so it mounts as is in any fetch-style server (Next.js route handlers, Hono, Remix, Bun, Deno, Cloudflare Workers). It runs on the server with the provider built there, so the provider's key never reaches the browser.
 
-There is one handler per flow, each at its own route: the browser never chooses the flow, and each route owns its facts and limits. `createFilterHandler` serves a filter the same way (see [Filter](#filter)), and card gets its own.
+There is one handler per flow, each at its own route: the browser never chooses the flow, and each route owns its facts and limits. `createFilterHandler` and `createCardHandler` serve a filter and a card the same way (see [Filter](#filter) and [Card](#card)).
 
 ```ts
 import { createSearchHandler, fuzzyShortlist } from "justask";
@@ -198,6 +198,37 @@ const { card } = await ask({
 - **amount** fields fill with `{ value, currency? }`, one question over every number found.
 - **catalog** fields with `several: true` ask one yes-or-no question per shortlisted item, so combinations are never enumerated, and fill with the items asked for. The field is held when any item's pick is below the gate, or says a word could be this item or another.
 
+### Card over HTTP and in React
+
+`createCardHandler` takes the same `provider`, `timeoutMs`, `facts` and `onError` as the other handlers, plus the `card` declaration, and answers `200` with `{ card, error? }`: the record in `card.value`, the intent question's pick and gate in `card.intent`, and every field's candidates, picks and gate in `card.fields`.
+
+`useCard` from `justask/react` drives it from the host app's markup. It calls when the person presses Enter, unless `timing` says `{ on: "type", debounceMs }`. Each answer starts the card over: the fields it filled, the held ones empty. The person fills or changes any field through `set`, and `onConfirm` receives the card only on Confirm. Saving and undo are the host app's: after Confirm the box and the card empty for the next record and the undo slot opens, and the host's undo control takes the record back its own way, then calls `card.restore()` to put the card back as it was.
+
+```tsx
+const card = useCard<typeof expense.fields>({
+  endpoint: "/api/card",
+  onConfirm: (value) => saveExpense(value), // the host app's own storage
+});
+
+<CardBox card={card} label="Describe the expense" />
+<CardStatus
+  card={card}
+  announce={({ filled, waiting }) => `Filled: ${filled.join(", ")}. For you to fill: ${waiting.join(", ")}.`}
+/>
+<CardEntry card={card} name="vendor">
+  {({ value, set }) => <VendorSelect value={value} onChange={set} />}
+</CardEntry>
+{/* one CardEntry per field */}
+<CardConfirm card={card}>Save expense</CardConfirm>
+<CardUndo card={card}>
+  Expense saved. <button onClick={() => { undoSave(); card.restore(); }}>Undo</button>
+</CardUndo>
+```
+
+The pieces are unstyled. `CardEntry` wraps the host's own control for one field and passes it `{ value, set, filledBy }`. It sets `data-empty` on an empty field, held or never mentioned alike, and `data-filled-by="answer"` or `"person"` on a filled one. `CardStatus` is a polite live region that says once per answer which fields were filled and which wait for the person, in the words `announce` gives. Filling the card does not change it. `CardConfirm` stays focusable with `aria-disabled` while there is nothing to confirm or an answer is on its way. `CardUndo` is a polite live region that shows its children from Confirm until the person types or fills a field again. Place them in this order, box, status, entries, Confirm, undo, so Tab follows the card. When the undo control disappears after `restore`, the host moves the focus, for example back to the box.
+
+A failed provider fills nothing, and the card keeps working by hand: `card.error` says why.
+
 ## Measuring a gate
 
 Every gate is declared with no default, so it has to come from measurement. `justask/eval` runs an eval set through the real pipeline, with the real provider, and scores it the way the lab did. It runs by hand, never in CI, because every row is a paid call.
@@ -239,16 +270,16 @@ Keep a separate dev set for tuning descriptions and shortlists, and never let it
 
 ## Demo
 
-A local demo shows a fictional invoicing app, in English or Spanish, one page per flow, each beside a state panel that shows what happened. The search page finds a vendor: the shortlist, every label's probability, the pick, the gate on `none` and `several`, and why the item filled or was held. The filter page turns a request into the transactions table's filters (vendor, status, date and amount), applied only when the person confirms; its panel shows each field's questions, picks and gate, and why it filled or was held. Each page's suggested requests include ones that hold and ones with nothing to do.
+A local demo shows a fictional invoicing app, in English or Spanish, one page per flow, each beside a state panel that shows what happened. The search page finds a vendor: the shortlist, every label's probability, the pick, the gate on `none` and `several`, and why the item filled or was held. The filter page turns a request into the transactions table's filters (vendor, status, date and amount), applied only when the person confirms; its panel shows each field's questions, picks and gate, and why it filled or was held. The card page fills a new expense (vendor, tags, day and amount) from a request. The person fills what was held from a calendar, a select and a box, saves it to a list kept in memory, and can undo right after. Its panel starts with the intent question, then each field's questions and why it filled or was held. Each page's suggested requests include ones that hold and ones with nothing to do.
 
 ```sh
 cp .env.example .env   # then set TYPESAFE_API_KEY
 pnpm demo              # http://localhost:5173
 ```
 
-Vite serves the page and mounts the handlers as dev middleware, one route per flow and language (`/api/search/en`, `/api/filter/es` and so on), each with its own catalog. Both languages' local currency is USD. The key is read from `.env` on the server side and never reaches the browser bundle. Every search or filter request is one real, paid Jev call. Without a key the page still runs, and every request fails and is held.
+Vite serves the page and mounts the handlers as dev middleware, one route per flow and language (`/api/search/en`, `/api/filter/es` and so on), each with its own catalog. Both languages' local currency is USD. The key is read from `.env` on the server side and never reaches the browser bundle. Every search, filter or card request is one real, paid Jev call. Without a key the page still runs, and every request fails and is held.
 
-The demo's gate (0.15) was fixed by the owner before round 2 and measured on that round's fresh search eval sets. It failed there, as round 1's gate did, on Spanish requests that could mean two vendors. With `several` read against it (ADR 0007), it passed round 3's fresh sets in both languages, with no slack on held ambiguous; every round's verdict and misses are in `docs/search-eval.md`. Its timeout (2 s) and typing pause (300 ms) are not measured yet. `node --conditions=source demo/eval/search.ts` runs those sets by hand with the key in `.env`, never in CI. The filter's fields all take the lab's filter gate, 0.9, until the filter eval set measures one per field.
+The demo's gate (0.15) was fixed by the owner before round 2 and measured on that round's fresh search eval sets. It failed there, as round 1's gate did, on Spanish requests that could mean two vendors. With `several` read against it (ADR 0007), it passed round 3's fresh sets in both languages, with no slack on held ambiguous; every round's verdict and misses are in `docs/search-eval.md`. Its timeout (2 s) and typing pause (300 ms) are not measured yet. `node --conditions=source demo/eval/search.ts` runs those sets by hand with the key in `.env`, never in CI. The filter's fields all take the lab's filter gate, 0.9, until the filter eval set measures one per field. The card's intent and fields all take the lab's card gate, 0.9, until the card eval set measures them.
 
 ## Development
 

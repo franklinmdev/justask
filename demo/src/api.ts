@@ -8,3 +8,7 @@ export function searchEndpoint(language: Language): string {
 export function filterEndpoint(language: Language): string {
 	return `/api/filter/${language}`;
 }
+
+export function cardEndpoint(language: Language): string {
+	return `/api/card/${language}`;
+}
