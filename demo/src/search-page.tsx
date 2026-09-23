@@ -2,9 +2,10 @@ import { SearchBox, SearchEmpty, SearchItem, useSearch } from "justask/react";
 import { searchEndpoint } from "./api.ts";
 import type { Content, Vendor } from "./content/types.ts";
 import { formats } from "./format.ts";
-import { DEBOUNCE_MS, RecordedLabel, Suggestions } from "./parts.tsx";
+import { DEBOUNCE_MS, RecordedLabel, Saved, Suggestions } from "./parts.tsx";
 import { dayOf, type SearchRecording } from "./recording.ts";
 import { useReplay } from "./replay.ts";
+import { costOf, searchControls } from "./saved.ts";
 import { CaseLayout } from "./showcase.tsx";
 import { StatePanel } from "./state-panel.tsx";
 import { useSuggest } from "./trace.ts";
@@ -68,6 +69,11 @@ export function SearchPage({
 				className="box"
 				autoComplete="off"
 				spellCheck={false}
+			/>
+			<Saved
+				content={content}
+				cost={costOf(searchControls(search.result?.item ?? null))}
+				stale={search.loading}
 			/>
 			<SearchItem
 				search={search}

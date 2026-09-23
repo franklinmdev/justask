@@ -169,6 +169,10 @@ describe("the Table case's recorded run", () => {
 		expect(announced()).toContain(
 			"Set: Vendor, Fixbright IT; Date, since Jul 1, 2026; Amount, $200.00 to $600.00. Held: Status.",
 		);
+		// The vendor's menu, the start day's calendar and both bounds; the held status counts nothing.
+		expect(screen.getByText(/^1 sentence /).textContent).toBe(
+			"1 sentence vs 6 clicks in 2 menus",
+		);
 		// Each control Apply set settles in after the one before; the held one stays still.
 		expect(
 			[...container.querySelectorAll<HTMLElement>("[data-settle]")].map(
@@ -307,6 +311,9 @@ describe("the Search case's recorded run", () => {
 			`Reproduciendo una ejecución grabada del ${day("es", search)}: “${search.request}”`,
 		);
 		expect(announced()).toContain(vendor.name);
+		expect(screen.getByText(/^1 frase /).textContent).toBe(
+			"1 frase frente a 2 clics en 1 menú",
+		);
 		expect(figure("Latencia", "Esta llamada")).toBe(`${search.latencyMs} ms`);
 		expect(provider.calls).toHaveLength(0);
 		await expectNoAxeViolations(container);

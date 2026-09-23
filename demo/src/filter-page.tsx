@@ -17,9 +17,10 @@ import type {
 import { DayPicker } from "./day-picker.tsx";
 import { FilterPanel } from "./filter-panel.tsx";
 import { formats, LOCAL_CURRENCY, parseAmount } from "./format.ts";
-import { DEBOUNCE_MS, RecordedLabel, Suggestions } from "./parts.tsx";
+import { DEBOUNCE_MS, RecordedLabel, Saved, Suggestions } from "./parts.tsx";
 import { dayOf, type TableRecording } from "./recording.ts";
 import { useReplay } from "./replay.ts";
+import { costOf, tableControls } from "./saved.ts";
 import { CaseLayout } from "./showcase.tsx";
 import { useSuggest } from "./trace.ts";
 
@@ -199,6 +200,11 @@ export function FilterPage({
 				className="box"
 				autoComplete="off"
 				spellCheck={false}
+			/>
+			<Saved
+				content={content}
+				cost={costOf(tableControls(filter.result?.value ?? {}))}
+				stale={filter.loading}
 			/>
 			<FilterFields
 				filter={filter}

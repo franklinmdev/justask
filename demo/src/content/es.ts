@@ -113,6 +113,12 @@ export const spanish: Content = {
 		recorded: (date) => `Ejecución grabada · ${date}`,
 		replaying: (date, request) =>
 			`Reproduciendo una ejecución grabada del ${date}: “${request}”`,
+		saved: ({ clicks, menus }) => {
+			const words = `1 frase frente a ${clicks} ${clicks === 1 ? "clic" : "clics"}`;
+			return menus === 0
+				? words
+				: `${words} en ${menus} ${menus === 1 ? "menú" : "menús"}`;
+		},
 		filter: {
 			transactions: "Transacciones",
 			boxLabel: "Filtrar las transacciones",
