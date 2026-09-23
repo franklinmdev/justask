@@ -39,6 +39,9 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 	const round4Set = parseCardEvalSet(
 		read(`card-${content.language}.round4.jsonl`),
 	);
+	const round5Set = parseCardEvalSet(
+		read(`card-${content.language}.round5.jsonl`),
+	);
 	const diagSet = parseCardEvalSet(read(`card-${content.language}.diag.jsonl`));
 	const pairSet = parseCardEvalSet(read(`card-${content.language}.pair.jsonl`));
 	const allSets = [
@@ -47,6 +50,7 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 		...round2Set,
 		...round3Set,
 		...round4Set,
+		...round5Set,
 		...diagSet,
 		...pairSet,
 	];
@@ -78,6 +82,7 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 		["round 2", round2Set],
 		["round 3", round3Set],
 		["round 4", round4Set],
+		["round 5", round5Set],
 	])(
 		"give the %s set 28 records, 2 ambiguous rows per field and 6 with nothing to record",
 		(_, set) => {
@@ -184,7 +189,7 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 });
 
 /**
- * Frozen on the owner's approval, 2026-09-23 (#20, round 2 #44, round 3 #57, round 4 #63), before any call. A
+ * Frozen on the owner's approval, 2026-09-23 (#20, round 2 #44, round 3 #57, round 4 #63, round 5 #73), before any call. A
  * failure here means the verdict's inputs changed after the fact: revert the
  * edit, or log the owner's call in docs/card-eval.md with a new checksum or
  * value.
@@ -225,6 +230,15 @@ describe("the frozen card eval", () => {
 		[
 			"card-es.round4.jsonl",
 			"236390a28187c5e8ef13c55fbbeb3199e9a393c048e36f48d1a30ed3f7a6edf7",
+		],
+		// Round 5, approved in five batches on 2026-09-23 (#73), before any call.
+		[
+			"card-en.round5.jsonl",
+			"fca825759009558e2fa33a783172abb290a4d78d81858dda0061f264e4a2ccd4",
+		],
+		[
+			"card-es.round5.jsonl",
+			"66147a3d8de451c56268334ed05bbba6d294fc87882692400d7de6bceca06c6e",
 		],
 		// #63's pair probes, approved before any call: the pair rule was chosen from their runs.
 		[

@@ -625,3 +625,23 @@ English: 7 flips on four rows; coverage 0.798, exact 0.941, held ambiguous 1, an
 - Run 2: `demo/eval/runs/card-en-round4-2.jsonl`, `demo/eval/runs/card-es-round4-2.jsonl`
 
 Each rescores with `scoreCardRun(await readCardRun(path), { gates })` and no call.
+
+## Round 5: the same card, under the latency rule
+
+Carried by [#73](https://github.com/franklinmdev/justask/issues/73). Rounds 1 to 4 above stand as recorded. Round 4 failed on Spanish p95 alone, in a slow provider window, and cannot be rescored under #65's rule (Latency, above), so the card gets a fresh round with nothing changed: the code of ADR 0009 and ADR 0010, the labels, and round 4's gates as `demo/server/handler.ts` serves them (intent 0.45, vendor 0.7, tags 0.4, spent_on 0.8, total 0.9, from dev run 5). No dev run is made.
+
+### Round 5 sets
+
+Files in `demo/eval/`, drafted against every set in `demo/eval/` (probes included) and the demo's suggestions and recordings, approved by the owner in five batches on 2026-09-23 (rows 1 to 10, 11 to 20, 21 to 30, 31 to 40, 41 and 42, English beside Spanish) and frozen by checksum in `test/demo-card-eval.test.ts` in the commit before the first round 5 call. Run logs `demo/eval/runs/card-<language>-round5-<n>.jsonl`.
+
+| File | Rows | record | ambiguous | nothing |
+|---|---|---|---|---|
+| `card-en.round5.jsonl` | 42 | 28 | 8 | 6 |
+| `card-es.round5.jsonl` | 42 | 28 | 8 | 6 |
+
+- **The same shape as round 4:** tags in all 28 records, the day in 24, the amount in 27, the vendor in 21, each of the 14 vendors at least once, 7 records with no vendor of the catalog (`a rideshare`, `a wine bar`, `a hardware store`), typos (`Tallroot`, `Klausewood`; `Cuemtia`, `Lindiero`), paraphrases (`the IT support team`, `our commercial insurer`), one euro amount. Spanish row N has the same shape as English row N.
+- **ambiguous:** vendor, two named pairs no earlier set or probe names, one per arm of the rule: `Sureharbor and Clausewood` (`Cobertura Plena y Lindero`) and `Paydale or Tallyroot` (`Serena o Cuentia`). Tags `Beanhaven order for the front desk` and `not sure if it's billable to a client`; day `last Friday` and `in July`; amount `2,200 pesos` and `$35 or $40`.
+- **A record names a third vendor beside an "or" pair** (row 23, `Larkspur dinner for the Clausewood or Paydale kickoff`): the rule holds no pair there, and the vendor is expected filled.
+- **nothing:** a question about spending, a delete, a change that sets a value, a thank-you, a question about tags, and a send. The code holds the delete in both languages (`remove the Tallyroot expense`, `quite el gasto de Cuentia`); no list holds the change (`the Brightmop charge on Thursday should be $210`, `el cargo de Brisamar del jueves debería ser $210`) or the send (`text the Cloudberth receipt to our accountant`, `pásele el recibo de Nubalia a nuestro contador`), which the label alone must hold. Checked with no call: the code holds no round 5 record, only the two pair rows' vendors and the delete.
+- The same checks as rounds 1 to 4 hold: no request repeats any other set, probe, suggestion or recording, every expected day and amount is one the parser builds on Wednesday 2026-09-23, and every held one is held by the parser's reading or by two candidates.
+- Kill lines, measures and procedure as round 1, under the latency rule: run 1 gives the verdict, a failing p95 in a slow window with every quality line passing reads `LATENCY PENDING` and is measured again in a normal window; run 2 reports flips only.
