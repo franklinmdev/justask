@@ -44,6 +44,9 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 	);
 	const diagSet = parseCardEvalSet(read(`card-${content.language}.diag.jsonl`));
 	const pairSet = parseCardEvalSet(read(`card-${content.language}.pair.jsonl`));
+	const officeSet = parseCardEvalSet(
+		read(`card-${content.language}.office.jsonl`),
+	);
 	const allSets = [
 		...devSet,
 		...evalSet,
@@ -53,6 +56,7 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 		...round5Set,
 		...diagSet,
 		...pairSet,
+		...officeSet,
 	];
 	const card = demoCard(content);
 	const rows = (set: CardEvalRow[], kind: CardEvalKind) =>
@@ -189,7 +193,7 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 });
 
 /**
- * Frozen on the owner's approval, 2026-09-23 (#20, round 2 #44, round 3 #57, round 4 #63, round 5 #73), before any call. A
+ * Frozen on the owner's approval, 2026-09-23 (#20, round 2 #44, round 3 #57, round 4 #63, round 5 #73, #77's office probes), before any call. A
  * failure here means the verdict's inputs changed after the fact: revert the
  * edit, or log the owner's call in docs/card-eval.md with a new checksum or
  * value.
@@ -248,6 +252,15 @@ describe("the frozen card eval", () => {
 		[
 			"card-es.pair.jsonl",
 			"571ba0f2bdaef184a9d1e927317ac9cb75c3016d00a9db8b5ebb856bea4e1bc6",
+		],
+		// #77's office probes, approved in two batches on 2026-09-23, before any call.
+		[
+			"card-en.office.jsonl",
+			"eb6a13c97c39cf2460f4c6127d6716b77d24641f96fe8f3018d0cfb73246ffaf",
+		],
+		[
+			"card-es.office.jsonl",
+			"154cbfa826a91d1edd4e44b8567aec0b6ba71386d9a2c8dd678682ed020e3d73",
 		],
 	])("keeps %s as approved", (name, sha256) => {
 		const bytes = readFileSync(evalFile(name));
