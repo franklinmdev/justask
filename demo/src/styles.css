@@ -85,8 +85,10 @@ dd {
 }
 
 :focus-visible {
-	outline: 2px solid var(--ring);
-	outline-offset: 1px;
+	/* The accent at 30% over a solid accent border. */
+	outline: 1px solid var(--primary);
+	outline-offset: 0;
+	box-shadow: 0 0 0 3px var(--ring);
 }
 
 .data {
@@ -232,9 +234,7 @@ h2 {
 	background: var(--bg);
 	color: var(--text);
 	font: inherit;
-	transition:
-		border-color 120ms ease-out,
-		box-shadow 120ms ease-out;
+	transition: border-color 120ms ease-out;
 }
 
 .box::placeholder {
@@ -380,8 +380,8 @@ h2 {
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
-	margin-top: 20px;
-	padding-top: 20px;
+	margin-top: 24px;
+	padding-top: 24px;
 	border-top: 1px solid var(--border);
 }
 
@@ -406,7 +406,7 @@ h2 {
 
 .chip {
 	min-height: 28px;
-	padding: 3px 8px;
+	padding: 4px 8px;
 	border: 1px solid var(--border);
 	border-radius: 0.125rem;
 	background: var(--surface);

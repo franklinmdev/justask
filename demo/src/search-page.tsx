@@ -181,7 +181,7 @@ function Transactions({
 				{rows.map((row) => (
 					<tr key={row.number}>
 						<td className="data">{row.number}</td>
-						<td>{format.date(row.date)}</td>
+						<td className="data">{format.date(row.date)}</td>
 						<td className="data numeric">{format.amount(row.amount)}</td>
 						<td data-status={row.status}>{copy.statuses[row.status]}</td>
 					</tr>

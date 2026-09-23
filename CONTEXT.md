@@ -37,7 +37,7 @@ The label the provider chose for one question, with its probability.
 _Avoid_: Answer, prediction, extraction
 
 **Provider**:
-The model service that answers questions. It picks; it never writes a value.
+The model service that answers questions. It picks; it never writes a value. Spanish UI copy calls it "el modelo", since "proveedor" is a vendor.
 _Avoid_: LLM, AI, backend
 
 **Field**:
