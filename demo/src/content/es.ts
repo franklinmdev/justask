@@ -433,12 +433,17 @@ export const spanish: Content = {
 		t("serena", "FAC-2036", "2026-09-06", 820.0, "paid"),
 		t("coberplena", "FAC-1899", "2026-07-01", 2940.0, "paid"),
 	],
+	// Plural names: the typo rule reads the singular too, and "pagada" would
+	// also read "pasada", as in "la semana pasada" (#75).
 	statuses: [
-		status("paid", "facturas pagadas en su totalidad"),
-		status("open", "facturas pendientes, sin pagar y aún sin vencer"),
+		status("paid", "facturas pagadas en su totalidad", ["pagadas"]),
+		status("open", "facturas pendientes, sin pagar y aún sin vencer", [
+			"pendientes",
+		]),
 		status(
 			"overdue",
 			"facturas vencidas, sin pagar después de su fecha límite",
+			["vencidas"],
 		),
 	],
 	filterSuggestions: {

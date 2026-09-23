@@ -183,6 +183,47 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 		]);
 	});
 
+	it.each([
+		{
+			en: "paid or overdue invoices",
+			es: "facturas pagadas o vencidas",
+			held: ["status"],
+		},
+		{
+			en: "the open and the overdue invoice",
+			es: "la factura pendiente y la vencida",
+			held: ["status"],
+		},
+		// "pasada" is one letter from "pagada": the Spanish name is plural, so a date never reads as paid.
+		{
+			en: "overdue invoices or the ones from last week",
+			es: "facturas vencidas o la semana pasada",
+			held: [],
+		},
+		{
+			en: "paid Cloudberth or Tallyroot invoices",
+			es: "facturas pagadas de Nubalia o de Cuentia",
+			held: ["vendor"],
+		},
+	])(
+		"hold the status of a named pair of statuses, as $en is written in each language (#75)",
+		async (row) => {
+			const request = content.language === "es" ? row.es : row.en;
+			// The code finds the pair before any answer, so a failing provider still reports it.
+			const { filter: result } = await ask({
+				request,
+				facts: { ...FACTS, today: TODAY },
+				provider: failingProvider(new Error("no call")),
+				timeoutMs: 1_000,
+				filter,
+			});
+			const held = Object.entries(result.fields)
+				.filter(([, field]) => "pair" in field && field.pair)
+				.map(([name]) => name);
+			expect(held).toEqual(row.held);
+		},
+	);
+
 	it("expect only dates and amounts the parser can build, on the day the runs are fixed at", () => {
 		for (const row of [...devSet, ...evalSet, ...round2]) {
 			const { dates: read = [], amounts = [] } = builtInParser(row.request, {
