@@ -37,6 +37,11 @@ const answers: Record<string, FakeAnswers> = {
 	}),
 	"the cleaners": answer({ brightmop: 0.21, glasswell: 0.15, none: 0.61 }),
 	"los del catering": answer({ cazuela: 0.92, none: 0.02 }),
+	"the plumber who fixed the leak": answer({
+		none: 0.45,
+		brightmop: 0.3,
+		glasswell: 0.25,
+	}),
 };
 
 const byRequest = fakeProvider((request) => {
@@ -131,6 +136,23 @@ describe("the demo's search page", () => {
 			screen.queryByRole("button", { name: /Brightmop Cleaning/ }),
 		).toBeNull();
 		await expectNoAxeViolations(container);
+	});
+
+	it("says the provider picked none when none wins below the gate", async () => {
+		const { user } = renderDemo();
+
+		await user.click(
+			screen.getByRole("button", { name: "the plumber who fixed the leak" }),
+		);
+
+		expect(
+			await screen.findByText("No vendor fits that request."),
+		).toBeDefined();
+		const state = panel();
+		expect(state.getByText("Held")).toBeDefined();
+		expect(
+			state.getByText("The provider picked none (0.45), so nothing is shown."),
+		).toBeDefined();
 	});
 
 	it("offers requests with nothing to find beside the ambiguous ones", () => {

@@ -39,6 +39,8 @@ export const spanish: Content = {
 			switch (reason.kind) {
 				case "none-reached-gate":
 					return `none (${reason.none}) alcanzó el umbral (${reason.gate}), así que no se muestra nada.`;
+				case "none-picked":
+					return `El modelo eligió none (${reason.none}), así que no se muestra nada.`;
 				case "tie":
 					return "Dos candidatos empataron en el primer lugar, así que no se muestra nada.";
 				case "no-candidates":

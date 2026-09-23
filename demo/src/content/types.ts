@@ -25,6 +25,7 @@ export type Transaction = {
 /** Why a search holds its item, as the state panel explains it. */
 export type HeldReason =
 	| { kind: "none-reached-gate"; none: string; gate: string }
+	| { kind: "none-picked"; none: string }
 	| { kind: "tie" }
 	| { kind: "no-candidates" }
 	| { kind: "provider" }

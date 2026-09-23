@@ -38,6 +38,8 @@ export const english: Content = {
 			switch (reason.kind) {
 				case "none-reached-gate":
 					return `none (${reason.none}) reached the gate (${reason.gate}), so nothing is shown.`;
+				case "none-picked":
+					return `The provider picked none (${reason.none}), so nothing is shown.`;
 				case "tie":
 					return "Two candidates tied for first place, so nothing is shown.";
 				case "no-candidates":

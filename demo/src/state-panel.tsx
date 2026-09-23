@@ -44,13 +44,20 @@ function verdictOf(
 	const none = result.probabilities.none ?? 1;
 	if (result.item) return { kind: "filled", name: result.item.name, none };
 	if (!result.pick) return { kind: "held", reason: { kind: "tie" } };
+	if (none >= result.gate) {
+		return {
+			kind: "held",
+			reason: {
+				kind: "none-reached-gate",
+				none: format.probability(none),
+				gate: format.probability(result.gate),
+			},
+		};
+	}
+	// Below the gate, a none pick still holds, like a tie (ADR 0005).
 	return {
 		kind: "held",
-		reason: {
-			kind: "none-reached-gate",
-			none: format.probability(none),
-			gate: format.probability(result.gate),
-		},
+		reason: { kind: "none-picked", none: format.probability(none) },
 	};
 }
 
