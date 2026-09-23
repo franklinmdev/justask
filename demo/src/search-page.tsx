@@ -3,14 +3,9 @@ import { useState } from "react";
 import { searchEndpoint } from "./api.ts";
 import type { Content, Vendor } from "./content/types.ts";
 import { formats } from "./format.ts";
+import { DEBOUNCE_MS, Suggestions } from "./parts.tsx";
 import { StatePanel } from "./state-panel.tsx";
 import { type Trace, timed, useSuggest } from "./trace.ts";
-
-/**
- * Not measured yet: the demo is where the pause gets measured, so the round
- * trip it shows is part of the point.
- */
-export const DEBOUNCE_MS = 300;
 
 /**
  * The fictional invoicing app's vendor search beside the state panel. The app
@@ -93,39 +88,6 @@ export function SearchPage({
 
 			<StatePanel content={content} search={search} trace={trace} />
 		</main>
-	);
-}
-
-export function Suggestions({
-	id,
-	title,
-	requests,
-	onPick,
-}: {
-	id: string;
-	title: string;
-	requests: string[];
-	onPick: (request: string) => void;
-}) {
-	return (
-		<div className="suggestion-group">
-			<p id={`${id}-title`} className="label">
-				{title}
-			</p>
-			<ul aria-labelledby={`${id}-title`}>
-				{requests.map((request) => (
-					<li key={request}>
-						<button
-							type="button"
-							className="chip"
-							onClick={() => onPick(request)}
-						>
-							{request}
-						</button>
-					</li>
-				))}
-			</ul>
-		</div>
 	);
 }
 

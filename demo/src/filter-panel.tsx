@@ -10,11 +10,10 @@ import type {
 	Content,
 	FieldHeldReason,
 	FieldName,
-	HeldReason,
 	TransactionFields,
 } from "./content/types.ts";
 import { formats } from "./format.ts";
-import { Bar } from "./state-panel.tsx";
+import { Bar, failureOf } from "./parts.tsx";
 import type { Trace } from "./trace.ts";
 
 type Format = ReturnType<typeof formats>;
@@ -32,18 +31,6 @@ type Readout = {
 	rows: { label: string; name: string; detail?: string }[];
 	answer: FieldAnswer;
 };
-
-function failureOf(error: UseFilter<TransactionFields>["error"]): HeldReason {
-	if (!error) return { kind: "provider" };
-	switch (error.kind) {
-		case "provider":
-			return { kind: "provider" };
-		case "timeout":
-			return { kind: "timeout", timeoutMs: error.timeoutMs };
-		default:
-			return { kind: "unreachable", message: error.message };
-	}
-}
 
 /** The answers a field's result holds, one per question. */
 function answersOf(
@@ -100,13 +87,16 @@ function readoutsOf(
 	const missing = MISSING.map((label) => ({ label, name: label }));
 	if (name === "vendor" || name === "status") {
 		const field = result.fields[name];
-		const rows = field.candidates.map(({ id, value }) => ({
-			label: id,
-			name:
-				typeof value === "string"
-					? copy.statuses[value]
-					: (value as { name: string }).name,
-		}));
+		const rows =
+			name === "status"
+				? result.fields.status.candidates.map(({ id, value }) => ({
+						label: id,
+						name: copy.statuses[value],
+					}))
+				: result.fields.vendor.candidates.map(({ id, value }) => ({
+						label: id,
+						name: value.name,
+					}));
 		return [
 			{
 				id: name,

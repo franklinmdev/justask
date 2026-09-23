@@ -16,7 +16,7 @@ import type {
 } from "./content/types.ts";
 import { FilterPanel } from "./filter-panel.tsx";
 import { formats } from "./format.ts";
-import { DEBOUNCE_MS, Suggestions } from "./search-page.tsx";
+import { DEBOUNCE_MS, Suggestions } from "./parts.tsx";
 import { type Trace, timed, useSuggest } from "./trace.ts";
 
 type Applied = FilterValue<TransactionFields>;
@@ -38,7 +38,7 @@ function matches(row: Transaction, filter: Applied): boolean {
 }
 
 /** One field's filter in the page's own words, for the proposed and the applied filters alike. */
-function useWords(content: Content) {
+function fieldWords(content: Content) {
 	const { copy } = content;
 	const format = formats(content.locale);
 	const words: {
@@ -74,7 +74,7 @@ export function FilterPage({
 	fetch?: typeof fetch;
 }) {
 	const { copy } = content;
-	const words = useWords(content);
+	const words = fieldWords(content);
 	const [applied, setApplied] = useState<Applied>({});
 	const [trace, setTrace] = useState<Trace | null>(null);
 
