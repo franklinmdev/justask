@@ -522,6 +522,15 @@ describe("ask: card", () => {
 			expect(card.value.vendor).toEqual({ name: "Northwind" });
 		});
 
+		it("reads a joiner written with spaces around it", async () => {
+			const { card } = await fill("Northwind or Acme, $42", {
+				or: [" or "],
+				and: [],
+			});
+
+			expect(card.fields.vendor.pair?.ids).toEqual(["northwind", "acme"]);
+		});
+
 		it("fills as before when the card declares no joiners", async () => {
 			const { card } = await fill("Northwind or Acme, $42", null);
 

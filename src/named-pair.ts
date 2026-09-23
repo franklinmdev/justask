@@ -143,7 +143,9 @@ export function findPair(
 	const text = request.normalize("NFC");
 	const said = words(text);
 	const joining = new Set(
-		[...joiners.or, ...(several ? [] : joiners.and)].map(fold),
+		[...joiners.or, ...(several ? [] : joiners.and)].map((joiner) =>
+			fold(joiner.trim()),
+		),
 	);
 	const named = mentions(said, candidates);
 	if (new Set(named.map(({ id }) => id)).size !== 2) return undefined;
