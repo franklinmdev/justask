@@ -1,14 +1,14 @@
 // The demo's search eval, by hand with the key in .env, never in CI: every
 // row is a real Jev call.
 //
-//   node --conditions=source demo/eval/search.ts run <en|es> <eval|round2|dev> <n>
-//   node --conditions=source demo/eval/search.ts compare <en|es> <eval|round2> <first n> <second n>
+//   node --conditions=source demo/eval/search.ts run <en|es> <eval|round2|round3|dev> <n>
+//   node --conditions=source demo/eval/search.ts compare <en|es> <eval|round2|round3> <first n> <second n>
 //
-// `run` writes demo/eval/runs/search-<language>[-round2|-dev]-<n>.jsonl, which
-// it never overwrites, and prints its report. `eval` is round 1's set, `round2`
-// the fresh set of round 2. A dev run gets no verdict: it tunes, it never
-// decides. `compare` reads two saved runs of one set and prints the second
-// one's measures and flips, with no call.
+// `run` writes demo/eval/runs/search-<language>[-round2|-round3|-dev]-<n>.jsonl,
+// which it never overwrites, and prints its report. `eval` is round 1's set,
+// `round2` and `round3` the fresh sets of rounds 2 and 3. A dev run gets no
+// verdict: it tunes, it never decides. `compare` reads two saved runs of one set
+// and prints the second one's measures and flips, with no call.
 
 import { readFile } from "node:fs/promises";
 import {
@@ -31,6 +31,7 @@ const TODAY = "Today is Tuesday 2026-09-22 (martes 22 de septiembre de 2026).";
 const SETS = {
 	eval: { file: "", log: "" },
 	round2: { file: ".round2", log: "-round2" },
+	round3: { file: ".round3", log: "-round3" },
 	dev: { file: ".dev", log: "-dev" },
 } as const;
 type SetKind = keyof typeof SETS;
@@ -80,7 +81,7 @@ if (command === "run") {
 
 function usage(): never {
 	console.error(
-		"usage: search.ts run <en|es> <eval|round2|dev> <n> | compare <en|es> <eval|round2> <first n> <second n>",
+		"usage: search.ts run <en|es> <eval|round2|round3|dev> <n> | compare <en|es> <eval|round2|round3> <first n> <second n>",
 	);
 	process.exit(1);
 }

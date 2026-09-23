@@ -1,0 +1,40 @@
+{"id":"en-r3-01","request":"a box of envelopes and a stapler","kind":"item","expected":"papergrove"}
+{"id":"en-r3-02","request":"Papergrove Supplies' August invoice","kind":"item","expected":"papergrove"}
+{"id":"en-r3-03","request":"sandwiches for the board meeting","kind":"item","expected":"larkspur"}
+{"id":"en-r3-04","request":"larkspure catering","kind":"item","expected":"larkspur"}
+{"id":"en-r3-05","request":"the cloud server we rent","kind":"item","expected":"cloudberth"}
+{"id":"en-r3-06","request":"cloudbirth","kind":"item","expected":"cloudberth"}
+{"id":"en-r3-07","request":"the late-night office cleaning contract","kind":"item","expected":"brightmop"}
+{"id":"en-r3-08","request":"Brightmop's overdue invoice","kind":"item","expected":"brightmop"}
+{"id":"en-r3-09","request":"the company that did the windows on the third floor","kind":"item","expected":"glasswell"}
+{"id":"en-r3-10","request":"la empresa que lava las ventanas","kind":"item","expected":"glasswell"}
+{"id":"en-r3-11","request":"posters for the grand opening","kind":"item","expected":"inkhollow"}
+{"id":"en-r3-12","request":"the Inkhollow order","kind":"item","expected":"inkhollow"}
+{"id":"en-r3-13","request":"the hotel for the Chicago sales trip","kind":"item","expected":"farwander"}
+{"id":"en-r3-14","request":"farwnder travel","kind":"item","expected":"farwander"}
+{"id":"en-r3-15","request":"accounting licenses for the new hires","kind":"item","expected":"tallyroot"}
+{"id":"en-r3-16","request":"tallyrot","kind":"item","expected":"tallyroot"}
+{"id":"en-r3-17","request":"the monthly coffee delivery for the kitchen","kind":"item","expected":"beanhaven"}
+{"id":"en-r3-18","request":"el café de la oficina","kind":"item","expected":"beanhaven"}
+{"id":"en-r3-19","request":"the rush delivery to the client downtown","kind":"item","expected":"swiftlane"}
+{"id":"en-r3-20","request":"did Swiftlane deliver it?","kind":"item","expected":"swiftlane"}
+{"id":"en-r3-21","request":"advice on the trademark dispute","kind":"item","expected":"clausewood"}
+{"id":"en-r3-22","request":"clausewod","kind":"item","expected":"clausewood"}
+{"id":"en-r3-23","request":"the screen replacement on Maria's laptop","kind":"item","expected":"fixbright"}
+{"id":"en-r3-24","request":"Fixbright's repair bill","kind":"item","expected":"fixbright"}
+{"id":"en-r3-25","request":"the company that pays our employees","kind":"item","expected":"paydale"}
+{"id":"en-r3-26","request":"paydail","kind":"item","expected":"paydale"}
+{"id":"en-r3-27","request":"the premium on our business policy","kind":"item","expected":"sureharbor"}
+{"id":"en-r3-28","request":"Sure Harbor","kind":"item","expected":"sureharbor"}
+{"id":"en-r3-29","request":"the pest control guys","kind":"nothing"}
+{"id":"en-r3-30","request":"our bank's wire transfer fees","kind":"nothing"}
+{"id":"en-r3-31","request":"the agency that designed our website","kind":"nothing"}
+{"id":"en-r3-32","request":"the rental car for the trip","kind":"nothing"}
+{"id":"en-r3-33","request":"the accountant who does our taxes","kind":"nothing"}
+{"id":"en-r3-34","request":"what can you do?","kind":"nothing"}
+{"id":"en-r3-35","request":"the Swiftlane or Clausewood invoice","kind":"ambiguous"}
+{"id":"en-r3-36","request":"the flight or the payroll bill","kind":"ambiguous"}
+{"id":"en-r3-37","request":"the kitchen supplier","kind":"ambiguous"}
+{"id":"en-r3-38","request":"whoever handles our contracts and our staff","kind":"ambiguous"}
+{"id":"en-r3-39","request":"paper for the flyers","kind":"ambiguous"}
+{"id":"en-r3-40","request":"what we pay every month for our computers","kind":"ambiguous"}
