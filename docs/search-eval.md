@@ -67,7 +67,9 @@ Runs of 2026-09-22 with `jev-1.13.0`, gate 0.2, shortlist 14, today fixed at Tue
 
 ### Gate, from the dev runs
 
-| Dev run | exact | coverage | invented | held ambiguous | p95 | cost per call |
+The dev runs were logged at the draft gate of 0.5; held ambiguous here is at that gate.
+
+| Dev run (gate 0.5) | exact | coverage | invented | held ambiguous | p95 | cost per call |
 |---|---|---|---|---|---|---|
 | English | 8 of 8 | 8 of 8 | 0 | 1 of 2 | 594 ms | $0.0000300 |
 | Spanish | 8 of 8 | 8 of 8 | 0 | 1 of 2 | 421 ms | $0.0000323 |
@@ -103,8 +105,8 @@ English: one flip, `whoever cleans the office`, Brightmop at `none` 0.19 in run 
 
 ### What the misses say
 
-- **The two Spanish failures are confident single picks, not near-misses.** Relucir at 0.78 and Tecnoria at 0.77, with the runner-up at 0.08 and 0.04: the provider read each request as naming one vendor. No gate on `none` and no margin between the top two would hold them without holding right answers too.
-- **The item and ambiguous `none` values overlap in Spanish.** Items reach 0.16 (`la firma de recursos humanos`), ambiguous rows start at 0.14. Rescored with no call, and so with no verdict: a gate of 0.15 holds 5 of 6 Spanish ambiguous rows but drops Spanish coverage to 0.893; 0.1 holds all 6 but drops coverage to 0.929 in English and 0.893 in Spanish. The old demo gate of 0.5 would have held only 1 of 6 in English and 2 of 6 in Spanish, so the dev-run rule moved the gate the right way.
+- **The two Spanish failures are confident single picks, not near-misses.** Relucir at 0.78 and Tecnoria at 0.77, with the runner-up at 0.08 and 0.04: the provider read each request as naming one vendor. No margin between the top two tells them from a right answer.
+- **The FAIL is close to the gate, and a lower gate would have passed.** Rescored with no call, and so with no verdict: at 0.15, run 1 clears every kill line in both languages (English coverage 1, held ambiguous 1; Spanish coverage 0.893, held ambiguous 0.833, `es39` held and `es35` still filled at 0.14), and so does run 2. At 0.1 every ambiguous row holds but coverage drops to 0.929 in English and 0.893 in Spanish. The item and ambiguous `none` values overlap in Spanish (items up to 0.16, `la firma de recursos humanos`; ambiguous from 0.14), so no gate separates them cleanly. The gate rule was fixed before the run and set 0.2, so the verdict stays FAIL; choosing 0.15 now would be tuning on the rows that judge it. The old demo gate of 0.5 would have held only 1 of 6 in English and 2 of 6 in Spanish, so the dev-run rule moved the gate the right way.
 - **`es35`** reads the words of one vendor's description (Relucir: "limpieza de oficinas y de ventanas") over the other's ("limpieza nocturna de oficinas"). Both vendors clean offices, so the row is ambiguous as drafted; the catalog's wording pulls it to one.
 - **`es39` may be a drafting error, the owner's call.** "tecnología" shares its root with the vendor's name, Tecnoria, which the English row (`our tech vendor` against Fixbright) does not. A Spanish speaker with a vendor called Tecnoria may well mean it. The row is left as frozen; if the owner rules it wrong, the ruling is logged here and the verdict stays with run 1 as written.
 - **`es20`** held a request for the courier at `none` 0.66 and 0.58 in both runs: phrased as a question about who did something today, it read as nothing to find.

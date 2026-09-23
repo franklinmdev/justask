@@ -19,18 +19,18 @@ import {
 	scoreRun,
 } from "justask/eval";
 import { jevProvider } from "justask/jev";
-import { demoSearch, FACTS, TIMEOUT_MS } from "../server/handler.ts";
-import { english } from "../src/content/en.ts";
-import { spanish } from "../src/content/es.ts";
-import type { Content, Language } from "../src/content/types.ts";
+import { contents, demoSearch, FACTS, TIMEOUT_MS } from "../server/handler.ts";
+import type { Language } from "../src/content/types.ts";
 import { KILL_LINES } from "./kill-lines.ts";
 
 /** Fixed, so every run reads the same day. */
 const TODAY = "Today is Tuesday 2026-09-22 (martes 22 de septiembre de 2026).";
 
-const contents: Record<Language, Content> = { en: english, es: spanish };
+type SetKind = "eval" | "dev";
 const here = (path: string) => new URL(path, import.meta.url).pathname;
-const logOf = (language: Language, set: "eval" | "dev", n: string) =>
+const setPath = (language: Language, set: SetKind) =>
+	here(`search-${language}${set === "dev" ? ".dev" : ""}.jsonl`);
+const runLogPath = (language: Language, set: SetKind, n: string) =>
 	here(`runs/search-${language}${set === "dev" ? "-dev" : ""}-${n}.jsonl`);
 
 const [command, language, ...rest] = process.argv.slice(2);
@@ -45,15 +45,14 @@ if (command === "run") {
 	} catch {
 		// Fine when TYPESAFE_API_KEY is already in the environment.
 	}
-	const file = `search-${content.language}${set === "dev" ? ".dev" : ""}.jsonl`;
 	const run = await runEval({
-		set: parseEvalSet(await readFile(here(file), "utf8")),
+		set: parseEvalSet(await readFile(setPath(content.language, set), "utf8")),
 		search: demoSearch(content),
 		provider: jevProvider(),
 		facts: { today: TODAY, ...FACTS },
 		timeoutMs: TIMEOUT_MS,
 		killLines: KILL_LINES,
-		log: logOf(content.language, set, n),
+		log: runLogPath(content.language, set, n),
 	});
 	const report = scoreRun(run);
 	console.log(
@@ -62,8 +61,8 @@ if (command === "run") {
 } else if (command === "compare") {
 	const [first, second] = rest;
 	if (!first || !second) usage();
-	const before = await readRun(logOf(content.language, "eval", first));
-	const after = await readRun(logOf(content.language, "eval", second));
+	const before = await readRun(runLogPath(content.language, "eval", first));
+	const after = await readRun(runLogPath(content.language, "eval", second));
 	console.log(formatReport(scoreRun(after), compareRuns(before, after)));
 } else {
 	usage();

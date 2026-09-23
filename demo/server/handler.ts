@@ -32,7 +32,10 @@ export const FACTS: Facts = { local_currency: "USD" };
  */
 const SHORTLIST_LIMIT = 14;
 
-const contents: Record<Language, Content> = { en: english, es: spanish };
+export const contents: Record<Language, Content> = {
+	en: english,
+	es: spanish,
+};
 
 /** The search the demo serves in one language, which its eval sets measure. */
 export function demoSearch(content: Content): Search<Vendor> {
