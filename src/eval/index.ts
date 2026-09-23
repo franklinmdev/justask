@@ -1,4 +1,25 @@
 export {
+	type CardRun,
+	type CardRunRow,
+	type LoggedCardField,
+	type RunCardEvalInput,
+	readCardRun,
+	runCardEval,
+} from "./card-run.ts";
+export {
+	type CardFlip,
+	type CardMiss,
+	type CardReport,
+	compareCardRuns,
+	scoreCardRun,
+} from "./card-score.ts";
+export {
+	type CardEvalKind,
+	type CardEvalRow,
+	type CardExpectedValue,
+	parseCardEvalSet,
+} from "./card-set.ts";
+export {
 	type FilterRun,
 	type FilterRunRow,
 	type LoggedField,
@@ -20,7 +41,11 @@ export {
 	type FilterEvalRow,
 	parseFilterEvalSet,
 } from "./filter-set.ts";
-export { formatFilterReport, formatReport } from "./format.ts";
+export {
+	formatCardReport,
+	formatFilterReport,
+	formatReport,
+} from "./format.ts";
 export type { KillLines, Measure } from "./kill-lines.ts";
 export {
 	type Run,

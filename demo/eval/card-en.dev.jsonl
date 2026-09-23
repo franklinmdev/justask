@@ -1,0 +1,20 @@
+{"id": "en-d-01", "request": "Paydale HR consulting, $400 on August 24", "kind": "record", "expected": {"vendor": "paydale", "tags": ["office"], "spent_on": "2026-08-24", "total": {"value": 400, "currency": "USD"}}}
+{"id": "en-d-02", "request": "lunch at Larkspur with a client yesterday, $96", "kind": "record", "expected": {"vendor": "larkspur", "tags": ["meals", "client"], "spent_on": "2026-09-22", "total": {"value": 96, "currency": "USD"}}}
+{"id": "en-d-03", "request": "Sureharbor policy renewal today, $1,200", "kind": "record", "expected": {"vendor": "sureharbor", "tags": ["office"], "spent_on": "2026-09-23", "total": {"value": 1200, "currency": "USD"}}}
+{"id": "en-d-04", "request": "train ticket to Boston on Friday, $64", "kind": "record", "expected": {"tags": ["travel"], "spent_on": "2026-09-18", "total": {"value": 64, "currency": "USD"}}}
+{"id": "en-d-05", "request": "Clausewood legal advice on the lease, $750 on September 3", "kind": "record", "expected": {"vendor": "clausewood", "tags": ["office"], "spent_on": "2026-09-03", "total": {"value": 750, "currency": "USD"}}}
+{"id": "en-d-06", "request": "glaswell windows, $320 yesterday", "kind": "record", "expected": {"vendor": "glasswell", "tags": ["office"], "spent_on": "2026-09-22", "total": {"value": 320, "currency": "USD"}}}
+{"id": "en-d-07", "request": "Farwander flights for the sales trip, $2,360.90 on September 17", "kind": "record", "expected": {"vendor": "farwander", "tags": ["travel"], "spent_on": "2026-09-17", "total": {"value": 2360.9, "currency": "USD"}}}
+{"id": "en-d-08", "request": "pizza for the team today, $43", "kind": "record", "expected": {"tags": ["meals"], "spent_on": "2026-09-23", "total": {"value": 43, "currency": "USD"}}}
+{"id": "en-d-09", "request": "Cloudberth, $299 on August 1 for hosting", "kind": "record", "expected": {"vendor": "cloudberth", "tags": ["office"], "spent_on": "2026-08-01", "total": {"value": 299, "currency": "USD"}}}
+{"id": "en-d-10", "request": "the IT people fixed the printer, $110 on Tuesday", "kind": "record", "expected": {"vendor": "fixbright", "tags": ["office"], "spent_on": "2026-09-22", "total": {"value": 110, "currency": "USD"}}}
+{"id": "en-d-11", "request": "business cards from Inkhollow, 60 dollars", "kind": "record", "expected": {"vendor": "inkhollow", "tags": ["office"], "total": {"value": 60, "currency": "USD"}}}
+{"id": "en-d-12", "request": "Tallyroot annual license, $1,188 on August 20", "kind": "record", "expected": {"vendor": "tallyroot", "tags": ["office"], "spent_on": "2026-08-20", "total": {"value": 1188, "currency": "USD"}}}
+{"id": "en-d-13", "request": "the cleaning company, $1,800 yesterday", "kind": "ambiguous", "expected": {"vendor": "held", "tags": ["office"], "spent_on": "2026-09-22", "total": {"value": 1800, "currency": "USD"}}}
+{"id": "en-d-14", "request": "Swiftlane, $40 on Monday, maybe for a client", "kind": "ambiguous", "expected": {"vendor": "swiftlane", "tags": "held", "spent_on": "2026-09-21", "total": {"value": 40, "currency": "USD"}}}
+{"id": "en-d-15", "request": "Larkspur catering last Monday, $500", "kind": "ambiguous", "expected": {"vendor": "larkspur", "tags": ["meals"], "spent_on": "held", "total": {"value": 500, "currency": "USD"}}}
+{"id": "en-d-16", "request": "Papergrove toner yesterday, $150 or $160", "kind": "ambiguous", "expected": {"vendor": "papergrove", "tags": ["office"], "spent_on": "2026-09-22", "total": "held"}}
+{"id": "en-d-17", "request": "what did we pay Cloudberth last month?", "kind": "nothing"}
+{"id": "en-d-18", "request": "undo the last expense", "kind": "nothing"}
+{"id": "en-d-19", "request": "good morning", "kind": "nothing"}
+{"id": "en-d-20", "request": "move the taxi expense to Friday", "kind": "nothing"}
