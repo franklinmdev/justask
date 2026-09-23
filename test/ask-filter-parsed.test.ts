@@ -417,10 +417,36 @@ describe("ask: parsers the host app registers", () => {
 		});
 	});
 
+	it("claims the occurrence a host parser read even when the same text comes twice", async () => {
+		const secondPrice: Parser = (request) =>
+			request.includes("500")
+				? {
+						amounts: [
+							{ text: "500", value: 500, currency: "DOP" },
+							{ text: "500", value: 500, currency: "DOP" },
+						],
+					}
+				: {};
+
+		const result = await ask({
+			...base,
+			request: "500 invoices over 500",
+			provider: fakeProvider({
+				total_a0: answer(ROLES, "not_mentioned"),
+				total_a1: answer(ROLES, "min"),
+			}),
+			filter: invoiceFilter({ parsers: [secondPrice] }),
+		});
+
+		expect(
+			result.filter.fields.total.candidates.map(({ value }) => value.currency),
+		).toEqual(["DOP", "DOP"]);
+	});
+
 	it("hands a parser today as a date and the facts", async () => {
 		const seen: unknown[] = [];
-		const fiscalYear: Parser = (request, context) => {
-			seen.push(context);
+		const fiscalYear: Parser = (request, input) => {
+			seen.push(input);
 			return request.includes("FY26")
 				? {
 						dates: [

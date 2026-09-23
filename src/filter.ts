@@ -208,7 +208,7 @@ export function datePlan(
 				answerOf(answer[`${name}_${end}`]),
 			) as [FieldAnswer, FieldAnswer];
 			const result = { ...held, answers: { from, to } };
-			if (!clear([from, to], field.gate)) return { result };
+			if (!clearsGate([from, to], field.gate)) return { result };
 			const start = candidates.find(({ id }) => id === from.pick?.label);
 			const end = candidates.find(({ id }) => id === to.pick?.label);
 			if (!start && !end) return { result };
@@ -247,7 +247,7 @@ export function amountPlan(
 				answers[id] = answerOf(answer[`${name}_${id}`]);
 			}
 			const result = { ...held, answers };
-			if (!clear(Object.values(answers), field.gate)) return { result };
+			if (!clearsGate(Object.values(answers), field.gate)) return { result };
 			const value: AmountRange = {};
 			const currencies = new Set<string>();
 			for (const { id, value: reading } of candidates) {
@@ -280,7 +280,7 @@ function answerOf(probabilities: Probabilities = {}): FieldAnswer {
 }
 
 /** Every pick clears the gate, and none says the request asks for what no candidate expresses. */
-function clear(answers: FieldAnswer[], gate: number): boolean {
+function clearsGate(answers: FieldAnswer[], gate: number): boolean {
 	return answers.every(
 		({ pick }) =>
 			pick !== null && pick.probability >= gate && pick.label !== NOT_AVAILABLE,

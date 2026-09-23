@@ -38,8 +38,8 @@ export {
 	type AmountReading,
 	builtInParser,
 	type DateReading,
-	type ParseContext,
 	type Parser,
+	type ParserInput,
 	type Readings,
 } from "./parse.ts";
 export type {

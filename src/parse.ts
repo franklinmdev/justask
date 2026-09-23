@@ -26,7 +26,7 @@ export type Readings = {
 	amounts?: AmountReading[];
 };
 
-export type ParseContext = {
+export type ParserInput = {
 	/** Today in the person's time zone, YYYY-MM-DD. */
 	today: string;
 	facts: Facts;
@@ -36,7 +36,7 @@ export type ParseContext = {
  * Code that finds candidates in a request. A host app registers its own
  * beside the built-in one, for its domain's or region's formats.
  */
-export type Parser = (request: string, context: ParseContext) => Readings;
+export type Parser = (request: string, input: ParserInput) => Readings;
 
 /**
  * The built-in English and general Spanish parser, ported from the lab. It
@@ -44,8 +44,8 @@ export type Parser = (request: string, context: ParseContext) => Readings;
  * resolves a bare "$" and currency words through the `local_currency` fact.
  * An ambiguous reading is never guessed: "03/04" becomes two readings.
  */
-export const builtInParser: Parser = (request, context) => {
-	const { dates, amounts } = readSpans(request, context, []);
+export const builtInParser: Parser = (request, input) => {
+	const { dates, amounts } = readSpans(request, input, []);
 	return {
 		dates: dates.map(({ reading }) => reading),
 		amounts: amounts.map(({ reading }) => reading),
@@ -62,14 +62,14 @@ type Placed<R> = { at: Span; reading: R };
  */
 export function parseRequest(
 	request: string,
-	context: ParseContext,
+	input: ParserInput,
 	parsers: readonly Parser[],
 ): { dates: DateReading[]; amounts: AmountReading[] } {
 	const claimed: Span[] = [];
 	const dates: Placed<DateReading>[] = [];
 	const amounts: Placed<AmountReading>[] = [];
 	for (const parser of parsers) {
-		const readings = parser(request, context);
+		const readings = parser(request, input);
 		for (const reading of readings.dates ?? []) {
 			dates.push({ at: place(request, reading.text, claimed), reading });
 		}
@@ -77,7 +77,7 @@ export function parseRequest(
 			amounts.push({ at: place(request, reading.text, claimed), reading });
 		}
 	}
-	const own = readSpans(request, context, claimed);
+	const own = readSpans(request, input, claimed);
 	const inOrder = <R>(placed: Placed<R>[]) =>
 		placed.sort((x, y) => x.at[0] - y.at[0]).map(({ reading }) => reading);
 	return {
@@ -86,9 +86,13 @@ export function parseRequest(
 	};
 }
 
-/** Where a host parser's text sits, claimed; a text not found sorts last and claims nothing. */
+/** The first unclaimed place a host parser's text sits, claimed; a text not found sorts last and claims nothing. */
 function place(request: string, text: string, claimed: Span[]): Span {
-	const start = text ? request.indexOf(text) : -1;
+	const overlaps = (s: number) =>
+		claimed.some(([cs, ct]) => s < ct && cs < s + text.length);
+	let start = text ? request.indexOf(text) : -1;
+	while (start >= 0 && overlaps(start))
+		start = request.indexOf(text, start + 1);
 	if (start < 0) return [request.length, request.length];
 	const span: Span = [start, start + text.length];
 	claimed.push(span);
@@ -821,7 +825,7 @@ function currencyOf(
 /** Reads dates, then amounts, never twice over one span nor over a claimed one. */
 function readSpans(
 	text: string,
-	{ today, facts }: ParseContext,
+	{ today, facts }: ParserInput,
 	claimed: readonly Span[],
 ): { dates: Placed<DateReading>[]; amounts: Placed<AmountReading>[] } {
 	const local = localCurrency(facts);
@@ -868,12 +872,13 @@ function readSpans(
 	for (let m = DIGIT_AMOUNT.exec(folded); m; m = DIGIT_AMOUNT.exec(folded)) {
 		let s = m.index + (m[0].length - m[0].trimStart().length);
 		let t = m.index + m[0].trimEnd().length;
-		const written = m[1] ?? m[4];
+		// A word after the number says more than a "$" before it: "$500 pesos".
+		const written = m[4] ?? m[1];
 		let mark: string | null = null;
 		if (written) {
-			const at = m[1]
-				? folded.indexOf(written, s)
-				: folded.lastIndexOf(written, t);
+			const at = m[4]
+				? folded.lastIndexOf(written, t)
+				: folded.indexOf(written, s);
 			mark = text.slice(at, at + written.length);
 		} else {
 			// A currency code in capitals just before or after the number.

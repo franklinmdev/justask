@@ -334,6 +334,15 @@ describe("amounts", () => {
 			]);
 		});
 
+		it("lets the currency word after a number decide over a bare $ before it", () => {
+			expect(amounts("más de $500 pesos", { local_currency: "USD" })).toEqual([
+				["$500 pesos", 500, null],
+			]);
+			expect(amounts("más de $500 pesos", { local_currency: "MXN" })).toEqual([
+				["$500 pesos", 500, "MXN"],
+			]);
+		});
+
 		it("refuses a local currency that is not a currency code", () => {
 			expect(() => parse("500", { local_currency: "pesos" })).toThrow(
 				/local_currency/,
@@ -366,11 +375,23 @@ describe("amounts", () => {
 	});
 
 	it.each([
+		["1,500", 1500],
+		["1.500", 1500],
+		["1.5", 1.5],
+		["300", 300],
 		["1,234,567.89", 1234567.89],
 		["1.234.567,89", 1234567.89],
 		["1,5", 1.5],
 	])("reads the separators of %s", (raw, value) => {
 		expect(amounts(raw)).toEqual([[raw, value, null]]);
+	});
+});
+
+describe("accents", () => {
+	it("keeps every span where the person typed it, accents included", () => {
+		expect(dates("Pagos de María del año pasado")).toEqual([
+			["año pasado", "2025-01-01", "2025-12-31"],
+		]);
 	});
 });
 
