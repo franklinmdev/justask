@@ -19,7 +19,7 @@ export function formats(locale: string) {
 	return {
 		probability: (value: number) => probability.format(value),
 		/** In the local currency, or as the bare number and its code when another one is named. */
-		amount: (value: number, currency?: string) =>
+		amount: (value: number, currency?: string | null) =>
 			currency && currency !== LOCAL_CURRENCY
 				? `${value} ${currency}`
 				: amount.format(value),
