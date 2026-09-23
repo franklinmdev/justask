@@ -382,3 +382,18 @@ Dev run 4, of 2026-09-23 with `jev-1.13.0`, the first dev run with both fixes, f
 The gates are in `demo/server/handler.ts`; `test/demo-card-eval.test.ts` pins them to dev run 4.
 
 Run logs: `demo/eval/runs/card-<en|es>-diag-4.jsonl`, `demo/eval/runs/card-<en|es>-dev-4.jsonl`.
+
+### Round 3 sets
+
+Files in `demo/eval/`, drafted against every set in `demo/eval/` and the demo's suggestions, approved by the owner in five batches on 2026-09-23 (rows 1 to 10, 11 to 20, 21 to 30, 31 to 40, 41 and 42, English beside Spanish) and frozen by checksum in `test/demo-card-eval.test.ts` in the commit before the first round 3 call. Run logs `demo/eval/runs/card-<language>-round3-<n>.jsonl`.
+
+| File | Rows | record | ambiguous | nothing |
+|---|---|---|---|---|
+| `card-en.round3.jsonl` | 42 | 28 | 8 | 6 |
+| `card-es.round3.jsonl` | 42 | 28 | 8 | 6 |
+
+- **The same shape as rounds 1 and 2:** tags in all 28 records, the day in 24, the amount in 27, the vendor in 21, each of the 14 vendors at least once, 7 records with no vendor of the catalog (`Lyft`, `a seafood place`, `an office outlet`), typos (`Taliroot`, `clauswood`; `Quentia`, `lyndero`), paraphrases (`the laptop repair shop`, `our business insurer`), one euro amount. Spanish row N has the same shape as English row N.
+- **ambiguous:** vendor `the cleaning crew` and the named pair `Tallyroot or Cloudberth` (`Cuentia o Nubalia`); tags `Beanhaven delivery` and `perhaps billable to a client`; day `last Monday` and `last month`; amount `2,500 pesos` and `$27 or $32`. Two shapes repeat round 2's leaks on purpose: the named pair, and `billable to them` on a record (row 24).
+- **nothing:** a question about spending, a delete, a change, a thank-you, a question about tags, and a send. They measure both fixes apart: the code holds the delete in both languages (`delete the Papergrove expense`, `quite la factura de Tintaverde`), and no list holds the change (`make yesterday's Brightmop charge $260`, `deje en $260 el cargo`) or the send (`forward Paydale's invoice to our accountant`, `mándele la factura de Serena al contador`), which the label alone must hold. Checked with no call: the code holds no round 3 record.
+- The same checks as rounds 1 and 2 hold: no request repeats any other set, probe or suggestion, every expected day and amount is one the parser builds on Wednesday 2026-09-23, and every held one is held by the parser's reading or by two candidates.
+- Kill lines, measures and procedure as round 1, at the gates from dev run 4 (above). Run 1 gives the verdict; run 2 reports flips only.

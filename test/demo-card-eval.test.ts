@@ -177,7 +177,7 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 });
 
 /**
- * Frozen on the owner's approval, 2026-09-23 (#20, round 2 #44), before any call. A
+ * Frozen on the owner's approval, 2026-09-23 (#20, round 2 #44, round 3 #57), before any call. A
  * failure here means the verdict's inputs changed after the fact: revert the
  * edit, or log the owner's call in docs/card-eval.md with a new checksum or
  * value.
@@ -200,6 +200,15 @@ describe("the frozen card eval", () => {
 		[
 			"card-es.round2.jsonl",
 			"8a4572903c88e437bce14a1e8210083ae190e117e4a421316074f578d99182f2",
+		],
+		// Round 3, approved in five batches on 2026-09-23 (#57), before any call.
+		[
+			"card-en.round3.jsonl",
+			"f0c044883020c57261022a89cd0154d9d8ce047cae652e08caec111a62f4b6cd",
+		],
+		[
+			"card-es.round3.jsonl",
+			"8e072a3faa4186b4921dcece01af0a32b6b87e69c55317ef14307fe31453bfb9",
 		],
 	])("keeps %s as approved", (name, sha256) => {
 		const bytes = readFileSync(evalFile(name));
