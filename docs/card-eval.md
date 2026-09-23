@@ -298,7 +298,7 @@ Carried by [#57](https://github.com/franklinmdev/justask/issues/57). Rounds 1 an
 
 ### Probe sets
 
-`demo/eval/card-es.diag.jsonl` (50 rows) and `demo/eval/card-en.diag.jsonl` (30 rows), every row a nothing row, run with `card.ts run <en|es> diag <n>` and no verdict. They are measured, never tuned against, and no round 3 row may repeat them (`test/demo-card-eval.test.ts`).
+`demo/eval/card-es.diag.jsonl` and `demo/eval/card-en.diag.jsonl`, run with `card.ts run <en|es> diag <n>` and no verdict. The first 50 Spanish and 30 English rows are nothing rows, the diagnosis below; the 15 records per language after them measure the fix's false holds (The fix, below). They are measured, never tuned against, and no round 3 row may repeat them (`test/demo-card-eval.test.ts`).
 
 - **Spanish, 44 rows:** each of `quite`, `quita`, `quité`, `borre`, `borra`, `elimine`, `elimina`, `cambie`, `cambia`, `envíe` and `envía` on the same expense four ways: with a vendor and an amount (`quite el gasto de $58 del Cafetal`), a vendor alone, an amount alone, and neither (`quite ese gasto`). Changes move the expense to Friday; sends go to accounting and name an invoice (`la factura`).
 - **English, 24 rows:** `remove`, `I removed`, `erase`, `delete`, `change` and `send` on the Beanhaven expense, the same four ways.
@@ -329,3 +329,56 @@ Run 3's added rows: `quite el gasto de $320 de Nubalia` 0.74, `quite la factura 
 - **The misreading is stable.** The same row moved by at most 0.11 across three runs (`envíe esa factura a contabilidad`, 0.57 to 0.68).
 
 Run logs: `demo/eval/runs/card-<en|es>-diag-<1|2|3>.jsonl`.
+
+## Round 3: the fix, from dev runs only
+
+The owner decided on 2026-09-23 from the diagnosis above: both fixes, recorded in [ADR 0009](adr/0009-card-holds-commands-on-existing-records.md). **The fix covers English too**, which leaked on sending.
+
+1. **The intent question's `not_available` label names sending and forwarding**: "it changes, cancels, deletes, sends or forwards one, or asks a question".
+2. **The demo's card holds a command on an existing record in code**, before the intent's gate: a verb and a reference from its language's lists (`cardCommands` in `demo/src/content/en.ts` and `es.ts`), each as whole words, up to two words between a reference's determiner and its noun. `quite` is on the Spanish list alone.
+
+| Language | Verbs | References |
+|---|---|---|
+| English | remove, delete, erase, cancel, void, change, edit, update, move, undo, send, resend, forward, email | the, that, this expense; the expenses; the, that, this invoice; the invoices |
+| Spanish | quite, quita, quitar, borre, borra, borrar, elimine, elimina, eliminar, anule, anula, anular, cancele, cancela, cancelar, cambie, cambia, cambiar, mueva, mueve, mover, pase, pasa, deshaga, deshaz, envíe, envía, enviar, reenvíe, reenvía, reenviar, mande, manda, mandar | el, del, ese, este gasto; los gastos; la, esa, esta factura; las facturas |
+
+### False holds, beside the leaks removed
+
+Before any gate was fixed, the owner asked for the cost: 15 real new records per language, appended to the probe sets, each with a listed word in it, such as `email hosting invoice from Cloudberth, $12`, `quite a pricey lunch at Larkspur, $95 yesterday` and `limpieza de Brisamar para que quite las manchas de la alfombra, $140 el viernes`. Six of them hold a listed verb and a listed reference together (`Swiftlane courier to send the invoice to the client`, `complemento de Cuentia para enviar las facturas`), the shape the code check cannot tell from a command. Probe run 4, of 2026-09-23 with `jev-1.13.0`, has both fixes, the intent gate at 0.45, today Wednesday 2026-09-23.
+
+| Probe run 4 | English | Spanish |
+|---|---|---|
+| Nothing rows that read as new records at 0.45, run 3 (no fix) | 2 of 30 | 15 of 50 |
+| The same, run 4 (both fixes) | 0 of 30 | 0 of 50 |
+| Of those, held by the provider in run 4, with the new label | 2 | 10 |
+| Of those, held by the code alone, the provider still reading a new record | 0 | 5 |
+| Records held, of 15 | 5 | 3 |
+| Held by the code | 3 | 3 |
+| Of those, which the provider held too | 2 | 2 |
+| Held by the provider, no command found | 2 | 0 |
+
+- **The label carries sending.** Every English send and forward fell to 0.00 or 0.01 (from 0.25 to 0.57); Spanish `envíe`, `envía`, `mande` and `reenvíe` fell to 0.14 or less, all but `envíe el gasto de $58 del Cafetal a contabilidad` at 0.46, where `not_available` still won at 0.54. The code holds every one of them too.
+- **The code carries `quite`, as the diagnosis said the label could not.** `quite` read about the same with the new label, 0.34 to 0.87: five of its six rows still read as new records, and the code held all six.
+- **The code's own cost is one record per language.** It held 3 of 15 in each; the provider read 2 of those 3 as not new too (`send the invoice to the client` 0.10, `resend the invoice to Paydale` 0.00; `enviar la factura al cliente` 0.32, `reenviar la factura a Serena` 0.12), so only `Tallyroot add-on to email the invoices, $30 today` (0.74) and `complemento de Cuentia para enviar las facturas, $30 hoy` (0.53) are held by the code alone. Every one of the six is a purpose clause, `to` or `para` and a verb, the verb's infinitive in Spanish.
+- **The provider held two English records with no command in them**: `taxi to forward the signed contract to Clausewood, $22 yesterday` (`not_available` 0.32 for `new_record`), and `quite a pricey lunch at Larkspur, $95 yesterday` (`not_mentioned`, `new_record` 0.12). The code never holds the second, as the owner required; there was no run without the new label to say whether the label moved them.
+- **No record of any frozen set holds a command.** Checked with no call over every set in `demo/eval/`: the code holds only nothing rows there.
+
+### Gates for round 3
+
+Dev run 4, of 2026-09-23 with `jev-1.13.0`, the first dev run with both fixes, fixes every gate by the same rule as rounds 1 and 2. `node --conditions=source demo/eval/card.ts gates 4`:
+
+| Field | Lowest right | Highest wrong | Rule | Gate | Round 2 |
+|---|---|---|---|---|---|
+| intent | 0.48 | none | lowest right rounded down | **0.45** | 0.45 |
+| vendor | 0.52 | none | lowest right rounded down | **0.5** | 0.5 |
+| tags | 0.38 | none | lowest right rounded down | **0.35** | 0.35 |
+| spent_on | 0.84 | none | lowest right rounded down | **0.8** | 0.9 |
+| total | 0.98 | none | lowest right rounded down, at most 0.9 | **0.9** | 0.9 |
+
+- The code held 3 English and 3 Spanish dev nothing rows (`undo the last expense`, `pase el gasto del taxi al viernes`); the rule reads no intent pick on them, since no gate lets them through. No nothing row picked `new_record`, held or not: the highest was 0.18 (`pase el gasto del taxi al viernes`, held by the code), and 0.16 among the rest (`póngale la etiqueta de cliente al almuerzo de ayer`).
+- The label cost the dev cards nothing the earlier runs did not: English held `the IT people fixed the printer`, as dev run 3 did, and `train ticket to Boston on Friday` (`not_mentioned` 0.48), held in dev run 1 too. Spanish passed all 16 cards.
+- At these gates dev run 4 fills 49 of 57 English and 52 of 57 Spanish expected fields, every filled card exact, every ambiguous row held, no nothing row filled.
+
+The gates are in `demo/server/handler.ts`; `test/demo-card-eval.test.ts` pins them to dev run 4.
+
+Run logs: `demo/eval/runs/card-<en|es>-diag-4.jsonl`, `demo/eval/runs/card-<en|es>-dev-4.jsonl`.

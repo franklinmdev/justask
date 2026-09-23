@@ -28,3 +28,18 @@
 {"id": "en-x-28", "request": "remove the $320 Cloudberth expense", "kind": "nothing"}
 {"id": "en-x-29", "request": "remove the $58 Beanhaven invoice", "kind": "nothing"}
 {"id": "en-x-30", "request": "forward the Clausewood invoice to accounting", "kind": "nothing"}
+{"id": "en-x-31", "request": "email hosting invoice from Cloudberth, $12", "kind": "record", "expected": {"vendor": "cloudberth", "tags": ["office"], "total": {"value": 12, "currency": "USD"}}}
+{"id": "en-x-32", "request": "Swiftlane courier to send the invoice to the client, $25 yesterday", "kind": "record", "expected": {"vendor": "swiftlane", "tags": ["office"], "spent_on": "2026-09-22", "total": {"value": 25, "currency": "USD"}}}
+{"id": "en-x-33", "request": "Paydale fee to update the payroll, $60 on Monday", "kind": "record", "expected": {"vendor": "paydale", "tags": ["office"], "spent_on": "2026-09-21", "total": {"value": 60, "currency": "USD"}}}
+{"id": "en-x-34", "request": "Fixbright laptop repair, the invoice came to $180", "kind": "record", "expected": {"vendor": "fixbright", "tags": ["office"], "total": {"value": 180, "currency": "USD"}}}
+{"id": "en-x-35", "request": "Clausewood fee to change the lease, $450 on September 10", "kind": "record", "expected": {"vendor": "clausewood", "tags": ["office"], "spent_on": "2026-09-10", "total": {"value": 450, "currency": "USD"}}}
+{"id": "en-x-36", "request": "Inkhollow flyers to send out, $90 today", "kind": "record", "expected": {"vendor": "inkhollow", "tags": ["office"], "spent_on": "2026-09-23", "total": {"value": 90, "currency": "USD"}}}
+{"id": "en-x-37", "request": "Farwander change fee for the Denver flight, $75 yesterday", "kind": "record", "expected": {"vendor": "farwander", "tags": ["travel"], "spent_on": "2026-09-22", "total": {"value": 75, "currency": "USD"}}}
+{"id": "en-x-38", "request": "Tallyroot add-on to email the invoices, $30 today", "kind": "record", "expected": {"vendor": "tallyroot", "tags": ["office"], "spent_on": "2026-09-23", "total": {"value": 30, "currency": "USD"}}}
+{"id": "en-x-39", "request": "Papergrove envelopes to mail the invoices, $14 on Friday", "kind": "record", "expected": {"vendor": "papergrove", "tags": ["office"], "spent_on": "2026-09-18", "total": {"value": 14, "currency": "USD"}}}
+{"id": "en-x-40", "request": "movers to move the office, $600 on Monday", "kind": "record", "expected": {"tags": ["office"], "spent_on": "2026-09-21", "total": {"value": 600, "currency": "USD"}}}
+{"id": "en-x-41", "request": "Sureharbor cover for the expense of a new laptop, $40 yesterday", "kind": "record", "expected": {"vendor": "sureharbor", "tags": ["office"], "spent_on": "2026-09-22", "total": {"value": 40, "currency": "USD"}}}
+{"id": "en-x-42", "request": "taxi to forward the signed contract to Clausewood, $22 yesterday", "kind": "record", "expected": {"tags": ["travel"], "spent_on": "2026-09-22", "total": {"value": 22, "currency": "USD"}}}
+{"id": "en-x-43", "request": "Swiftlane delivery to resend the invoice to Paydale, $18 today", "kind": "record", "expected": {"vendor": "swiftlane", "tags": ["office"], "spent_on": "2026-09-23", "total": {"value": 18, "currency": "USD"}}}
+{"id": "en-x-44", "request": "Brightmop cleaning to remove the carpet stains, $140 on Friday", "kind": "record", "expected": {"vendor": "brightmop", "tags": ["office"], "spent_on": "2026-09-18", "total": {"value": 140, "currency": "USD"}}}
+{"id": "en-x-45", "request": "quite a pricey lunch at Larkspur, $95 yesterday", "kind": "record", "expected": {"vendor": "larkspur", "tags": ["meals"], "spent_on": "2026-09-22", "total": {"value": 95, "currency": "USD"}}}
