@@ -49,8 +49,8 @@ Where a field's candidates come from: date, time, amount (from parsers), catalog
 _Avoid_: Type, field type
 
 **Gate**:
-The minimum probability a pick needs before its field is filled. A search reads it the other way, on its `none` label: the item is held once `none` reaches the gate (ADR 0005). Every field declares its own; there is no default. Fixed before any run and measured on an eval set.
-_Avoid_: Threshold, confidence cutoff
+The minimum probability a pick needs before its field is filled. A search reads it the other way, on its `none` label: the item is held once `none` reaches the gate (ADR 0005). Every field declares its own; there is no default. Fixed before any run and measured on an eval set. Spanish UI copy calls it "umbral".
+_Avoid_: Threshold, confidence cutoff (in English)
 
 **Eval set**:
 Real requests, each with the result a person expects, used to measure a gate before it is fixed.
