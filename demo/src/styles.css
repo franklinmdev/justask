@@ -510,6 +510,19 @@ h2 {
 	box-shadow: 0 0 0 2px var(--ring);
 }
 
+/* What the sentence saved, tied to the box above it */
+.saved {
+	margin-top: -4px;
+	color: var(--muted);
+	font-size: 0.8125rem;
+	font-variant-numeric: tabular-nums;
+	transition: opacity 150ms ease-out;
+}
+
+.saved[data-stale] {
+	opacity: 0.55;
+}
+
 /* The item and the empty state share one slot under the box */
 
 .result:empty {

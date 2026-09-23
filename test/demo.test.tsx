@@ -129,6 +129,11 @@ async function figure(state: ReturnType<typeof panel>, term: string) {
 	return dt.nextElementSibling?.textContent;
 }
 
+/** What the sentence saved, as the counter beside the box says it; null when it shows none. */
+function counter() {
+	return screen.queryByText(/^1 (sentence|frase) /)?.textContent ?? null;
+}
+
 async function expectNoAxeViolations(container: Element) {
 	// jsdom paints nothing: contrast is checked in the browser.
 	const { violations } = await axe.run(container, {
@@ -416,6 +421,29 @@ describe("the demo's search page", () => {
 		expect(byRequest.calls.map(({ request }) => request)).toEqual([
 			"the cleaners",
 		]);
+	});
+
+	it("counts the vendor found as a pick from the vendor list, and shows no comparison when the item is held", async () => {
+		const { user } = renderDemo();
+		expect(counter()).toBeNull();
+
+		await user.click(
+			screen.getByRole("button", { name: "the catering people" }),
+		);
+		await screen.findByRole("button", { name: /Larkspur Catering/ });
+		expect(counter()).toBe("1 sentence vs 2 clicks in 1 menu");
+
+		await user.click(screen.getByRole("button", { name: "the cleaners" }));
+		await screen.findByText("No vendor fits that request.");
+		expect(counter()).toBeNull();
+	});
+
+	it("says the count in Spanish", async () => {
+		const { user } = renderDemo({ url: "/?case=search&lang=es" });
+
+		await user.click(screen.getByRole("button", { name: "los del catering" }));
+		await screen.findByRole("button", { name: /Banquetes Cazuela Azul/ });
+		expect(counter()).toBe("1 frase frente a 2 clics en 1 menú");
 	});
 
 	it("says the provider failed, and holds the item", async () => {

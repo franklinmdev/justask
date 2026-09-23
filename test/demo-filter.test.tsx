@@ -1,5 +1,11 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from "@testing-library/react";
+import {
+	cleanup,
+	render,
+	screen,
+	waitFor,
+	within,
+} from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import axe from "axe-core";
 import type { Probabilities, Provider } from "justask";
@@ -148,6 +154,11 @@ function select(name: string) {
 /** One bound of the table's amount range, by its label. */
 function amountBox(name: string) {
 	return screen.getByRole("textbox", { name }) as HTMLInputElement;
+}
+
+/** What the sentence saved, as the counter beside the box says it; null when it shows none. */
+function counter() {
+	return screen.queryByText(/^1 (sentence|frase) /)?.textContent ?? null;
 }
 
 function waitForProposal() {
@@ -541,6 +552,59 @@ describe("the demo's filter page", () => {
 		).toContain("Se quitó: estado");
 	});
 
+	it("counts the clicks and menus the answer's controls take, and shows no comparison for an answer that sets nothing", async () => {
+		const { user } = renderDemo();
+		expect(counter()).toBeNull();
+
+		// The vendor's menu, and the minimum amount's box.
+		await user.click(
+			screen.getByRole("button", { name: "Larkspur invoices over $1,000" }),
+		);
+		await waitForProposal();
+		expect(counter()).toBe("1 sentence vs 3 clicks in 1 menu");
+
+		// The vendor is held, so only the two days' calendars count.
+		await user.click(
+			screen.getByRole("button", {
+				name: "the cleaners' invoices from last month",
+			}),
+		);
+		await waitFor(() =>
+			expect(counter()).toBe("1 sentence vs 4 clicks in 2 menus"),
+		);
+
+		// The applied controls keep the count until the next answer.
+		await user.click(screen.getByRole("button", { name: "Apply filters" }));
+		expect(counter()).toBe("1 sentence vs 4 clicks in 2 menus");
+
+		await user.click(
+			screen.getByRole("button", { name: "how much do we owe in total?" }),
+		);
+		await screen.findByText(
+			"Nothing in that request filters the transactions.",
+		);
+		expect(counter()).toBeNull();
+	});
+
+	it("counts a bound alone as one click, with no menu", async () => {
+		const { user } = renderDemo();
+
+		await user.type(
+			screen.getByRole("searchbox", { name: "Filter the transactions" }),
+			"invoices over 500 euros",
+		);
+		await waitForProposal();
+		expect(counter()).toBe("1 sentence vs 1 click");
+	});
+
+	it("says the count in Spanish", async () => {
+		const { user } = renderDemo({ url: "/?case=table&lang=es" });
+
+		await user.click(screen.getByRole("button", { name: "facturas vencidas" }));
+		await screen.findByRole("list", { name: "Filtros por aplicar" });
+		expect(counter()).toBe("1 frase frente a 2 clics en 1 menú");
+	});
+
 	it("says the provider failed, holds every field and offers nothing to apply", async () => {
 		const { container, user } = renderDemo({
 			provider: failingProvider(new Error("no key")),
@@ -560,6 +624,7 @@ describe("the demo's filter page", () => {
 		expect(
 			screen.getByText("Nothing in that request filters the transactions."),
 		).toBeDefined();
+		expect(counter()).toBeNull();
 		expect(
 			screen
 				.getByRole("button", { name: "Apply filters" })
