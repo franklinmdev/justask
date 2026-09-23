@@ -5,10 +5,13 @@ import {
 	type CardEvalKind,
 	type CardEvalRow,
 	parseCardEvalSet,
+	readCardRun,
+	scoreCardRun,
 } from "justask/eval";
 import { describe, expect, it } from "vitest";
+import { fixGate, poolFields } from "../demo/eval/filter-gates.ts";
 import { CARD_KILL_LINES } from "../demo/eval/kill-lines.ts";
-import { demoCard, FACTS } from "../demo/server/handler.ts";
+import { CARD_GATES, demoCard, FACTS } from "../demo/server/handler.ts";
 import { english } from "../demo/src/content/en.ts";
 import { spanish } from "../demo/src/content/es.ts";
 import type { ExpenseName } from "../demo/src/content/types.ts";
@@ -183,5 +186,33 @@ describe("the frozen card eval", () => {
 			p95Ms: 1000,
 			errors: 0,
 		});
+	});
+});
+
+/**
+ * The demo serves the gates the rule gives on dev run 1 of both languages,
+ * the intent's among them, read from the committed logs with no call
+ * (docs/card-eval.md).
+ */
+describe("the card's gates", () => {
+	it("are the approved rule applied to dev run 1", async () => {
+		const reports = await Promise.all(
+			["en", "es"].map(async (language) => {
+				const { intent, fields } = scoreCardRun(
+					await readCardRun(
+						evalFile(`runs/card-${language}-dev-1.jsonl`).pathname,
+					),
+				);
+				return { fields: { intent, ...fields } };
+			}),
+		);
+		const fixed = Object.fromEntries(
+			Object.entries(poolFields(reports)).map(([name, picks]) => [
+				name,
+				fixGate(picks),
+			]),
+		);
+
+		expect(fixed).toEqual(CARD_GATES);
 	});
 });

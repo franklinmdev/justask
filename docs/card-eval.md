@@ -68,6 +68,33 @@ The rule, as approved for the filter on 2026-09-22 (#17):
 
 The dev runs go at the lab's 0.9 on every gate, the demo's `CARD_GATE` today. The gates the rule gives are written into `demo/server/handler.ts` before run 1, so the demo serves the gates the verdict was measured at. A rescore of run 1 at other gates is reported apart and changes neither the verdict nor the demo.
 
+### Dev run 1
+
+Runs of 2026-09-23 with `jev-1.13.0`, every gate at the lab's 0.9 (the gates are not fixed yet), today fixed at Wednesday 2026-09-23. The frozen sets' checksums were checked unchanged and every test passed before the first call. Dev runs print no verdict.
+
+| Dev run 1, all gates 0.9 | coverage | invented | held ambiguous | p95 | cost per call |
+|---|---|---|---|---|---|
+| English | 12 of 57 fields | 0 | 4 of 4 | 278 ms | $0.0000776 |
+| Spanish | 2 of 57 fields | 0 | 4 of 4 | 289 ms | $0.0000809 |
+
+At 0.9 the intent held 12 of 16 English cards and 15 of 16 Spanish ones: `new_record` won on almost every card, but between 0.47 and 0.89. No filled field was wrong.
+
+The intent's and each field's picks, read with no gate, both languages pooled:
+
+| Field | Lowest right | Highest wrong | Rule | Gate |
+|---|---|---|---|---|
+| intent | 0.47 (`tóner de Tintaverde ayer, $150 o $160`) | none: no nothing row picked `new_record` | lowest right rounded down | **0.45** |
+| vendor | 0.53 | none | lowest right rounded down | **0.5** |
+| tags | 0.44 (`pizza para el equipo hoy, $43`, meals) | 0.49 (`Swiftlane, $40 on Monday, maybe for a client`, `client` yes, where the tags must stay empty) | overlap: the first 0.05 above the wrong pick | **0.5** |
+| spent_on | 0.82 | none | lowest right rounded down | **0.8** |
+| total | 0.98 | none | lowest right rounded down, at most 0.9 | **0.9** |
+
+- **The intent sits low, not wrong.** Every nothing row picked `not_mentioned` or `not_available`, so the rule has no wrong pick to keep out and sets the gate at the lowest right one. Two cards picked something else outright (`train ticket to Boston on Friday, $64`, `not_mentioned` 0.50; `renovación de la póliza de Cobertura Plena hoy, $1,200`, `not_available` 0.50); no gate reaches them.
+- **Tags are the weakest field.** One question per tag, and the field's pick is its weakest: a right `meals` at 0.44 and the ambiguous row's `client` at 0.49 overlap, so the gate goes just above the wrong one.
+- The dev set has only four nothing rows per language, so the intent's 0.45 is judged by the eval set's six.
+
+Run logs: `demo/eval/runs/card-en-dev-1.jsonl`, `demo/eval/runs/card-es-dev-1.jsonl`. `demo/eval/card.ts gates 1` prints the table's gates with no call; `test/demo-card-eval.test.ts` pins the demo's `CARD_GATES` to it.
+
 ## Procedure
 
 By hand with the key in `.env`, never in CI; every row is a paid call.

@@ -105,11 +105,18 @@ export function demoFilter(content: Content): Filter<TransactionFields> {
 }
 
 /**
- * Not measured on the demo's data yet; the card eval set (#20) will fix the
- * intent's and each field's. Until then all take the lab's card gate, 0.9,
- * under which it passed 7 of 7 kill lines.
+ * The intent's gate and each card field's, fixed on 2026-09-23 from dev run 1
+ * of both languages by the rule the owner approved before any call (fixGate
+ * in demo/eval/filter-gates.ts), and judged on the frozen eval sets only
+ * (docs/card-eval.md).
  */
-export const CARD_GATE = 0.9;
+export const CARD_GATES = {
+	intent: 0.45,
+	vendor: 0.5,
+	tags: 0.5,
+	spent_on: 0.8,
+	total: 0.9,
+} as const;
 
 /**
  * The expense card in one language: an expense the business paid, with its
@@ -119,31 +126,31 @@ export const CARD_GATE = 0.9;
 export function demoCard(content: Content): Card<ExpenseFields> {
 	return {
 		description: "expense the business paid",
-		gate: CARD_GATE,
+		gate: CARD_GATES.intent,
 		fields: {
 			vendor: {
 				kind: "catalog",
 				description: "the vendor who was paid",
-				gate: CARD_GATE,
+				gate: CARD_GATES.vendor,
 				shortlist: () => content.vendors,
 			},
 			tags: {
 				kind: "catalog",
 				several: true,
 				description: "the expense's tags",
-				gate: CARD_GATE,
+				gate: CARD_GATES.tags,
 				shortlist: () => content.tags,
 			},
 			spent_on: {
 				kind: "date",
 				reads: "past",
 				description: "the day the money was spent",
-				gate: CARD_GATE,
+				gate: CARD_GATES.spent_on,
 			},
 			total: {
 				kind: "amount",
 				description: "the amount paid",
-				gate: CARD_GATE,
+				gate: CARD_GATES.total,
 			},
 		},
 	};
