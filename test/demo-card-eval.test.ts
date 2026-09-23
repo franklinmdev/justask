@@ -33,8 +33,17 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 	const round2Set = parseCardEvalSet(
 		read(`card-${content.language}.round2.jsonl`),
 	);
+	const round3Set = parseCardEvalSet(
+		read(`card-${content.language}.round3.jsonl`),
+	);
 	const diagSet = parseCardEvalSet(read(`card-${content.language}.diag.jsonl`));
-	const allSets = [...devSet, ...evalSet, ...round2Set, ...diagSet];
+	const allSets = [
+		...devSet,
+		...evalSet,
+		...round2Set,
+		...round3Set,
+		...diagSet,
+	];
 	const card = demoCard(content);
 	const rows = (set: CardEvalRow[], kind: CardEvalKind) =>
 		set.filter((row) => row.kind === kind);
@@ -61,6 +70,7 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 	it.each([
 		["round 1", evalSet],
 		["round 2", round2Set],
+		["round 3", round3Set],
 	])(
 		"give the %s set 28 records, 2 ambiguous rows per field and 6 with nothing to record",
 		(_, set) => {
