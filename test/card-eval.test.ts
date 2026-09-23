@@ -595,7 +595,7 @@ describe("runCardEval", () => {
 	it("logs the pair that held a field, holds it at every gate, and reads none of its picks for the field's gate", async () => {
 		const run = await runCardEval({
 			...input(join(dir, "run-1.jsonl")),
-			card: { ...expenseCard(), joiners: ["or"] },
+			card: { ...expenseCard(), joiners: { or: ["or"], and: [] } },
 		});
 
 		expect(run.rows[2]?.pairs).toEqual({
@@ -635,7 +635,7 @@ describe("runCardEval", () => {
 					},
 				},
 			]),
-			card: { ...expenseCard(), joiners: ["or"] },
+			card: { ...expenseCard(), joiners: { or: ["or"], and: [] } },
 		});
 
 		const { misses, fields } = scoreCardRun(run);

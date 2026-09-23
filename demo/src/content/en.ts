@@ -466,7 +466,7 @@ export const english: Content = {
 			"the invoices",
 		],
 	},
-	cardJoiners: ["or"],
+	cardJoiners: { or: ["or"], and: ["and"] },
 
 	cardSuggestions: {
 		fills: [

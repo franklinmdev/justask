@@ -7,6 +7,7 @@ import type {
 	CatalogField,
 	DateField,
 	DateRange,
+	Joiners,
 	SeveralCatalogField,
 } from "justask";
 
@@ -280,8 +281,8 @@ export type Content = {
 	 * "quite" is a Spanish command and an English word.
 	 */
 	cardCommands: CardCommands;
-	/** The words that offer a choice between two items: "or"; "o", "u" (ADR 0010). */
-	cardJoiners: string[];
+	/** The words that join two vendors or tags into a pair the card holds (ADR 0010). */
+	cardJoiners: Joiners;
 };
 
 /** A catalog row: the provider reads the description, never the value. */

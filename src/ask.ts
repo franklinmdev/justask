@@ -305,7 +305,9 @@ async function askCard<F extends CardFields>({
 					declared,
 					candidates,
 					NO_READINGS,
-					findPair(request, candidates, card.joiners),
+					findPair(request, candidates, card.joiners, {
+						several: "several" in declared,
+					}),
 				);
 			} else {
 				const readings = readingsFor(

@@ -9,7 +9,7 @@ import {
 	NOT_MENTIONED,
 	type ParsedFieldResult,
 } from "./filter.ts";
-import type { NamedPair } from "./named-pair.ts";
+import type { Joiners, NamedPair } from "./named-pair.ts";
 import type {
 	AmountReading,
 	DateReading,
@@ -95,12 +95,14 @@ export type Card<F extends CardFields> = {
 	 */
 	commands?: CardCommands;
 	/**
-	 * Words that offer a choice, in the card's language, each one word: "or";
-	 * "o", "u". A request that names two items of one catalog field with one
-	 * of these between them holds that field before its gate, whatever its
-	 * pick (ADR 0010).
+	 * Words that join two items, in the card's language, each one word: `or`
+	 * words offer a choice ("or"; "o", "u"), `and` words name both ("and";
+	 * "y", "e"). A request that names two items of one catalog field, and no
+	 * third, with one of these between them holds that field before its gate,
+	 * whatever its pick; an `and` word holds only a field that takes one item
+	 * (ADR 0010).
 	 */
-	joiners?: string[];
+	joiners?: Joiners;
 };
 
 /** A card's command words: "quite", "envíe"; "el gasto", "la factura". */

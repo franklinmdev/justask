@@ -494,7 +494,7 @@ export const spanish: Content = {
 			"las facturas",
 		],
 	},
-	cardJoiners: ["o", "u"],
+	cardJoiners: { or: ["o", "u"], and: ["y", "e"] },
 
 	cardSuggestions: {
 		fills: [

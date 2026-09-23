@@ -8,6 +8,13 @@ export type NamedPair = {
 	text: string;
 };
 
+/**
+ * A card's words that join two items, in its language, each one word. "or"
+ * words offer a choice, which no catalog field can fill; "and" words name
+ * both, which only a field that takes one item cannot fill.
+ */
+export type Joiners = { or: string[]; and: string[] };
+
 /** Other words than the joiner that may sit between the two names: "lunch or", "o de". */
 const GAP = 2;
 
@@ -117,21 +124,29 @@ function mentions(text: Word[], candidates: Candidate<unknown>[]): Mention[] {
 }
 
 /**
- * The first two items of the candidates the request names with one of the
- * joiners between them, and up to two other words: "Tallyroot or Cloudberth",
- * "de Cuentia o de Nubalia". An item is named by its id, read exactly, or by
- * one of its names, exactly or with a clear typo, ignoring case and accents.
+ * The two items of the candidates the request names with a joiner between
+ * them, and up to two other words: "Tallyroot or Cloudberth", "de Cuentia o
+ * de Nubalia", "Larkspur lunch and Beanhaven coffee". An item is named by its
+ * id, read exactly, or by one of its names, exactly or with a clear typo,
+ * ignoring case and accents. A request that names a third item of the field
+ * holds no pair: the third is the one it is most likely about ("Swiftlane
+ * courier to Clausewood or Paydale"). On a field where several items may
+ * apply, only an "or" word joins a pair.
  */
 export function findPair(
 	request: string,
 	candidates: Candidate<unknown>[],
-	joiners: string[] | undefined,
+	joiners: Joiners | undefined,
+	{ several }: { several: boolean },
 ): NamedPair | undefined {
-	if (!joiners || joiners.length === 0) return undefined;
+	if (!joiners) return undefined;
 	const text = request.normalize("NFC");
 	const said = words(text);
-	const joining = new Set(joiners.map(fold));
+	const joining = new Set(
+		[...joiners.or, ...(several ? [] : joiners.and)].map(fold),
+	);
 	const named = mentions(said, candidates);
+	if (new Set(named.map(({ id }) => id)).size !== 2) return undefined;
 	for (let n = 1; n < named.length; n++) {
 		const a = named[n - 1] as Mention;
 		const b = named[n] as Mention;
@@ -151,8 +166,8 @@ export function findPair(
 }
 
 /** Refuses a blank joiner, or one of several words, which the pair hold would never read. */
-export function checkJoiners(joiners: string[] | undefined): void {
-	for (const joiner of joiners ?? []) {
+export function checkJoiners(joiners: Joiners | undefined): void {
+	for (const joiner of [...(joiners?.or ?? []), ...(joiners?.and ?? [])]) {
 		if (joiner.trim().split(/\s+/).length !== 1 || !joiner.trim()) {
 			throw new TypeError(
 				`justask: the card's joiner "${joiner}" is not one word`,
