@@ -349,7 +349,7 @@ describe("the demo's showcase page", () => {
 			);
 			const declared = demoFilter(content);
 
-			expect(server).toContain("createFilterHandler(");
+			expect(server).toContain("createFilterHandler<TransactionFields>(");
 			expect(server).toContain(JSON.stringify(declared.description));
 			expectFields(server, declared.fields);
 			expect(server).toContain("shortlist: () => vendors");
@@ -374,7 +374,7 @@ describe("the demo's showcase page", () => {
 			]);
 			const declared = demoCard(content);
 
-			expect(server).toContain("createCardHandler(");
+			expect(server).toContain("createCardHandler<ExpenseFields>(");
 			expect(server).toContain(`gate: ${declared.gate}`);
 			expectFields(server, declared.fields);
 			expect(server).toContain("several: true");
@@ -397,7 +397,7 @@ describe("the demo's showcase page", () => {
 			);
 			const declared = demoSearch(content);
 
-			expect(server).toContain("createSearchHandler(");
+			expect(server).toContain("createSearchHandler<Vendor>(");
 			expect(server).toContain(JSON.stringify(declared.description));
 			expect(server).toContain(`gate: ${declared.gate}`);
 			expect(server).toContain(
