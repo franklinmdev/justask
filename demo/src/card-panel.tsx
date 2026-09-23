@@ -17,6 +17,7 @@ type Result = CardResult<ExpenseFields>;
 
 function intentPassed({ intent }: Result): boolean {
 	return (
+		!intent.command &&
 		intent.pick?.label === "new_record" &&
 		intent.pick.probability >= intent.gate
 	);
@@ -28,10 +29,11 @@ function intentReasonOf(
 	failed: boolean,
 	format: Format,
 ): IntentReason {
-	const { pick, probabilities, gate } = result.intent;
+	const { pick, probabilities, gate, command } = result.intent;
 	if (failed || Object.keys(probabilities).length === 0) {
 		return { kind: "failed" };
 	}
+	if (command) return { kind: "command", ...command };
 	if (!pick) return { kind: "tie" };
 	if (pick.label === "not_mentioned") return { kind: "not-mentioned" };
 	if (pick.label === "not_available") return { kind: "not-available" };

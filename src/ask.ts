@@ -5,6 +5,7 @@ import {
 	type CardResult,
 	cardPlan,
 	cardQuestionIds,
+	findCommand,
 	INTENT,
 	intentQuestion,
 	NO_READINGS,
@@ -327,7 +328,11 @@ async function askCard<F extends CardFields>({
 		return { card: held(), ...outcome.usage, error: outcome.error };
 	}
 
-	const intent = readIntent(outcome.answer[INTENT] ?? {}, card.gate);
+	const intent = readIntent(
+		outcome.answer[INTENT] ?? {},
+		card.gate,
+		findCommand(request, card.commands),
+	);
 	const value: Record<string, unknown> = {};
 	const fields: Record<string, unknown> = {};
 	for (const name of names) {

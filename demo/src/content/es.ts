@@ -235,6 +235,8 @@ export const spanish: Content = {
 						return "Dos etiquetas empataron en el primer lugar, así que todos los campos quedan retenidos.";
 					case "failed":
 						return "No llegó respuesta, así que todos los campos quedan retenidos.";
+					case "command":
+						return `La solicitud actúa sobre un gasto ya registrado (“${reason.verb}”, “${reason.reference}”), así que el código retuvo todos los campos sin importar la elección.`;
 				}
 			},
 			heldBecause: (reason) => {
@@ -389,6 +391,55 @@ export const spanish: Content = {
 			"facturable a un cliente, o gastado con un cliente, cuando la solicitud lo dice con certeza, no cuando dice quizás",
 		),
 	],
+	cardCommands: {
+		verbs: [
+			"quite",
+			"quita",
+			"quitar",
+			"borre",
+			"borra",
+			"borrar",
+			"elimine",
+			"elimina",
+			"eliminar",
+			"anule",
+			"anula",
+			"anular",
+			"cancele",
+			"cancela",
+			"cancelar",
+			"cambie",
+			"cambia",
+			"cambiar",
+			"mueva",
+			"mueve",
+			"mover",
+			"pase",
+			"pasa",
+			"deshaga",
+			"deshaz",
+			"envíe",
+			"envía",
+			"enviar",
+			"reenvíe",
+			"reenvía",
+			"reenviar",
+			"mande",
+			"manda",
+			"mandar",
+		],
+		references: [
+			"el gasto",
+			"del gasto",
+			"ese gasto",
+			"este gasto",
+			"los gastos",
+			"la factura",
+			"esa factura",
+			"esta factura",
+			"las facturas",
+		],
+	},
 	cardSuggestions: {
 		fills: [
 			"almuerzo con Cazuela Azul ayer, $86.40",

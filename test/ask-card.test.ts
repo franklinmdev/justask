@@ -215,6 +215,110 @@ describe("ask: card", () => {
 		]);
 	});
 
+	it("offers sending and forwarding a record as not adding one", async () => {
+		const fake = fakeProvider({ intent: answer(INTENT, "not_available") });
+
+		await ask({
+			...base,
+			request: "send the Northwind invoice to accounting",
+			provider: fake,
+			card: expenseCard(),
+		});
+
+		const intent = fake.calls[0]?.questions.find(({ id }) => id === "intent");
+		expect(
+			intent?.labels.find(({ label }) => label === "not_available")
+				?.description,
+		).toBe(
+			"It is about a expense the person paid but does not add a new one: it changes, cancels, deletes, sends or forwards one, or asks a question",
+		);
+	});
+
+	describe("commands on a record that already exists (ADR 0009)", () => {
+		const commands = {
+			verbs: ["quite", "envíe", "send"],
+			references: ["el gasto", "la factura", "the invoice"],
+		};
+		const fill = (request: string) => {
+			const fake = fakeProvider({
+				intent: answer(INTENT, "new_record", 0.99),
+				...confident,
+			});
+			return {
+				fake,
+				result: ask({
+					...base,
+					request,
+					provider: fake,
+					card: { ...expenseCard(), commands },
+				}),
+			};
+		};
+
+		it("holds the whole card on a verb and a reference, whatever the pick, and names the words as written", async () => {
+			const { fake, result } = fill("Quite el gasto de $42 de Northwind");
+			const { card } = await result;
+
+			expect(card.value).toEqual({});
+			expect(card.intent).toEqual({
+				pick: { label: "new_record", probability: 0.99 },
+				probabilities: answer(INTENT, "new_record", 0.99),
+				gate: 0.8,
+				command: { verb: "Quite", reference: "el gasto" },
+			});
+			// Still asked, so every pick is reported.
+			expect(fake.calls).toHaveLength(1);
+			expect(card.fields.vendor.pick).toEqual({
+				label: "northwind",
+				probability: 0.99,
+			});
+		});
+
+		it("reads a reference across up to two words, as English puts them before the noun", async () => {
+			const held = await fill("send the $42 Northwind invoice to accounting")
+				.result;
+			const far = await fill("send the big $42 Northwind invoice to accounting")
+				.result;
+
+			expect(held.card.intent.command).toEqual({
+				verb: "send",
+				reference: "the $42 Northwind invoice",
+			});
+			expect(far.card.intent.command).toBeUndefined();
+		});
+
+		it.each([
+			["a verb alone", "send $42 to Northwind for lunch yesterday"],
+			["a reference alone", "Northwind lunch, the invoice said $42"],
+			[
+				"a verb inside another word",
+				"resend-free Northwind lunch, the invoice $42",
+			],
+			["the verb with other accents", "quité el gasto de $42 de Northwind"],
+			["a reference with no determiner", "send invoice copies, Northwind, $42"],
+		])("fills on %s", async (_, request) => {
+			const { card } = await fill(request).result;
+
+			expect(card.intent.command).toBeUndefined();
+			expect(card.value).not.toEqual({});
+		});
+
+		it("fills as before when the card declares no commands", async () => {
+			const result = await ask({
+				...base,
+				request: "quite el gasto de $42 de Northwind",
+				provider: fakeProvider({
+					intent: answer(INTENT, "new_record", 0.99),
+					...confident,
+				}),
+				card: expenseCard(),
+			});
+
+			expect(result.card.intent.command).toBeUndefined();
+			expect(result.card.value).not.toEqual({});
+		});
+	});
+
 	describe("a catalog field where several items may apply", () => {
 		const fill = (tagQuestions: Record<string, Probabilities>) =>
 			ask({

@@ -127,6 +127,7 @@ export function demoCard(content: Content): Card<ExpenseFields> {
 	return {
 		description: "expense the business paid",
 		gate: CARD_GATES.intent,
+		commands: content.cardCommands,
 		fields: {
 			vendor: {
 				kind: "catalog",

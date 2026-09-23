@@ -86,7 +86,28 @@ export type Card<F extends CardFields> = {
 	fields: F;
 	/** The host app's own parsers, run beside the built-in one; their readings win where they overlap. */
 	parsers?: Parser[];
+	/**
+	 * Words of a command on a record that already exists, in the card's
+	 * language. A request with one of the verbs and one of the references,
+	 * each as whole words, ignoring case but not accents, is held whole before
+	 * the intent's gate, whatever its pick (ADR 0009).
+	 */
+	commands?: CardCommands;
 };
+
+/** A card's command words: "quite", "envíe"; "el gasto", "la factura". */
+export type CardCommands = {
+	verbs: string[];
+	/**
+	 * A determiner and a record's noun, so the noun alone in a new record does
+	 * not hold it. Up to two words may sit between them: "the $58 Beanhaven
+	 * expense" holds on "the expense".
+	 */
+	references: string[];
+};
+
+/** The words of a command that held a card, as the request writes them. */
+export type CardCommand = { verb: string; reference: string };
 
 /** An amount field's value on a card: the amount, with the currency when the request says which. */
 export type Amount = {
@@ -136,6 +157,8 @@ export type IntentResult = {
 	/** Every label's probability; empty when there was no answer. */
 	probabilities: Probabilities;
 	gate: number;
+	/** The command that held the card before its gate, whatever the pick. */
+	command?: CardCommand;
 };
 
 export type CardResult<F extends CardFields> = {
@@ -152,13 +175,53 @@ export function cardQuestionIds(name: string, field: CardField): RegExp {
 		: new RegExp(`^${escaped}$`);
 }
 
-/** Whether the intent pick clears the card's gate. */
-export function readIntent(probabilities: Probabilities, gate: number) {
+/** Whether the intent pick clears the card's gate; a command holds it whatever the pick. */
+export function readIntent(
+	probabilities: Probabilities,
+	gate: number,
+	command?: CardCommand,
+): { result: IntentResult; passes: boolean } {
 	const pick = readPick(probabilities);
 	return {
-		result: { pick, probabilities, gate },
-		passes: pick?.label === NEW_RECORD && pick.probability >= gate,
+		result: { pick, probabilities, gate, ...(command && { command }) },
+		passes: !command && pick?.label === NEW_RECORD && pick.probability >= gate,
 	};
+}
+
+/** The first verb and reference of the card's commands the request holds, as it writes them. */
+export function findCommand(
+	request: string,
+	commands: CardCommands | undefined,
+): CardCommand | undefined {
+	if (!commands) return undefined;
+	const verb = firstWords(request, commands.verbs);
+	const reference = firstWords(request, commands.references);
+	return verb && reference ? { verb, reference } : undefined;
+}
+
+/**
+ * The first of the phrases in the text as whole words, ignoring case and
+ * spacing, never accents. Up to two words may sit between a phrase's first
+ * word and the rest: "the $58 Beanhaven expense" is "the expense".
+ */
+function firstWords(text: string, phrases: string[]): string | undefined {
+	const normal = text.normalize("NFC");
+	for (const phrase of phrases) {
+		const words = phrase
+			.normalize("NFC")
+			.trim()
+			.split(/\s+/)
+			.map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+		const [first, ...rest] = words;
+		const tail =
+			rest.length > 0 ? `(?:\\s+\\S+){0,2}?\\s+${rest.join("\\s+")}` : "";
+		const found = new RegExp(
+			`(?<![\\p{L}\\p{N}-])${first}${tail}(?![\\p{L}\\p{N}-])`,
+			"iu",
+		).exec(normal);
+		if (found) return found[0];
+	}
+	return undefined;
 }
 
 /** Whether the request asks for a new record at all, asked before every field. */
@@ -178,7 +241,7 @@ export function intentQuestion(card: Card<CardFields>): Question {
 			},
 			{
 				label: NOT_AVAILABLE,
-				description: `It is about a ${card.description} but does not add a new one: it changes, cancels or deletes one, or asks a question`,
+				description: `It is about a ${card.description} but does not add a new one: it changes, cancels, deletes, sends or forwards one, or asks a question`,
 			},
 		],
 	};

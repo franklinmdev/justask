@@ -2,6 +2,7 @@ import type {
 	AmountField,
 	AmountRange,
 	Candidate,
+	CardCommands,
 	CardDateField,
 	CatalogField,
 	DateField,
@@ -83,7 +84,8 @@ export type IntentReason =
 	| { kind: "not-mentioned" }
 	| { kind: "not-available" }
 	| { kind: "tie" }
-	| { kind: "failed" };
+	| { kind: "failed" }
+	| { kind: "command"; verb: string; reference: string };
 
 /** The card page's own words. */
 export type CardCopy = {
@@ -247,6 +249,12 @@ export type Content = {
 	/** The card's tags field reads these; the provider reads the description. */
 	tags: Candidate<Tag>[];
 	cardSuggestions: { fills: string[]; holds: string[]; nothing: string[] };
+	/**
+	 * The card holds a request with one of these verbs and references, a
+	 * command on an expense already recorded (ADR 0009). Per language:
+	 * "quite" is a Spanish command and an English word.
+	 */
+	cardCommands: CardCommands;
 };
 
 /** A catalog row: the provider reads the description, never the value. */

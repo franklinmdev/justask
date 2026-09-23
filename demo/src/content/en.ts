@@ -238,6 +238,8 @@ export const english: Content = {
 						return "Two labels tied for first place, so every field is held.";
 					case "failed":
 						return "No answer came back, so every field is held.";
+					case "command":
+						return `The request acts on an expense already recorded (“${reason.verb}”, “${reason.reference}”), so the code held every field whatever the pick.`;
 				}
 			},
 			heldBecause: (reason) => {
@@ -371,6 +373,34 @@ export const english: Content = {
 			"billable to a client, or spent with a client, when the request says so for certain, not when it says maybe",
 		),
 	],
+	cardCommands: {
+		verbs: [
+			"remove",
+			"delete",
+			"erase",
+			"cancel",
+			"void",
+			"change",
+			"edit",
+			"update",
+			"move",
+			"undo",
+			"send",
+			"resend",
+			"forward",
+			"email",
+		],
+		references: [
+			"the expense",
+			"that expense",
+			"this expense",
+			"the expenses",
+			"the invoice",
+			"that invoice",
+			"this invoice",
+			"the invoices",
+		],
+	},
 	cardSuggestions: {
 		fills: [
 			"lunch with Larkspur yesterday, $86.40",
