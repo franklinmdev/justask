@@ -1,9 +1,9 @@
 import { type Pick, readPick } from "./pick.ts";
 import type { Probabilities, Question } from "./provider.ts";
 
-/** A value code found for the search before the provider is asked: one catalog row. */
+/** A value code found for a decision before the provider is asked: one catalog row. */
 export type Candidate<T> = {
-	/** The label the provider picks; unique in the shortlist and never `none`. */
+	/** The label the provider picks; unique in the shortlist and never one of the question's own labels. */
 	id: string;
 	/** What the provider reads about this row. */
 	description: string;
@@ -28,12 +28,16 @@ export type Search<T> = {
 
 export const NONE = "none";
 
-export function checkShortlist(candidates: Candidate<unknown>[]): void {
+/** Throws on a candidate id that repeats or takes one of the question's own labels. */
+export function checkShortlist(
+	candidates: Candidate<unknown>[],
+	reserved: readonly string[],
+): void {
 	const seen = new Set<string>();
 	for (const { id } of candidates) {
-		if (id === NONE) {
+		if (reserved.includes(id)) {
 			throw new TypeError(
-				`justask: a shortlist candidate cannot use the id "${NONE}", which is the search's own label`,
+				`justask: a shortlist candidate cannot use the id "${id}", which is the question's own label`,
 			);
 		}
 		if (seen.has(id)) {

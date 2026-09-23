@@ -490,9 +490,11 @@ describe("scoreRun", () => {
 		expect(retuned.counts.covered).toBe(1);
 	});
 
-	it("refuses a gate outside 0 to 1", () => {
+	it("refuses a gate that is not strictly between 0 and 1", () => {
 		expect(() => scoreRun(run, { gate: 0 })).toThrow(TypeError);
+		expect(() => scoreRun(run, { gate: 1 })).toThrow(TypeError);
 		expect(() => scoreRun(run, { gate: 1.2 })).toThrow(TypeError);
+		expect(() => scoreRun(run, { gate: Number.NaN })).toThrow(TypeError);
 	});
 
 	it("formats the report as Markdown, verdict first", () => {
