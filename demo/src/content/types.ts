@@ -222,6 +222,8 @@ export type Copy = {
 	shortlistLabel: string;
 	shortlist: (count: number, catalog: number) => string;
 	roundTrip: string;
+	inputTokens: string;
+	cost: string;
 	filter: FilterCopy;
 	card: CardCopy;
 };

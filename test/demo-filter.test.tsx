@@ -77,10 +77,18 @@ const answers: Record<string, FakeAnswers> = {
 	"facturas de más de 500 pesos": answer({}),
 };
 
-const byRequest = fakeProvider((request) => {
+function fixtureFor(request: string): FakeAnswers {
 	const fixture = answers[request];
 	if (!fixture) throw new Error(`no fixture for "${request}"`);
 	return fixture;
+}
+
+const byRequest = fakeProvider(fixtureFor);
+
+/** The same answers, from a provider that reports what each call used. */
+const priced = fakeProvider(fixtureFor, {
+	costUsd: 0.000005,
+	inputTokens: 120,
 });
 
 /** The demo as the browser runs it, its handler served in process. */
@@ -105,6 +113,12 @@ function renderDemo({
 
 function panel(name = "What happened") {
 	return within(screen.getByRole("region", { name }));
+}
+
+/** The figure the state panel shows under a term, once the call has returned. */
+async function figure(state: ReturnType<typeof panel>, term: string) {
+	const dt = await state.findByText(term, { selector: "dt" });
+	return dt.nextElementSibling?.textContent;
 }
 
 function proposed(name = "Filters to apply") {
@@ -177,6 +191,31 @@ describe("the demo's filter page", () => {
 			table.getAllByRole("cell", { name: "Larkspur Catering" }),
 		).toHaveLength(2);
 		expect(proposed()).toEqual([]);
+	});
+
+	it("shows the call's input tokens and cost beside the round trip, when the provider reports them", async () => {
+		const { user } = renderDemo({ provider: priced });
+
+		await user.click(
+			screen.getByRole("button", { name: "Larkspur invoices over $1,000" }),
+		);
+
+		const state = panel();
+		expect(await figure(state, "Input tokens")).toBe("120");
+		expect(await figure(state, "Cost")).toBe("$0.000005");
+	});
+
+	it("shows neither tokens nor cost when the provider does not report them", async () => {
+		const { user } = renderDemo();
+
+		await user.click(
+			screen.getByRole("button", { name: "Larkspur invoices over $1,000" }),
+		);
+
+		const state = panel();
+		await figure(state, "Round trip");
+		expect(state.queryByText("Input tokens")).toBeNull();
+		expect(state.queryByText("Cost")).toBeNull();
 	});
 
 	it("shows why each field filled or was held in the state panel", async () => {

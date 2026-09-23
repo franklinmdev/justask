@@ -93,10 +93,18 @@ const answers: Record<string, FakeAnswers> = {
 	}),
 };
 
-const byRequest = fakeProvider((request) => {
+function fixtureFor(request: string): FakeAnswers {
 	const fixture = answers[request];
 	if (!fixture) throw new Error(`no fixture for "${request}"`);
 	return fixture;
+}
+
+const byRequest = fakeProvider(fixtureFor);
+
+/** The same answers, from a provider that reports what each call used. */
+const priced = fakeProvider(fixtureFor, {
+	costUsd: 0.000005,
+	inputTokens: 120,
 });
 
 /** The demo as the browser runs it, its handler served in process. */
@@ -121,6 +129,12 @@ function renderDemo({
 
 function panel(name = "What happened") {
 	return within(screen.getByRole("region", { name }));
+}
+
+/** The figure the state panel shows under a term, once the call has returned. */
+async function figure(state: ReturnType<typeof panel>, term: string) {
+	const dt = await state.findByText(term, { selector: "dt" });
+	return dt.nextElementSibling?.textContent;
 }
 
 const vendor = (name = "Vendor") =>
@@ -196,6 +210,40 @@ describe("the demo's card page", () => {
 		expect(vendor().value).toBe("");
 		expect(save().getAttribute("aria-disabled")).toBe("true");
 		await expectNoAxeViolations(container);
+	});
+
+	it("shows the call's input tokens and cost beside the round trip, when the provider reports them", async () => {
+		const { user } = renderDemo({ provider: priced });
+
+		await suggest(user, "lunch with Larkspur yesterday, $86.40");
+
+		const state = panel();
+		expect(await figure(state, "Input tokens")).toBe("120");
+		expect(await figure(state, "Cost")).toBe("$0.000005");
+	});
+
+	it("shows neither tokens nor cost when the provider does not report them", async () => {
+		const { user } = renderDemo();
+
+		await suggest(user, "lunch with Larkspur yesterday, $86.40");
+
+		const state = panel();
+		await figure(state, "Round trip");
+		expect(state.queryByText("Input tokens")).toBeNull();
+		expect(state.queryByText("Cost")).toBeNull();
+	});
+
+	it("shows the tokens and cost in Spanish", async () => {
+		const { user } = renderDemo({
+			provider: priced,
+			url: "/?page=card&lang=es",
+		});
+
+		await suggest(user, "almuerzo con Cazuela Azul ayer, $86.40");
+
+		const state = panel("Qué pasó");
+		expect(await figure(state, "Tokens de entrada")).toBe("120");
+		expect(await figure(state, "Costo")).toBe("0,000005\u00a0US$");
 	});
 
 	it("takes the expense back on Undo and puts it on the card again", async () => {

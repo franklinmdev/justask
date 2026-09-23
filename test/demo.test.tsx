@@ -75,10 +75,18 @@ const answers: Record<string, FakeAnswers> = {
 	}),
 };
 
-const byRequest = fakeProvider((request) => {
+function fixtureFor(request: string): FakeAnswers {
 	const fixture = answers[request];
 	if (!fixture) throw new Error(`no fixture for "${request}"`);
 	return fixture;
+}
+
+const byRequest = fakeProvider(fixtureFor);
+
+/** The same answers, from a provider that reports what each call used. */
+const priced = fakeProvider(fixtureFor, {
+	costUsd: 0.000005,
+	inputTokens: 120,
 });
 
 /** The demo as the browser runs it, its handler served in process. */
@@ -103,6 +111,12 @@ function renderDemo({
 
 function panel() {
 	return within(screen.getByRole("region", { name: "What happened" }));
+}
+
+/** The figure the state panel shows under a term, once the call has returned. */
+async function figure(state: ReturnType<typeof panel>, term: string) {
+	const dt = await state.findByText(term, { selector: "dt" });
+	return dt.nextElementSibling?.textContent;
 }
 
 async function expectNoAxeViolations(container: Element) {
@@ -147,6 +161,43 @@ describe("the demo's search page", () => {
 		// The shortlist is the whole catalog of 14, plus none and several.
 		expect(state.getAllByRole("row")).toHaveLength(1 + 14 + 2);
 		await expectNoAxeViolations(container);
+	});
+
+	it("shows the call's input tokens and cost beside the round trip, when the provider reports them", async () => {
+		const { container, user } = renderDemo({ provider: priced });
+
+		await user.click(
+			screen.getByRole("button", { name: "the catering people" }),
+		);
+
+		const state = panel();
+		expect(await figure(state, "Input tokens")).toBe("120");
+		expect(await figure(state, "Cost")).toBe("$0.000005");
+		expect(await figure(state, "Round trip")).toMatch(/^\d+ ms$/);
+		await expectNoAxeViolations(container);
+	});
+
+	it("shows neither tokens nor cost when the provider does not report them", async () => {
+		const { user } = renderDemo();
+
+		await user.click(
+			screen.getByRole("button", { name: "the catering people" }),
+		);
+
+		const state = panel();
+		await figure(state, "Round trip");
+		expect(state.queryByText("Input tokens")).toBeNull();
+		expect(state.queryByText("Cost")).toBeNull();
+	});
+
+	it("shows the tokens and cost in Spanish", async () => {
+		const { user } = renderDemo({ provider: priced, url: "/?lang=es" });
+
+		await user.click(screen.getByRole("button", { name: "los del catering" }));
+
+		const state = within(screen.getByRole("region", { name: "Qué pasó" }));
+		expect(await figure(state, "Tokens de entrada")).toBe("120");
+		expect(await figure(state, "Costo")).toBe("0,000005\u00a0US$");
 	});
 
 	it("holds a request that could mean two vendors, and says several reached the gate", async () => {

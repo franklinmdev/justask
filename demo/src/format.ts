@@ -16,8 +16,17 @@ export function formats(locale: string) {
 		dateStyle: "medium",
 		timeZone: "UTC",
 	});
+	// A call costs millionths of a dollar, so two significant digits, not cents.
+	const cost = new Intl.NumberFormat(locale, {
+		style: "currency",
+		currency: "USD",
+		maximumSignificantDigits: 2,
+	});
+	const count = new Intl.NumberFormat(locale);
 	return {
 		probability: (value: number) => probability.format(value),
+		cost: (usd: number) => cost.format(usd),
+		count: (value: number) => count.format(value),
 		/** In the local currency, or as the bare number and its code when another one is named. */
 		amount: (value: number, currency?: string | null) =>
 			currency && currency !== LOCAL_CURRENCY
