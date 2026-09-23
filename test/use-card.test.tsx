@@ -153,7 +153,7 @@ function renderCard({
 					announce={({ filled, waiting }) =>
 						`Filled: ${filled.join(", ") || "nothing"}. Waiting for you: ${waiting.join(", ") || "nothing"}.`
 					}
-					unanswered="Filled: nothing. The card could not be filled; fill it by hand."
+					unanswered="Filled: nothing from this request. The card stays as it was."
 				/>
 				<CardEntry card={card} name="vendor">
 					{({ value, set }) => (
@@ -424,6 +424,19 @@ describe("useCard and its pieces", () => {
 		});
 	});
 
+	it("does not announce the old answer again after the host undoes the save", async () => {
+		const { user } = renderCard({ provider: fakeProvider(holdsVendor) });
+
+		await ask(user);
+		await user.selectOptions(vendor(), "acme");
+		await user.click(confirmButton());
+		await user.click(screen.getByRole("button", { name: "Undo" }));
+
+		// The vendor the person chose no longer waits, so the old words would be wrong.
+		expect(announced().join(" ")).not.toContain("Waiting for you: vendor");
+		expect(announced().join(" ")).not.toContain("Filled:");
+	});
+
 	it("closes the undo slot once the person starts the next card", async () => {
 		const { user } = renderCard({ provider: fakeProvider(fills) });
 
@@ -469,7 +482,7 @@ describe("useCard and its pieces", () => {
 			message: "The provider failed",
 		});
 		expect(announced()).toContain(
-			"Filled: nothing. The card could not be filled; fill it by hand.",
+			"Filled: nothing from this request. The card stays as it was.",
 		);
 		await expectNoAxeViolations(container);
 		await user.type(amount(), "42");
@@ -495,7 +508,7 @@ describe("useCard and its pieces", () => {
 			message: "The provider failed",
 		});
 		expect(announced()).toContain(
-			"Filled: nothing. The card could not be filled; fill it by hand.",
+			"Filled: nothing from this request. The card stays as it was.",
 		);
 		expect(vendor().value).toBe("acme");
 		expect(filledBy(vendor())).toBe("person");
@@ -532,7 +545,7 @@ describe("useCard and its pieces", () => {
 
 		expect(seen.card?.error?.kind).toBe("network");
 		expect(announced()).toContain(
-			"Filled: nothing. The card could not be filled; fill it by hand.",
+			"Filled: nothing from this request. The card stays as it was.",
 		);
 		await user.type(amount(), "42");
 		await user.click(confirmButton());

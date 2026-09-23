@@ -58,7 +58,11 @@ export type UseCard<F extends CardFields> = {
 	result: CardResult<F> | null;
 	/** Why the last answer failed, beside `result`. */
 	error: CardError | null;
-	/** True when the last answer, or error, is for the request in the box. */
+	/**
+	 * True when the last answer, or error, is for the request in the box and
+	 * the card has not been confirmed since; `restore` does not bring it back,
+	 * since the card may have changed after that answer.
+	 */
 	answered: boolean;
 	/**
 	 * The card as it stands: what the last successful answer filled, with the
@@ -141,6 +145,8 @@ export function useCard<F extends CardFields>({
 	});
 	const { answer, current } = flow;
 	const [kept, setKept] = useState<Draft>(EMPTY);
+	// The answer whose card was confirmed; it is not announced again.
+	const [spent, setSpent] = useState<typeof answer>(null);
 	const [saved, setSaved] = useState<{
 		request: string;
 		draft: Draft;
@@ -166,7 +172,7 @@ export function useCard<F extends CardFields>({
 		loading: flow.loading,
 		result: answer?.result ?? null,
 		error: answer?.error ?? null,
-		answered: current,
+		answered: current && answer !== spent,
 		value,
 		filledBy: (name) => (name in draft.value ? (draft.by[name] ?? null) : null),
 		set: (name, next) => {
@@ -186,6 +192,7 @@ export function useCard<F extends CardFields>({
 		confirm: () => {
 			if (!ready) return;
 			onConfirm(value);
+			setSpent(answer);
 			setSaved({ request: flow.request, draft });
 			setKept({ answer, value: {}, by: {} });
 			flow.replaceRequest("");
