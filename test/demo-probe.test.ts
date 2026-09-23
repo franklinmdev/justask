@@ -3,6 +3,7 @@ import {
 	PROBE,
 	PROBE_BASELINE_MS,
 	PROBE_TIMES,
+	PROBE_WARM_UP,
 	probe,
 } from "../demo/eval/probe.ts";
 
@@ -34,6 +35,7 @@ describe("the frozen provider probe", () => {
 			],
 		});
 		expect(PROBE_TIMES).toBe(3);
+		expect(PROBE_WARM_UP).toBe(3);
 	});
 
 	// Null until the first normal runs measure it; written before a verdict run.
@@ -41,6 +43,7 @@ describe("the frozen provider probe", () => {
 		expect(PROBE_BASELINE_MS).toBeNull();
 		expect(probe()).toEqual({
 			input: PROBE,
+			warmUp: 3,
 			times: 3,
 			baselineMs: PROBE_BASELINE_MS,
 		});

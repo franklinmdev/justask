@@ -57,6 +57,7 @@ const probe: Probe = {
 			},
 		],
 	},
+	warmUp: 3,
 	times: 3,
 	baselineMs: 250,
 };
@@ -96,7 +97,7 @@ describe("a run's probes", () => {
 		await rm(dir, { recursive: true });
 	});
 
-	it("sends the fixed probe straight to the provider before the rows and again after, and logs each latency", async () => {
+	it("warms the provider up, then sends the fixed probe straight to it before the rows and again after, and logs each latency", async () => {
 		const log = join(dir, "run-1.jsonl");
 		const fake = provider();
 
@@ -111,16 +112,19 @@ describe("a run's probes", () => {
 			probe,
 		});
 
+		// Three warm-up calls, three measured probes, the row, three probes.
 		expect(fake.calls.map(({ request }) => request)).toEqual([
-			...Array(3).fill("the catering invoices"),
+			...Array(6).fill("the catering invoices"),
 			"hola",
 			...Array(3).fill("the catering invoices"),
 		]);
 		expect(fake.calls[0]).toMatchObject(probe.input);
 		expect(run.probes?.baselineMs).toBe(250);
+		expect(run.probes?.warmUp).toHaveLength(3);
 		expect(run.probes?.before).toHaveLength(3);
 		expect(run.probes?.after).toHaveLength(3);
 		for (const result of [
+			...(run.probes?.warmUp ?? []),
 			...(run.probes?.before ?? []),
 			...(run.probes?.after ?? []),
 		]) {
@@ -197,7 +201,7 @@ describe("a run's probes", () => {
 			timeoutMs: 1_000,
 			killLines,
 			log: filterLog,
-			probe: { ...probe, times: 2 },
+			probe: { ...probe, warmUp: 1, times: 2 },
 		});
 		const cardRun = await runCardEval({
 			set: parseCardEvalSet(nothing),
@@ -207,11 +211,12 @@ describe("a run's probes", () => {
 			timeoutMs: 1_000,
 			killLines,
 			log: cardLog,
-			probe: { ...probe, times: 2 },
+			probe: { ...probe, warmUp: 1, times: 2 },
 		});
 
 		for (const fake of [filterFake, cardFake]) {
 			expect(fake.calls.map(({ request }) => request)).toEqual([
+				"the catering invoices",
 				"the catering invoices",
 				"the catering invoices",
 				"hola",
@@ -233,7 +238,7 @@ describe("a run's probes", () => {
 		);
 	});
 
-	it("refuses a probe sent fewer than once, or a negative baseline, before any call", async () => {
+	it("refuses a probe sent fewer than once, a negative warm-up, or a negative baseline, before any call", async () => {
 		const fake = provider();
 		const run = (bad: Probe) =>
 			runEval({
@@ -248,6 +253,7 @@ describe("a run's probes", () => {
 			});
 
 		await expect(run({ ...probe, times: 0 })).rejects.toThrow(TypeError);
+		await expect(run({ ...probe, warmUp: -1 })).rejects.toThrow(TypeError);
 		await expect(run({ ...probe, baselineMs: -1 })).rejects.toThrow(TypeError);
 		expect(fake.calls).toHaveLength(0);
 	});
@@ -426,10 +432,12 @@ describe("a slow window", () => {
 });
 
 describe("probeMedian", () => {
-	it("is the median over every probe of the runs given, a baseline to write before the next verdict run", () => {
+	it("is the median over every measured probe of the runs given, the warm-up left out, a baseline to write before the next verdict run", () => {
 		const runs: Probes[] = [
 			{
 				baselineMs: null,
+				// A cold start, never counted.
+				warmUp: [{ latencyMs: 1_400 }, { latencyMs: 1_300 }],
 				before: [{ latencyMs: 200 }],
 				after: [{ latencyMs: 260 }],
 			},

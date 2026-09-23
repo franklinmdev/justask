@@ -5,7 +5,8 @@ import type { ProbeSender, Probes } from "./probe.ts";
 /**
  * Writes a run log: its header as the first line, then each row as soon as
  * `answer` returns it, so a crash keeps every call already paid for. Given
- * probes, it sends them before the rows, into the header, and again after,
+ * probes, it sends the warm-up and then the probes before the rows, into the
+ * header, and the probes again after,
  * on a last line of their own. The log must not exist yet: a saved run is
  * never overwritten.
  */
@@ -28,7 +29,11 @@ export async function writeRunLog<H extends object, In, Out>(
 	try {
 		const startedAt = new Date().toISOString();
 		const before = probes && {
-			probes: { baselineMs: probes.baselineMs, before: await probes.send() },
+			probes: {
+				baselineMs: probes.baselineMs,
+				warmUp: await probes.warmUp(),
+				before: await probes.send(),
+			},
 		};
 		const started = { startedAt, ...header, ...before };
 		await file.write(`${JSON.stringify(started)}\n`);

@@ -10,6 +10,12 @@ import { readRunLog } from "./log.ts";
 export type Probe = {
 	/** Sent as is, with no shortlist, parser or gate around it. */
 	input: Omit<ProviderInput, "signal">;
+	/**
+	 * How many calls of the request go first, before the measured probes and
+	 * before any row, so a cold start falls on them. Logged as warm-up, never
+	 * counted in the probe median or the p95.
+	 */
+	warmUp: number;
 	/** How many times before the rows, and again after. */
 	times: number;
 	/**
@@ -29,6 +35,8 @@ export type ProbeResult = {
 /** A run's probes as its log saves them; `after` is missing when the run never finished. */
 export type Probes = {
 	baselineMs: number | null;
+	/** Absent from logs written before the warm-up. */
+	warmUp?: ProbeResult[];
 	before: ProbeResult[];
 	after?: ProbeResult[];
 };
@@ -43,7 +51,12 @@ export type ProbeWindow = {
 };
 
 /** Throws before any call when the probe cannot be sent or judged. */
-function checkProbe({ times, baselineMs }: Probe): void {
+function checkProbe({ warmUp, times, baselineMs }: Probe): void {
+	if (!Number.isInteger(warmUp) || warmUp < 0) {
+		throw new TypeError(
+			"justask: a probe's warm-up is a whole number of calls, 0 or more",
+		);
+	}
 	if (!Number.isInteger(times) || times < 1) {
 		throw new TypeError(
 			"justask: a probe is sent at least once before the rows and once after",
@@ -59,6 +72,7 @@ function checkProbe({ times, baselineMs }: Probe): void {
 /** Sends a run's probes, and the baseline saved beside them. */
 export type ProbeSender = {
 	baselineMs: number | null;
+	warmUp: () => Promise<ProbeResult[]>;
 	send: () => Promise<ProbeResult[]>;
 };
 
@@ -72,6 +86,8 @@ export function probeSender(
 	checkProbe(probe);
 	return {
 		baselineMs: probe.baselineMs,
+		warmUp: () =>
+			sendProbes(provider, { ...probe, times: probe.warmUp }, timeoutMs),
 		send: () => sendProbes(provider, probe, timeoutMs),
 	};
 }
@@ -97,7 +113,8 @@ async function sendProbes(
 }
 
 /**
- * The median over every probe of the runs given. A timed out probe counts at
+ * The median over every measured probe of the runs given, the warm-up
+ * left out. A timed out probe counts at
  * its wait, since the provider was at least that slow; one that failed fast
  * says nothing about latency and is left out. Null when none is left.
  */

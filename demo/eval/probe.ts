@@ -1,8 +1,9 @@
 import type { Probe } from "justask/eval";
 
 /**
- * The fixed request every eval run sends straight to the provider, three
- * times before its rows and three after, so the run log holds the
+ * The fixed request every eval run sends straight to the provider: three
+ * warm-up calls it discards, then three measured probes before its rows
+ * and three after, so the run log holds the
  * provider's latency apart from the flow's (#65). The same for search,
  * filter and card, in both languages, so one baseline reads them all. Frozen
  * by value in test/demo-probe.test.ts.
@@ -26,6 +27,12 @@ export const PROBE: Probe["input"] = {
 export const PROBE_TIMES = 3;
 
 /**
+ * Discarded calls of the probe request before the measured probes and
+ * before any row, so a cold start after idle falls on them (#65).
+ */
+export const PROBE_WARM_UP = 3;
+
+/**
  * The probes' median from the most recent normal runs, written here before
  * a verdict run and frozen by value in test/demo-probe.test.ts. Null until
  * the first is measured: a dev run may run without it, a verdict run may
@@ -36,6 +43,7 @@ export const PROBE_BASELINE_MS: number | null = null;
 /** The probe a run sends, under the baseline declared before it. */
 export const probe = (): Probe => ({
 	input: PROBE,
+	warmUp: PROBE_WARM_UP,
 	times: PROBE_TIMES,
 	baselineMs: PROBE_BASELINE_MS,
 });
