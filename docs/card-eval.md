@@ -291,3 +291,41 @@ English: 2 flips, coverage 0.847, exact 0.941, held ambiguous 0.875 again: `Farw
 - Run 2: `demo/eval/runs/card-en-round2-2.jsonl`, `demo/eval/runs/card-es-round2-2.jsonl`
 
 Each rescores with `scoreCardRun(await readCardRun(path), { gates })` and no call.
+
+## Round 3: diagnosis, from probes only
+
+Carried by [#57](https://github.com/franklinmdev/justask/issues/57). Rounds 1 and 2 above stand as recorded. Before any fix is chosen, the question is why two Spanish nothing rows read as new records in round 2 while their English twins did not: the usted imperative (`quite` is also an English word), commands in general, or amounts and vendors pulling toward `new_record`.
+
+### Probe sets
+
+`demo/eval/card-es.diag.jsonl` (50 rows) and `demo/eval/card-en.diag.jsonl` (30 rows), every row a nothing row, run with `card.ts run <en|es> diag <n>` and no verdict. They are measured, never tuned against, and no round 3 row may repeat them (`test/demo-card-eval.test.ts`).
+
+- **Spanish, 44 rows:** each of `quite`, `quita`, `quité`, `borre`, `borra`, `elimine`, `elimina`, `cambie`, `cambia`, `envíe` and `envía` on the same expense four ways: with a vendor and an amount (`quite el gasto de $58 del Cafetal`), a vendor alone, an amount alone, and neither (`quite ese gasto`). Changes move the expense to Friday; sends go to accounting and name an invoice (`la factura`).
+- **English, 24 rows:** `remove`, `I removed`, `erase`, `delete`, `change` and `send` on the Beanhaven expense, the same four ways.
+- **Six more per language, added for run 3,** to split the verb from the noun and the vendor: `borre la factura ...` and `envíe el gasto ...`, `mande la factura ...`, `quite` on another vendor and amount (`quite el gasto de $320 de Nubalia`) and on an invoice, and `reenvíe la factura de Lindero a contabilidad`; English twins with `delete`, `send`, `forward` and `remove`.
+
+### Result
+
+Runs of 2026-09-23 with `jev-1.13.0`, the demo's card at round 2's gates (intent 0.45), today fixed at Wednesday 2026-09-23. Runs 1 and 2 read the first 44 and 24 rows; run 3 reads all of them. `new_record`'s probability, lowest to highest across the runs:
+
+| Verb | Vendor and amount | Vendor | Amount | Neither |
+|---|---|---|---|---|
+| `quite` | 0.78 to 0.81 | 0.57 to 0.60 | 0.86 to 0.88 | 0.19 to 0.26 |
+| `quita`, `quité`, `borre`, `borra`, `elimine`, `elimina` | 0.00 | 0.00 | 0.00 | 0.00 |
+| `cambie`, `cambia` | 0.00 to 0.01 | 0.01 to 0.03 | 0.02 to 0.04 | 0.00 |
+| `envíe` | 0.93 to 0.94 | 0.78 to 0.83 | 0.88 | 0.57 to 0.68 |
+| `envía` | 0.91 to 0.95 | 0.79 to 0.82 | 0.88 to 0.91 | 0.45 to 0.52 |
+| `remove`, `I removed`, `erase`, `delete`, `change` | 0.00 | 0.00 | 0.00 | 0.00 |
+| `send` | 0.38 to 0.43 | 0.14 to 0.16 | 0.45 to 0.48 | 0.09 to 0.16 |
+
+Run 3's added rows: `quite el gasto de $320 de Nubalia` 0.74, `quite la factura de $58 del Cafetal` 0.70, `borre la factura de $58 del Cafetal` 0.00, `envíe el gasto de $58 del Cafetal a contabilidad` 0.99, `mande la factura de $58 del Cafetal a contabilidad` 0.97, `reenvíe la factura de Lindero a contabilidad` 0.34; English `delete the $58 Beanhaven invoice` 0.00, `remove the $58 Beanhaven invoice` 0.00, `remove the $320 Cloudberth expense` 0.00, `send the $58 Beanhaven expense to accounting` 0.57, `forward the $58 Beanhaven invoice to accounting` 0.40, `forward the Clausewood invoice to accounting` 0.25.
+
+### What the probes say
+
+- **Not commands in general.** Every other Spanish delete and change, usted or tú, read 0.04 or less in every run, as did every English one. The intent question handles commands on an existing record.
+- **`quite` alone, and it is the word, not the mood.** `quita`, `borre` and `elimine` are the same command, and `borre`/`elimine` the same usted imperative, all at 0.00; `quite` reads as a new record on either vendor, on an expense or an invoice. Read as English, `quite the $58 Cafetal expense` is a note about an expense, not a delete.
+- **Sending is a second, separate gap, in both languages.** The intent's `not_available` label names changing, cancelling, deleting and asking; sending names none of them. Spanish `envíe`, `envía` and `mande` read as new records at up to 0.99 whatever the noun (`el gasto` 0.99, `la factura` 0.97). English reads lower but not safely: `send the $58 invoice to accounting` reached 0.45, 0.46 and 0.48, and `send the $58 Beanhaven expense to accounting` 0.57, at or above the intent gate of 0.45. English passed round 2 because its send row named no amount (`email the Clausewood invoice to accounting` read 0.12).
+- **Amounts and vendors raise the leak but do not cause it.** Under `quite` and `envíe`, an amount lifts `new_record` most (`quite ese gasto` 0.19 to 0.26, `quite el gasto de $58` 0.86 to 0.88); under every other verb they change nothing. The noun does not matter: `borre la factura` and `delete the invoice` read 0.00.
+- **The misreading is stable.** The same row moved by at most 0.11 across three runs (`envíe esa factura a contabilidad`, 0.57 to 0.68).
+
+Run logs: `demo/eval/runs/card-<en|es>-diag-<1|2|3>.jsonl`.

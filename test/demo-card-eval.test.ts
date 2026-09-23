@@ -33,7 +33,8 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 	const round2Set = parseCardEvalSet(
 		read(`card-${content.language}.round2.jsonl`),
 	);
-	const allSets = [...devSet, ...evalSet, ...round2Set];
+	const diagSet = parseCardEvalSet(read(`card-${content.language}.diag.jsonl`));
+	const allSets = [...devSet, ...evalSet, ...round2Set, ...diagSet];
 	const card = demoCard(content);
 	const rows = (set: CardEvalRow[], kind: CardEvalKind) =>
 		set.filter((row) => row.kind === kind);
