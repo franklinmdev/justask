@@ -190,17 +190,17 @@ describe("the frozen card eval", () => {
 });
 
 /**
- * The demo serves the gates the rule gives on dev run 1 of both languages,
- * the intent's among them, read from the committed logs with no call
- * (docs/card-eval.md).
+ * The demo serves the gates the rule gives on dev run 3 of both languages,
+ * the first with the tuned tag descriptions, the intent's among them, read
+ * from the committed logs with no call (docs/card-eval.md).
  */
 describe("the card's gates", () => {
-	it("are the approved rule applied to dev run 1", async () => {
+	it("are the approved rule applied to dev run 3", async () => {
 		const reports = await Promise.all(
 			["en", "es"].map(async (language) => {
 				const { intent, fields } = scoreCardRun(
 					await readCardRun(
-						evalFile(`runs/card-${language}-dev-1.jsonl`).pathname,
+						evalFile(`runs/card-${language}-dev-3.jsonl`).pathname,
 					),
 				);
 				return { fields: { intent, ...fields } };

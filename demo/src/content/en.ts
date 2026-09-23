@@ -353,10 +353,19 @@ export const english: Content = {
 		nothing: ["the plumber who fixed the leak", "how much do we owe in total?"],
 	},
 	tags: [
-		tag("meals", "meals: lunch, dinner, coffee, catering"),
-		tag("travel", "travel: flights, hotels, taxis"),
-		tag("office", "office: supplies, equipment, software and services"),
-		tag("client", "billable to a client, or spent with a client"),
+		tag(
+			"meals",
+			"meals: food and drink, such as lunch, dinner, coffee, snacks and catering",
+		),
+		tag("travel", "travel: flights, hotels, taxis and trains"),
+		tag(
+			"office",
+			"office: what keeps the business running, such as supplies, equipment, software, hosting, repairs, cleaning and window washing, printing, couriers, payroll and HR, legal advice and insurance",
+		),
+		tag(
+			"client",
+			"billable to a client, or spent with a client, when the request says so for certain, not when it says maybe",
+		),
 	],
 	cardSuggestions: {
 		fills: [

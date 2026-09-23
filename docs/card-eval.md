@@ -170,3 +170,54 @@ English: 3 flips, all on one row whose intent crossed the gate: `hotel in Denver
 - Run 2: `demo/eval/runs/card-en-2.jsonl`, `demo/eval/runs/card-es-2.jsonl`
 
 Each rescores with `scoreCardRun(await readCardRun(path), { gates })` and no call.
+
+## Round 2: tuning, from the dev runs only
+
+Carried by [#44](https://github.com/franklinmdev/justask/issues/44). Round 1 above stands as recorded; its logs rescore at their own gates, which each log saves. Everything in this section was fixed from dev runs, before any round 2 call.
+
+### Dev nothing rows
+
+The owner approved 8 more dev nothing rows per language on 2026-09-23, `en-d-21` to `en-d-28` and `es-d-21` to `es-d-28`: a question about a recorded expense (`did the Larkspur lunch on Monday come to $96?`), changes and deletes that name a vendor, a day or an amount (`change the Cloudberth expense from August 1 to $329`), a thank-you about a vendor, a tag added to another expense, a split between clients, and a total. The dev sets now hold 12 records, 4 ambiguous rows and 12 nothing rows per language; round 1's dev counts above describe dev run 1.
+
+### Tag descriptions
+
+Tuned on the dev sets only, toward the reading the sets were written with (Sets, above). What the provider reads, English and Spanish alike:
+
+| Tag | Round 1 | Round 2 |
+|---|---|---|
+| meals | `meals: lunch, dinner, coffee, catering` | `meals: food and drink, such as lunch, dinner, coffee, snacks and catering` |
+| travel | `travel: flights, hotels, taxis` | `travel: flights, hotels, taxis and trains` |
+| office | `office: supplies, equipment, software and services` | `office: what keeps the business running, such as supplies, equipment, software, hosting, repairs, cleaning and window washing, printing, couriers, payroll and HR, legal advice and insurance` |
+| client | `billable to a client, or spent with a client` | `billable to a client, or spent with a client, when the request says so for certain, not when it says maybe` |
+
+Dev run 2 had every change but `window washing` and `HR` (`ventanas` and `recursos humanos`); `office` still answered `not_mentioned` on `Paydale HR consulting` and `glaswell windows` in both languages, services the catalog's own vendors sell, so dev run 3 names them. The labels a person sees are unchanged.
+
+### Dev runs 2 and 3
+
+Runs of 2026-09-23 with `jev-1.13.0`, at round 1's gates, today fixed at Wednesday 2026-09-23. Tags filled at round 1's tags gate of 0.5, of 15 expected:
+
+| Tags filled at 0.5 | Dev run 1 | Dev run 2 | Dev run 3 |
+|---|---|---|---|
+| English | 3 | 10 | 10 |
+| Spanish | 1 | 7 | 11 |
+
+- **No field filled wrong** on any dev card, in either run or language, and no nothing row filled anything.
+- **The `client` tag held on `maybe for a client`** in both languages and both runs (`not_mentioned` 0.79 and 0.83 in dev run 2), where dev run 1 filled it at 0.49.
+- **The intent's margin is measured now, though the rule still has no wrong pick.** None of the 24 dev nothing rows picked `new_record`. Its highest probability on them was 0.23 in dev run 2 (`póngale la etiqueta de cliente al almuerzo de ayer`) and 0.18 in dev run 3 (`pase el gasto del taxi al viernes`), against a lowest right pick of 0.49: the gate of 0.45 sits above every nothing row by more than 0.2.
+- **The remaining tag misses in dev run 3 are weak picks, not wrong ones.** `yes` on `travel` for `Farwander flights for the sales trip` came at 0.37 and 0.39, `yes` on `office` for software, toner and business cards between 0.44 and 0.49, and `office` still answered `not_mentioned` on `glaswell windows` (0.44), `Cuentia` licenses (0.42) and `Tintaverde` toner (0.39).
+
+### Gates for round 2
+
+The owner ruled on 2026-09-23 that dev run 3 alone fixes the gates, the only dev run with the final descriptions, by the same rule as round 1. `node --conditions=source demo/eval/card.ts gates 3`:
+
+| Field | Lowest right | Highest wrong | Rule | Gate | Round 1 |
+|---|---|---|---|---|---|
+| intent | 0.49 | none | lowest right rounded down | **0.45** | 0.45 |
+| vendor | 0.51 | none | lowest right rounded down | **0.5** | 0.5 |
+| tags | 0.37 | none | lowest right rounded down | **0.35** | 0.5 |
+| spent_on | 0.9 | none | lowest right rounded down, at most 0.9 | **0.9** | 0.8 |
+| total | 0.99 | none | lowest right rounded down, at most 0.9 | **0.9** | 0.9 |
+
+At these gates dev run 3 fills 51 of 57 English and 54 of 57 Spanish expected fields, every filled card exact, every ambiguous row held. The gates are in `demo/server/handler.ts`; `test/demo-card-eval.test.ts` pins them to dev run 3.
+
+Run logs: `demo/eval/runs/card-en-dev-2.jsonl`, `demo/eval/runs/card-es-dev-2.jsonl`, `demo/eval/runs/card-en-dev-3.jsonl`, `demo/eval/runs/card-es-dev-3.jsonl`.
