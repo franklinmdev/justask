@@ -49,7 +49,7 @@ Where a field's candidates come from: date, time, amount (from parsers), catalog
 _Avoid_: Type, field type
 
 **Gate**:
-The minimum probability a pick needs before its field is filled. A search reads it the other way, on its `none` label: the item is held once `none` reaches the gate (ADR 0005). Every field declares its own; there is no default. Fixed before any run and measured on an eval set.
+The minimum probability a pick needs before its field is filled. A search reads it the other way, on its `none` label: the item is held once `none` reaches the gate (ADR 0005). Every field declares its own, a number strictly between 0 and 1; there is no default. Fixed before any run and measured on an eval set.
 _Avoid_: Threshold, confidence cutoff
 
 **Eval set**:
@@ -86,7 +86,7 @@ _Avoid_: Client app, consumer
 A request resolved to one item among candidates, or to none.
 
 **Filter**:
-A request resolved to the exact filter object a table in the host app already understands.
+A request resolved to the exact filter object a table in the host app already understands. Declared with a description of what one row of that table is, which every field's question reads, and its fields.
 
 **Card**:
 A request resolved to a filled record, such as an appointment, gated first by an intent question.
