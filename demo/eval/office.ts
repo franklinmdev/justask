@@ -15,8 +15,9 @@ const served = (content: Content) => {
 /**
  * #77's office labels, each changing one thing from the one the demo serves
  * (`current`): `backups` names backups among the services, `short` keeps the
- * label's head and drops its list. The probe runs measure them; the demo
- * serves `current` alone.
+ * label's head and drops its list, and `rest` names what the tag is not
+ * instead of what it is, after `short` showed the list is what fills it. The
+ * probe runs measure them; the demo serves `current` alone.
  */
 export const OFFICE_LABELS: Record<Language, Record<string, string>> = {
 	en: {
@@ -24,12 +25,14 @@ export const OFFICE_LABELS: Record<Language, Record<string, string>> = {
 		backups:
 			"office: what keeps the business running, such as supplies, equipment, software, hosting, backups, repairs, cleaning and window washing, printing, couriers, payroll and HR, legal advice and insurance",
 		short: "office: what keeps the business running",
+		rest: "office: any business expense that is not meals or travel",
 	},
 	es: {
 		current: served(spanish),
 		backups:
 			"oficina: lo que mantiene el negocio en marcha, como artículos, equipos, software, hosting, respaldos, reparaciones, limpieza y ventanas, imprenta, mensajería, nómina y recursos humanos, asesoría legal y seguros",
 		short: "oficina: lo que mantiene el negocio en marcha",
+		rest: "oficina: cualquier gasto del negocio que no sea comida ni viajes",
 	},
 };
 
