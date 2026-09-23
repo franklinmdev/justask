@@ -282,6 +282,43 @@ describe("runEval", () => {
 		expect(provider.calls).toHaveLength(0);
 	});
 
+	it("logs the pair that held the item and holds it at every gate (ADR 0010)", async () => {
+		const log = join(dir, "run-1.jsonl");
+		const run = await runEval({
+			...input(
+				log,
+				fakeProvider({
+					search: answersByRequest["invoices from Acme"]?.search ?? {},
+				}),
+			),
+			set: set([
+				{
+					id: "pair",
+					request: "Acme or Northwind invoices",
+					kind: "ambiguous",
+				},
+				{
+					id: "acme",
+					request: "invoices from Acme",
+					kind: "item",
+					expected: "acme",
+				},
+			]),
+			search: { ...search, joiners: { or: ["or"], and: [] } },
+		});
+
+		expect(run.rows[0]?.pair).toEqual({
+			ids: ["acme", "northwind"],
+			text: "Acme or Northwind",
+		});
+		expect(run.rows[1]).not.toHaveProperty("pair");
+		expect((await readRun(log)).rows[0]?.pair).toEqual(run.rows[0]?.pair);
+		// Acme won at 0.9 with none at 0.02: no gate lets it through now.
+		expect(scoreRun(run).leaked).toEqual([]);
+		expect(scoreRun(run, { gate: 0.99 }).leaked).toEqual([]);
+		expect(scoreRun(run).counts.covered).toBe(1);
+	});
+
 	it("rescores a saved run at another gate with no provider call", async () => {
 		const log = join(dir, "run-1.jsonl");
 		const provider = fakeAnswers();
@@ -576,6 +613,36 @@ describe("compareRuns", () => {
 		expect(text).not.toContain("Verdict:");
 		expect(text).not.toContain("| FAIL |");
 		expect(text).toContain("no verdict: the first run keeps it");
+	});
+});
+
+describe("scoreRun and compareRuns with a named pair (ADR 0010)", () => {
+	const pair = {
+		ids: ["acme", "northwind"] as [string, string],
+		text: "Acme or Northwind",
+	};
+	const run = savedRun([
+		row({ id: "amb-pair", kind: "ambiguous", pair }),
+		row({ id: "false-hold", kind: "item", expected: "acme", pair }),
+	]);
+	const report = scoreRun(run);
+
+	it("holds a row the pair held, whatever its pick, and blames the pair for an item it held", () => {
+		expect(report.leaked).toEqual([]);
+		expect(report.measures.heldAmbiguous).toBe(1);
+		expect(report.counts).toMatchObject({ items: 1, covered: 0 });
+		expect(report.misses).toEqual([
+			expect.objectContaining({ id: "false-hold", item: null, blame: "pair" }),
+		]);
+	});
+
+	it("lists no flip on a row the pair held in both runs", () => {
+		expect(
+			compareRuns(
+				run,
+				savedRun([row({ id: "amb-pair", kind: "ambiguous", pair, none: 0.6 })]),
+			),
+		).toEqual([]);
 	});
 });
 

@@ -329,6 +329,88 @@ describe("ask: search", () => {
 			}),
 		).rejects.toThrow(TypeError);
 	});
+
+	describe("a named pair (ADR 0010)", () => {
+		const joiners = { or: ["or", "o"], and: ["and", "y"] };
+		const confident = {
+			search: { acme: 0.95, northwind: 0.03, none: 0.01, several: 0.01 },
+		};
+		const find = (
+			request: string,
+			declared: { or: string[]; and: string[] } | null = joiners,
+		) =>
+			ask({
+				...base,
+				request,
+				provider: fakeProvider(confident),
+				search: {
+					...vendorSearch(),
+					shortlist: () => [
+						{ ...acme, names: ["Acme"] },
+						{ ...northwind, names: ["Northwind"] },
+					],
+					...(declared && { joiners: declared }),
+				},
+			});
+
+		it("holds the item when two candidates are joined by a joiner, whatever the pick, and names them as written", async () => {
+			const { search } = await find("the Acme or Northwind invoice");
+
+			expect(search.item).toBeNull();
+			expect(search.pair).toEqual({
+				ids: ["acme", "northwind"],
+				text: "Acme or Northwind",
+			});
+			// Still asked, so the pick is reported.
+			expect(search.pick).toEqual({ label: "acme", probability: 0.95 });
+		});
+
+		it('holds on "and" too, since the search takes one item', async () => {
+			const { search } = await find("factura de Acme y de Northwind");
+
+			expect(search.item).toBeNull();
+			expect(search.pair?.ids).toEqual(["acme", "northwind"]);
+		});
+
+		it("fills as before when the request names one candidate, or the search declares no joiners", async () => {
+			const one = await find("the Acme or the other invoice");
+			const undeclared = await find("the Acme or Northwind invoice", null);
+
+			for (const { search } of [one, undeclared]) {
+				expect(search).not.toHaveProperty("pair");
+				expect(search.item).toEqual({ id: 1, name: "Acme Supplies" });
+			}
+		});
+
+		it("names the pair when the provider fails, since the code found it", async () => {
+			const result = await ask({
+				...base,
+				request: "Acme or Northwind",
+				provider: failingProvider(new Error("down")),
+				search: { ...vendorSearch(), joiners },
+			});
+
+			expect(result.search.item).toBeNull();
+			expect(result.search.pair?.ids).toEqual(["acme", "northwind"]);
+		});
+
+		it("refuses a joiner of several words before any call", async () => {
+			const provider = fakeProvider(confident);
+
+			await expect(
+				ask({
+					...base,
+					provider,
+					search: { ...vendorSearch(), joiners: { or: ["or else"], and: [] } },
+				}),
+			).rejects.toThrow(
+				new TypeError(
+					'justask: the search\'s joiner "or else" is not one word',
+				),
+			);
+			expect(provider.calls).toHaveLength(0);
+		});
+	});
 });
 
 describe("ask: fuzzyShortlist", () => {

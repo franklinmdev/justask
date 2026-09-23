@@ -131,10 +131,15 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 				...Object.values(content.cardSuggestions).flat(),
 			].map(normalized),
 		);
-		for (const { request } of allSets) {
-			expect(seen).not.toContain(normalized(request));
+		const repeated: string[] = [];
+		for (const { id, request } of allSets) {
+			if (seen.has(normalized(request))) repeated.push(id);
 			seen.add(normalized(request));
 		}
+		// es-r5-40, "perfecto, gracias", is also filter round 2's es-r2-n42: both
+		// sets were frozen seconds apart from parallel sessions (#73, #68), and
+		// the owner approved it as is, logged in docs/card-eval.md.
+		expect(repeated).toEqual(content.language === "es" ? ["es-r5-40"] : []);
 	});
 
 	it("expect only days and amounts the parser can build, on the day the runs are fixed at", () => {

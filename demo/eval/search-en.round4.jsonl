@@ -1,0 +1,40 @@
+{"id": "en-r4-01", "request": "reams for the copier", "kind": "item", "expected": "papergrove"}
+{"id": "en-r4-02", "request": "the Papergroove bill", "kind": "item", "expected": "papergrove"}
+{"id": "en-r4-03", "request": "the buffet at the client workshop", "kind": "item", "expected": "larkspur"}
+{"id": "en-r4-04", "request": "Larkspur's June invoice", "kind": "item", "expected": "larkspur"}
+{"id": "en-r4-05", "request": "where our website lives", "kind": "item", "expected": "cloudberth"}
+{"id": "en-r4-06", "request": "the Cloudberth renewal", "kind": "item", "expected": "cloudberth"}
+{"id": "en-r4-07", "request": "the crew that cleans after we close", "kind": "item", "expected": "brightmop"}
+{"id": "en-r4-08", "request": "brightmob", "kind": "item", "expected": "brightmop"}
+{"id": "en-r4-09", "request": "whoever cleans the glass on the storefront", "kind": "item", "expected": "glasswell"}
+{"id": "en-r4-10", "request": "Glasswell's last invoice", "kind": "item", "expected": "glasswell"}
+{"id": "en-r4-11", "request": "banners for the trade show booth", "kind": "item", "expected": "inkhollow"}
+{"id": "en-r4-12", "request": "inkholow", "kind": "item", "expected": "inkhollow"}
+{"id": "en-r4-13", "request": "plane tickets to the Denver conference", "kind": "item", "expected": "farwander"}
+{"id": "en-r4-14", "request": "Farwander's booking fee", "kind": "item", "expected": "farwander"}
+{"id": "en-r4-15", "request": "the bookkeeping program subscription", "kind": "item", "expected": "tallyroot"}
+{"id": "en-r4-16", "request": "Tallyroot's annual plan", "kind": "item", "expected": "tallyroot"}
+{"id": "en-r4-17", "request": "la cafetera que alquilamos", "kind": "item", "expected": "beanhaven"}
+{"id": "en-r4-18", "request": "Beenhaven", "kind": "item", "expected": "beanhaven"}
+{"id": "en-r4-19", "request": "the Swiftlane run to Clausewood or Paydale", "kind": "item", "expected": "swiftlane"}
+{"id": "en-r4-20", "request": "the bike courier who took the contracts across town", "kind": "item", "expected": "swiftlane"}
+{"id": "en-r4-21", "request": "our attorneys' retainer", "kind": "item", "expected": "clausewood"}
+{"id": "en-r4-22", "request": "Clausewood Legal", "kind": "item", "expected": "clausewood"}
+{"id": "en-r4-23", "request": "whoever fixed the office wifi", "kind": "item", "expected": "fixbright"}
+{"id": "en-r4-24", "request": "fixbrigth", "kind": "item", "expected": "fixbright"}
+{"id": "en-r4-25", "request": "the service that runs our paychecks", "kind": "item", "expected": "paydale"}
+{"id": "en-r4-26", "request": "Paydale", "kind": "item", "expected": "paydale"}
+{"id": "en-r4-27", "request": "the company that covers us if there's a fire", "kind": "item", "expected": "sureharbor"}
+{"id": "en-r4-28", "request": "sureharber", "kind": "item", "expected": "sureharbor"}
+{"id": "en-r4-29", "request": "the parking garage pass", "kind": "nothing"}
+{"id": "en-r4-30", "request": "the electrician who fixed the kitchen outlets", "kind": "nothing"}
+{"id": "en-r4-31", "request": "our mobile phone plan", "kind": "nothing"}
+{"id": "en-r4-32", "request": "gym memberships for the staff", "kind": "nothing"}
+{"id": "en-r4-33", "request": "set a reminder for Friday", "kind": "nothing"}
+{"id": "en-r4-34", "request": "good afternoon", "kind": "nothing"}
+{"id": "en-r4-35", "request": "the Glasswell or Beanhaven receipt", "kind": "ambiguous"}
+{"id": "en-r4-36", "request": "the Fixbright and Cloudberth bills", "kind": "ambiguous"}
+{"id": "en-r4-37", "request": "the office cleaners' invoice", "kind": "ambiguous"}
+{"id": "en-r4-38", "request": "the cleaning crew we pay monthly", "kind": "ambiguous"}
+{"id": "en-r4-39", "request": "lunch and coffee for the offsite", "kind": "ambiguous"}
+{"id": "en-r4-40", "request": "our IT costs", "kind": "ambiguous"}

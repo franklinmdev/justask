@@ -1,14 +1,16 @@
 // The demo's filter eval, by hand with the key in .env, never in CI: every
 // row is a real Jev call.
 //
-//   node --conditions=source demo/eval/filter.ts run <en|es> <eval|dev> <n>
-//   node --conditions=source demo/eval/filter.ts compare <en|es> <first n> <second n>
+//   node --conditions=source demo/eval/filter.ts run <en|es> <eval|round2|dev> <n>
+//   node --conditions=source demo/eval/filter.ts compare <en|es> <eval|round2> <first n> <second n>
 //   node --conditions=source demo/eval/filter.ts gates <dev n>
 //
-// `run` writes demo/eval/runs/filter-<language>[-dev]-<n>.jsonl, which it
-// never overwrites, and prints its report. A dev run gets no verdict: it
-// tunes, it never decides. `compare` reads two saved eval runs and prints the
-// second one's measures and flips, with no call. `gates` reads dev run <n> of
+// `run` writes demo/eval/runs/filter-<language>[-round2|-dev]-<n>.jsonl, which
+// it never overwrites, and prints its report. `eval` is round 1's set,
+// `round2` the fresh set of round 2, the first with the named-pair hold
+// (ADR 0011). A dev run gets no verdict: it tunes, it never decides. `compare`
+// reads two saved runs of one set and prints the second one's measures and
+// flips, with no call. `gates` reads dev run <n> of
 // both languages and prints each field's gate by the rule in gates.ts,
 // with no call.
 
@@ -34,6 +36,7 @@ const TODAY = "Today is Tuesday 2026-09-22 (martes 22 de septiembre de 2026).";
 
 const SETS = {
 	eval: { file: "", log: "" },
+	round2: { file: ".round2", log: "-round2" },
 	dev: { file: ".dev", log: "-dev" },
 } as const;
 type SetKind = keyof typeof SETS;
@@ -71,15 +74,11 @@ if (command === "run") {
 		formatFilterReport(set === "dev" ? { ...report, verdict: null } : report),
 	);
 } else if (command === "compare") {
-	const [language, first, second] = rest;
+	const [language, set, first, second] = rest;
 	const content = contents[language as Language];
-	if (!content || !first || !second) usage();
-	const before = await readFilterRun(
-		runLogPath(content.language, "eval", first),
-	);
-	const after = await readFilterRun(
-		runLogPath(content.language, "eval", second),
-	);
+	if (!content || !isSet(set) || set === "dev" || !first || !second) usage();
+	const before = await readFilterRun(runLogPath(content.language, set, first));
+	const after = await readFilterRun(runLogPath(content.language, set, second));
 	console.log(
 		formatFilterReport(scoreFilterRun(after), compareFilterRuns(before, after)),
 	);
@@ -102,7 +101,7 @@ if (command === "run") {
 
 function usage(): never {
 	console.error(
-		"usage: filter.ts run <en|es> <eval|dev> <n> | compare <en|es> <first n> <second n> | gates <dev n>",
+		"usage: filter.ts run <en|es> <eval|round2|dev> <n> | compare <en|es> <eval|round2> <first n> <second n> | gates <dev n>",
 	);
 	process.exit(1);
 }

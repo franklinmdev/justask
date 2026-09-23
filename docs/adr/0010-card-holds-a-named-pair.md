@@ -22,7 +22,7 @@ The owner chose the rule above from these numbers: both joiners, "and" only on a
 - **`Candidate` gains an optional `names`**, the words a request names a row by, such as a brand. The demo's vendors name their brand (`Tallyroot`, `Cazuela Azul`, `Cobertura Plena`). Ids are read exactly, never with a typo: an id is a label, and `meals` is one letter from `meels` and `deals`.
 - **The eval log saves each field's pair**, as ADR 0009's log saves the command. The scorer holds that field at every gate, blames the pair for a record it held, and the gate rule reads no pick of that field on that row.
 - **The demo's state panel says the code held the field**, naming the pair's words.
-- **Search and filter do not adopt it yet.** Every frozen search and filter set's pair rows are ambiguous rows the rule holds (`Cloudberth or Tallyroot invoices in July`, `la factura de Pieveloz o de Lindero`), and none of their records, so the evidence points the same way; each adopts it with its own fresh round, as a follow-up.
+- **Search and filter do not adopt it yet.** Every frozen search and filter set's pair rows are ambiguous rows the rule holds (`Cloudberth or Tallyroot invoices in July`, `la factura de Pieveloz o de Lindero`), and none of their records, so the evidence points the same way; each adopts it with its own fresh round, as a follow-up. ADR 0011 adopts it for both.
 - Every gate is refixed from dev runs with both changes in place, before any round 4 call.
 
 ## Known limits

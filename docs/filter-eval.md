@@ -1,6 +1,6 @@
 # Filter eval: sets, kill lines and verdict
 
-**Status: run, verdict PASS in both languages (run 1), with no wrong value shown and nothing invented. Sets, kill lines and gate rule approved and frozen by the owner on 2026-09-22 (#17), before any provider call; the gates were fixed from the dev runs by that rule and written into the demo before run 1.**
+**Status: round 2 run, verdict PASS in both languages (run 1) with no miss, with the named-pair hold of ADR 0011, which held the two Spanish pairs the provider alone would have filled. Round 1: verdict PASS in both languages (run 1), with no wrong value shown and nothing invented. Sets, kill lines and gate rule approved and frozen by the owner on 2026-09-22 (#17), before any provider call; the gates were fixed from the dev runs by that rule and written into the demo before run 1.**
 
 **Hypothesis:** on the demo's fictional transactions, the filter turns a request into the exact filter object a person means (vendor, status, date, amount), or leaves a field empty when it cannot tell, in English and in Spanish, as the person types.
 
@@ -83,7 +83,7 @@ By hand with the key in `.env`, never in CI; every row is a paid call.
 1. After #39 is in main and merged into this branch: dev runs, `node --conditions=source demo/eval/filter.ts run <en|es> dev <n>`. They print no verdict.
 2. `node --conditions=source demo/eval/filter.ts gates <n>` prints each field's gate by the rule; write them into the demo.
 3. From #65 on, write the probe baseline into the demo, as Latency below says. Run 1 per language gives the verdict: `run <en|es> eval 1`.
-4. Run 2 per language reports flips only: `run <en|es> eval 2`, then `compare <en|es> 1 2`.
+4. Run 2 per language reports flips only: `run <en|es> eval 2`, then `compare <en|es> eval 1 2`.
 5. Record here the verdict, the numbers, the misses and the run logs' paths (`demo/eval/runs/`, committed so anyone can rescore them with no call).
 
 A row found wrong after a run is the owner's call, logged here; it never silently changes the set.
@@ -144,3 +144,60 @@ English: two flips, both held in run 1 and filled right in run 2, both on a gate
 - Run 2: `demo/eval/runs/filter-en-2.jsonl`, `demo/eval/runs/filter-es-2.jsonl`
 
 Each rescores with `scoreFilterRun(await readFilterRun(path), { gates })` and no call.
+
+## Round 2: the named-pair hold
+
+Carried by [#68](https://github.com/franklinmdev/justask/issues/68). Round 1 above stands as recorded. The filter now holds a named pair in code before a catalog field's gate ([ADR 0011](adr/0011-search-and-filter-hold-a-named-pair.md)): two vendors, or two statuses by their ids, joined by a word from the language's `joiners` (`or`, `and`; `o`, `u`, `y`, `e`), with no third one named. Round 1's one leak was such a pair (`facturas de Nubalia o de Cuentia de julio`, 0.61).
+
+The owner fixed the frame on 2026-09-23, before any row existed:
+
+- **Round 1's gates (vendor 0.6, status 0.95, date 0.85, amount 0.9) and the same six kill lines, and no dev run.** The hold asks the provider nothing new, and no dev row names a pair, so a dev run would measure only noise (checked with no call: the rule holds no dev row).
+- **The same grid as round 1:** 28 filterable, 8 ambiguous, 6 nothing per language; each field in 14 filterable rows in the same one-, two- and three-field combinations, row for row; each vendor once; status paid 5, open 5, overdue 4; amount minimum 4, maximum 4, exact 3, range 3.
+
+### Round 2 sets
+
+Files in `demo/eval/`, drafted against every set in `demo/eval/` and all the demo's suggestions, approved by the owner in five batches on 2026-09-23 (rows 1 to 10, 11 to 20, 21 to 30, 31 to 40, 41 and 42, English beside Spanish), copied in unchanged (sha256 checked against the approved drafts) and frozen by checksum in `test/demo-filter-eval.test.ts` in the commit before the first round 2 call. Run logs `demo/eval/runs/filter-<language>-round2-<n>.jsonl`.
+
+| File | Rows | filterable | ambiguous | nothing |
+|---|---|---|---|---|
+| `filter-en.round2.jsonl` | 42 | 28 | 8 | 6 |
+| `filter-es.round2.jsonl` | 42 | 28 | 8 | 6 |
+
+- **filterable:** vendors by name, typo (`brightmopp`, `brisamarr`) or a paraphrase only one vendor fits (`the print shop`, `our insurer`, `the travel agency`). **Row 19 names a third vendor beside an "or" pair** (`overdue Swiftlane invoices for runs to Clausewood or Paydale`, `facturas vencidas de Pieveloz por envíos a Lindero o a Serena`): the rule holds no pair there, and the courier is expected. The open status is written as unpaid and not yet due, as in round 1.
+- **ambiguous, two per field:** vendor, row 29 an "or" pair (`Inkhollow or Papergrove invoices from March`) and row 30 an "and" pair (`Beanhaven and Larkspur invoices over $200`), whose other field still fills; status `we haven't settled`, `still outstanding`; date `mid-August`, `April or May`; amount `around $300`, `over $500 or under $50`.
+- **nothing:** a vendor the catalog lacks (the phone company), undoing a payment, today's date, 50 rows per page, a sort by amount, a thank-you.
+- **One approved exception, found after the runs:** `es-r2-n42`, `perfecto, gracias`, is also the card's round 5 row `es-r5-40`. The two sets were frozen seconds apart from parallel sessions (#68, #73), neither able to see the other, and the row filled nothing in either flow in either run. The owner ruled on 2026-09-23 that both sets and verdicts stand; the repeat check in `test/demo-filter-eval.test.ts` allows this one row by id.
+- Checked with no call, and pinned in `test/demo-filter-eval.test.ts`: the code holds the vendor of rows 29 and 30 in both languages, and no other field of any row. Every expected date and amount is one the parser builds on Tuesday 2026-09-22 (`invoices from May` read no date, so row 32 says `dated in May`, before approval).
+- Procedure as round 1, with the probe baseline in `demo/eval/probe.ts`: run 1 gives the verdict (`filter.ts run <en|es> round2 1`), run 2 reports flips only (`compare <en|es> round2 1 2`).
+
+## Round 2: result
+
+**Verdict: PASS.** Both languages clear every kill line in run 1 with no miss at all: every filterable row filled its whole filter object right, every ambiguous row stayed held, no nothing row filled a field. Runs of 2026-09-23 with `jev-1.13.0`, gates vendor 0.6, status 0.95, date 0.85, amount 0.9, the named-pair hold (ADR 0011), the same six kill lines and today fixed at Tuesday 2026-09-22.
+
+### Run 1: the verdict
+
+| Measure | Kill line | English | Spanish |
+|---|---|---|---|
+| exact | at least 0.9 | 1 (28 of 28) | 1 (28 of 28) |
+| coverage | at least 0.7 | 1 (28 of 28) | 1 (28 of 28) |
+| invented | at most 0 | 0 | 0 |
+| held ambiguous | at least 0.75 | 1 (8 of 8) | 1 (8 of 8) |
+| p95 | at most 800 ms | 349 ms | 329 ms |
+| errors | at most 0 | 0 | 0 |
+| cost per call | | $0.0000578 | $0.0000603 |
+| probes' median (baseline 235 ms) | | 260 ms, normal | 239 ms, normal |
+
+### Run 2: flips only
+
+No flip in either language; p95 297 and 354 ms, probes normal (206 and 214 ms).
+
+### What #68 set out to fix
+
+- **The hold kept the named pairs out; the provider alone would not have.** Read with no hold at the vendor gate of 0.6, the Spanish pair rows filled a vendor in both runs (`facturas de Letranueva o de Tintaverde de marzo`, Letranueva 0.65 and 0.63; `facturas de Cafetal y de Cazuela Azul de más de $200`, Cafetal 0.68 and 0.74), and the English "and" pair in run 2 (`Beanhaven and Larkspur invoices over $200`, Beanhaven 0.60, on the gate). Without the hold, Spanish held ambiguous would have been 6 of 8 in both runs, 0.75, on the line with no slack: round 1's leak (`Nubalia o Cuentia`, 0.61) again, as the ADR expected.
+- **No false hold.** Row 19, the third vendor beside an "or" pair, filled the courier at 0.99 in both languages and both runs, and the rule held nothing but the two pair rows' vendors.
+- **This set read easier than round 1's.** Coverage 1 against round 1's 0.857 and 0.893: no named vendor with a date range beside it read as unsure, and no typo read as no vendor, the misses that cost round 1 its coverage. The status, date and amount gates held every wrong pick below them (status 0.73 English, 0.88 Spanish; date 0.80; amount 0.57), as in round 1. A perfect score on 42 rows says the rows were answerable, not that the filter never misses.
+
+### Run logs
+
+- Run 1: `demo/eval/runs/filter-en-round2-1.jsonl`, `demo/eval/runs/filter-es-round2-1.jsonl`
+- Run 2: `demo/eval/runs/filter-en-round2-2.jsonl`, `demo/eval/runs/filter-es-round2-2.jsonl`

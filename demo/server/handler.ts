@@ -47,12 +47,16 @@ export const contents: Record<Language, Content> = {
 	es: spanish,
 };
 
-/** The search the demo serves in one language, which its eval sets measure. */
+/**
+ * The search the demo serves in one language, which its eval sets measure. A
+ * request that names two vendors is held in code (ADR 0011).
+ */
 export function demoSearch(content: Content): Search<Vendor> {
 	return {
 		description: "the vendor the request means",
 		gate: GATE,
 		shortlist: fuzzyShortlist(content.vendors, { limit: SHORTLIST_LIMIT }),
+		joiners: content.joiners,
 	};
 }
 
@@ -71,12 +75,14 @@ export const FILTER_GATES = {
 
 /**
  * The transactions table's filter in one language. The vendor field reads the
- * whole catalog, and the status field its three statuses.
+ * whole catalog, and the status field its three statuses; a request that
+ * names two of either holds that field in code (ADR 0011).
  */
 export function demoFilter(content: Content): Filter<TransactionFields> {
 	return {
 		description:
 			"invoices the business received from its vendors, one row per invoice",
+		joiners: content.joiners,
 		fields: {
 			vendor: {
 				kind: "catalog",
@@ -129,7 +135,7 @@ export function demoCard(content: Content): Card<ExpenseFields> {
 		description: "expense the business paid",
 		gate: CARD_GATES.intent,
 		commands: content.cardCommands,
-		joiners: content.cardJoiners,
+		joiners: content.joiners,
 		fields: {
 			vendor: {
 				kind: "catalog",

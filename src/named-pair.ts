@@ -9,9 +9,10 @@ export type NamedPair = {
 };
 
 /**
- * A card's words that join two items, in its language, each one word. "or"
- * words offer a choice, which no catalog field can fill; "and" words name
- * both, which only a field that takes one item cannot fill.
+ * A card's, a search's or a filter's words that join two items, in its
+ * language, each one word. "or" words offer a choice, which no catalog field
+ * can fill; "and" words name both, which only a field that takes one item
+ * cannot fill.
  */
 export type Joiners = { or: string[]; and: string[] };
 
@@ -167,12 +168,18 @@ export function findPair(
 	return undefined;
 }
 
-/** Refuses a blank joiner, or one of several words, which the pair hold would never read. */
-export function checkJoiners(joiners: Joiners | undefined): void {
+/**
+ * Refuses a blank joiner, or one of several words, which the pair hold would
+ * never read. `owner` names who declared them: "the card's".
+ */
+export function checkJoiners(
+	joiners: Joiners | undefined,
+	owner: string,
+): void {
 	for (const joiner of [...(joiners?.or ?? []), ...(joiners?.and ?? [])]) {
 		if (!/^\S+$/.test(joiner.trim())) {
 			throw new TypeError(
-				`justask: the card's joiner "${joiner}" is not one word`,
+				`justask: ${owner} joiner "${joiner}" is not one word`,
 			);
 		}
 	}

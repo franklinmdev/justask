@@ -1,6 +1,6 @@
 # Search eval: sets, kill lines and verdict
 
-**Status: round 3 run, verdict PASS with no slack on held ambiguous (5 of 6, 0.833 against 0.75, in both languages); rounds 1 and 2 failed it in Spanish at 0.667.** Approved by the owner on 2026-09-22 (#13), with the shortlist raised to 14; the eval sets, the kill lines and the gate rule were frozen then, before any provider call.
+**Status: round 4 run, verdict PASS in both languages (run 1), held ambiguous 6 of 6 each, with the named-pair hold of ADR 0011; round 3 passed with no slack on held ambiguous, and rounds 1 and 2 failed it in Spanish at 0.667.** Approved by the owner on 2026-09-22 (#13), with the shortlist raised to 14; the eval sets, the kill lines and the gate rule were frozen then, before any provider call.
 
 **Hypothesis:** on the demo's fictional invoicing data, the search shows the vendor a request means, or nothing, in English and in Spanish, as the person types.
 
@@ -253,3 +253,76 @@ English: one flip, `accounting licenses for the new hires`, held at `none` 0.16 
 
 - Run 1: `demo/eval/runs/search-en-round3-1.jsonl`, `demo/eval/runs/search-es-round3-1.jsonl`
 - Run 2: `demo/eval/runs/search-en-round3-2.jsonl`, `demo/eval/runs/search-es-round3-2.jsonl`
+
+## Round 4: the named-pair hold
+
+Carried by [#68](https://github.com/franklinmdev/justask/issues/68). Rounds 1 to 3 above stand as recorded. The search now holds a named pair in code before its gate ([ADR 0011](adr/0011-search-and-filter-hold-a-named-pair.md)): two vendors joined by a word from the language's `joiners` (`or`, `and`; `o`, `u`, `y`, `e`), with no third one named.
+
+The owner fixed the frame on 2026-09-23, before any row existed:
+
+- **Gate 0.15 and the same six kill lines, and no dev run.** The hold asks the provider nothing new, and no dev row names a pair, so a dev run would measure only noise (checked with no call: the rule holds no dev row).
+- **The same shape as rounds 1 to 3:** 28 item, 6 nothing, 6 ambiguous per language.
+
+### Round 4 sets
+
+Files in `demo/eval/`, drafted against every set in `demo/eval/` and all the demo's suggestions, approved by the owner in four batches of ten on 2026-09-23, English beside Spanish, copied in unchanged (sha256 checked against the approved drafts) and frozen by checksum in `test/demo-eval.test.ts` in the commit before the first round 4 call. Run logs `demo/eval/runs/search-<language>-round4-<n>.jsonl`.
+
+| File | Rows | item | nothing | ambiguous |
+|---|---|---|---|---|
+| `search-en.round4.jsonl` | 40 | 28 | 6 | 6 |
+| `search-es.round4.jsonl` | 40 | 28 | 6 | 6 |
+
+- **item:** each of the 14 vendors twice, a paraphrase and its name (bare, possessive or with a typo: `Papergroove`, `brightmob`, `fixbrigth`; `Tintaverd`, `brizamar`, `Covertura Plena`). Row 17 is in the other language (`la cafetera que alquilamos`, `the coffee maker we rent`). **Row 19 names a third vendor beside an "or" pair** (`the Swiftlane run to Clausewood or Paydale`, `el envío de Pieveloz a Lindero o a Serena`): the rule holds no pair there, and the courier is expected.
+- **nothing:** a parking pass, an electrician, a phone plan, gym memberships, a reminder, a greeting.
+- **ambiguous:** row 35 an "or" pair (`the Glasswell or Beanhaven receipt`, `el recibo de Relucir o de Cafetal`), row 36 an "and" pair (`the Fixbright and Cloudberth bills`, `las facturas de Tecnoria y de Nubalia`), rows 37 and 38 the cleaning near-duplicate, row 39 lunch and coffee, row 40 IT costs.
+- Checked with no call, and pinned in `test/demo-eval.test.ts`: the code holds rows 35 and 36 in both languages and no other row.
+- Procedure as round 1, with the probe baseline in `demo/eval/probe.ts`: run 1 gives the verdict (`search.ts run <en|es> round4 1`), run 2 reports flips only.
+
+## Round 4: result
+
+**Verdict: PASS.** Both languages clear every kill line in run 1, held ambiguous at 6 of 6 in each, with the probes in a normal window. What the pair hold added is nothing measurable: the provider's `several` held every pair row on its own.
+
+Runs of 2026-09-23 with `jev-1.13.0`, gate 0.15 against `none` and `several`, the named-pair hold (ADR 0011), shortlist 14, the same six kill lines and today fixed at Tuesday 2026-09-22.
+
+### Run 1: the verdict
+
+| Measure | Kill line | English | Spanish |
+|---|---|---|---|
+| exact | at least 0.9 | 1 (24 of 24) | 1 (24 of 24) |
+| coverage | at least 0.8 | 0.857 (24 of 28) | 0.857 (24 of 28) |
+| invented | at most 0 | 0 | 0 |
+| held ambiguous | at least 0.75 | 1 (6 of 6) | 1 (6 of 6) |
+| p95 | at most 800 ms | 380 ms | 394 ms |
+| errors | at most 0 | 0 | 0 |
+| cost per call | | $0.0000316 | $0.0000338 |
+| probes' median (baseline 235 ms) | | 286 ms, normal | 278 ms, normal |
+
+Every vendor shown was the one meant, and no nothing row got a vendor.
+
+Misses, all held items:
+
+| Row | Request | Expected | `none` | `several` |
+|---|---|---|---|---|
+| en-r4-07 | the crew that cleans after we close | Brightmop | 0.01 | 0.49 |
+| en-r4-19 | the Swiftlane run to Clausewood or Paydale | Swiftlane | 0.03 | 0.28 |
+| en-r4-18 | Beenhaven | Beanhaven | 0.20 | 0 |
+| en-r4-08 | brightmob | Brightmop | 0.54 | 0.01 |
+| es-r4-07 | el equipo que limpia cuando cerramos | Brisamar | 0.01 | 0.37 |
+| es-r4-19 | el envío de Pieveloz a Lindero o a Serena | Pieveloz | 0.02 | 0.44 |
+| es-r4-03 | el bufé del taller con el cliente | Cazuela Azul | 0.18 | 0.02 |
+| es-r4-12 | letranuva | Letranueva | 0.26 | 0.04 |
+
+### Run 2: flips only
+
+English: no flip. Spanish: one, `tecnorria`, Tecnoria at `none` 0.12 in run 1 and held at 0.18 in run 2: it sits on the gate. Spanish run 2's coverage is 0.821 (23 of 28), still above its line; run 2 carries no verdict. Both runs' probes were normal (233 and 237 ms), p95 304 and 302 ms.
+
+### What #68 set out to check
+
+- **The code held both pair rows in both languages and both runs, and the provider would have held them too.** Read with no hold, `several` was 0.97 to 1.00 on all eight: `the Glasswell or Beanhaven receipt`, `the Fixbright and Cloudberth bills`, and their Spanish twins. As in rounds 1 to 3, no search pair has leaked; the hold is a floor under the label, not a fix of a leak.
+- **The code held no item.** Row 19, the third vendor beside an "or" pair, was held by the provider, not by the rule: `several` at 0.28 and 0.31 in English, 0.44 and 0.40 in Spanish, with the courier the top pick each time (0.53 to 0.68). Three vendors named reads to the provider as more than one; a gate on `several` holds it. The row is a coverage miss, not a false hold.
+- **Coverage lost the night cleaner in both languages** (`the crew that cleans after we close`, `several` 0.49 and 0.37): read as either cleaning company, as the near-duplicate the ambiguous rows use. And two typos each, as in round 3.
+
+### Run logs
+
+- Run 1: `demo/eval/runs/search-en-round4-1.jsonl`, `demo/eval/runs/search-es-round4-1.jsonl`
+- Run 2: `demo/eval/runs/search-en-round4-2.jsonl`, `demo/eval/runs/search-es-round4-2.jsonl`

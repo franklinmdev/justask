@@ -56,7 +56,8 @@ export type FieldHeldReason =
 	| { kind: "not-mentioned" }
 	| { kind: "not-available" }
 	| { kind: "below-gate"; probability: string; gate: string }
-	| { kind: "conflict" };
+	| { kind: "conflict" }
+	| { kind: "pair"; text: string };
 
 /** How an expense is tagged; several can apply to one. */
 export type Tag = "meals" | "travel" | "office" | "client";
@@ -77,8 +78,7 @@ export type CardHeldReason =
 	| { kind: "not-a-record" }
 	| { kind: "foreign-currency"; mark: string }
 	| { kind: "ambiguous"; text: string }
-	| { kind: "period"; text: string }
-	| { kind: "pair"; text: string };
+	| { kind: "period"; text: string };
 
 /** Why the intent question let the fields fill, or held them all. */
 export type IntentReason =
@@ -202,6 +202,7 @@ export type HeldReason =
 	| { kind: "several-reached-gate"; several: string; gate: string }
 	| { kind: "none-picked"; none: string }
 	| { kind: "several-picked"; several: string }
+	| { kind: "pair"; text: string }
 	| { kind: "tie" }
 	| { kind: "no-candidates" }
 	| { kind: "provider" }
@@ -322,8 +323,11 @@ export type Content = {
 	 * "quite" is a Spanish command and an English word.
 	 */
 	cardCommands: CardCommands;
-	/** The words that join two vendors or tags into a pair the card holds (ADR 0010). */
-	cardJoiners: Joiners;
+	/**
+	 * The words that join two vendors, statuses or tags into a pair the
+	 * search, the filter and the card hold (ADR 0010).
+	 */
+	joiners: Joiners;
 };
 
 /**

@@ -26,6 +26,8 @@ function fieldHeldBecause(reason: FieldHeldReason): string {
 			return `Una elección (${reason.probability}) quedó por debajo del umbral (${reason.gate}), así que el campo queda retenido.`;
 		case "conflict":
 			return "Las elecciones no forman un solo filtro, así que el código retuvo el campo.";
+		case "pair":
+			return `La solicitud nombra dos candidatos (“${reason.text}”), así que el código retuvo el campo sin importar la elección.`;
 	}
 }
 
@@ -88,6 +90,8 @@ export const spanish: Content = {
 					return `El modelo eligió none (${reason.none}), así que no se muestra nada.`;
 				case "several-picked":
 					return `El modelo eligió several (${reason.several}), así que no se muestra nada.`;
+				case "pair":
+					return `La solicitud nombra dos candidatos (“${reason.text}”), así que el código no muestra nada, sin importar la elección.`;
 				case "tie":
 					return "Dos candidatos empataron en el primer lugar, así que no se muestra nada.";
 				case "no-candidates":
@@ -284,8 +288,6 @@ export const spanish: Content = {
 				switch (reason.kind) {
 					case "not-a-record":
 						return "La solicitud no pide un gasto nuevo, así que el campo queda retenido con los demás.";
-					case "pair":
-						return `La solicitud nombra dos candidatos (“${reason.text}”), así que el código retuvo el campo sin importar la elección.`;
 					case "foreign-currency":
 						return `La elección nombra “${reason.mark}”, que no es la moneda local, así que el código retuvo el campo.`;
 					case "ambiguous":
@@ -533,7 +535,7 @@ export const spanish: Content = {
 			"las facturas",
 		],
 	},
-	cardJoiners: { or: ["o", "u"], and: ["y", "e"] },
+	joiners: { or: ["o", "u"], and: ["y", "e"] },
 
 	cardSuggestions: {
 		fills: [

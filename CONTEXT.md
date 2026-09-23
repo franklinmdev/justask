@@ -81,7 +81,7 @@ An eval run whose provider probes' median is more than twice the baseline declar
 _Avoid_: Outage, bad run, flaky run
 
 **Held field**:
-A field left empty because its pick did not clear the gate, because the provider picked `not_mentioned` or `not_available`, because a parser marked its candidates ambiguous (such as "next Friday"), or, on a card, because the request is a command on an existing record or names a pair of the field's items. Empty looks the same whatever the reason.
+A field left empty because its pick did not clear the gate, because the provider picked `not_mentioned` or `not_available`, because a parser marked its candidates ambiguous (such as "next Friday"), because the request names a pair of the field's items, or, on a card, because the request is a command on an existing record. Empty looks the same whatever the reason.
 _Avoid_: Abstained field, unknown, null field
 
 **Confirm**:
@@ -109,5 +109,5 @@ A request that acts on a record that already exists ("quite el gasto de $75", "s
 _Avoid_: Edit request, action
 
 **Named pair**:
-Two items of one catalog field that a request names with a joiner between them, and no third item of that field: "Tallyroot or Cloudberth", "Lindero y Serena". An "or" word holds any catalog field, an "and" word only a field that takes one item. The card holds that field before its gate, whatever the pick (ADR 0010).
+Two items of one catalog field that a request names with a joiner between them, and no third item of that field: "Tallyroot or Cloudberth", "Lindero y Serena". An "or" word holds any catalog field, an "and" word only a field that takes one item. The search holds its item, and the filter and the card that field, before the gate, whatever the pick (ADR 0010, 0011).
 _Avoid_: Choice, either-or

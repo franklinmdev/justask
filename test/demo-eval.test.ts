@@ -1,11 +1,13 @@
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
+import { ask } from "justask";
 import { type EvalRow, parseEvalSet, readRun, scoreRun } from "justask/eval";
 import { describe, expect, it } from "vitest";
 import { KILL_LINES } from "../demo/eval/kill-lines.ts";
-import { demoSearch } from "../demo/server/handler.ts";
+import { demoSearch, FACTS } from "../demo/server/handler.ts";
 import { english } from "../demo/src/content/en.ts";
 import { spanish } from "../demo/src/content/es.ts";
+import { failingProvider } from "./fake-provider.ts";
 
 const evalFile = (name: string) =>
 	new URL(`../demo/eval/${name}`, import.meta.url);
@@ -19,12 +21,19 @@ describe.each([english, spanish])("the search sets in $language", (content) => {
 	const devSet = read(`search-${content.language}.dev.jsonl`);
 	const round2 = read(`search-${content.language}.round2.jsonl`);
 	const round3 = read(`search-${content.language}.round3.jsonl`);
+	const round4 = read(`search-${content.language}.round4.jsonl`);
 	const catalog = new Set(content.vendors.map(({ id }) => id));
 	const count = (set: EvalRow[], kind: EvalRow["kind"]) =>
 		set.filter((row) => row.kind === kind).length;
 
 	it("expect only vendors of that language's catalog", () => {
-		for (const row of [...evalSet, ...devSet, ...round2, ...round3]) {
+		for (const row of [
+			...evalSet,
+			...devSet,
+			...round2,
+			...round3,
+			...round4,
+		]) {
 			if (row.expected !== null) expect(catalog).toContain(row.expected);
 		}
 	});
@@ -109,8 +118,69 @@ describe.each([english, spanish])("the search sets in $language", (content) => {
 		);
 	});
 
+	it("give the round 4 eval set every kind, and every vendor twice", () => {
+		expect(count(round4, "item")).toBe(28);
+		expect(count(round4, "nothing")).toBe(6);
+		expect(count(round4, "ambiguous")).toBe(6);
+		for (const id of catalog) {
+			expect(round4.filter((row) => row.expected === id)).toHaveLength(2);
+		}
+	});
+
+	it("never repeat a request of any set in demo/eval/ or any of the demo's suggestions in round 4", () => {
+		const seen = new Set(
+			[
+				...readdirSync(evalFile("."))
+					.filter(
+						(name) => name.endsWith(".jsonl") && !name.includes("search-"),
+					)
+					.flatMap((name) =>
+						readFileSync(evalFile(name), "utf8")
+							.split("\n")
+							.filter((line) => line.trim())
+							.map((line) => JSON.parse(line).request as string),
+					),
+				...[evalSet, devSet, round2, round3]
+					.flat()
+					.map(({ request }) => request),
+				...[english, spanish].flatMap((language) =>
+					[
+						language.suggestions,
+						language.filterSuggestions,
+						language.cardSuggestions,
+					].flatMap((groups) => Object.values(groups).flat()),
+				),
+			].map(normalized),
+		);
+		for (const { request } of round4) {
+			expect(seen).not.toContain(normalized(request));
+		}
+		expect(new Set(round4.map(({ request }) => normalized(request))).size).toBe(
+			round4.length,
+		);
+	});
+
+	it("hold a named pair in round 4 only on its two pair rows, and on no item (ADR 0011)", async () => {
+		// The code finds the pair before any answer, so a failing provider still reports it.
+		const held: string[] = [];
+		for (const { id, request } of round4) {
+			const { search } = await ask({
+				request,
+				facts: FACTS,
+				provider: failingProvider(new Error("no call")),
+				timeoutMs: 1_000,
+				search: demoSearch(content),
+			});
+			if (search.pair) held.push(id);
+		}
+		expect(held).toEqual([
+			`${content.language}-r4-35`,
+			`${content.language}-r4-36`,
+		]);
+	});
+
 	it("are run against the search the demo serves, on that catalog", async () => {
-		for (const { request } of [...evalSet, ...round2, ...round3]) {
+		for (const { request } of [...evalSet, ...round2, ...round3, ...round4]) {
 			const shortlist = await demoSearch(content).shortlist(request);
 			for (const { id } of shortlist) expect(catalog).toContain(id);
 		}
@@ -148,6 +218,15 @@ describe("the frozen search eval", () => {
 		[
 			"search-es.round3.jsonl",
 			"8cf43ad146b70d4ba66d2e46763d50a5bf848859eeea7e5b4f3f8bc605293e8c",
+		],
+		// Round 4 (#68), approved in four batches on 2026-09-23, before any call.
+		[
+			"search-en.round4.jsonl",
+			"4bd9cd9496140914992d15179518c4308992ee7cd7608c288c22ddb16c6d0337",
+		],
+		[
+			"search-es.round4.jsonl",
+			"a073535a4e15a56b109bdaf93b722daf0688a61cad0b2df40f83611304ec7d5f",
 		],
 	])("keeps %s as approved", (name, sha256) => {
 		const bytes = readFileSync(evalFile(name));

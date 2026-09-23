@@ -7,6 +7,7 @@ import {
 	type FieldPlan,
 	NOT_AVAILABLE,
 	NOT_MENTIONED,
+	type Paired,
 	type ParsedFieldResult,
 } from "./filter.ts";
 import type { Joiners, NamedPair } from "./named-pair.ts";
@@ -159,9 +160,6 @@ export type CardFieldResult<F extends CardField> =
 				: F extends TimeField
 					? CatalogFieldResult<TimeReading>
 					: CatalogFieldResult<AmountReading>;
-
-/** A catalog field on a card reports the named pair that held it, whatever its pick. */
-type Paired = { pair?: NamedPair };
 
 /** The intent question's answer and gate. */
 export type IntentResult = {
