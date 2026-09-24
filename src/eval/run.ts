@@ -85,7 +85,7 @@ async function runRow<T>(
 	}: Pick<RunEvalInput<T>, "search" | "provider" | "facts" | "timeoutMs">,
 ): Promise<RunRow> {
 	let called = false;
-	// The provider as the flow calls it, noting that it was called and what it answered.
+	// The provider as the flow calls it, noting that it was called.
 	const watched: Provider = {
 		async answer(input) {
 			called = true;
