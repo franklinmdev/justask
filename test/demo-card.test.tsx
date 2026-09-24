@@ -1,17 +1,18 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
-import axe from "axe-core";
 import type { Probabilities, Provider } from "justask";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createDemoHandler } from "../demo/server/handler.ts";
 import { App } from "../demo/src/app.tsx";
 import { english } from "../demo/src/content/en.ts";
 import { spanish } from "../demo/src/content/es.ts";
+import { counter, expectNoAxeViolations, figure } from "./checks.ts";
 import {
 	type FakeAnswers,
 	failingProvider,
 	fakeProvider,
+	perRequest,
 } from "./fake-provider.ts";
 
 const vendors = [...english.vendors, ...spanish.vendors].map(({ id }) => id);
@@ -131,11 +132,7 @@ const answers: Record<string, FakeAnswers> = {
 	}),
 };
 
-function fixtureFor(request: string): FakeAnswers {
-	const fixture = answers[request];
-	if (!fixture) throw new Error(`no fixture for "${request}"`);
-	return fixture;
-}
+const fixtureFor = perRequest(answers);
 
 const byRequest = fakeProvider(fixtureFor);
 
@@ -170,12 +167,6 @@ function panel(name = "What happened") {
 	return within(screen.getByRole("region", { name }));
 }
 
-/** The figure the state panel shows under a term, once the call has returned. */
-async function figure(state: ReturnType<typeof panel>, term: string) {
-	const dt = await state.findByText(term, { selector: "dt" });
-	return dt.nextElementSibling?.textContent;
-}
-
 const vendor = (name = "Vendor") =>
 	screen.getByRole("combobox", { name }) as HTMLSelectElement;
 const amount = (name = "Amount") =>
@@ -194,24 +185,11 @@ function saved(name = "Saved expenses") {
 		: [];
 }
 
-/** What the sentence saved, as the counter beside the box says it; null when it shows none. */
-function counter() {
-	return screen.queryByText(/^1 (sentence|frase) /)?.textContent ?? null;
-}
-
 async function suggest(user: ReturnType<typeof userEvent.setup>, name: string) {
 	await user.click(screen.getByRole("button", { name }));
 	await screen.findByText(
 		/^(Filled:|Nothing filled\.|The request could not|Completado:|Nada completado\.|No se pudo leer)/,
 	);
-}
-
-async function expectNoAxeViolations(container: Element) {
-	// jsdom paints nothing: contrast is checked in the browser.
-	const { violations } = await axe.run(container, {
-		rules: { "color-contrast": { enabled: false } },
-	});
-	expect(violations.map(({ id, help }) => `${id}: ${help}`)).toEqual([]);
 }
 
 // A Tuesday; "yesterday" is Monday 21 September. Date alone is faked.
