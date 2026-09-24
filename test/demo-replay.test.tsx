@@ -8,7 +8,6 @@ import {
 	within,
 } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
-import axe from "axe-core";
 import type { Probabilities, Provider } from "justask";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createDemoHandler } from "../demo/server/handler.ts";
@@ -18,6 +17,7 @@ import { spanish } from "../demo/src/content/es.ts";
 import type { Language } from "../demo/src/content/types.ts";
 import { formats } from "../demo/src/format.ts";
 import { dayOf, type Recording, recordings } from "../demo/src/recording.ts";
+import { expectNoAxeViolations as expectNoAxe } from "./checks.ts";
 import { failingProvider, fakeProvider } from "./fake-provider.ts";
 
 // The recording files themselves: a rerun of the script changes their
@@ -138,14 +138,10 @@ function replayApplied() {
 	);
 }
 
-async function expectNoAxeViolations(container: Element) {
+function expectNoAxeViolations(container: Element) {
 	// axe paces its own work with timers: the real clock runs it.
 	vi.useRealTimers();
-	// jsdom paints nothing: contrast is checked in the browser.
-	const { violations } = await axe.run(container, {
-		rules: { "color-contrast": { enabled: false } },
-	});
-	expect(violations.map(({ id, help }) => `${id}: ${help}`)).toEqual([]);
+	return expectNoAxe(container);
 }
 
 // A replay is paced by timers, which run on a faked clock: under load, real

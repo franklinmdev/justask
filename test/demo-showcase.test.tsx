@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import { act, cleanup, render, screen, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
-import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
 import {
 	createDemoHandler,
@@ -13,6 +12,7 @@ import {
 import { App } from "../demo/src/app.tsx";
 import { english } from "../demo/src/content/en.ts";
 import { spanish } from "../demo/src/content/es.ts";
+import { expectNoAxeViolations } from "./checks.ts";
 import { failingProvider } from "./fake-provider.ts";
 
 /** The width the page reads: desktop unless a test narrows it to a phone. */
@@ -57,19 +57,21 @@ function hood() {
 	return screen.getByRole("complementary", { hidden: true });
 }
 
-async function expectNoAxeViolations(container: Element) {
-	// jsdom paints nothing: contrast is checked in the browser.
-	const { violations } = await axe.run(container, {
-		rules: { "color-contrast": { enabled: false } },
-	});
-	expect(violations.map(({ id, help }) => `${id}: ${help}`)).toEqual([]);
-}
-
 afterEach(() => {
 	cleanup();
 	// @ts-expect-error jsdom has no matchMedia of its own.
 	delete window.matchMedia;
 });
+
+/** Back or Forward, as the browser's buttons do, once the page has heard it. */
+async function go(way: "back" | "forward") {
+	await act(async () => {
+		history[way]();
+		await new Promise((resolve) =>
+			addEventListener("popstate", resolve, { once: true }),
+		);
+	});
+}
 
 describe("the demo's showcase page", () => {
 	it("opens on the Table case, with the three cases as tabs", async () => {
@@ -104,28 +106,13 @@ describe("the demo's showcase page", () => {
 		expect(location.search).toBe("?case=search");
 		expect(tab("Search").getAttribute("aria-selected")).toBe("true");
 
-		await act(async () => {
-			history.back();
-			await new Promise((resolve) =>
-				addEventListener("popstate", resolve, { once: true }),
-			);
-		});
+		await go("back");
 		expect(tab("Búsqueda").getAttribute("aria-selected")).toBe("true");
 
-		await act(async () => {
-			history.back();
-			await new Promise((resolve) =>
-				addEventListener("popstate", resolve, { once: true }),
-			);
-		});
+		await go("back");
 		expect(tab("Formulario").getAttribute("aria-selected")).toBe("true");
 
-		await act(async () => {
-			history.forward();
-			await new Promise((resolve) =>
-				addEventListener("popstate", resolve, { once: true }),
-			);
-		});
+		await go("forward");
 		expect(tab("Búsqueda").getAttribute("aria-selected")).toBe("true");
 	});
 
