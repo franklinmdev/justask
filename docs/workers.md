@@ -1,6 +1,6 @@
 # The demo on Cloudflare Workers
 
-**Status (2026-09-24, #107): the demo builds as one Worker and every flow answers in local workerd with real Jev calls. It is not deployed yet: the Cloudflare account, the key as a secret and the Access policy need the owner (Deploy, below). CPU time on the deployed Worker is not measured yet, so there is no verdict.** A local measure in Node gives an early signal: about 1 ms per warm request, and 10 to 49 ms on the first request after start (Measuring CPU).
+**Status (2026-09-24, #107): deployed behind Access at `https://justask-demo.franklinmdev.workers.dev`, every flow answers there, and CPU is measured: search and filter fit the free plan's 10 ms with room (max 9 ms), the card does not. 8 of its 168 requests ran 10 to 29 ms, every one of them in rounds 1 and 2 of 3, none in round 3, and every one answered, since Cloudflare lets an isolate run over now and then. Verdict: not a clean fit. The owner decides between the free plan on that allowance and Workers Paid at $5 a month (Verdict, below).**
 
 ## Shape
 
@@ -9,7 +9,7 @@ One Worker on the free plan, `justask-demo` (`wrangler.jsonc`):
 - The frontend is what `pnpm demo:build` writes to `demo/dist`, served as the Worker's static assets. Static requests never reach the Worker's code, so they cost no Worker CPU and, per Cloudflare's pricing page, are "free and unlimited".
 - `/api/*` alone runs the Worker first (`run_worker_first`), which serves the demo's handler, `createDemoHandler`, with the real Jev provider (`demo/worker/index.ts`). The handler is built once per isolate, at startup, not per request.
 - The key is the Worker's secret `TYPESAFE_API_KEY`. Under `nodejs_compat` the runtime fills `process.env` from the Worker's secrets, where the TypeSafe SDK reads it, as it does on the dev server. It is in no file of the repo and in neither bundle: on 2026-09-24 the key's value was searched for in `demo/dist` and in the Worker bundle wrangler writes, and found in neither (its name is in the Worker bundle, as in the SDK).
-- Workers Logs is on (`observability`), which is where each request's CPU time is read. A failed request logs its error and, for a provider error, the SDK's error object, as on the dev server. That object holds TypeSafe's response (status, body, response headers), never the request's `Authorization` header, and the SDK redacts request headers even in its debug log (read in `@typesafe-ai/sdk` 0.6.0's `dist/index.mjs` on 2026-09-24). Whether Workers Logs stores incoming request headers, which would hold the Access service token's secret, is unverified; the token is deleted once the measure is written.
+- Workers Logs is on (`observability`), which is where each request's CPU time is read. A failed request logs its error and, for a provider error, the SDK's error object, as on the dev server. That object holds TypeSafe's response (status, body, response headers), never the request's `Authorization` header, and the SDK redacts request headers even in its debug log (read in `@typesafe-ai/sdk` 0.6.0's `dist/index.mjs` on 2026-09-24). The Access service token's secret never reaches the Worker: in the measure's trace events on 2026-09-24, the request headers had no `cf-access-client-id` or `cf-access-client-secret`, and `cf-access-jwt-assertion` and `cookie` read `REDACTED`. Delete the token once it is no longer needed.
 - `pnpm demo` is unchanged: the Vite dev server with the handler as middleware, the key from `.env`.
 
 wrangler bundles `justask` from `src/` through the `source` export condition, set by `WRANGLER_BUILD_CONDITIONS` in the package scripts, as the tests and the dev server do.
@@ -37,13 +37,13 @@ The Worker stays behind Access until the launch ticket of #29, so nobody spends 
 
 ## Measuring CPU
 
-The free plan allows 10 ms of CPU per request; waiting on `fetch`, such as the Jev call, does not count. A Worker's startup is under its own limit of 1 s, separate from the request's. Over 10 ms the request fails with error 1102. The docs state no averaging or grace; treat any request over 10 ms as a failed visitor request.
+The free plan allows 10 ms of CPU per request; waiting on `fetch`, such as the Jev call, does not count. A Worker's startup is under its own limit of 1 s, separate from the request's. Over it, the request fails with error 1102, but not at once: "Each isolate has some built-in flexibility to allow for cases where your Worker infrequently runs over the configured limit. If your Worker starts hitting the limit consistently, its execution will be terminated" (https://developers.cloudflare.com/workers/platform/limits/, read on 2026-09-24). The docs do not say how often is infrequent.
 
 ### Procedure
 
-1. Deploy, then send nothing else for a few minutes, so the first measured request lands on a fresh isolate if Cloudflare evicted it (unverified that a few minutes is enough).
+1. Deploy, then send nothing else for a while, so the first measured request lands on a fresh isolate if Cloudflare evicted it (unverified how long that takes). Start `pnpm exec wrangler tail justask-demo --format json > <file>` before the first request, so the tail catches it.
 2. `node --conditions=source demo/worker/measure.ts <workers.dev URL> 3`: every dev row of the search, filter and card eval sets, both languages (12, 20 and 28 rows per language), three times over, one at a time: 360 real Jev calls on the owner's key. One request at a time is not how a visitor types, but CPU is per request, so the pace does not change it. It prints each request's status and wall time, and the run's window, and stops at the first request Access refuses.
-3. In the dashboard, Workers & Pages, `justask-demo`, Observability, Query Builder, over the printed window: group by `$workers.event.request.path`, and calculate the count, median, p99 and max of `$workers.cpuTimeMs`. The same query runs on the Workers Observability REST API (`POST /accounts/{account_id}/workers/observability/telemetry/query`, a token with Workers Observability Write), not used yet.
+3. Stop the tail. Each request's trace event carries `cpuTime` and `wallTime` in ms and `event.request.url`; group by the URL's path, and take the count, median, p99 (linear between ranks) and max of `cpuTime`. Match the events to the measure's lines in time order to tell the rows and rounds apart. The dashboard's Observability Query Builder has the same numbers (`$workers.cpuTimeMs`, grouped by `$workers.event.request.path`). Its REST API (`POST /accounts/{account_id}/workers/observability/telemetry/query`) refused wrangler's login token with an authentication error on 2026-09-24; it needs an API token with Workers Observability permission.
 4. Write the table below, with the date, and the verdict.
 
 ### Local signal, not the measure (2026-09-24)
@@ -63,20 +63,39 @@ Warm requests fit with room. The risk is the first request on a fresh isolate, b
 
 ### On the deployed Worker
 
-Not measured yet.
+2026-09-24, 17:53:52 to 17:55:50 UTC, three rounds of every dev row, 360 requests, every one 200 with outcome `ok`, one deployed version (`fe341dc9`), all served from Cloudflare's ATL location. The Worker had been idle for about an hour since its secret was set. CPU in ms, from the tail's trace events:
 
-| Flow | Requests | Median | p99 | Max |
-|---|---|---|---|---|
-| search en | | | | |
-| search es | | | | |
-| filter en | | | | |
-| filter es | | | | |
-| card en | | | | |
-| card es | | | | |
+| Flow | Requests | Median | p99 | Max | Over 10 ms | First request |
+|---|---|---|---|---|---|---|
+| search en | 36 | 2 | 5.6 | 6 | 0 | 6 |
+| search es | 36 | 2 | 6.9 | 9 | 0 | 3 |
+| filter en | 60 | 2 | 5.2 | 7 | 0 | 7 |
+| filter es | 60 | 2 | 3.4 | 4 | 0 | 2 |
+| card en | 84 | 3 | 14.3 | 16 | 4 | 16 |
+| card es | 84 | 2 | 26.5 | 29 | 4 | 16 |
+| all | 360 | 2 | 14.8 | 29 | 8 | 6 (search en, the run's first) |
+
+The cold start was not the problem: the run's first request, on a Worker idle for an hour, took 6 ms. The overruns were all card requests, and none belongs to one request. The same rows ran 2 or 3 ms in round 3:
+
+| Card row | Round 1 | Round 2 | Round 3 |
+|---|---|---|---|
+| en 1, `Paydale HR consulting, $400 on August 24` | 16 | 14 | 2 |
+| en 18, `undo the last expense` | 14 | 14 | 2 |
+| es 1, `consultoría de recursos humanos de Serena, $400 el 24 de agosto` | 16 | 14 | 2 |
+| es 3, `renovación de la póliza de Cobertura Plena hoy, $1,200` | 10 | 2 | 3 |
+| es 18, `deshaga el último gasto` | 3 | 26 | 2 |
+| es 20, `pase el gasto del taxi al viernes` | 29 | 3 | 3 |
+
+Rows 1 are the first card request of a round, right after 40 filter requests; rows 18 are the set's first requests that name a command on an existing record. That points at code paths the isolate had not run yet, or recently, being compiled, and at garbage collection, not at the card's own work, which is 2 or 3 ms once warm. The trace cannot split justask's CPU from the TypeSafe SDK's, and whether the card ran on one isolate or several is not in the events. The Node signal above said to watch the max; it was the card, not the first request.
 
 ### Verdict
 
-Pending the measure. If any flow's max is over 10 ms, the demo does not fit the free plan, and the owner decides. Workers Paid, read on 2026-09-24 from https://developers.cloudflare.com/workers/platform/pricing/: $5 a month minimum, 10 million requests and 30 million CPU ms a month included, then $0.30 per million requests and $0.02 per million CPU ms. Re-read the price at the time of the decision.
+**Search and filter fit the free plan. The card does not fit cleanly:** 8 of 168 card requests (4.8%), 8 of 360 overall (2.2%), ran over 10 ms, up to 29 ms. None failed: Cloudflare's per-isolate allowance let every one through. Whether it keeps doing so for real visitors, who would hit fresh isolates more often than a 2-minute run on one location, is not known, and the docs do not say how often is too often. A refusal would show the visitor error 1102 on the card, which the demo cannot tell from a provider failure.
+
+By the ticket's rule, the demo stops here for the owner's decision:
+
+- **Stay on the free plan**, relying on the allowance. It costs nothing, and the answer cache and replays of #29 cut the card's calls. The risk is a card that fails now and then with no cause the demo can show.
+- **Workers Paid**, re-read on 2026-09-24 from https://developers.cloudflare.com/workers/platform/pricing/: $5 a month minimum for the account, 10 million requests and 30 million CPU ms a month included, then $0.30 per additional million requests and $0.02 per additional million CPU ms. The CPU limit is 30 s per request by default. Under #29's limits the demo stays inside what is included (estimate, not measured: its $1 a day budget is about 7,700 card calls a day, 230,000 a month, at about 3 ms each), so the bill would be the $5.
 
 ## Testing the Worker side
 
