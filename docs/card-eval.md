@@ -18,6 +18,8 @@
 
 **Round 7 (#88): the same card on 168 rows per language, under #86's tag cover and shape cap, fails on errors alone in both languages, a FAIL the owner ruled stands; the errors line's rule is extended for later rounds only, in [#93](https://github.com/franklinmdev/justask/issues/93).** Every quality line and p95 pass with room (exact 0.949 and 0.963, coverage 0.848 and 0.808, held ambiguous 0.935 and 0.903, nothing invented); the three errors of run 1 are the provider's 529 high-traffic answer and a 2 s timeout, in normal probe windows, and the errors line has no rule that sets them apart. A better result on reworded rows is not evidence that the card improved. See Round 7: result below; rounds 1 to 6 are unchanged.
 
+**Round 8 (#97): the same card on fresh rows, under #93's retry and errors rule, fails on English invented alone; Spanish passes every line.** One English nothing row, a send no list names (`copy accounting on the Cloudberth bill`), filled a card in both runs (`new_record` 0.70 and 0.64); every other line passes in both languages with room (exact 0.957 and 0.95, coverage 0.869 and 0.841, held ambiguous 1 and 0.938). No row errored and no row retried in any of the four runs, so the round measured nothing of the retry. See Round 8: result below; rounds 1 to 7 are unchanged.
+
 **Latency (#65): from the next verdict run on, every run sends a fixed provider probe before and after its rows, and a run whose probes are more than twice the baseline leaves a failing latency line pending, to be measured again in a normal window.** See Latency below; round 4 stays a FAIL.
 
 **Hypothesis:** on the demo's fictional vendors, the expense card turns a typed expense into the record a person means (vendor, tags, day, amount), leaves a field empty when it cannot tell, and fills nothing when the request asks for no new expense, in English and in Spanish, on Enter. The lab measured a salon appointment card; this is a new measurement.
@@ -1249,3 +1251,65 @@ Round 7's shapes, reused as the owner approved on 2026-09-24: every row names on
 - **No order carried over:** drafted by shape and shuffled once, with the same order in both languages; no row shares its shape with round 7's row at the same position.
 - **Checked with no call:** the code holds the eight nothing rows with a listed verb and a reference and the vendor of the four named-pair rows in each language, and no record. One nothing row names two tags with `or` in both languages (`is a parking fee travel or office?`); it expects nothing either way.
 - The same checks as rounds 1 to 7 hold: no request repeats any other set, probe, suggestion or recording, every expected day and amount is one the parser builds on Wednesday 2026-09-23, and every held one is held by the parser's reading or by two candidates.
+
+## Round 8: result
+
+**Verdict: FAIL, on English invented alone; Spanish passes every line.** Runs of 2026-09-24 with `jev-1.13.0` on main `ff6eb4a`, round 7's card and gates (intent 0.45, vendor 0.7, tags 0.4, spent_on 0.8, total 0.9) with #93's retry, the frozen round 8 sets, the same kill lines, and `PROBE_BASELINE_MS` of 235, today fixed at Wednesday 2026-09-23. Main did not move between the freeze and run 1, so no saved log was rescored. Every run's probes were normal and no row errored, so no line is pending and nothing was remeasured.
+
+As #86 wrote for round 7, the rows changed and the card did not: a result on reworded rows is a new measurement of the same card, not evidence that it changed.
+
+### Run 1: the verdict
+
+| Measure | Kill line | English | Spanish |
+|---|---|---|---|
+| exact | at least 0.9 | 0.957 (134 of 140 cards) | 0.95 (133 of 140 cards) |
+| coverage | at least 0.7 | 0.869 (426 of 490 fields) | 0.841 (412 of 490 fields) |
+| invented | at most 0 | **1** (`en-r8-060`) | 0 |
+| held ambiguous | at least 0.75 | 1 (32 of 32) | 0.938 (30 of 32) |
+| p95 | at most 1000 ms | 380 ms | 543 ms |
+| errors | at most 0 | 0 | 0 |
+| cost per call | | $0.0000872 | $0.0000923 |
+| probes, median against 235 ms | | 202 ms, normal | 242 ms, normal |
+| retried, recovered | | 0, 0 | 0, 0 |
+
+- **The invented card:** `en-r8-060`, `copy accounting on the Cloudberth bill`, a send no list names. The intent picked `new_record` at 0.70 over `not_available` at 0.27, the vendor filled Cloudberth at 0.89, and the tags filled `office` from the vendor (ADR 0012), since every tag answered `not_mentioned`. Its Spanish row (`ponga en copia a contabilidad con la factura de Nubalia`) held. Round 7's two rows of the same shape held in both languages.
+- **The retry and the errors rule:** no row of the four runs errored, and none called twice (`retried` is absent from every report). The round cannot say whether the retry helps a visitor: the provider answered every first call.
+
+### Filled and wrong
+
+| Row | Request | Shape | Expected | Got | Pick |
+|---|---|---|---|---|---|
+| en-r8-149 | train to Providence for the client's quarterly review, $52 on September 15 | a trip whose purpose names a client | travel | travel + client | client yes 0.64 |
+| en-r8-020 | Farwander hotel in Tucson for the client training, $176 on Thursday | a trip whose purpose names a client | travel | travel + client | client yes 0.61 |
+| en-r8-078 | bus ticket and a coffee on the way to the Stamford office, $11 on Monday | two purchases in two tags | meals + travel | meals | travel not_mentioned 0.61 |
+| en-r8-158 | snacks on the flight back from Phoenix, $12 on Sunday | a meal on a trip | meals | meals + travel | travel yes 0.61 |
+| en-r8-025 | parking at the client's office for the kickoff, $14 on Thursday | a client named as a place | travel | client | client yes 0.53 |
+| en-r8-063 | breakfast at the hotel during the Des Moines trip, $21 on Friday | a meal on a trip | meals | meals + travel | travel yes 0.52 |
+| es-r8-078 | pasaje de autobús y un café camino a la oficina de Stamford, $11 el lunes | two purchases in two tags | meals + travel | meals | travel not_mentioned 0.78 |
+| es-r8-058 | Cafetal para la sala de espera, $57 el martes | tags held: the vendor that sells in two tags, a place named | held | meals | meals yes 0.90 |
+| es-r8-048 | pedido del Cafetal para el área de recepción, $44 el 10 de septiembre | tags held: the vendor that sells in two tags, a place named | held | meals | meals yes 0.68 |
+| es-r8-025 | parqueo en la oficina del cliente para el arranque, $14 el jueves | a client named as a place | travel | client | client yes 0.53 |
+| es-r8-158 | meriendas en el vuelo de regreso de Phoenix, $12 el domingo | a meal on a trip | meals | meals + travel | travel yes 0.52 |
+| es-r8-063 | desayuno en el hotel durante el viaje a Des Moines, $21 el viernes | a meal on a trip | meals | meals + travel | travel yes 0.46 |
+| es-r8-149 | tren a Providence para la revisión trimestral del cliente, $52 el 15 de septiembre | a trip whose purpose names a client | travel | travel + client | client yes 0.46 |
+
+Every correction on a card is a tag the provider picked; none came from a vendor's implied office. The one implied fill of the round is the invented card's `office`, above.
+
+### Run 2: flips only
+
+English: 2 flips, no error, no retry. Exact 0.95 (133 of 140), coverage 0.871, held ambiguous 0.969, p95 574 ms, probes 219 ms, normal. `en-r8-060` invented again (`new_record` 0.64); `en-r8-048` filled `meals` on a tags-held row, and `en-r8-128` (`our caterer`) filled Larkspur where run 1 held it. Spanish: 9 flips on 6 rows, no error, no retry. Exact 0.95 (132 of 139), coverage 0.835, held ambiguous 0.938, p95 516 ms, probes 209 ms, normal; the intent held `es-r8-104` (a maybe billable) in run 2, which emptied its four fields, and the other flips are single fields filled in one run and held in the other, none wrong. English fails invented again and Spanish passes every line again.
+
+### What the misses say
+
+- **The one line that fails is a row, not a pattern:** `invented <= 0` reads a count, and the count is one English send no list names, in both runs. The other 23 English nothing rows and all 24 Spanish ones held in both runs, as every nothing row of round 7 did.
+- **The quality lines clear with room in both languages:** exact 0.057 and 0.05 over its line, held ambiguous 0.25 and 0.188, coverage 0.169 and 0.141. No shape costs exact more than two rows.
+- **The same partings as round 7, on new rows:** a client named as a purpose or a place draws `client` (three rows in English, two in Spanish), and a meal on a trip draws `travel` in both languages. A bus ticket and a coffee drop `travel` in both languages.
+- **Beanhaven and Cafetal still draw `meals`** with a place named: both Spanish rows in both runs, and one English row in run 2.
+- **The retry was not exercised.** Round 7's five errors in four runs were a 529 or a timeout; round 8 met none. What the retry does for a visitor is still unmeasured by a verdict run.
+
+### Run logs
+
+- Run 1: `demo/eval/runs/card-en-round8-1.jsonl`, `demo/eval/runs/card-es-round8-1.jsonl`
+- Run 2: `demo/eval/runs/card-en-round8-2.jsonl`, `demo/eval/runs/card-es-round8-2.jsonl`
+
+Each rescores with `scoreCardRun(await readCardRun(path), { gates })` and no call.
