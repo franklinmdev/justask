@@ -326,8 +326,10 @@ function choicePlan<T>(
 	candidates: Candidate<T>[],
 	gate: number,
 	fill: (value: T) => unknown,
-	ambiguous: (value: T) => boolean = () => false,
-	pair?: NamedPair,
+	{
+		ambiguous = () => false,
+		pair,
+	}: { ambiguous?: (value: T) => boolean; pair?: NamedPair | undefined } = {},
 ): FieldPlan {
 	const held = {
 		candidates,
@@ -376,15 +378,9 @@ export function cardPlan(
 			: null;
 	switch (field.kind) {
 		case "catalog":
-			return choicePlan(
-				name,
-				ask(catalog, ""),
-				catalog,
-				field.gate,
-				(v) => v,
-				undefined,
+			return choicePlan(name, ask(catalog, ""), catalog, field.gate, (v) => v, {
 				pair,
-			);
+			});
 		case "date":
 			return choicePlan(
 				name,
@@ -395,7 +391,7 @@ export function cardPlan(
 				readings.dates,
 				field.gate,
 				({ from, to }) => (from === to ? from : undefined),
-				({ ambiguous }) => ambiguous === true,
+				{ ambiguous: ({ ambiguous }) => ambiguous === true },
 			);
 		case "time":
 			return choicePlan(
@@ -407,7 +403,7 @@ export function cardPlan(
 				readings.times,
 				field.gate,
 				({ time }) => time,
-				({ ambiguous }) => ambiguous === true,
+				{ ambiguous: ({ ambiguous }) => ambiguous === true },
 			);
 		case "amount":
 			return choicePlan(
