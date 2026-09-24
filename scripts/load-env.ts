@@ -9,13 +9,17 @@ const HERE = fileURLToPath(new URL("..", import.meta.url));
 /**
  * Loads the key's .env into process.env, never overriding what is already
  * set: the .env at the top of the checkout that holds `dir`, otherwise the
- * main checkout's, so every worktree shares the one file. Loads nothing when
- * neither exists, which is fine when TYPESAFE_API_KEY is already in the
- * environment. Throws on a .env it cannot read or parse, naming the file and
- * line, never its contents, and in a bare-repository layout, which has no
- * main checkout to share a .env.
+ * main checkout's, so every worktree shares the one file. Skips the lookup
+ * when `key` is already in the environment; asks only whether it is set,
+ * never its value. Loads nothing when neither .env exists. Throws on a .env
+ * it cannot read or parse, naming the file and line, never its contents, and
+ * in a bare-repository layout, which has no main checkout to share a .env.
  */
-export function loadKeyEnv(dir: string = HERE): void {
+export function loadKeyEnv(
+	dir: string = HERE,
+	key: string = "TYPESAFE_API_KEY",
+): void {
+	if (Object.hasOwn(process.env, key)) return;
 	const top = git(dir, "rev-parse", "--show-toplevel") ?? dir;
 	const own = join(top, ".env");
 	if (loaded(own)) return;
