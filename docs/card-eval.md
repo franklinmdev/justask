@@ -1181,7 +1181,7 @@ As #86 wrote, the rows changed and the card did not, so a better result on the r
 | probes, median against 235 ms | | 456 ms, normal | 395 ms, normal |
 
 - **Errors:** `en-r7-153` (`Paydale and Tallyroot, $150 for the payroll export setup on September 9`) and `es-r7-030` (`la imprenta, $58 por los banners del evento el viernes`) got the 529 in 245 and 185 ms; `es-r7-097` (`taxi en Ciudad de México el lunes, 350 pesos`) timed out at 2 s. An errored row is scored as no card, so the cards count 143 and 142 of 144, and the ambiguous rows 31 of 32.
-- **The probes were normal, and high.** Both medians sat under twice the baseline (470 ms), at 1.9 and 1.7 times it in English and Spanish run 1; the warm-up's first call took 1,759 ms in English. The runs fell in a busy provider window, the one the 529s name, without crossing the slow-window line.
+- **The probes were normal, and high.** Both medians sat under twice the baseline (470 ms), at 1.9 and 1.7 times it in English and Spanish run 1; the warm-up's first call took 1,759 ms in English. The 529s name the provider's high traffic, in windows the probes still read as normal.
 
 Per field, filled of expected: vendor 88 of 102 English, 82 of 101 Spanish; tags 120 of 135 (7 wrong, two of them on ambiguous rows that must hold their tags) and 108 of 134 (5 wrong, three on ambiguous rows); day 79 of 119 and 79 of 118; amount 126 of 131 and 122 of 131. No field but the tags filled wrong. The intent passed 136 English and 135 Spanish cards, and no nothing row in either language; no vendor filled on a named-pair row.
 
@@ -1193,13 +1193,13 @@ Per field, filled of expected: vendor 88 of 102 English, 82 of 101 Spanish; tags
 | en-r7-094 | rideshare to the client's headquarters, $21 on Friday | a client named as a place | travel | travel + client | client yes 0.58 |
 | en-r7-016 | lunch on the train to the Portland trade fair, $18 on September 16 | a meal on a trip | meals | meals + travel | travel yes 0.52 |
 | en-r7-024 | Farwander hotel in Omaha for the client's project kickoff, $198 on September 13 | a trip whose purpose names a client | travel | travel + client | client yes 0.49 |
-| en-r7-064 | Inkhollow brochures for the client's launch, $96 on Monday | another purchase whose purpose names a client, not billed | office | office + client | client yes 0.49 |
+| en-r7-064 | Inkhollow brochures for the client's launch, $96 on Monday | another purchase whose purpose names a client, not billed | office | office + client | client yes 0.68 |
 | en-r7-055 | Beanhaven order for the third-floor lounge, $49 on Monday | tags held: the vendor that sells in two tags, a place named | held | meals | meals yes 0.73 |
-| en-r7-026 | $82 at the supermarket for the break room on Monday | tags held: a store across tags, a place named | held | meals | not_mentioned 0.56 |
+| en-r7-026 | $82 at the supermarket for the break room on Monday | tags held: a store across tags, a place named | held | meals | meals yes 0.65 |
 | es-r7-016 | almuerzo en el tren a la feria de Portland, $18 el 16 de septiembre | a meal on a trip | meals | meals + travel | travel yes 0.74 |
 | es-r7-024 | hotel de Rumbo Claro en Omaha para el arranque del proyecto del cliente, $198 el 13 de septiembre | a trip whose purpose names a client | travel | travel + client | client yes 0.53 |
 | es-r7-055 | pedido del Cafetal para la sala del tercer piso, $49 el lunes | tags held: the vendor that sells in two tags, a place named | held | meals | meals yes 0.86 |
-| es-r7-113 | Cafetal para el vestíbulo, $66 el viernes | tags held: the vendor that sells in two tags, a place named | held | meals | not_mentioned 0.84 |
+| es-r7-113 | Cafetal para el vestíbulo, $66 el viernes | tags held: the vendor that sells in two tags, a place named | held | meals | meals yes 0.91 |
 | es-r7-129 | Cafetal, $73 el martes | tags held: the vendor that sells in two tags, nothing named | held | meals | meals yes 0.70 |
 
 Every correction is a tag the provider picked; none came from a vendor's implied office.
@@ -1214,7 +1214,7 @@ English: 14 flips on 9 rows, one error (`en-r7-167`, the 529 again). Exact 0.964
 - **Where the provider and the cover part:** a client named as a purpose or a place still draws `client` in English (three shapes, four rows), and a meal on a train draws `travel` in both languages. These are the cases #86 decided against the provider's rounds 2 to 6 answers; they now cost exact, where before they cost it the other way.
 - **Beanhaven and Cafetal still draw `meals`** on the tags-held rows, most on the rows with a place named (both languages' `-055`); the stores outside the catalog held in Spanish and leaked once in English.
 - **The owner's printing ruling held:** both rows of an office purchase billed to a client (`-127`, `-141`) filled `client` alone in every run, office `not_mentioned` at 0.58 to 0.88.
-- **Errors, not the card, fail the round.** Nothing in the rules sets the provider's overload apart on the errors line, as #65 did for p95; all five errors in four runs were a 529 or a timeout in a busy but normal window. [#93](https://github.com/franklinmdev/justask/issues/93) carries that rule for later rounds; round 7 is not rescored under it.
+- **Errors, not the card, fail the round.** Nothing in the rules sets the provider's overload apart on the errors line, as #65 did for p95; all five errors in four runs were a 529 or a timeout in a normal window. [#93](https://github.com/franklinmdev/justask/issues/93) carries that rule for later rounds; round 7 is not rescored under it.
 
 ### Run logs
 
