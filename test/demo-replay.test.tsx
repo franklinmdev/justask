@@ -259,9 +259,13 @@ describe("the Table case's recorded run", () => {
 		await waitFor(() => expect(figure("Input tokens")).toBe("120"), REPLAY);
 		expect(screen.queryByText(label("en", table))).toBeNull();
 		expect(provider.calls).toHaveLength(1);
-		// The live answer applies itself; the vendor it held keeps the replay's.
+		// The live answer applies itself and starts over: nothing the replay set sticks (#123).
 		await waitFor(() => expect(control("Status").value).toBe("overdue"));
-		expect(control("Vendor").value).toBe("fixbright");
+		expect(control("Vendor").value).toBe("");
+		expect(
+			screen.getByRole("button", { name: "Start date Start" }),
+		).toBeDefined();
+		expect(textbox("Minimum amount").value).toBe("");
 	});
 
 	it("drops the label once the person edits the box, even when an empty box makes no call", async () => {

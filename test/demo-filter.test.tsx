@@ -196,6 +196,26 @@ describe("the demo's Table case", () => {
 		expect(rows()).toBe(total);
 	});
 
+	it("starts over on each request: a new one replaces the fields earlier answers set (#123)", async () => {
+		const { user } = renderDemo();
+		const larkspurOver1000 = english.transactions.filter(
+			({ vendorId, amount }) => vendorId === "larkspur" && amount >= 1000,
+		);
+		expect(larkspurOver1000.length).toBeGreaterThan(0);
+
+		await user.click(screen.getByRole("button", { name: "overdue invoices" }));
+		await waitFor(() => expect(select("Status").value).toBe("overdue"));
+
+		await user.click(
+			screen.getByRole("button", { name: "Larkspur invoices over $1,000" }),
+		);
+
+		// Not Larkspur's overdue invoices over $1,000: the status the first answer set goes.
+		await waitFor(() => expect(select("Vendor").value).toBe("larkspur"));
+		expect(select("Status").value).toBe("");
+		expect(rows()).toBe(larkspurOver1000.length);
+	});
+
 	it("moves the rows a change brings in or takes out, and only those", async () => {
 		const { container, user } = renderDemo();
 		const motion = (kind: string) =>
@@ -301,7 +321,7 @@ describe("the demo's Table case", () => {
 		await expectNoAxeViolations(container);
 	});
 
-	it("sets the table's controls from the answer, leaves a held field's control as it was, and lets the person fill it", async () => {
+	it("sets the table's controls from the answer, leaves a held field's control empty, and keeps what the person fills there over the next request", async () => {
 		const { container, user } = renderDemo();
 		const august = english.transactions.filter(({ date }) =>
 			date.startsWith("2026-08"),
@@ -327,16 +347,20 @@ describe("the demo's Table case", () => {
 		const brightmop = august.filter(({ vendorId }) => vendorId === "brightmop");
 		expect(rows()).toBe(brightmop.length);
 
-		// A second request fills only the status: the vendor and the date stay.
+		// A second request fills only the status: the person's vendor stays, the
+		// first answer's date goes.
 		await user.click(screen.getByRole("button", { name: "overdue invoices" }));
 
 		await waitFor(() => expect(select("Status").value).toBe("overdue"));
 		expect(select("Vendor").value).toBe("brightmop");
 		expect(
-			screen.getByRole("button", { name: "Start date Aug 1" }),
+			screen.getByRole("button", { name: "Start date Start" }),
 		).toBeDefined();
 		expect(rows()).toBe(
-			brightmop.filter(({ status }) => status === "overdue").length,
+			english.transactions.filter(
+				({ vendorId, status }) =>
+					vendorId === "brightmop" && status === "overdue",
+			).length,
 		);
 		await expectNoAxeViolations(container);
 	});
