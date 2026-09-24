@@ -4,20 +4,25 @@
 //   node --conditions=source demo/eval/card.ts run <en|es> <eval|round2|round3|round4|round5|dev|diag|pair> <n>
 //   node --conditions=source demo/eval/card.ts run <en|es> office <n> <label>
 //   node --conditions=source demo/eval/card.ts office <en|es> <label> <n>
+//   node --conditions=source demo/eval/card.ts run <en|es> notoffice <n>
+//   node --conditions=source demo/eval/card.ts gaps <en|es> <n>
 //   node --conditions=source demo/eval/card.ts compare <en|es> <eval|round2|round3|round4|round5> <first n> <second n>
 //   node --conditions=source demo/eval/card.ts gates <dev n>
 //
 // `run` writes
-// demo/eval/runs/card-<language>[-round2|-round3|-round4|-round5|-dev|-diag|-pair|-office-<label>]-<n>.jsonl,
+// demo/eval/runs/card-<language>[-round2|-round3|-round4|-round5|-dev|-diag|-pair|-office-<label>|-notoffice]-<n>.jsonl,
 // which it never overwrites, and prints its report. `eval` is round 1's
 // set, `round2` to `round5` the fresh sets of rounds 2 to 5,
 // `diag` the probes of #57: commands on a recorded expense, and records with
 // the command words in them, and `pair` the probes of #63: two vendors named
 // with "and" or "or", as a pair or beside the vendor paid, and `office` the
 // probes of #77: office services, run with the office tag read by one of
-// #77's labels (office.ts). A dev, diag, pair or office run gets no verdict:
-// it tunes or diagnoses, it never decides. `office` reads a saved office run
-// and prints the office tag's picks, with no call. `compare` reads two
+// #77's labels (office.ts), and `notoffice` the probes of #79: records at an
+// office vendor that bought something else. A dev, diag, pair, office or
+// notoffice run gets no verdict: it tunes or diagnoses, it never decides.
+// `office` reads a saved office run and prints the office tag's picks, and
+// `gaps` a saved notoffice run and prints where the tags left the gap the
+// vendor fills (ADR 0012), both with no call. `compare` reads two
 // saved eval runs and prints the second one's measures and flips, with no
 // call. `gates` reads dev run <n> of both
 // languages and prints the intent's and each field's gate by the rule in
@@ -39,7 +44,7 @@ import { contents, demoCard, FACTS, TIMEOUT_MS } from "../server/handler.ts";
 import type { Language } from "../src/content/types.ts";
 import { fixGate, poolFields } from "./gates.ts";
 import { CARD_KILL_LINES } from "./kill-lines.ts";
-import { officePicks, withOfficeLabel } from "./office.ts";
+import { officePicks, tagGaps, withOfficeLabel } from "./office.ts";
 import { needBaseline, probe } from "./probe.ts";
 
 /** Fixed, so every run reads the same day. */
@@ -56,12 +61,19 @@ const SETS = {
 	diag: { file: ".diag", log: "-diag" },
 	pair: { file: ".pair", log: "-pair" },
 	office: { file: ".office", log: "-office" },
+	notoffice: { file: ".notoffice", log: "-notoffice" },
 } as const;
 type SetKind = keyof typeof SETS;
 const isSet = (set: string | undefined): set is SetKind =>
 	set !== undefined && Object.hasOwn(SETS, set);
 /** The sets that tune or diagnose: their runs never give a verdict. */
-const NO_VERDICT = new Set<SetKind>(["dev", "diag", "pair", "office"]);
+const NO_VERDICT = new Set<SetKind>([
+	"dev",
+	"diag",
+	"pair",
+	"office",
+	"notoffice",
+]);
 
 const here = (path: string) => new URL(path, import.meta.url).pathname;
 const setPath = (language: Language, set: SetKind) =>
@@ -105,6 +117,12 @@ if (command === "run") {
 		),
 	);
 	if (label) printOfficePicks(run);
+	if (set === "notoffice") printTagGaps(run);
+} else if (command === "gaps") {
+	const [language, n] = rest;
+	const content = contents[language as Language];
+	if (!content || !n) usage();
+	printTagGaps(await readCardRun(runLogPath(content.language, "notoffice", n)));
 } else if (command === "office") {
 	const [language, label, n] = rest;
 	const content = contents[language as Language];
@@ -158,9 +176,21 @@ function printOfficePicks(run: CardRun) {
 	}
 }
 
+function printTagGaps(run: CardRun) {
+	const { rows, gaps, filled } = tagGaps(run);
+	console.log(
+		`\nTags left a gap on ${gaps} of ${rows.length} rows; the vendor filled office on ${filled}`,
+	);
+	for (const row of rows) {
+		console.log(
+			`  ${row.id}  ${row.gap ? "gap" : "no gap"}${row.filled ? ", office filled" : ""}  ${row.picks}  ${row.request}`,
+		);
+	}
+}
+
 function usage(): never {
 	console.error(
-		"usage: card.ts run <en|es> <eval|round2|round3|round4|round5|dev|diag|pair> <n> | run <en|es> office <n> <label> | office <en|es> <label> <n> | compare <en|es> <eval|round2|round3|round4|round5> <first n> <second n> | gates <dev n>",
+		"usage: card.ts run <en|es> <eval|round2|round3|round4|round5|dev|diag|pair|notoffice> <n> | run <en|es> office <n> <label> | office <en|es> <label> <n> | gaps <en|es> <n> | compare <en|es> <eval|round2|round3|round4|round5> <first n> <second n> | gates <dev n>",
 	);
 	process.exit(1);
 }

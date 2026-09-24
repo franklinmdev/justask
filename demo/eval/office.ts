@@ -1,4 +1,4 @@
-import type { CardRun } from "justask/eval";
+import { type CardRun, scoreCardRun } from "justask/eval";
 import { english } from "../src/content/en.ts";
 import { spanish } from "../src/content/es.ts";
 import type { Content, Language } from "../src/content/types.ts";
@@ -99,5 +99,65 @@ export function officePicks(run: CardRun): OfficePicks {
 		yes: rows.filter(({ pick, p }) => pick === "yes" && p >= gate).length,
 		won,
 		rows,
+	};
+}
+
+export type TagGap = {
+	id: string;
+	request: string;
+	/** Every tag's question answered, each winning label with its probability. */
+	picks: string;
+	/**
+	 * The tags left the gap an office vendor fills (ADR 0012): every tag
+	 * answered `not_mentioned`, or office `yes` at any probability.
+	 */
+	gap: boolean;
+	/** The card filled office from the vendor, where the row expects no office: a false fill. */
+	filled: boolean;
+};
+
+export type TagGaps = { rows: TagGap[]; gaps: number; filled: number };
+
+/**
+ * #79's probes: records at an office vendor that bought something else. It
+ * reads the tags' own questions, whatever the vendor and the intent did, for
+ * how often the provider leaves the gap the rule fills, and the scored card
+ * for how often the rule filled it: a miss the scorer blames on the vendor.
+ */
+export function tagGaps(run: CardRun): TagGaps {
+	const falseFills = new Set(
+		scoreCardRun(run)
+			.misses.filter(({ blame }) => blame === "implied")
+			.map(({ id }) => id),
+	);
+	const rows: TagGap[] = [];
+	for (const row of run.rows) {
+		const tags = row.fields.tags?.candidates ?? [];
+		const picks = tags.map(({ id }) => {
+			const answer = row.answers[`tags_${id}`] ?? {};
+			const sorted = Object.entries(answer).sort((a, b) => b[1] - a[1]);
+			const [first, second] = sorted;
+			// A tie picks nothing, as the card reads it.
+			const label = first && first[1] !== second?.[1] ? first[0] : "tie";
+			return { id, label, p: first?.[1] ?? 0 };
+		});
+		if (picks.length === 0) continue;
+		rows.push({
+			id: row.id,
+			request: row.request,
+			picks: picks
+				.map(({ id, label, p }) => `${id} ${label} ${p.toFixed(2)}`)
+				.join(", "),
+			gap: picks.every(
+				({ id, label }) =>
+					label === "not_mentioned" || (id === OFFICE && label === "yes"),
+			),
+			filled: falseFills.has(row.id),
+		});
+	}
+	return {
+		rows,
+		gaps: rows.filter(({ gap }) => gap).length,
+		filled: rows.filter(({ filled }) => filled).length,
 	};
 }
