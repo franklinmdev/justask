@@ -187,18 +187,22 @@ export function slowFirstProvider(
 /**
  * Rejects each of its first calls with the next of `causes`, after `delayMs`,
  * then answers every later call from `answers`, or never when it is
- * `"hang"`.
+ * `"hang"`. `costUsd` and `inputTokens`, when given, are reported by each
+ * call that answers.
  */
 export function unavailableFirstProvider(
 	causes: unknown[],
 	answers: FakeAnswers | "hang",
-	{ delayMs = 0 } = {},
+	{
+		delayMs = 0,
+		...usage
+	}: { delayMs?: number; costUsd?: number; inputTokens?: number } = {},
 ): RecordingProvider {
 	const provider = recording(async (input) => {
 		const cause = causes[provider.calls.length - 1];
 		if (provider.calls.length > causes.length) {
 			if (answers === "hang") return new Promise(() => {});
-			return fakeProvider(answers).answer(input);
+			return fakeProvider(answers, usage).answer(input);
 		}
 		await new Promise((resolve) => setTimeout(resolve, delayMs));
 		throw cause;

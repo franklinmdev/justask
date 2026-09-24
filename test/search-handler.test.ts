@@ -1,6 +1,7 @@
 import {
 	type Candidate,
 	createSearchHandler,
+	ProviderUnavailableError,
 	type SearchHandlerConfig,
 } from "justask";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -9,6 +10,7 @@ import {
 	fakeProvider,
 	hangingProvider,
 	rawProvider,
+	unavailableFirstProvider,
 } from "./fake-provider.ts";
 
 type Vendor = { id: number; name: string };
@@ -108,6 +110,24 @@ describe("createSearchHandler", () => {
 		expect(body.search).toBeDefined();
 		expect(body).not.toHaveProperty("costUsd");
 		expect(body).not.toHaveProperty("inputTokens");
+		expect(body).not.toHaveProperty("retried");
+	});
+
+	it("says when ask called the provider twice, with the cost of the call that answered (ADR 0013)", async () => {
+		const response = await handler({
+			provider: unavailableFirstProvider(
+				[new ProviderUnavailableError("529 high traffic")],
+				picksAcme,
+				{ costUsd: 0.000005, inputTokens: 120 },
+			),
+		})(post(asked));
+
+		const body = await response.json();
+		expect(body.error).toBeUndefined();
+		expect(body.retried).toBe(true);
+		// The first call threw, so it reported nothing to add.
+		expect(body.costUsd).toBe(0.000005);
+		expect(body.inputTokens).toBe(120);
 	});
 
 	it("writes today in the browser's time zone and the configured facts, in one provider call", async () => {

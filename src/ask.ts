@@ -95,24 +95,34 @@ export type AskError =
 	| { kind: "timeout"; message: string; timeoutMs: number };
 
 /**
+ * Set when `ask` called the provider twice, the first call unavailable (ADR
+ * 0013), whether or not the second answered; left out otherwise.
+ */
+export type Retried = { retried?: true };
+
+/**
  * Each result carries what the provider call used, when the provider reports
  * it: left out when there was no call, when the call failed or timed out, or
- * when the adapter cannot know (ADR 0006).
+ * when the adapter cannot know (ADR 0006). A retried call's figures are the
+ * second call's, since the first threw and reported none.
  */
-export type AskResult<T> = Usage & {
-	search: SearchResult<T>;
-	error?: AskError;
-};
+export type AskResult<T> = Usage &
+	Retried & {
+		search: SearchResult<T>;
+		error?: AskError;
+	};
 
-export type AskFilterResult<F extends Fields> = Usage & {
-	filter: FilterResult<F>;
-	error?: AskError;
-};
+export type AskFilterResult<F extends Fields> = Usage &
+	Retried & {
+		filter: FilterResult<F>;
+		error?: AskError;
+	};
 
-export type AskCardResult<F extends CardFields> = Usage & {
-	card: CardResult<F>;
-	error?: AskError;
-};
+export type AskCardResult<F extends CardFields> = Usage &
+	Retried & {
+		card: CardResult<F>;
+		error?: AskError;
+	};
 
 const SEARCH = "search";
 
@@ -177,7 +187,7 @@ async function askSearch<T>({
 		timeoutMs,
 	);
 	if ("error" in outcome) {
-		return { search: held, ...outcome.usage, error: outcome.error };
+		return { search: held, ...spent(outcome), error: outcome.error };
 	}
 
 	const probabilities = outcome.answer[SEARCH] ?? {};
@@ -190,7 +200,7 @@ async function askSearch<T>({
 			pick,
 			probabilities,
 		},
-		...outcome.usage,
+		...spent(outcome),
 	};
 }
 
@@ -266,7 +276,7 @@ async function askFilter<F extends Fields>({
 		timeoutMs,
 	);
 	if ("error" in outcome) {
-		return { filter: held(), ...outcome.usage, error: outcome.error };
+		return { filter: held(), ...spent(outcome), error: outcome.error };
 	}
 
 	const value: Record<string, unknown> = {};
@@ -281,7 +291,7 @@ async function askFilter<F extends Fields>({
 		fields[name] = read.result;
 		if ("value" in read) value[name] = read.value;
 	}
-	return { filter: { value, fields } as FilterResult<F>, ...outcome.usage };
+	return { filter: { value, fields } as FilterResult<F>, ...spent(outcome) };
 }
 
 /**
@@ -376,7 +386,7 @@ async function askCard<F extends CardFields>({
 		timeoutMs,
 	);
 	if ("error" in outcome) {
-		return { card: held(), ...outcome.usage, error: outcome.error };
+		return { card: held(), ...spent(outcome), error: outcome.error };
 	}
 
 	const intent = readIntent(
@@ -399,7 +409,7 @@ async function askCard<F extends CardFields>({
 	if (intent.passes) fillImplied(names, fields, value);
 	return {
 		card: { intent, value, fields } as CardResult<F>,
-		...outcome.usage,
+		...spent(outcome),
 	};
 }
 
@@ -482,9 +492,14 @@ export async function answer(
 	timeoutMs: number,
 	{ retry = true }: { retry?: boolean } = {},
 ): Promise<
-	{ answer: ProviderAnswer; usage: Usage } | { error: AskError; usage?: Usage }
+	(
+		| { answer: ProviderAnswer; usage: Usage }
+		| { error: AskError; usage?: Usage }
+	) &
+		Retried
 > {
 	const controller = new AbortController();
+	let calls = 0;
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	const timeout = new Promise<{ error: AskError }>((resolve) => {
 		timer = setTimeout(() => {
@@ -501,7 +516,10 @@ export async function answer(
 	// Started inside a promise so an adapter that throws synchronously is caught too.
 	const once = () =>
 		Promise.resolve()
-			.then(() => provider.answer({ ...input, signal: controller.signal }))
+			.then(() => {
+				calls++;
+				return provider.answer({ ...input, signal: controller.signal });
+			})
 			.then(
 				(result) => {
 					const { answers } = result;
@@ -524,10 +542,19 @@ export async function answer(
 			: outcome,
 	);
 	try {
-		return await Promise.race([call, timeout]);
+		const outcome = await Promise.race([call, timeout]);
+		return { ...outcome, ...(calls > 1 && { retried: true as const }) };
 	} finally {
 		clearTimeout(timer);
 	}
+}
+
+/** What a flow's result carries of its call: the figures it reported, and the retry mark. */
+function spent({
+	usage,
+	retried,
+}: { usage?: Usage } & Retried): Usage & Retried {
+	return { ...usage, ...(retried && { retried }) };
 }
 
 function providerError(cause: unknown): AskError {

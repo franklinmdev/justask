@@ -211,6 +211,7 @@ describe("ask: search", () => {
 			expect(provider.calls[1]?.signal).toBe(provider.calls[0]?.signal);
 			expect(result.error).toBeUndefined();
 			expect(result.search.item).toEqual({ id: 1, name: "Acme Supplies" });
+			expect(result.retried).toBe(true);
 		});
 
 		it("holds and returns a transport error when the second call fails too, with no third", async () => {
@@ -229,6 +230,7 @@ describe("ask: search", () => {
 				transport: true,
 			});
 			expect(result.search.item).toBeNull();
+			expect(result.retried).toBe(true);
 		});
 
 		it("keeps one timeout over both calls", async () => {
@@ -247,6 +249,7 @@ describe("ask: search", () => {
 			expect(performance.now() - started).toBeLessThan(120);
 			expect(provider.calls).toHaveLength(2);
 			expect(provider.calls[1]?.signal.aborted).toBe(true);
+			expect(result.retried).toBe(true);
 		});
 
 		it("does not call again once the timeout has run out", async () => {
@@ -263,6 +266,7 @@ describe("ask: search", () => {
 
 			expect(result.error?.kind).toBe("timeout");
 			expect(provider.calls).toHaveLength(1);
+			expect(result).not.toHaveProperty("retried");
 		});
 
 		it("does not call again after an answer that breaks the contract", async () => {
@@ -271,6 +275,7 @@ describe("ask: search", () => {
 
 			expect(provider.calls).toHaveLength(1);
 			expect(result.error).not.toHaveProperty("transport");
+			expect(result).not.toHaveProperty("retried");
 		});
 	});
 
