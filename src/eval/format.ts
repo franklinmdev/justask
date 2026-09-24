@@ -2,6 +2,7 @@ import type { CardFlip, CardReport } from "./card-score.ts";
 import type { CardExpectedValue } from "./card-set.ts";
 import type { FilterFlip, FilterReport } from "./filter-score.ts";
 import type { ExpectedValue } from "./filter-set.ts";
+import { HELD } from "./held.ts";
 import type { ProbeWindow } from "./probe.ts";
 import type { Flip, Report, Side, Verdict } from "./score.ts";
 
@@ -174,7 +175,7 @@ export function formatFilterReport(
 			"|---|---|---|---|---|---|---|",
 			...report.misses.map(
 				(miss) =>
-					`| ${miss.id} | ${cell(miss.request)} | ${miss.field} | ${miss.expected === null ? "not mentioned" : shown(miss.expected === "held" ? null : miss.expected)} | ${shown(miss.got)} | ${miss.label === null ? "" : `${miss.label} `}${number(miss.probability)} | ${miss.blame} |`,
+					`| ${miss.id} | ${cell(miss.request)} | ${miss.field} | ${miss.expected === null ? "not mentioned" : shown(miss.expected === HELD ? null : miss.expected)} | ${shown(miss.got)} | ${miss.label === null ? "" : `${miss.label} `}${number(miss.probability)} | ${miss.blame} |`,
 			),
 			"",
 		);
@@ -259,7 +260,7 @@ export function formatCardReport(
 			"|---|---|---|---|---|---|---|",
 			...report.misses.map(
 				(miss) =>
-					`| ${miss.id} | ${cell(miss.request)} | ${miss.field} | ${miss.expected === null ? "not mentioned" : shownCard(miss.expected === "held" ? null : miss.expected)} | ${shownCard(miss.got)} | ${miss.label === null ? "" : `${miss.label} `}${number(miss.probability)} | ${miss.blame} |`,
+					`| ${miss.id} | ${cell(miss.request)} | ${miss.field} | ${miss.expected === null ? "not mentioned" : shownCard(miss.expected === HELD ? null : miss.expected)} | ${shownCard(miss.got)} | ${miss.label === null ? "" : `${miss.label} `}${number(miss.probability)} | ${miss.blame} |`,
 			),
 			"",
 		);

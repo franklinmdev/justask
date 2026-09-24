@@ -85,20 +85,23 @@ async function runRow<T>(
 	}: Pick<RunEvalInput<T>, "search" | "provider" | "facts" | "timeoutMs">,
 ): Promise<RunRow> {
 	let called = false;
-	let costUsd: number | undefined;
-	const counted: Provider = {
+	// The provider as the flow calls it, noting that it was called and what it answered.
+	const watched: Provider = {
 		async answer(input) {
 			called = true;
 			const result = await provider.answer(input);
-			costUsd = result.costUsd;
 			return result;
 		},
 	};
 	const started = performance.now();
-	const { search: result, error } = await ask({
+	const {
+		search: result,
+		error,
+		costUsd,
+	} = await ask({
 		request: row.request,
 		facts,
-		provider: counted,
+		provider: watched,
 		timeoutMs,
 		search,
 	});

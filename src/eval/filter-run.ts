@@ -143,22 +143,25 @@ async function runRow<F extends Fields>(
 	}: Pick<RunFilterEvalInput<F>, "filter" | "provider" | "facts" | "timeoutMs">,
 ): Promise<FilterRunRow> {
 	let called = false;
-	let costUsd: number | undefined;
 	let answers: ProviderAnswer = {};
-	const counted: Provider = {
+	// The provider as the flow calls it, noting that it was called and what it answered.
+	const watched: Provider = {
 		async answer(input) {
 			called = true;
 			const result = await provider.answer(input);
-			costUsd = result.costUsd;
 			answers = result.answers;
 			return result;
 		},
 	};
 	const started = performance.now();
-	const { filter: result, error } = await ask({
+	const {
+		filter: result,
+		error,
+		costUsd,
+	} = await ask({
 		request: row.request,
 		facts,
-		provider: counted,
+		provider: watched,
 		timeoutMs,
 		filter,
 	});

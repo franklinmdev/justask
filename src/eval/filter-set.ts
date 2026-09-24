@@ -24,7 +24,8 @@ export type FilterEvalRow = {
 };
 
 const KEYS = new Set(["id", "request", "kind", "expected"]);
-const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+/** A day as the eval sets write it. */
+export const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 
 function isKind(kind: unknown): kind is FilterEvalKind {
 	return kind === "filterable" || kind === "ambiguous" || kind === "nothing";

@@ -10,6 +10,7 @@ import type { NamedPair } from "../named-pair.ts";
 import type { AmountReading, DateReading, TimeReading } from "../parse.ts";
 import type { Facts, Provider, ProviderAnswer } from "../provider.ts";
 import { type CardEvalRow, isAmount, isIds } from "./card-set.ts";
+import { ISO_DAY } from "./filter-set.ts";
 import { HELD } from "./held.ts";
 import { checkKillLines, type KillLines } from "./kill-lines.ts";
 import { readRunLog, writeRunLog } from "./log.ts";
@@ -114,7 +115,6 @@ export async function runCardEval<F extends CardFields>({
 	);
 }
 
-const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 const HH_MM = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 /** Every expected field exists in the card and takes that kind of value, checked before any call. */
@@ -158,22 +158,25 @@ async function runRow<F extends CardFields>(
 	}: Pick<RunCardEvalInput<F>, "card" | "provider" | "facts" | "timeoutMs">,
 ): Promise<CardRunRow> {
 	let called = false;
-	let costUsd: number | undefined;
 	let answers: ProviderAnswer = {};
-	const counted: Provider = {
+	// The provider as the flow calls it, noting that it was called and what it answered.
+	const watched: Provider = {
 		async answer(input) {
 			called = true;
 			const result = await provider.answer(input);
-			costUsd = result.costUsd;
 			answers = result.answers;
 			return result;
 		},
 	};
 	const started = performance.now();
-	const { card: result, error } = await ask({
+	const {
+		card: result,
+		error,
+		costUsd,
+	} = await ask({
 		request: row.request,
 		facts,
-		provider: counted,
+		provider: watched,
 		timeoutMs,
 		card,
 	});
