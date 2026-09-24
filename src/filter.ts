@@ -147,14 +147,16 @@ export type FilterResult<F extends Fields> = {
 /**
  * Reads a field's answer through its gate: the id of the candidate that fills
  * the field, or null when it is held. A missing label or a tie holds the field
- * whatever its probability.
+ * whatever its probability, and so does a named pair (ADR 0011).
  */
 export function gateField(
 	probabilities: Probabilities,
 	gate: number,
+	pair?: NamedPair,
 ): { pick: Pick | null; filled: string | null } {
 	const pick = readPick(probabilities);
 	const filled =
+		!pair &&
 		pick &&
 		!(MISSING as readonly string[]).includes(pick.label) &&
 		pick.probability >= gate
@@ -206,10 +208,10 @@ export function catalogPlan(
 		held,
 		read(answer) {
 			const probabilities = answer[name] ?? {};
-			const { pick, filled } = gateField(probabilities, field.gate);
+			const { pick, filled } = gateField(probabilities, field.gate, pair);
 			const result = { ...held, pick, probabilities };
 			const winner = candidates.find(({ id }) => id === filled);
-			if (pair || !winner) return { result };
+			if (!winner) return { result };
 			return { result, value: winner.value };
 		},
 	};

@@ -1,4 +1,4 @@
-import type { Joiners } from "./named-pair.ts";
+import type { Joiners, NamedPair } from "./named-pair.ts";
 import { type Pick, readPick } from "./pick.ts";
 import type { Probabilities, Question } from "./provider.ts";
 
@@ -82,17 +82,20 @@ export function checkShortlist(
  * fills the item, or null when the item is held. The gate reads none and
  * several, not the winner (ADR 0005, 0007): near-duplicate candidates split the
  * winner's probability, while none stays low whenever one fits and several
- * rises when more than one does. A none or several pick, or a tie, still holds.
+ * rises when more than one does. A none or several pick, or a tie, still holds,
+ * and so does a named pair, whatever the pick (ADR 0011).
  */
 export function gateSearch(
 	probabilities: Probabilities,
 	gate: number,
+	pair?: NamedPair,
 ): { pick: Pick | null; filled: string | null } {
 	const pick = readPick(probabilities);
 	const none = probabilities[NONE] ?? 1;
 	// A run log saved before ADR 0007 has no several; it reads as never raised.
 	const several = probabilities[SEVERAL] ?? 0;
 	const filled =
+		!pair &&
 		pick &&
 		!(SEARCH_LABELS as readonly string[]).includes(pick.label) &&
 		none < gate &&

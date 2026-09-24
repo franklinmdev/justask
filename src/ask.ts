@@ -173,8 +173,8 @@ async function askSearch<T>({
 	}
 
 	const probabilities = outcome.answer[SEARCH] ?? {};
-	const { pick, filled } = gateSearch(probabilities, search.gate);
-	const winner = pair ? undefined : candidates.find(({ id }) => id === filled);
+	const { pick, filled } = gateSearch(probabilities, search.gate, pair);
+	const winner = candidates.find(({ id }) => id === filled);
 	return {
 		search: {
 			...held,

@@ -114,9 +114,13 @@ export function readField(
 	const logged = row.fields[name];
 	if (!logged || row.error || logged.candidates.length === 0) return UNASKED;
 	if (logged.kind === "catalog") {
-		const { pick, filled } = gateField(row.answers[name] ?? {}, gate);
+		const { pick, filled } = gateField(
+			row.answers[name] ?? {},
+			gate,
+			row.pairs?.[name],
+		);
 		return {
-			value: row.pairs?.[name] ? null : filled,
+			value: filled,
 			probability: pick?.probability ?? null,
 			label: pick?.label ?? null,
 		};
@@ -296,8 +300,7 @@ function fieldStats(
 			if (got !== null && sameValue(got, expected)) stats.right++;
 		}
 		if (got !== null && !sameValue(got, expected)) stats.wrong++;
-		// No gate lets a field a pair held through, so its pick fixes none.
-		if (row.pairs?.[name]) continue;
+		// A field a pair held reads null at every gate, so its pick fixes none.
 		const bare = readField(row, name, NO_GATE);
 		if (bare.value === null || bare.probability === null) continue;
 		notePick(stats, sameValue(bare.value, expected), bare.probability);
