@@ -100,6 +100,24 @@ export function settleAt(at: number): Settle {
 /** A settling control's props, spread on its outermost element. */
 export type Settle = { "data-settle"?: ""; style?: CSSProperties };
 
+const answerIds = new WeakMap<object, number>();
+let lastAnswerId = 0;
+
+/**
+ * A key that changes with each answer, so what the answer filled remounts
+ * and settles in again, and the card's amount box drops text the person
+ * typed that no longer stands for its amount.
+ */
+export function answerKey(result: object | null): number {
+	if (result === null) return 0;
+	let id = answerIds.get(result);
+	if (id === undefined) {
+		id = ++lastAnswerId;
+		answerIds.set(result, id);
+	}
+	return id;
+}
+
 /**
  * A case's heading, labelled with the day its recorded run ran while the
  * display is the recording's, then the live region that says the replay

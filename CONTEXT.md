@@ -101,8 +101,8 @@ A field left empty because its pick did not clear the gate, because the provider
 _Avoid_: Abstained field, unknown, null field
 
 **Confirm**:
-The person's explicit approval of a result before anything is saved. Nothing leaves justask for the host app without it.
-_Avoid_: Submit, auto-apply
+The person's explicit approval of a result before anything is saved. Nothing leaves justask for the host app without it. A host app may confirm a filter itself as each answer comes in, since filtering is reversible and Clear filters undoes it, as the demo's Table does (#123); a record is always confirmed by the person.
+_Avoid_: Submit
 
 **Host app**:
 The developer's application that uses justask. It saves confirmed results and owns undo; justask hands it the confirmed object and the place for the undo control.

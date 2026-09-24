@@ -2,7 +2,13 @@ import { SearchBox, SearchEmpty, SearchItem, useSearch } from "justask/react";
 import { REQUEST_LIMIT, searchEndpoint } from "./api.ts";
 import type { Content, Vendor } from "./content/types.ts";
 import { formats } from "./format.ts";
-import { CaseHead, DEBOUNCE_MS, Saved, Suggestions } from "./parts.tsx";
+import {
+	answerKey,
+	CaseHead,
+	DEBOUNCE_MS,
+	Saved,
+	Suggestions,
+} from "./parts.tsx";
 import { dayShown, type SearchRecording } from "./recording.ts";
 import { useReplay } from "./replay.ts";
 import { costOf, searchControls } from "./saved.ts";
@@ -70,7 +76,9 @@ export function SearchPage({
 				cost={costOf(searchControls(search.result?.item ?? null))}
 				stale={search.loading}
 			/>
+			{/* Keyed by the answer, so each one's pick settles in and lights again. */}
 			<SearchItem
+				key={answerKey(search.result)}
 				search={search}
 				className="result"
 				itemProps={{ className: "item" }}

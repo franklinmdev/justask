@@ -243,7 +243,8 @@ function tableSnippet(content: Content): Snippet {
 		client: {
 			name: "Transactions.tsx",
 			code: `import type { FilterValue } from "justask";
-import { FilterBox, FilterConfirm, useFilter } from "justask/react";
+import { FilterBox, useFilter } from "justask/react";
+import { useEffect } from "react";
 import type { TransactionFields } from "./handler";
 
 export function Transactions({
@@ -256,11 +257,12 @@ export function Transactions({
     timing: { on: "type", debounceMs: ${DEBOUNCE_MS} },
     onConfirm: onApply,
   });
+  // Filtering is reversible, so each answer applies with no click.
+  useEffect(() => {
+    if (filter.ready) filter.confirm();
+  });
   return (
-    <>
-      <FilterBox filter={filter} label=${JSON.stringify(copy.filter.boxLabel)} />
-      <FilterConfirm filter={filter}>${copy.filter.confirm}</FilterConfirm>
-    </>
+    <FilterBox filter={filter} label=${JSON.stringify(copy.filter.boxLabel)} />
   );
 }
 `,

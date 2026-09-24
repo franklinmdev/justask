@@ -12,10 +12,6 @@ const TYPE_MS = 35;
 /** The pause after the last character before Enter, for a box that calls only on Enter. */
 const ENTER_MS = 300;
 
-/** How long the proposal shows before Confirm is pressed, then how long it looks pressed. */
-const PROPOSAL_MS = 900;
-const PRESS_MS = 150;
-
 type Timers = { current: ReturnType<typeof setTimeout>[] };
 
 /** Runs `step` after `ms`, kept in `timers` so the replay can drop it. */
@@ -44,15 +40,9 @@ type Flow = {
 	submit: () => void;
 };
 
-/** A flow's Confirm: whether it can be pressed, and pressing it. */
-type Confirm = { ready: boolean; press: () => void };
-
 export type Replay = {
-	/**
-	 * Hands the replay the flow's hook on every render, with Confirm for a
-	 * flow that has it, pressed once the recorded proposal is ready.
-	 */
-	follow: (flow: Flow, confirm?: Confirm) => void;
+	/** Hands the replay the flow's hook on every render. */
+	follow: (flow: Flow) => void;
 	/** The hook's `fetch`: the recorded response for the replayed sentence, a timed live call for anything else. */
 	fetch: typeof fetch;
 	/** The flow for the box and the suggestions: anything the person types or picks ends the replay. */
@@ -63,8 +53,6 @@ export type Replay = {
 	trace: Trace | null;
 	/** True while the display is the recording's, so it is labelled with its date. */
 	recorded: boolean;
-	/** True while the replay presses Confirm, so it looks pressed. */
-	pressing: boolean;
 	/** True from the sentence's first character until the person takes over, so the replay is announced. */
 	started: boolean;
 };
@@ -72,9 +60,9 @@ export type Replay = {
 /**
  * Opens a case on its recorded run at no cost: the sentence types into the
  * box, the hook's call is answered with the recorded response and the hood
- * shows the recorded latency and use, then, where the flow has one, Confirm
- * is pressed on screen. A box that calls only on Enter, `enter`, has Enter
- * pressed once the sentence is in. Typing or picking a suggestion ends it,
+ * shows the recorded latency and use. A box that calls only on Enter,
+ * `enter`, has Enter pressed once the sentence is in. It never presses
+ * Save: that stays the person's. Typing or picking a suggestion ends it,
  * and the next call is a live one that replaces the recording's display.
  * With no recording the case opens idle.
  */
@@ -89,18 +77,13 @@ export function useReplay({
 }): Replay {
 	const [trace, setTrace] = useState<Trace | null>(null);
 	const [recorded, setRecorded] = useState(recording !== null);
-	const [pressing, setPressing] = useState(false);
 	const [started, setStarted] = useState(false);
-	// Set once the person takes over, once the recorded response is served, and once Confirm is due.
+	// Set once the person takes over, and once the recorded response is served.
 	const stopped = useRef(recording === null);
 	const served = useRef(false);
-	const pressed = useRef(false);
 	const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
-	// The latest render's flow and Confirm, for the steps that run later.
-	const latest = useRef<{
-		flow: Flow | null;
-		confirm: Confirm | undefined;
-	}>({ flow: null, confirm: undefined });
+	// The latest render's flow, for the steps that run later.
+	const latest = useRef<Flow | null>(null);
 
 	useEffect(() => {
 		if (recording === null) return;
@@ -108,40 +91,22 @@ export function useReplay({
 		later(timers, START_MS, () => setStarted(true));
 		const typingMs = reducedMotion() ? 0 : request.length * TYPE_MS;
 		if (typingMs === 0) {
-			later(timers, START_MS, () => latest.current.flow?.setRequest(request));
+			later(timers, START_MS, () => latest.current?.setRequest(request));
 		} else {
 			for (let typed = 1; typed <= request.length; typed++) {
 				later(timers, START_MS + typed * TYPE_MS, () =>
-					latest.current.flow?.setRequest(request.slice(0, typed)),
+					latest.current?.setRequest(request.slice(0, typed)),
 				);
 			}
 		}
 		// The box's own pause then calls, or Enter does, and `fetch` answers from the recording.
 		if (enter) {
 			later(timers, START_MS + typingMs + ENTER_MS, () =>
-				latest.current.flow?.submit(),
+				latest.current?.submit(),
 			);
 		}
 		return () => drop(timers);
 	}, [recording, enter]);
-
-	// Once the recorded proposal is ready, Confirm is pressed on screen.
-	useEffect(() => {
-		const ready = latest.current.confirm?.ready ?? false;
-		if (!ready || !served.current || stopped.current || pressed.current) {
-			return;
-		}
-		pressed.current = true;
-		later(timers, PROPOSAL_MS, () => {
-			// The person may have pressed it first.
-			if (!latest.current.confirm?.ready) return;
-			setPressing(true);
-			later(timers, PRESS_MS, () => {
-				setPressing(false);
-				latest.current.confirm?.press();
-			});
-		});
-	});
 
 	/**
 	 * The person took over: the replay ends, and the label and its
@@ -154,7 +119,6 @@ export function useReplay({
 		if (stopped.current) return;
 		stopped.current = true;
 		drop(timers);
-		setPressing(false);
 	}
 
 	const live = timed(fetchImpl, (next) => {
@@ -163,8 +127,8 @@ export function useReplay({
 	});
 
 	return {
-		follow: (flow, confirm) => {
-			latest.current = { flow, confirm };
+		follow: (flow) => {
+			latest.current = flow;
 		},
 		fetch: async (input, init) => {
 			const { request } = JSON.parse(String(init?.body)) as {
@@ -192,7 +156,6 @@ export function useReplay({
 		stop,
 		trace,
 		recorded,
-		pressing,
 		started,
 	};
 }

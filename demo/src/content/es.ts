@@ -130,17 +130,12 @@ export const spanish: Content = {
 			transactions: "Transacciones",
 			boxLabel: "Filtrar las transacciones",
 			placeholder: "Describa las transacciones que quiere ver",
-			proposed: "Filtros por aplicar",
 			fields: {
 				vendor: "Proveedor",
 				status: "Estado",
 				date: "Fecha",
 				amount: "Monto",
 			},
-			remove: "Quitar",
-			removeLabel: (field) => `Quitar el filtro de ${field.toLowerCase()}`,
-			removed: (field) => `Se quitó: ${field.toLowerCase()}`,
-			confirm: "Aplicar filtros",
 			empty: "Nada en esa solicitud filtra las transacciones.",
 			applied: "Aplicados",
 			appliedFields: (set, held) =>

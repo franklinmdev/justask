@@ -15,6 +15,7 @@ import type { Content, ExpenseFields, ExpenseName } from "./content/types.ts";
 import { DayPicker } from "./day-picker.tsx";
 import { formats, LOCAL_CURRENCY, parseAmount } from "./format.ts";
 import {
+	answerKey,
 	CaseHead,
 	Saved,
 	Suggestions,
@@ -75,7 +76,9 @@ export function CardPage({
 			card.set(name, value);
 		},
 	};
-	// The fields the answer filled, each settling in after the one before it.
+	// The fields the answer filled, each settling in after the one before it,
+	// again with each answer.
+	const answer = answerKey(card.result);
 	const filled = fieldOrder.filter((name) => card.filledBy(name) === "answer");
 	const settle = (name: ExpenseName) => settleAt(filled.indexOf(name));
 
@@ -156,6 +159,7 @@ export function CardPage({
 
 			<div className="card">
 				<CardEntry
+					key={`vendor-${answer}`}
 					card={fields}
 					name="vendor"
 					className="entry"
@@ -186,6 +190,7 @@ export function CardPage({
 					)}
 				</CardEntry>
 				<CardEntry
+					key={`tags-${answer}`}
 					card={fields}
 					name="tags"
 					className="entry"
@@ -215,6 +220,7 @@ export function CardPage({
 					)}
 				</CardEntry>
 				<CardEntry
+					key={`spent_on-${answer}`}
 					card={fields}
 					name="spent_on"
 					className="entry"
@@ -235,6 +241,7 @@ export function CardPage({
 					)}
 				</CardEntry>
 				<CardEntry
+					key={`total-${answer}`}
 					card={fields}
 					name="total"
 					className="entry"
@@ -243,12 +250,7 @@ export function CardPage({
 					{({ value, set, filledBy }) => (
 						<>
 							{head("total", filledBy, "card-total")}
-							<AmountInput
-								key={answerKey(card.result)}
-								id="card-total"
-								value={value}
-								onChange={set}
-							/>
+							<AmountInput id="card-total" value={value} onChange={set} />
 						</>
 					)}
 				</CardEntry>
@@ -337,23 +339,6 @@ function SavedExpense({
 			<span className="expense-total data">{total}</span>
 		</li>
 	);
-}
-
-const answerIds = new WeakMap<object, number>();
-let lastAnswerId = 0;
-
-/**
- * A key that changes with each answer, so the amount box drops text the
- * person typed that no longer stands for the card's amount.
- */
-function answerKey(result: object | null): number {
-	if (result === null) return 0;
-	let id = answerIds.get(result);
-	if (id === undefined) {
-		id = ++lastAnswerId;
-		answerIds.set(result, id);
-	}
-	return id;
 }
 
 /** How an amount shows in its box: two decimals, as money is written. */

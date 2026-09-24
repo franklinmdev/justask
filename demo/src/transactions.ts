@@ -52,7 +52,7 @@ export function matches(row: Transaction, filter: Applied): boolean {
 }
 
 /**
- * The table's controls once Apply is pressed: a filled field replaces its
+ * The table's controls once an answer applies: a filled field replaces its
  * control's value, a held one leaves it as it was. The amount control is two
  * bounds, so an exact amount sets both.
  */
