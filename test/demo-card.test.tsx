@@ -471,6 +471,8 @@ describe("the demo's card page", () => {
 			tags: "Tags",
 			reason:
 				"Filled from the vendor: every sale at Brightmop Cleaning is tagged office, and no tag's answer said otherwise.",
+			source: "from the vendor",
+			fromRequest: "from the request",
 		},
 		{
 			language: "Spanish",
@@ -481,16 +483,31 @@ describe("the demo's card page", () => {
 			tags: "Etiquetas",
 			reason:
 				"Completado desde el proveedor: toda venta de Limpiezas Brisamar lleva la etiqueta oficina, y ninguna respuesta de las etiquetas decía otra cosa.",
+			source: "del proveedor",
+			fromRequest: "de la solicitud",
 		},
 	])(
 		"tags office from a vendor that sells office services alone, where no tag's answer said otherwise, and says so, in $language",
-		async ({ url, request, office, hood, tags, reason }) => {
+		async ({
+			url,
+			request,
+			office,
+			hood,
+			tags,
+			reason,
+			source,
+			fromRequest,
+		}) => {
 			const { container, user } = renderDemo({ url });
 
 			await user.type(screen.getByRole("searchbox"), `${request}{Enter}`);
 			await screen.findByText(/^(Filled:|Completado:)/);
 
 			expect(checkbox(office).checked).toBe(true);
+			// The field names the vendor as its source, as the panel does.
+			const group = within(screen.getByRole("group", { name: tags }));
+			expect(group.getByText(source)).toBeDefined();
+			expect(group.queryByText(fromRequest)).toBeNull();
 			expect(
 				within(panel(hood).getByRole("region", { name: tags })).getByText(
 					reason,
@@ -510,6 +527,7 @@ describe("the demo's card page", () => {
 			hood: "What happened",
 			tags: "Tags",
 			reason: /^Every pick cleared the gate/,
+			fromRequest: "from the request",
 		},
 		{
 			language: "Spanish",
@@ -520,10 +538,20 @@ describe("the demo's card page", () => {
 			hood: "Qué pasó",
 			tags: "Etiquetas",
 			reason: /^Cada elección superó el umbral/,
+			fromRequest: "de la solicitud",
 		},
 	])(
 		"adds nothing from the vendor when the provider tagged the expense, in $language",
-		async ({ url, request, meals, office, hood, tags, reason }) => {
+		async ({
+			url,
+			request,
+			meals,
+			office,
+			hood,
+			tags,
+			reason,
+			fromRequest,
+		}) => {
 			const { user } = renderDemo({ url });
 
 			await user.type(screen.getByRole("searchbox"), `${request}{Enter}`);
@@ -531,6 +559,11 @@ describe("the demo's card page", () => {
 
 			expect(checkbox(meals).checked).toBe(true);
 			expect(checkbox(office).checked).toBe(false);
+			expect(
+				within(screen.getByRole("group", { name: tags })).getByText(
+					fromRequest,
+				),
+			).toBeDefined();
 			expect(
 				within(panel(hood).getByRole("region", { name: tags })).getByText(
 					reason,

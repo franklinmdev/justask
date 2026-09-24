@@ -103,7 +103,11 @@ export function CardPage({
 				</span>
 			)}
 			{filledBy === "answer" && (
-				<span className="entry-source">{copy.card.fromRequest}</span>
+				<span className="entry-source">
+					{name === "tags" && card.result?.fields.tags.implied
+						? copy.card.fromVendor
+						: copy.card.fromRequest}
+				</span>
 			)}
 		</div>
 	);

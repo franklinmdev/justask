@@ -231,6 +231,7 @@ export const spanish: Content = {
 			},
 			chooseVendor: "Elija un proveedor",
 			fromRequest: "de la solicitud",
+			fromVendor: "del proveedor",
 			announce: (filled, waiting) => {
 				const list = (names: string[]) =>
 					new Intl.ListFormat("es").format(

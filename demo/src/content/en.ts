@@ -232,6 +232,7 @@ export const english: Content = {
 			},
 			chooseVendor: "Choose a vendor",
 			fromRequest: "from the request",
+			fromVendor: "from the vendor",
 			announce: (filled, waiting) => {
 				const list = (names: string[]) =>
 					new Intl.ListFormat("en").format(

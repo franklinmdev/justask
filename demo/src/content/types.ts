@@ -108,6 +108,8 @@ export type CardCopy = {
 	chooseVendor: string;
 	/** Beside a field's label while its value is the one the request gave. */
 	fromRequest: string;
+	/** Beside the tags' label while their value is the one the vendor implied (ADR 0012). */
+	fromVendor: string;
 	/** What a screen reader hears, and the page shows, once an answer comes back. */
 	announce: (filled: string[], waiting: string[]) => string;
 	/** What the page says when the answer failed: the card stays as it was. */
