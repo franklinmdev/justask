@@ -178,10 +178,11 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 });
 
 /**
- * Frozen on the owner's approval, 2026-09-23 (#20, round 2 #44, round 3 #57, round 4 #63, round 5 #73, #77's office probes, #79's false-fill probes and round 6), before any call. A
- * failure here means the verdict's inputs changed after the fact: revert the
- * edit, or log the owner's call in docs/card-eval.md with a new checksum or
- * value.
+ * Frozen on the owner's approval, 2026-09-23 (#20, round 2 #44, round 3
+ * #57, round 4 #63, round 5 #73, #77's office probes, #79's false-fill probes
+ * and round 6), before any call. A failure here means the verdict's inputs
+ * changed after the fact: revert the edit, or log the owner's call in
+ * docs/card-eval.md with a new checksum or value.
  */
 describe("the frozen card eval", () => {
 	it.each([
