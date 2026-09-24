@@ -172,6 +172,13 @@ export function sameValue(
 	);
 }
 
+/** Throws on the first gate that is not one, naming its field. */
+function checkGates(gates: Record<string, number>): void {
+	for (const [name, gate] of Object.entries(gates)) {
+		checkGate(gate, `the gate of field "${name}"`);
+	}
+}
+
 /**
  * Scores a saved filter run, by default at the gates it was run under, which
  * gives the verdict. Other gates, any field at a time, rescore the same
@@ -183,9 +190,7 @@ export function scoreFilterRun(
 	{ gates: overrides = {} }: { gates?: Record<string, number> } = {},
 ): FilterReport {
 	const gates = overrideGates(run.gates, overrides);
-	for (const [name, gate] of Object.entries(gates)) {
-		checkGate(gate, `the gate of field "${name}"`);
-	}
+	checkGates(gates);
 	const names = Object.keys(gates);
 	const answered = run.rows.filter((row) => !row.error);
 	const read = answered.map((row) => ({
@@ -369,9 +374,7 @@ export function compareFilterRuns(
 	{ gates: overrides = {} }: { gates?: Record<string, number> } = {},
 ): FilterFlip[] {
 	const gates = overrideGates(first.gates, overrides);
-	for (const [name, gate] of Object.entries(gates)) {
-		checkGate(gate, `the gate of field "${name}"`);
-	}
+	checkGates(gates);
 	const again = new Map(second.rows.map((row) => [row.id, row]));
 	const flips: FilterFlip[] = [];
 	for (const row of first.rows) {
