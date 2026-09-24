@@ -239,8 +239,7 @@ describe("the demo's card page", () => {
 		expect(save().getAttribute("aria-disabled")).toBe("true");
 	});
 
-	// Its own test, not a second axe run in the one above: two runs of axe in
-	// jsdom took that test past its 5 s under load (#116).
+	// One axe run per test: two in one test ran past its 5 s under load (#116).
 	it("passes axe once the expense is saved, its list and Undo on the page", async () => {
 		const { container, user } = renderDemo();
 
