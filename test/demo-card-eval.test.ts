@@ -91,6 +91,7 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 			expect(named.filter((vendor) => vendor === undefined)).toHaveLength(
 				7 * scale,
 			);
+			expect(mentioning(records, "vendor")).toHaveLength(21 * scale);
 			expect(mentioning(records, "tags")).toHaveLength(28 * scale);
 			expect(mentioning(records, "spent_on")).toHaveLength(24 * scale);
 			expect(mentioning(records, "total")).toHaveLength(27 * scale);
