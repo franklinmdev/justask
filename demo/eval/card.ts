@@ -10,9 +10,9 @@
 //   node --conditions=source demo/eval/card.ts merge <en|es> <set> <first n> <n>...
 //   node --conditions=source demo/eval/card.ts gates <dev n>
 //
-// The sets, where each one's file and logs live, and which give a verdict
-// are in card-sets.ts. `run` writes its set's log, which it never
-// overwrites, and prints its report; a labelled set, `office`, also takes
+// The sets and which give a verdict are in card-sets.ts, where each one's
+// file and logs live in sets.ts. `run` writes its set's log, which it never
+// overwrites, and prints its report; `office` also takes
 // one of #77's office labels (office.ts). `office` reads a saved office run
 // and prints the office tag's picks, and `gaps` a saved notoffice run and
 // prints where the tags left the gap the vendor fills (ADR 0012), both with
@@ -30,21 +30,20 @@
 
 import { readFile } from "node:fs/promises";
 import {
+	type CardEvalRow,
 	type CardRun,
 	compareCardRuns,
 	formatCardReport,
-	mergeRemeasure,
 	parseCardEvalSet,
 	readCardRun,
 	remeasureSet,
 	runCardEval,
 	scoreCardRun,
-	transportFailures,
 } from "justask/eval";
 import { jevProvider } from "justask/jev";
 import { loadKeyEnv } from "../../scripts/load-env.ts";
 import { contents, demoCard, FACTS, TIMEOUT_MS } from "../server/handler.ts";
-import type { Language } from "../src/content/types.ts";
+import type { Content, Language } from "../src/content/types.ts";
 import {
 	CARD_SET_NAMES,
 	type CardSet,
@@ -52,7 +51,6 @@ import {
 	cardSetFile,
 	givesVerdict,
 	isCardSet,
-	isLabelled,
 } from "./card-sets.ts";
 import { fixGate, poolFields } from "./gates.ts";
 import { CARD_KILL_LINES } from "./kill-lines.ts";
@@ -64,14 +62,27 @@ import {
 	withOfficeLabel,
 } from "./office.ts";
 import { needBaseline, probe } from "./probe.ts";
+import { printRemeasure } from "./remeasure.ts";
 
 /** Fixed, so every run reads the same day. */
 const TODAY =
 	"Today is Wednesday 2026-09-23 (miércoles 23 de septiembre de 2026).";
 
 const here = (path: string) => new URL(path, import.meta.url).pathname;
-const runLogPath = (...args: Parameters<typeof cardRunLog>) =>
-	here(cardRunLog(...args));
+const readSet = async (language: Language, set: CardSet) =>
+	parseCardEvalSet(await readFile(here(cardSetFile(language, set)), "utf8"));
+/** Sends the rows through the demo's card, into run log `log`. */
+const sendRows = (content: Content, set: CardEvalRow[], log: string) =>
+	runCardEval({
+		set,
+		card: demoCard(content),
+		provider: jevProvider(),
+		facts: { today: TODAY, ...FACTS },
+		timeoutMs: TIMEOUT_MS,
+		killLines: CARD_KILL_LINES,
+		log,
+		probe: probe(),
+	});
 
 /** What a run of a probe set prints after its report. */
 const AFTER_REPORT: Partial<Record<CardSet, (run: CardRun) => void>> = {
@@ -88,7 +99,7 @@ if (command === "run") {
 		!served ||
 		!isCardSet(set) ||
 		!n ||
-		(isLabelled(set) ? !isOfficeLabel(label) : label !== undefined)
+		(set === "office" ? !isOfficeLabel(label) : label !== undefined)
 	)
 		usage();
 	if (givesVerdict(set)) needBaseline();
@@ -96,18 +107,11 @@ if (command === "run") {
 		? withOfficeLabel(served, label)
 		: served;
 	loadKeyEnv();
-	const run = await runCardEval({
-		set: parseCardEvalSet(
-			await readFile(here(cardSetFile(content.language, set)), "utf8"),
-		),
-		card: demoCard(content),
-		provider: jevProvider(),
-		facts: { today: TODAY, ...FACTS },
-		timeoutMs: TIMEOUT_MS,
-		killLines: CARD_KILL_LINES,
-		log: runLogPath(content.language, set, n, label),
-		probe: probe(),
-	});
+	const run = await sendRows(
+		content,
+		await readSet(content.language, set),
+		here(cardRunLog(content.language, set, n, label)),
+	);
 	const report = scoreCardRun(run);
 	console.log(
 		formatCardReport(givesVerdict(set) ? report : { ...report, verdict: null }),
@@ -117,75 +121,65 @@ if (command === "run") {
 	const [language, n] = rest;
 	const content = contents[language as Language];
 	if (!content || !n) usage();
-	printTagGaps(await readCardRun(runLogPath(content.language, "notoffice", n)));
+	printTagGaps(
+		await readCardRun(here(cardRunLog(content.language, "notoffice", n))),
+	);
 } else if (command === "office") {
 	const [language, n, label] = rest;
 	const content = contents[language as Language];
 	if (!content || !n || !isOfficeLabel(label)) usage();
 	printOfficePicks(
-		await readCardRun(runLogPath(content.language, "office", n, label)),
+		await readCardRun(here(cardRunLog(content.language, "office", n, label))),
 	);
 } else if (command === "compare") {
 	const [language, set, first, second] = rest;
 	const content = contents[language as Language];
 	if (!content || !isCardSet(set) || !givesVerdict(set) || !first || !second)
 		usage();
-	const before = await readCardRun(runLogPath(content.language, set, first));
-	const after = await readCardRun(runLogPath(content.language, set, second));
+	const before = await readCardRun(
+		here(cardRunLog(content.language, set, first)),
+	);
+	const after = await readCardRun(
+		here(cardRunLog(content.language, set, second)),
+	);
 	console.log(
 		formatCardReport(scoreCardRun(after), compareCardRuns(before, after)),
 	);
 } else if (command === "remeasure" || command === "merge") {
 	const [language, set, first, ...later] = rest;
-	const n = later.at(-1);
 	const content = contents[language as Language];
-	if (!content || !isCardSet(set) || !givesVerdict(set) || !first || !n)
+	if (
+		!content ||
+		!isCardSet(set) ||
+		!givesVerdict(set) ||
+		!first ||
+		!later.length
+	)
 		usage();
-	const firstRun = await readCardRun(runLogPath(content.language, set, first));
-	// The remeasures run before the last one, merged in order.
-	const merged = mergeRemeasure(
-		firstRun,
-		...(await Promise.all(
-			later
-				.slice(0, -1)
-				.map((m) => readCardRun(runLogPath(content.language, set, m))),
-		)),
-	);
-	if (command === "remeasure") {
-		needBaseline();
-		loadKeyEnv();
-	}
-	const again =
-		command === "remeasure"
-			? await runCardEval({
-					set: remeasureSet(
-						merged,
-						parseCardEvalSet(
-							await readFile(here(cardSetFile(content.language, set)), "utf8"),
-						),
-					),
-					card: demoCard(content),
-					provider: jevProvider(),
-					facts: { today: TODAY, ...FACTS },
-					timeoutMs: TIMEOUT_MS,
-					killLines: CARD_KILL_LINES,
-					log: runLogPath(content.language, set, n),
-					probe: probe(),
-				})
-			: await readCardRun(runLogPath(content.language, set, n));
-	console.log(
-		`Run ${first}, its transport failures (${transportFailures(firstRun.rows)
-			.map(({ id }) => id)
-			.join(", ")}) answered by run ${later.join(", then ")}\n`,
-	);
-	console.log(formatCardReport(scoreCardRun(mergeRemeasure(merged, again))));
+	await printRemeasure<CardRun>({
+		first,
+		later,
+		read: (n) => readCardRun(here(cardRunLog(content.language, set, n))),
+		...(command === "remeasure" && {
+			send: async (merged, n) => {
+				needBaseline();
+				loadKeyEnv();
+				return sendRows(
+					content,
+					remeasureSet(merged, await readSet(content.language, set)),
+					here(cardRunLog(content.language, set, n)),
+				);
+			},
+		}),
+		report: (run) => formatCardReport(scoreCardRun(run)),
+	});
 } else if (command === "gates") {
 	const [n] = rest;
 	if (!n) usage();
 	const reports = await Promise.all(
 		Object.values(contents).map(async ({ language }) => {
 			const { intent, fields } = scoreCardRun(
-				await readCardRun(runLogPath(language, "dev", n)),
+				await readCardRun(here(cardRunLog(language, "dev", n))),
 			);
 			return { fields: { intent, ...fields } };
 		}),
@@ -231,7 +225,7 @@ function usage(): never {
 	const sets = (keep: (set: CardSet) => boolean) =>
 		CARD_SET_NAMES.filter(keep).join("|");
 	console.error(
-		`usage: card.ts run <en|es> <${sets((set) => !isLabelled(set))}> <n> | run <en|es> <${sets(isLabelled)}> <n> <${OFFICE_LABEL_NAMES.join("|")}> | office <en|es> <n> <${OFFICE_LABEL_NAMES.join("|")}> | gaps <en|es> <n> | compare <en|es> <${sets(givesVerdict)}> <first n> <second n> | remeasure|merge <en|es> <${sets(givesVerdict)}> <first n> <n>... | gates <dev n>`,
+		`usage: card.ts run <en|es> <${sets((set) => set !== "office")}> <n> | run <en|es> <office> <n> <${OFFICE_LABEL_NAMES.join("|")}> | office <en|es> <n> <${OFFICE_LABEL_NAMES.join("|")}> | gaps <en|es> <n> | compare <en|es> <${sets(givesVerdict)}> <first n> <second n> | remeasure|merge <en|es> <${sets(givesVerdict)}> <first n> <n>... | gates <dev n>`,
 	);
 	process.exit(1);
 }

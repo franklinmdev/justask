@@ -1,15 +1,15 @@
 import type { CardEvalKind } from "justask/eval";
 
+/** A shape's kind and its rows per language: at most two (#86). */
+export type Shape = { kind: CardEvalKind; rows: 1 | 2 };
+
 /**
  * Round 7's shapes (#88), as the owner approved them on 2026-09-24 before any
  * row was drafted (docs/card-eval.md, Round 7: shapes): each shape's kind and
  * its rows per language. A plain record's shape is the item of the tag cover
  * that decides its tags. The set test holds every row of round 7 to this list.
  */
-export const ROUND7_SHAPES: Record<
-	string,
-	{ kind: CardEvalKind; rows: 1 | 2 }
-> = {
+export const ROUND7_SHAPES: Record<string, Shape> = {
 	// Records, plain, by the item of the tag cover.
 	"meals: lunch": { kind: "record", rows: 1 },
 	"meals: dinner": { kind: "record", rows: 1 },

@@ -14,7 +14,7 @@ import {
 	type CardSet,
 	cardSetFile,
 	givesVerdict,
-	scaleOf,
+	mixesOf,
 	shapesOf,
 } from "../demo/eval/card-sets.ts";
 import { fixGate, poolFields } from "../demo/eval/gates.ts";
@@ -69,32 +69,32 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 
 	it.each(
 		CARD_SET_NAMES.filter(givesVerdict).map(
-			(set) => [set, scaleOf(set), sets[set]] as const,
+			(set) => [set, mixesOf(set), sets[set]] as const,
 		),
 	)(
 		"give the %s set, %i times rounds 1 to 6's mix: 28 records, 2 ambiguous rows per field and 6 with nothing to record",
-		(_, scale, set) => {
+		(_, mixes, set) => {
 			const records = rows(set, "record");
 			const ambiguous = rows(set, "ambiguous");
-			expect(records).toHaveLength(28 * scale);
-			expect(ambiguous).toHaveLength(8 * scale);
-			expect(rows(set, "nothing")).toHaveLength(6 * scale);
+			expect(records).toHaveLength(28 * mixes);
+			expect(ambiguous).toHaveLength(8 * mixes);
+			expect(rows(set, "nothing")).toHaveLength(6 * mixes);
 			for (const field of FIELDS)
-				expect(heldOn(ambiguous, field)).toHaveLength(2 * scale);
-			// Every vendor at least once per scale, and seven records per scale with no vendor of the catalog.
+				expect(heldOn(ambiguous, field)).toHaveLength(2 * mixes);
+			// Every vendor at least once per mix, and seven records per mix with no vendor of the catalog.
 			const named = records.map((row) => row.expected.vendor);
 			for (const { id } of content.vendors)
 				expect(
 					named.filter((vendor) => vendor === id).length,
 					id,
-				).toBeGreaterThanOrEqual(scale);
+				).toBeGreaterThanOrEqual(mixes);
 			expect(named.filter((vendor) => vendor === undefined)).toHaveLength(
-				7 * scale,
+				7 * mixes,
 			);
-			expect(mentioning(records, "vendor")).toHaveLength(21 * scale);
-			expect(mentioning(records, "tags")).toHaveLength(28 * scale);
-			expect(mentioning(records, "spent_on")).toHaveLength(24 * scale);
-			expect(mentioning(records, "total")).toHaveLength(27 * scale);
+			expect(mentioning(records, "vendor")).toHaveLength(21 * mixes);
+			expect(mentioning(records, "tags")).toHaveLength(28 * mixes);
+			expect(mentioning(records, "spent_on")).toHaveLength(24 * mixes);
+			expect(mentioning(records, "total")).toHaveLength(27 * mixes);
 		},
 	);
 
@@ -104,7 +104,7 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 			return shapes ? [[set, shapes, sets[set]] as const] : [];
 		}),
 	)(
-		"name one approved shape on every row of the %s set, at most two rows each, as many as approved",
+		"name one approved shape on every row of the %s set, as many rows as approved",
 		(_, shapes, set) => {
 			const counts = new Map<string, number>();
 			for (const row of set) {
@@ -114,7 +114,6 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 				counts.set(shape, (counts.get(shape) ?? 0) + 1);
 			}
 			for (const [shape, { rows }] of Object.entries(shapes)) {
-				expect(rows, shape).toBeLessThanOrEqual(2);
 				expect(counts.get(shape) ?? 0, shape).toBe(rows);
 			}
 		},
