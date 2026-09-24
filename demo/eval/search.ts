@@ -42,6 +42,9 @@ type SetKind = keyof typeof SETS;
 const isSet = (set: string | undefined): set is SetKind =>
 	set !== undefined && Object.hasOwn(SETS, set);
 
+/** The sets that tune: their runs never give a verdict. */
+const NO_VERDICT = new Set<SetKind>(["dev"]);
+
 const here = (path: string) => new URL(path, import.meta.url).pathname;
 const setPath = (language: Language, set: SetKind) =>
 	here(`search-${language}${SETS[set].file}.jsonl`);
@@ -55,7 +58,7 @@ if (!content) usage();
 if (command === "run") {
 	const [set, n] = rest;
 	if (!isSet(set) || !n) usage();
-	if (set !== "dev") needBaseline();
+	if (!NO_VERDICT.has(set)) needBaseline();
 	loadKeyEnv(process.cwd());
 	const run = await runEval({
 		set: parseEvalSet(await readFile(setPath(content.language, set), "utf8")),
@@ -69,11 +72,11 @@ if (command === "run") {
 	});
 	const report = scoreRun(run);
 	console.log(
-		formatReport(set === "dev" ? { ...report, verdict: null } : report),
+		formatReport(NO_VERDICT.has(set) ? { ...report, verdict: null } : report),
 	);
 } else if (command === "compare") {
 	const [set, first, second] = rest;
-	if (!isSet(set) || set === "dev" || !first || !second) usage();
+	if (!isSet(set) || NO_VERDICT.has(set) || !first || !second) usage();
 	const before = await readRun(runLogPath(content.language, set, first));
 	const after = await readRun(runLogPath(content.language, set, second));
 	console.log(formatReport(scoreRun(after), compareRuns(before, after)));
