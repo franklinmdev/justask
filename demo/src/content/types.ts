@@ -2,6 +2,7 @@ import type {
 	AmountField,
 	AmountRange,
 	Candidate,
+	CardCommand,
 	CardCommands,
 	CardDateField,
 	CatalogField,
@@ -89,7 +90,7 @@ export type IntentReason =
 	| { kind: "not-available" }
 	| { kind: "tie" }
 	| { kind: "failed" }
-	| { kind: "command"; verb: string; reference: string };
+	| ({ kind: "command" } & CardCommand);
 
 /** A calendar popover's words: its name, the month steps and the clear button. */
 export type CalendarCopy = {
