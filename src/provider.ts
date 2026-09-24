@@ -34,6 +34,17 @@ export type Usage = {
 	inputTokens?: number;
 };
 
+/**
+ * Each figure a call reported, picked by name, and none it left out: a
+ * provider's result, or `ask`'s, whose other fields stay behind.
+ */
+export function usageOf({ costUsd, inputTokens }: Usage): Usage {
+	return {
+		...(costUsd !== undefined && { costUsd }),
+		...(inputTokens !== undefined && { inputTokens }),
+	};
+}
+
 /** One call's answer, and what the call used when the adapter knows (ADR 0006). */
 export type ProviderResult = Usage & {
 	answers: ProviderAnswer;

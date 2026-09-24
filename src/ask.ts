@@ -36,13 +36,14 @@ import { checkGate } from "./gate.ts";
 import { checkJoiners, findPair, type NamedPair } from "./named-pair.ts";
 import { type Parser, parseRequest, type Reads } from "./parse.ts";
 import type { Pick } from "./pick.ts";
-import type {
-	Facts,
-	Probabilities,
-	Provider,
-	ProviderAnswer,
-	Question,
-	Usage,
+import {
+	type Facts,
+	type Probabilities,
+	type Provider,
+	type ProviderAnswer,
+	type Question,
+	type Usage,
+	usageOf,
 } from "./provider.ts";
 import {
 	type Candidate,
@@ -484,12 +485,10 @@ export async function answer(
 	const call = Promise.resolve()
 		.then(() => provider.answer({ ...input, signal: controller.signal }))
 		.then(
-			({ answers, costUsd, inputTokens }) => {
+			(result) => {
+				const { answers } = result;
 				// A call that broke the contract was still made, and still cost.
-				const usage: Usage = {
-					...(costUsd !== undefined && { costUsd }),
-					...(inputTokens !== undefined && { inputTokens }),
-				};
+				const usage = usageOf(result);
 				const breach = contractBreach(input.questions, answers);
 				return breach
 					? { error: providerError(new Error(breach)), usage }

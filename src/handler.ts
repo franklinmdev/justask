@@ -1,7 +1,7 @@
 import { type AskError, type AskInput, ask, type SearchResult } from "./ask.ts";
 import type { Card, CardFields, CardResult } from "./card.ts";
 import type { Fields, Filter, FilterResult } from "./filter.ts";
-import type { Facts, Provider, Usage } from "./provider.ts";
+import { type Facts, type Provider, type Usage, usageOf } from "./provider.ts";
 import type { Search } from "./search.ts";
 
 /**
@@ -126,17 +126,6 @@ export function createCardHandler<F extends CardFields>(
 		};
 		return { response, error: result.error };
 	});
-}
-
-/**
- * Each figure `ask` reported, picked by name like the result, so a field
- * added to `ask`'s results never reaches the browser unseen.
- */
-function usageOf({ costUsd, inputTokens }: Usage): Usage {
-	return {
-		...(costUsd !== undefined && { costUsd }),
-		...(inputTokens !== undefined && { inputTokens }),
-	};
 }
 
 type AskBase = Omit<AskInput<unknown>, "search">;
