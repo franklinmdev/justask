@@ -17,5 +17,10 @@ export default defineConfig({
 	},
 	test: {
 		include: ["src/**/*.test.{ts,tsx}", "test/**/*.test.{ts,tsx}"],
+		// Four workers, not one per core: the whole-App tests are CPU-bound, and
+		// under other sessions' load a worker per core ran them past their 5 s.
+		// Measured on #83 under 8 busy loops: 2 failures a run at the default,
+		// none at 4; about a second slower idle.
+		maxWorkers: 4,
 	},
 });
