@@ -10,12 +10,14 @@
 
 import { readFileSync } from "node:fs";
 import { loadKeyEnv } from "../../scripts/load-env.ts";
+import { evalSets } from "../eval/sets.ts";
 import type { Language } from "../src/content/types.ts";
 
+// The .env holds the token's pair beside the key; skipped when the pair's id is already set.
 loadKeyEnv(undefined, "CF_ACCESS_CLIENT_ID");
 
 const [base, rounds = "1"] = process.argv.slice(2);
-if (!base) {
+if (!base || !/^[1-9]\d*$/.test(rounds)) {
 	throw new Error(
 		"usage: node --conditions=source demo/worker/measure.ts <deployed url> [rounds]",
 	);
@@ -29,12 +31,13 @@ if (!id || !secret) {
 }
 
 const flows = ["search", "filter", "card"] as const;
+type Flow = (typeof flows)[number];
 const languages: Language[] = ["en", "es"];
 
 /** A dev set's requests, in file order. */
-function requests(flow: string, language: Language): string[] {
+function requests(flow: Flow, language: Language): string[] {
 	const file = new URL(
-		`../eval/${flow}-${language}.dev.jsonl`,
+		`../eval/${evalSets(flow, { dev: { verdict: false } }).file(language, "dev")}`,
 		import.meta.url,
 	);
 	return readFileSync(file, "utf8")
@@ -47,15 +50,13 @@ const started = new Date();
 for (let round = 1; round <= Number(rounds); round++) {
 	for (const flow of flows) {
 		for (const language of languages) {
-			const walls: number[] = [];
-			const failed: number[] = [];
-			for (const request of requests(flow, language)) {
+			for (const [row, request] of requests(flow, language).entries()) {
 				const sent = performance.now();
 				const response = await fetch(
 					new URL(`/api/${flow}/${language}`, base),
 					{
 						method: "POST",
-						// Access answers a missing or wrong token with a redirect to its login page.
+						// Access answers a token it does not accept with a redirect to its login page.
 						redirect: "manual",
 						headers: {
 							"content-type": "application/json",
@@ -69,12 +70,17 @@ for (let round = 1; round <= Number(rounds); round++) {
 					},
 				);
 				await response.arrayBuffer();
-				walls.push(Math.round(performance.now() - sent));
-				if (response.status !== 200) failed.push(response.status);
+				const wall = Math.round(performance.now() - sent);
+				console.log(
+					`round ${round} ${flow}/${language} row ${row + 1}: ${response.status} in ${wall} ms`,
+				);
+				// Access refused the token, so every later request would be refused too.
+				if ([301, 302, 303, 307, 401, 403].includes(response.status)) {
+					throw new Error(
+						"justask: Access refused the service token; the Worker needs a policy with the Service Auth action for it (docs/workers.md, Deploy)",
+					);
+				}
 			}
-			console.log(
-				`round ${round} ${flow}/${language}: ${walls.length} requests, wall ms ${walls.join(" ")}${failed.length ? `, not 200: ${failed.join(" ")}` : ""}`,
-			);
 		}
 	}
 }

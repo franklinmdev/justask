@@ -1,6 +1,6 @@
 import type { Provider } from "justask";
 import { jevProvider } from "justask/jev";
-import { createDemoHandler } from "../server/handler.ts";
+import { createDemoHandler, logError } from "../server/handler.ts";
 
 /**
  * The demo as a Cloudflare Worker: the handler behind /api/*, with the
@@ -11,14 +11,7 @@ import { createDemoHandler } from "../server/handler.ts";
 export function createWorker(provider: Provider): {
 	fetch(request: Request): Promise<Response>;
 } {
-	const handle = createDemoHandler(provider, {
-		onError(error) {
-			console.error(
-				`justask: ${error.message}`,
-				error.kind === "provider" ? error.cause : "",
-			);
-		},
-	});
+	const handle = createDemoHandler(provider, { onError: logError });
 	return { fetch: (request) => handle(request) };
 }
 

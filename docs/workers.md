@@ -9,7 +9,7 @@ One Worker on the free plan, `justask-demo` (`wrangler.jsonc`):
 - The frontend is what `pnpm demo:build` writes to `demo/dist`, served as the Worker's static assets. Static requests never reach the Worker's code, so they cost no Worker CPU and, per Cloudflare's pricing page, are "free and unlimited".
 - `/api/*` alone runs the Worker first (`run_worker_first`), which serves the demo's handler, `createDemoHandler`, with the real Jev provider (`demo/worker/index.ts`). The handler is built once per isolate, at startup, not per request.
 - The key is the Worker's secret `TYPESAFE_API_KEY`. Under `nodejs_compat` the runtime fills `process.env` from the Worker's secrets, where the TypeSafe SDK reads it, as it does on the dev server. It is in no file of the repo and in neither bundle: on 2026-09-24 the key's value was searched for in `demo/dist` and in the Worker bundle wrangler writes, and found in neither (its name is in the Worker bundle, as in the SDK).
-- Workers Logs is on (`observability`), which is where each request's CPU time is read.
+- Workers Logs is on (`observability`), which is where each request's CPU time is read. A failed request logs its error and, for a provider error, the SDK's error object, as on the dev server. That object holds TypeSafe's response (status, body, response headers), never the request's `Authorization` header, and the SDK redacts request headers even in its debug log (read in `@typesafe-ai/sdk` 0.6.0's `dist/index.mjs` on 2026-09-24). Whether Workers Logs stores incoming request headers, which would hold the Access service token's secret, is unverified; the token is deleted once the measure is written.
 - `pnpm demo` is unchanged: the Vite dev server with the handler as middleware, the key from `.env`.
 
 wrangler bundles `justask` from `src/` through the `source` export condition, set by `WRANGLER_BUILD_CONDITIONS` in the package scripts, as the tests and the dev server do.
@@ -31,7 +31,7 @@ Each step needs the owner's Cloudflare account. The key is typed at a prompt, ne
 3. Lock it behind Access: Workers & Pages, `justask-demo`, Settings, Domains & Routes, and Enable Cloudflare Access on the `workers.dev` URL (and the Preview URLs). Cloudflare makes one policy per Worker, `justask-demo - Production`; set it to allow the owner's email alone. What that policy allows before it is edited is unverified, so check it.
 4. Open the URL in a private window: Access must ask for a login first.
 5. Only then `pnpm exec wrangler secret put TYPESAFE_API_KEY`, and paste the key at the prompt. Logged in, every flow now answers.
-6. For the measure, create a service token (Zero Trust, Access controls, Service credentials, Service Tokens), add a Service Auth rule for it to the Worker's policy, and put its pair in the main checkout's `.env` as `CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET`. Cloudflare shows the secret once. Delete the token once the measure is written down.
+6. For the measure, create a service token (Zero Trust, Access controls, Service credentials, Service Tokens), add a second policy to the Worker's Access application with the **Service Auth** action and that token as its rule (with the Allow action, Access sends the token to the login page), and put its pair in the main checkout's `.env` as `CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET`. Cloudflare shows the secret once. Delete the token once the measure is written down.
 
 The Worker stays behind Access until the launch ticket of #29, so nobody spends the key before the limits exist.
 
@@ -42,13 +42,13 @@ The free plan allows 10 ms of CPU per request; waiting on `fetch`, such as the J
 ### Procedure
 
 1. Deploy, then send nothing else for a few minutes, so the first measured request lands on a fresh isolate if Cloudflare evicted it (unverified that a few minutes is enough).
-2. `node --conditions=source demo/worker/measure.ts <workers.dev URL> 3`: every dev row of the search, filter and card eval sets, both languages (12, 20 and 28 rows per language), three times over, one at a time: 360 real Jev calls on the owner's key. It prints each request's status and wall time, and the run's window.
+2. `node --conditions=source demo/worker/measure.ts <workers.dev URL> 3`: every dev row of the search, filter and card eval sets, both languages (12, 20 and 28 rows per language), three times over, one at a time: 360 real Jev calls on the owner's key. One request at a time is not how a visitor types, but CPU is per request, so the pace does not change it. It prints each request's status and wall time, and the run's window, and stops at the first request Access refuses.
 3. In the dashboard, Workers & Pages, `justask-demo`, Observability, Query Builder, over the printed window: group by `$workers.event.request.path`, and calculate the count, median, p99 and max of `$workers.cpuTimeMs`. The same query runs on the Workers Observability REST API (`POST /accounts/{account_id}/workers/observability/telemetry/query`, a token with Workers Observability Write), not used yet.
 4. Write the table below, with the date, and the verdict.
 
 ### Local signal, not the measure (2026-09-24)
 
-In Node 24 on the owner's machine, the demo's handler with a provider that answers at once, one request per flow and language 60 times over, CPU from `process.cpuUsage` (process-wide, so GC and other threads count):
+In Node 24 on the owner's machine, from a throwaway script not kept in the repo: the demo's handler with a provider that answers at once, one request per flow and language 60 times over, CPU from `process.cpuUsage` (process-wide, so GC and other threads count):
 
 | Flow | First request | Warm median | Warm p95 | Warm max |
 |---|---|---|---|---|

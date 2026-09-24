@@ -168,6 +168,14 @@ export function demoCard(content: Content): Card<ExpenseFields> {
 	};
 }
 
+/** Logs a failed request on the server: the dev server's terminal, or Workers Logs. */
+export function logError(error: AskError): void {
+	console.error(
+		`justask: ${error.message}`,
+		error.kind === "provider" ? error.cause : "",
+	);
+}
+
 /**
  * The demo's server side: a search, a filter and a card handler per
  * language, each at its own route with its own catalog. Both languages'
