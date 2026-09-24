@@ -73,11 +73,11 @@ The raw answers of one eval run, saved with the gate and kill lines it ran under
 _Avoid_: Results, output, trace
 
 **Transport failure**:
-An error where the provider did not answer at all: a timeout, or an overload status such as 529, another 5xx, or a lost connection, after `ask`'s one more call (ADR 0013). Not an answer that broke the contract, nor an adapter that threw otherwise. On the errors line it leaves the line pending, and only its rows are remeasured (docs/card-eval.md, Latency).
+An error where the provider did not answer at all: a timeout, or an overload status such as 529, another 5xx, or a lost connection on both of `ask`'s calls (ADR 0013). Not an answer that broke the contract, nor an adapter that threw otherwise. On the errors line it leaves the line pending, and only its rows are remeasured (docs/card-eval.md, Latency).
 _Avoid_: Outage, flake, provider error (which covers both)
 
 **Remeasure**:
-A later run of only the rows a verdict run left pending on transport failures, whose answers replace theirs in that run's report. Not a full rerun of the set, which the latency rule asks for.
+A later run of only the rows a verdict run left pending on transport failures, whose answers replace theirs in that run's report. Not a later run of every row, which the latency rule asks for.
 _Avoid_: Retry (the product's one more call), rerun
 
 **Provider probe**:
