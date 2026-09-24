@@ -178,6 +178,8 @@ function declared(logged: LoggedCardField, gate: number): CardField {
 		case "several":
 			return { ...base, kind: "catalog", several: true, shortlist: () => [] };
 		case "date":
+			// Any direction does: only `ask` reads it, to parse the request, and
+			// the logged candidates are parsed already.
 			return { ...base, kind: "date", reads: "past" };
 		case "time":
 			return { ...base, kind: "time" };
@@ -241,26 +243,29 @@ function expectedValue(
  */
 function readCard(row: CardRunRow, gates: Record<string, number>) {
 	const intent = readRowIntent(row, gates[INTENT] as number);
-	const at: Record<string, FieldReading> = {};
+	const readings: Record<string, FieldReading> = {};
 	for (const [name, gate] of Object.entries(gates)) {
 		if (name === INTENT) continue;
 		const reading = readField(row, name, gate);
-		at[name] = intent.passes ? reading : { ...reading, value: null };
+		readings[name] = intent.passes ? reading : { ...reading, value: null };
 	}
-	if (intent.passes) readImplied(row, at);
-	return { intent, at };
+	if (intent.passes) readImplied(row, readings);
+	return { intent, readings };
 }
 
 /** Fills, in field order, a gap another field's filled item implies a value for (ADR 0012). */
-function readImplied(row: CardRunRow, at: Record<string, FieldReading>): void {
-	for (const [name, reading] of Object.entries(at)) {
+function readImplied(
+	row: CardRunRow,
+	readings: Record<string, FieldReading>,
+): void {
+	for (const [name, reading] of Object.entries(readings)) {
 		const logged = row.fields[name];
 		if (logged?.kind !== "catalog" || typeof reading.value !== "string") {
 			continue;
 		}
 		const item = logged.candidates.find(({ id }) => id === reading.value);
 		for (const [target, ids] of Object.entries(item?.implies ?? {})) {
-			const own = at[target];
+			const own = readings[target];
 			const several = row.fields[target];
 			if (!item || !own || own.value !== null || several?.kind !== "several") {
 				continue;
@@ -280,7 +285,9 @@ function readImplied(row: CardRunRow, at: Record<string, FieldReading>): void {
 				ids,
 				row.pairs?.[target],
 			);
-			if (filled) at[target] = { ...own, value: filled, implied: item.id };
+			if (filled) {
+				readings[target] = { ...own, value: filled, implied: item.id };
+			}
 		}
 	}
 }
@@ -304,32 +311,36 @@ export function scoreCardRun(
 	const names = Object.keys(gates).filter((name) => name !== INTENT);
 	const answered = run.rows.filter((row) => !row.error);
 	const read = answered.map((row) => ({ row, ...readCard(row, gates) }));
-	const filledIn = (at: Record<string, FieldReading>) =>
-		names.filter((name) => at[name]?.value != null);
-	const wrongIn = (row: CardRunRow, at: Record<string, FieldReading>) =>
-		filledIn(at).filter(
+	const filledIn = (readings: Record<string, FieldReading>) =>
+		names.filter((name) => readings[name]?.value != null);
+	const wrongIn = (row: CardRunRow, readings: Record<string, FieldReading>) =>
+		filledIn(readings).filter(
 			(name) =>
-				!sameCardValue(at[name]?.value ?? null, expectedValue(row, name)),
+				!sameCardValue(readings[name]?.value ?? null, expectedValue(row, name)),
 		);
 
 	const cards = read.filter(({ row }) => row.kind !== "nothing");
-	const filled = cards.filter(({ at }) => filledIn(at).length > 0);
-	const exact = filled.filter(({ row, at }) => wrongIn(row, at).length === 0);
+	const filled = cards.filter(({ readings }) => filledIn(readings).length > 0);
+	const exact = filled.filter(
+		({ row, readings }) => wrongIn(row, readings).length === 0,
+	);
 	let fieldsExpected = 0;
 	let fieldsFilled = 0;
-	for (const { row, at } of cards) {
+	for (const { row, readings } of cards) {
 		for (const name of names) {
 			if (expectedValue(row, name) === null) continue;
 			fieldsExpected++;
-			if (at[name]?.value != null) fieldsFilled++;
+			if (readings[name]?.value != null) fieldsFilled++;
 		}
 	}
 	const nothing = read.filter(({ row }) => row.kind === "nothing");
-	const invented = nothing.filter(({ at }) => filledIn(at).length > 0);
+	const invented = nothing.filter(
+		({ readings }) => filledIn(readings).length > 0,
+	);
 	const ambiguous = read.filter(({ row }) => row.kind === "ambiguous");
-	const leaked = ambiguous.filter(({ row, at }) =>
+	const leaked = ambiguous.filter(({ row, readings }) =>
 		Object.entries(row.expected).some(
-			([name, value]) => value === HELD && at[name]?.value != null,
+			([name, value]) => value === HELD && readings[name]?.value != null,
 		),
 	);
 
@@ -348,7 +359,7 @@ export function scoreCardRun(
 	};
 
 	const misses: CardMiss[] = [];
-	for (const { row, intent, at } of read) {
+	for (const { row, intent, readings } of read) {
 		const wantsRecord = row.kind !== "nothing";
 		if (wantsRecord !== intent.passes) {
 			misses.push({
@@ -367,7 +378,7 @@ export function scoreCardRun(
 		// is listed beside the fields it let through.
 		if (!intent.passes) continue;
 		for (const name of names) {
-			const got = at[name]?.value ?? null;
+			const got = readings[name]?.value ?? null;
 			const wanted = row.expected[name] ?? null;
 			const expected = wanted === HELD ? null : wanted;
 			if (sameCardValue(got, expected)) continue;
@@ -378,9 +389,9 @@ export function scoreCardRun(
 				field: name,
 				expected: wanted,
 				got,
-				probability: at[name]?.probability ?? null,
-				label: at[name]?.label ?? null,
-				blame: at[name]?.implied ? "implied" : blame(row, name, expected),
+				probability: readings[name]?.probability ?? null,
+				label: readings[name]?.label ?? null,
+				blame: readings[name]?.implied ? "implied" : blame(row, name, expected),
 			});
 		}
 	}
@@ -425,13 +436,14 @@ export function scoreCardRun(
 	};
 }
 
-type Read = {
+/** A row read at the gates: its intent, and each field's reading. */
+type ReadCard = {
 	row: CardRunRow;
 	intent: { passes: boolean };
-	at: Record<string, FieldReading>;
+	readings: Record<string, FieldReading>;
 };
 
-function intentStats(gate: number, read: Read[]): FieldStats {
+function intentStats(gate: number, read: ReadCard[]): FieldStats {
 	const stats = emptyStats(gate);
 	for (const { row, intent } of read) {
 		const wantsRecord = row.kind !== "nothing";
@@ -458,11 +470,11 @@ function intentStats(gate: number, read: Read[]): FieldStats {
  * no gate on the rows that ask for a new record only, since on a nothing row
  * the intent, not the field, keeps the card empty.
  */
-function fieldStats(name: string, gate: number, read: Read[]): FieldStats {
+function fieldStats(name: string, gate: number, read: ReadCard[]): FieldStats {
 	const stats = emptyStats(gate);
-	for (const { row, at } of read) {
+	for (const { row, readings } of read) {
 		const expected = expectedValue(row, name);
-		const got = at[name]?.value ?? null;
+		const got = readings[name]?.value ?? null;
 		if (expected !== null) {
 			stats.expected++;
 			if (got !== null) stats.filled++;
@@ -545,8 +557,8 @@ export function compareCardRuns(
 	for (const row of first.rows) {
 		const other = again.get(row.id);
 		if (row.error || !other || other.error) continue;
-		const before = readCard(row, gates).at;
-		const after = readCard(other, gates).at;
+		const before = readCard(row, gates).readings;
+		const after = readCard(other, gates).readings;
 		for (const name of Object.keys(before)) {
 			const was = before[name]?.value ?? null;
 			const is = after[name]?.value ?? null;
