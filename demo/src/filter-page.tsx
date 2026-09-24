@@ -27,8 +27,10 @@ import { CaseLayout } from "./showcase.tsx";
 import { useSuggest } from "./trace.ts";
 import {
 	type Applied,
-	applyTo,
+	answerOver,
 	matches,
+	setByHand,
+	type Table,
 	transactionsOn,
 } from "./transactions.ts";
 
@@ -114,7 +116,8 @@ export function FilterPage({
 	const { copy } = content;
 	const words = fieldWords(content);
 	// What the table's own controls hold: an answer sets them, and so does the person.
-	const [applied, setApplied] = useState<Applied>({});
+	const [table, setTable] = useState<Table>({ applied: {}, byAnswer: [] });
+	const { applied } = table;
 	// Clear filters renews the controls, so text in a box that set no bound goes too.
 	const [cleared, setCleared] = useState(0);
 	const [settling, setSettling] = useState<Settling>({ round: 0, names: [] });
@@ -127,7 +130,7 @@ export function FilterPage({
 		endpoint: filterEndpoint(content.language),
 		timing: { on: "type", debounceMs: DEBOUNCE_MS },
 		onConfirm: (value) => {
-			setApplied((table) => applyTo(table, value));
+			setTable((now) => answerOver(now, value));
 			const names = fieldOrder.filter((name) => value[name] !== undefined);
 			setSettling(({ round }) => ({ round: round + 1, names }));
 			const held = fieldOrder.filter(
@@ -230,7 +233,7 @@ export function FilterPage({
 							className="clear"
 							onClick={() => {
 								replay.stop();
-								setApplied({});
+								setTable({ applied: {}, byAnswer: [] });
 								setCleared((count) => count + 1);
 							}}
 						>
@@ -242,10 +245,11 @@ export function FilterPage({
 					key={cleared}
 					content={content}
 					value={applied}
-					onChange={(value) => {
-						// The person's choice stands: the replay never applies over it.
+					onChange={(value, name) => {
+						// The person's choice stands: the replay never applies over it,
+						// and a later answer keeps it.
 						replay.stop();
-						setApplied(value);
+						setTable((now) => setByHand(now, name, value));
 					}}
 					settling={settling}
 				/>
@@ -268,7 +272,8 @@ function TableFilters({
 }: {
 	content: Content;
 	value: Applied;
-	onChange: (value: Applied) => void;
+	/** The controls' new value, and the field the person changed. */
+	onChange: (value: Applied, name: FieldName) => void;
 	settling: Settling;
 }) {
 	const { copy } = content;
@@ -276,7 +281,7 @@ function TableFilters({
 	const format = formats(content.locale);
 
 	function set<K extends FieldName>(name: K, field: Applied[K] | undefined) {
-		onChange(withKey(value, name, field));
+		onChange(withKey(value, name, field), name);
 	}
 	const day = (end: "from" | "to") => (iso: string | undefined) =>
 		set("date", withEnd(value.date, end, iso));

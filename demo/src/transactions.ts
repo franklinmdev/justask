@@ -1,8 +1,18 @@
 import type { FilterValue } from "justask";
-import type { Transaction, TransactionFields } from "./content/types.ts";
+import type {
+	FieldName,
+	Transaction,
+	TransactionFields,
+} from "./content/types.ts";
 import { LOCAL_CURRENCY } from "./format.ts";
 
 export type Applied = FilterValue<TransactionFields>;
+
+/**
+ * What the table's controls hold, and which of them the latest answer set
+ * rather than the person.
+ */
+export type Table = { applied: Applied; byAnswer: FieldName[] };
 
 /**
  * The Monday of the week the content's transactions are dated for, the week
@@ -63,4 +73,34 @@ export function applyTo(table: Applied, value: Applied): Applied {
 		next.amount = { ...rest, min: exact, max: exact };
 	}
 	return next;
+}
+
+/**
+ * The table once a new answer applies: the fields earlier answers set go
+ * first, so a new request starts over rather than narrowing the last one,
+ * and only what the person set by hand stays beside it (#123). A field the
+ * person set that the answer fills takes the answer's value.
+ */
+export function answerOver(table: Table, value: Applied): Table {
+	const byHand = Object.fromEntries(
+		Object.entries(table.applied).filter(
+			([name]) => !table.byAnswer.includes(name as FieldName),
+		),
+	) as Applied;
+	return {
+		applied: applyTo(byHand, value),
+		byAnswer: Object.keys(value) as FieldName[],
+	};
+}
+
+/** The table once the person sets one control by hand: that field is theirs now. */
+export function setByHand(
+	table: Table,
+	name: FieldName,
+	applied: Applied,
+): Table {
+	return {
+		applied,
+		byAnswer: table.byAnswer.filter((other) => other !== name),
+	};
 }
