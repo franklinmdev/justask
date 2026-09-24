@@ -301,7 +301,7 @@ Every saved filter run log was rescored with no call: a field keeps the pair its
 | Logs | Status pairs saved | What changes |
 |---|---|---|
 | Round 1 (`filter-<en\|es>-<1\|2>`), round 2 (`-round2-<1\|2>`), dev run 1 (`-dev-1`) | none | nothing |
-| Round 3 (`-round3-<1\|2>`) | rows 31 and 32, both languages | nothing the report judges: the status gate holds all 8 (open 0.51 on row 31 in English, paid 0.70 and 0.60 on row 32 in Spanish, `not_available` on top of the rest). Verdict PASS in both languages, measures unchanged. The status field's highest wrong pick, none before, is now those picks: 0.51 in English, 0.70 and 0.60 in Spanish |
+| Round 3 (`-round3-<1\|2>`) | rows 31 and 32, both languages | nothing the report judges: the status gate holds all 8 (open 0.51 on row 31 in English, paid 0.70 and 0.60 on row 32 in Spanish, `not_available` on top of the rest). Verdict PASS in both languages, the six kill-line measures unchanged. Only the status field's gate statistics move, which judge no kill line: its highest wrong pick, none before, is now those picks: 0.51 in English, 0.70 and 0.60 in Spanish |
 | Probes (`-pair-<1\|2>`) | rows 1 to 4 and 7 and 8, both languages | rows 7 and 8 fill right, all 8 (overdue 0.98 to 1, open 0.99 to 1): coverage 0.5 to 1 (4 of 4 filterable rows). Rows 1 to 4 stay held by the gate (no pick above 0.74). No verdict, as before |
 
 - **No row gains a miss, and no verdict changes.** The only misses that go are the probes' rows 7 and 8, in both languages and both runs.

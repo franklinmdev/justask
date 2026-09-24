@@ -1,9 +1,10 @@
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
-import { ask, builtInParser } from "justask";
+import { ask, builtInParser, type Fields, type Filter } from "justask";
 import {
 	type FilterEvalKind,
 	type FilterEvalRow,
+	type FilterMiss,
 	parseFilterEvalSet,
 	readFilterRun,
 	scoreFilterRun,
@@ -40,6 +41,23 @@ function shape(row: FilterEvalRow, field: FieldName): string | undefined {
 	return min !== undefined ? "min" : "max";
 }
 
+/** The fields a filter holds on a named pair; it finds the pair before any answer, so a failing provider still reports it. */
+async function pairHeldBy(
+	filter: Filter<Fields>,
+	request: string,
+): Promise<string[]> {
+	const { filter: result } = await ask({
+		request,
+		facts: { ...FACTS, today: TODAY },
+		provider: failingProvider(new Error("no call")),
+		timeoutMs: 1_000,
+		filter,
+	});
+	return Object.entries(result.fields)
+		.filter(([, field]) => "pair" in field && field.pair)
+		.map(([name]) => name);
+}
+
 describe.each([english, spanish])("the filter sets in $language", (content) => {
 	const evalSet = parseFilterEvalSet(read(`filter-${content.language}.jsonl`));
 	const devSet = parseFilterEvalSet(
@@ -56,19 +74,7 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 	);
 	const filter = demoFilter(content);
 	const everyRow = [...devSet, ...evalSet, ...round2, ...pairSet, ...round3];
-	/** The fields the code holds on a named pair; it finds the pair before any answer, so a failing provider still reports it. */
-	const pairHeld = async (request: string) => {
-		const { filter: result } = await ask({
-			request,
-			facts: { ...FACTS, today: TODAY },
-			provider: failingProvider(new Error("no call")),
-			timeoutMs: 1_000,
-			filter,
-		});
-		return Object.entries(result.fields)
-			.filter(([, field]) => "pair" in field && field.pair)
-			.map(([name]) => name);
-	};
+	const pairHeld = (request: string) => pairHeldBy(filter, request);
 	/** Each row's held fields, as "<row id> <field>". */
 	const pairHeldIn = async (set: FilterEvalRow[]) => {
 		const held: string[] = [];
@@ -208,6 +214,13 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 		const held = await pairHeldIn(pairSet);
 		const probe = `${content.language}-p`;
 		expect(held).toEqual([`${probe}-05 vendor`, `${probe}-06 vendor`]);
+	});
+
+	// In Spanish the statuses declare no names, so no request names a pair of
+	// them: the declaration is what keeps the status out if names return.
+	it("declare the status out of the pair hold, and the vendor in it (#80)", () => {
+		expect(filter.fields.status.holdsPair).toBe(false);
+		expect(filter.fields.vendor).not.toHaveProperty("holdsPair");
 	});
 
 	it.each([
@@ -380,31 +393,15 @@ describe("the saved filter runs, rescored with the status out of the pair hold",
 		en: demoFilter(english),
 		es: demoFilter(spanish),
 	};
-	const heldNow = async (language: "en" | "es", request: string) => {
-		const { filter: result } = await ask({
-			request,
-			facts: { ...FACTS, today: TODAY },
-			provider: failingProvider(new Error("no call")),
-			timeoutMs: 1_000,
-			filter: filters[language],
-		});
-		return new Set(
-			Object.entries(result.fields)
-				.filter(([, field]) => "pair" in field && field.pair)
-				.map(([name]) => name),
-		);
-	};
 	const rescore = async (file: string) => {
-		const language = file.slice("filter-".length, "filter-xx".length) as
-			| "en"
-			| "es";
+		const language = /^filter-(en|es)-/.exec(file)?.[1] as "en" | "es";
 		const run = await readFilterRun(evalFile(`runs/${file}`).pathname);
 		const rows = await Promise.all(
 			run.rows.map(async ({ pairs, ...row }) => {
 				if (!pairs) return row;
-				const held = await heldNow(language, row.request);
+				const held = await pairHeldBy(filters[language], row.request);
 				const kept = Object.fromEntries(
-					Object.entries(pairs).filter(([name]) => held.has(name)),
+					Object.entries(pairs).filter(([name]) => held.includes(name)),
 				);
 				return Object.keys(kept).length > 0 ? { ...row, pairs: kept } : row;
 			}),
@@ -414,15 +411,8 @@ describe("the saved filter runs, rescored with the status out of the pair hold",
 			after: scoreFilterRun({ ...run, rows }),
 		};
 	};
-	const missKey = ({
-		id,
-		field,
-		got,
-	}: {
-		id: string;
-		field: string;
-		got: unknown;
-	}) => `${id} ${field} ${JSON.stringify(got)}`;
+	const missKey = ({ id, field, got }: FilterMiss) =>
+		`${id} ${field} ${JSON.stringify(got)}`;
 
 	it("fill the status of the probes' negated rows, and gain no miss anywhere", async () => {
 		const gone: string[] = [];
@@ -439,15 +429,16 @@ describe("the saved filter runs, rescored with the status out of the pair hold",
 					gone.push(`${file} ${miss.id} ${miss.field}`);
 			}
 		}
-		expect(gone).toEqual(
-			["en-pair-1", "en-pair-2", "es-pair-1", "es-pair-2"].flatMap((log) => {
-				const language = log.slice(0, 2);
-				return [
-					`filter-${log}.jsonl ${language}-p-07 status`,
-					`filter-${log}.jsonl ${language}-p-08 status`,
-				];
-			}),
-		);
+		expect(gone).toEqual([
+			"filter-en-pair-1.jsonl en-p-07 status",
+			"filter-en-pair-1.jsonl en-p-08 status",
+			"filter-en-pair-2.jsonl en-p-07 status",
+			"filter-en-pair-2.jsonl en-p-08 status",
+			"filter-es-pair-1.jsonl es-p-07 status",
+			"filter-es-pair-1.jsonl es-p-08 status",
+			"filter-es-pair-2.jsonl es-p-07 status",
+			"filter-es-pair-2.jsonl es-p-08 status",
+		]);
 	});
 
 	it("change no verdict, and no measure outside the probes' coverage", async () => {
