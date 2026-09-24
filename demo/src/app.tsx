@@ -10,7 +10,7 @@ import { english } from "./content/en.ts";
 import { spanish } from "./content/es.ts";
 import type { Case, Language } from "./content/types.ts";
 import { FilterPage } from "./filter-page.tsx";
-import { type Recordings, recordings as recorded } from "./recording.ts";
+import { type Recordings, recordings as recordingFiles } from "./recording.ts";
 import { SearchPage } from "./search-page.tsx";
 import {
 	HoodPlaceContext,
@@ -59,7 +59,7 @@ function hrefOf(view: View): string {
  */
 export function App({
 	fetch,
-	recordings = recorded,
+	recordings = recordingFiles,
 }: {
 	fetch?: typeof globalThis.fetch;
 	recordings?: Recordings | null;
