@@ -4,7 +4,7 @@ import {
 	useEffect,
 	useState,
 } from "react";
-import { ScaleContext } from "./calculator.tsx";
+import { CalculatorInputsContext } from "./calculator.tsx";
 import { CardPage } from "./card-page.tsx";
 import { english } from "./content/en.ts";
 import { spanish } from "./content/es.ts";
@@ -176,7 +176,12 @@ export function App({
 					role="tabpanel"
 					aria-labelledby={`case-tab-${shownCase}`}
 				>
-					<ScaleContext value={{ users, setUsers, actions, setActions }}>
+					<CalculatorInputsContext
+						value={{
+							users: { value: users, set: setUsers },
+							actions: { value: actions, set: setActions },
+						}}
+					>
 						{shownCase === "table" && (
 							<FilterPage
 								key={language}
@@ -198,7 +203,7 @@ export function App({
 								{...shared}
 							/>
 						)}
-					</ScaleContext>
+					</CalculatorInputsContext>
 				</div>
 			</main>
 		</HoodPlaceContext>

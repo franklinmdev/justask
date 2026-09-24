@@ -4,7 +4,7 @@ import { formats } from "./format.ts";
 import type { Trace } from "./trace.ts";
 
 /** A month, as the calculator counts it. */
-export const DAYS = 30;
+const DAYS = 30;
 
 /**
  * The price the calculator names, read from TypeSafe's docs on the day it was
@@ -32,18 +32,21 @@ export function monthlyCost({
 	return users * actionsPerDay * costPerCall * DAYS;
 }
 
+/** One of the calculator's inputs: the digits typed, and setting them. */
+type CalculatorInput = { value: string; set: (value: string) => void };
+
 /**
  * What the person typed into the calculator, kept by the page so it holds
  * across the cases. Digits only, so it reads the same in either language.
  */
-export type Scale = {
-	users: string;
-	setUsers: (users: string) => void;
-	actions: string;
-	setActions: (actions: string) => void;
+export type CalculatorInputs = {
+	users: CalculatorInput;
+	actions: CalculatorInput;
 };
 
-export const ScaleContext = createContext<Scale | null>(null);
+export const CalculatorInputsContext = createContext<CalculatorInputs | null>(
+	null,
+);
 
 /** A whole number, or undefined while the field is empty. */
 function countOf(digits: string): number | undefined {
@@ -67,11 +70,11 @@ export function Calculator({
 }) {
 	const copy = content.copy.calculator;
 	const format = formats(content.locale);
-	const scale = useContext(ScaleContext);
-	if (!scale) throw new Error("The calculator needs the page's scale");
+	const inputs = useContext(CalculatorInputsContext);
+	if (!inputs) throw new Error("The calculator needs the page's inputs");
 	const id = useId();
-	const users = countOf(scale.users);
-	const actions = countOf(scale.actions);
+	const users = countOf(inputs.users.value);
+	const actions = countOf(inputs.actions.value);
 	const costPerCall = trace?.costUsd;
 	const month =
 		users === undefined || actions === undefined || costPerCall === undefined
@@ -97,18 +100,8 @@ export function Calculator({
 						};
 
 	const fields = [
-		{
-			name: "users",
-			label: copy.users,
-			value: scale.users,
-			set: scale.setUsers,
-		},
-		{
-			name: "actions",
-			label: copy.actions,
-			value: scale.actions,
-			set: scale.setActions,
-		},
+		{ name: "users", label: copy.users, ...inputs.users },
+		{ name: "actions", label: copy.actions, ...inputs.actions },
 	];
 
 	return (
@@ -159,7 +152,7 @@ export function Calculator({
 						) : (
 							<dd>
 								<output className="data calculator-month">
-									{format.month(month)}
+									{format.cents(month)}
 								</output>
 							</dd>
 						)}
