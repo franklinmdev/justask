@@ -225,9 +225,10 @@ describe("the shaped card sets", () => {
 /**
  * Frozen on the owner's approval, 2026-09-23 (#20, round 2 #44, round 3
  * #57, round 4 #63, round 5 #73, #77's office probes, #79's false-fill probes
- * and round 6; round 7 #88 and round 8 #97 on 2026-09-24), before any call. A failure here
- * means the verdict's inputs changed after the fact: revert the edit, or log
- * the owner's call in docs/card-eval.md with a new checksum or value.
+ * and round 6; round 7 #88, round 8 #97, and #99's probes and round 9 on
+ * 2026-09-24), before any call. A failure here means the verdict's inputs
+ * changed after the fact: revert the edit, or log the owner's call in
+ * docs/card-eval.md with a new checksum or value.
  */
 describe("the frozen card eval", () => {
 	it.each([
@@ -302,6 +303,15 @@ describe("the frozen card eval", () => {
 			"card-es.round8.jsonl",
 			"2654433d9a98d9ada94dc673d0397da636b8115936ec31b49b5d692f688b4e58",
 		],
+		// Round 9, approved in seven batches on 2026-09-24 (#99), before any call.
+		[
+			"card-en.round9.jsonl",
+			"75738ca4d7feea881a255279cc1b21502e5c73bd302249c187238292b452dc1c",
+		],
+		[
+			"card-es.round9.jsonl",
+			"17896eac7275d3fac3f8cd22c13b3f192d0dec96dcf6303e0c8f6918d095d552",
+		],
 		// #63's pair probes, approved before any call: the pair rule was chosen from their runs.
 		[
 			"card-en.pair.jsonl",
@@ -328,6 +338,24 @@ describe("the frozen card eval", () => {
 		[
 			"card-es.notoffice.jsonl",
 			"20b88aa279721a6829b80fa16ff07a59dfc69eae44dda0833d410ebe738fdfe1",
+		],
+		// #99's copy probes, approved in two batches on 2026-09-24, before any call.
+		[
+			"card-en.copy.jsonl",
+			"c85406d532565e903180a7da48995edf061c05ceb82d6608d106691d340da2c2",
+		],
+		[
+			"card-es.copy.jsonl",
+			"77ecfd388a2f5a8875090de8eac5d5600a6c6bd68cd99795447c1a895c79e46d",
+		],
+		// #99's false-hold probes for the copy verbs, approved on 2026-09-24, before any call.
+		[
+			"card-en.copyrec.jsonl",
+			"c9c33609f87bdbc61144230d5aafe38ef68a3a85ff5eda50e43303acc67d7dab",
+		],
+		[
+			"card-es.copyrec.jsonl",
+			"fb865c26339047f4493af7113dd5f1aa800670a22ed1608c4a75167745a99be3",
 		],
 	])("keeps %s as approved", (name, sha256) => {
 		const bytes = readFileSync(evalFile(name));

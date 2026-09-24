@@ -227,7 +227,7 @@ describe("ask: card", () => {
 		]);
 	});
 
-	it("offers sending, forwarding and setting a record to a new value as not adding one", async () => {
+	it("offers sending, forwarding, copying someone and setting a record to a new value as not adding one", async () => {
 		const fake = fakeProvider({ intent: answer(INTENT, "not_available") });
 
 		await ask({
@@ -242,7 +242,7 @@ describe("ask: card", () => {
 			intent?.labels.find(({ label }) => label === "not_available")
 				?.description,
 		).toBe(
-			"It is about a expense the person paid but does not add a new one: it changes, cancels, deletes, sends or forwards one, sets one to a new value, or asks a question",
+			"It is about a expense the person paid but does not add a new one: it changes, cancels, deletes, sends or forwards one, copies someone on it, sets one to a new value, or asks a question",
 		);
 	});
 

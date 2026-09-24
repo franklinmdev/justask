@@ -544,6 +544,12 @@ export const spanish: Content = {
 			"mande",
 			"manda",
 			"mandar",
+			"copie",
+			"copiar",
+			"cópiale",
+			"cópiele",
+			"cópiame",
+			"cópieme",
 		],
 		references: [
 			"el gasto",

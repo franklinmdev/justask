@@ -28,6 +28,8 @@ export const CARD_SETS = {
 	round7: { verdict: true, mixes: 4, shapes: ROUND7_SHAPES },
 	/** Round 8's, fresh rows on round 7's shapes, the first under #93's retry and errors rule (#97). */
 	round8: { verdict: true, mixes: 4, shapes: ROUND7_SHAPES },
+	/** Round 9's, fresh rows on round 7's shapes, after the copy label (#99). */
+	round9: { verdict: true, mixes: 4, shapes: ROUND7_SHAPES },
 	/** The gates are fixed from its runs. */
 	dev: { verdict: false },
 	/** #57's probes: commands on a recorded expense, and records with the command words in them. */
@@ -38,6 +40,10 @@ export const CARD_SETS = {
 	office: { verdict: false },
 	/** #79's probes: records at an office vendor that bought something else. */
 	notoffice: { verdict: false },
+	/** #99's probes: copying someone on a record that exists, and records that name a person with no send. */
+	copy: { verdict: false },
+	/** #99's records with the copy verbs or a charge in them, the Spanish list's false holds. */
+	copyrec: { verdict: false },
 } satisfies Record<string, CardSetInfo>;
 
 export type CardSet = keyof typeof CARD_SETS;

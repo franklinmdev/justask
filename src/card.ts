@@ -294,7 +294,7 @@ export function intentQuestion(card: Card<CardFields>): Question {
 			},
 			{
 				label: NOT_AVAILABLE,
-				description: `It is about a ${card.description} but does not add a new one: it changes, cancels, deletes, sends or forwards one, sets one to a new value, or asks a question`,
+				description: `It is about a ${card.description} but does not add a new one: it changes, cancels, deletes, sends or forwards one, copies someone on it, sets one to a new value, or asks a question`,
 			},
 		],
 	};
