@@ -122,7 +122,7 @@ if (command === "run") {
 		!SETS.isSet(set) ||
 		!SETS.givesVerdict(set) ||
 		!first ||
-		!later.length
+		!later.at(-1)
 	)
 		usage();
 	await printRemeasure<FilterRun>({

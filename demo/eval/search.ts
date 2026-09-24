@@ -100,7 +100,7 @@ if (command === "run") {
 	console.log(formatReport(scoreRun(after), compareRuns(before, after)));
 } else if (command === "remeasure" || command === "merge") {
 	const [set, first, ...later] = rest;
-	if (!SETS.isSet(set) || !SETS.givesVerdict(set) || !first || !later.length)
+	if (!SETS.isSet(set) || !SETS.givesVerdict(set) || !first || !later.at(-1))
 		usage();
 	await printRemeasure<Run>({
 		first,

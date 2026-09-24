@@ -153,7 +153,7 @@ if (command === "run") {
 		!isCardSet(set) ||
 		!givesVerdict(set) ||
 		!first ||
-		!later.length
+		!later.at(-1)
 	)
 		usage();
 	await printRemeasure<CardRun>({
