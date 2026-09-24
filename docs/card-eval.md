@@ -805,7 +805,15 @@ Per row under `current`, `yes` in runs 1 and 2:
 
 The owner decides. Two ways, each with its cost on a round 6:
 
-1. **Fill `office` from the vendor, in code (recommended).** Eleven of the fourteen vendors in each language sell office services alone (`vendor()`'s `supplies` already says what); a card whose vendor fills with one of them gets `office` too, whatever the tag's pick. In Spanish round 5 run 1 the vendor filled with one of them on 19 cards, 17 of them expecting `office`; the other two were nothing rows the intent held. Rescored with no call over every saved verdict log (rounds 1 to 5, runs 1 and 2, `office` set to `yes` wherever the vendor filled with an office vendor): Spanish round 5 coverage 0.694 to 0.774 and 0.758, exact 0.938 to 0.969 and 0.906 to 0.938; English round 5 0.774 to 0.815, exact 0.97 to 1. No run's exact or held ambiguous fell in any round, and invented cannot move, since the intent gates the card. Its cost: a record at an office vendor that bought something else would get `office` too (a lunch with the cleaning crew, named by vendor); no frozen set has one, so that cost is unmeasured. The coffee vendors (`beanhaven`, `cafetal`) sell beans and machine rental, `meals` or `office`, and stay out. It needs an ADR, like the command and pair holds.
+1. **Fill `office` from the vendor, in code (recommended).** Eleven of the fourteen vendors in each language sell office services alone (`vendor()`'s `supplies` already says what); a card whose vendor fills with one of them gets `office` too, whatever the tag's pick. In Spanish round 5 run 1 the vendor filled with one of them on 19 cards, 17 of them expecting `office`; the other two were nothing rows the intent held. Rescored with no call over every saved verdict log (rounds 1 to 5, runs 1 and 2, `office` set to `yes` wherever the vendor filled with an office vendor), round 5 moves:
+
+   | Round 5 | Coverage | Exact |
+   |---|---|---|
+   | Spanish, run 1 | 0.694 to 0.774 | 0.938 to 0.969 |
+   | Spanish, run 2 | 0.694 to 0.758 | 0.906 to 0.938 |
+   | English | 0.774 to 0.815 | 0.97 to 1 |
+
+   No run's exact or held ambiguous fell in any round, and invented cannot move, since the intent gates the card. Its cost: a record at an office vendor that bought something else would get `office` too (a lunch with the cleaning crew, named by vendor); no frozen set has one, so that cost is unmeasured. The coffee vendors (`beanhaven`, `cafetal`) sell beans and machine rental, `meals` or `office`, and stay out. It needs an ADR, like the command and pair holds.
 2. **Extend the label's list.** Each service added fills the rows that name it, as `backups` did (+0.3 on its row), and nothing else. On a round 6 of fresh rows it gains only where a row names a word added, so its effect cannot be priced from these runs, and tuning the list toward rounds 1 to 5's words fits the past sets, not the next.
 
 No gate, kill line, label or code the demo serves changed.
