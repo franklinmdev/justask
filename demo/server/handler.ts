@@ -77,8 +77,8 @@ export const FILTER_GATES = {
  * The transactions table's filter in one language. The vendor field reads the
  * whole catalog, and the status field its three statuses. A request that
  * names two vendors holds the vendor in code; the status opts out of that
- * hold, since its gate holds every pair and the hold only misread a negated
- * status (ADR 0011, #80).
+ * hold, since its gate already holds a pair of statuses and the hold would
+ * only hold a negated status the provider reads right (ADR 0011, #80).
  */
 export function demoFilter(content: Content): Filter<TransactionFields> {
 	return {
