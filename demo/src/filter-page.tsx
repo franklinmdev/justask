@@ -24,6 +24,7 @@ import {
 	type Settle,
 	Suggestions,
 	settleAt,
+	useTypedText,
 } from "./parts.tsx";
 import type { TableRecording } from "./recording.ts";
 import { useReplay } from "./replay.ts";
@@ -490,6 +491,12 @@ function CatalogSelect<T>({
 	);
 }
 
+/** A bound as its box shows it: whole, or to the cent. */
+function boundText(bound: number | undefined): string {
+	if (bound === undefined) return "";
+	return Number.isInteger(bound) ? String(bound) : bound.toFixed(2);
+}
+
 /**
  * One bound of the amount range: a text box that keeps what the person
  * types, so "86." stays on screen while it is typed, and sets the bound to
@@ -506,16 +513,7 @@ function BoundInput({
 	onChange: (value: number | undefined) => void;
 	placeholder: string;
 }) {
-	// The text the person typed, kept only while the bound holds what it read.
-	const [typed, setTyped] = useState<{ for: number | undefined; text: string }>(
-		{ for: undefined, text: "" },
-	);
-	const shown =
-		value === undefined
-			? ""
-			: Number.isInteger(value)
-				? String(value)
-				: value.toFixed(2);
+	const [shown, type] = useTypedText(value, boundText);
 	return (
 		<input
 			id={id}
@@ -523,12 +521,12 @@ function BoundInput({
 			inputMode="decimal"
 			autoComplete="off"
 			placeholder={placeholder}
-			value={typed.for === value ? typed.text : shown}
+			value={shown}
 			onChange={(event) => {
 				// Only a number's characters: digits, separators and spaces.
 				const text = event.target.value.replace(/[^\d.,\s]/g, "");
 				const number = parseAmount(text);
-				setTyped({ for: number, text });
+				type(text, number);
 				onChange(number);
 			}}
 		/>

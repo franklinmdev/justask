@@ -1,6 +1,6 @@
 import type { Usage } from "justask";
 import type { SearchError } from "justask/react";
-import type { CSSProperties } from "react";
+import { type CSSProperties, useState } from "react";
 import type { Content, Cost, HeldReason } from "./content/types.ts";
 import { formats } from "./format.ts";
 import { dayOf, type Recording } from "./recording.ts";
@@ -67,6 +67,25 @@ export function Bar({ value, gate }: { value: number; gate?: number }) {
 			)}
 		</span>
 	);
+}
+
+/**
+ * A number box's text: what the person typed, kept while the value is still
+ * the one it read, so "86." stays on screen while it is typed; otherwise the
+ * value's own text, as when an answer or Clear filters set it.
+ */
+export function useTypedText<V>(
+	value: V | undefined,
+	text: (value: V | undefined) => string,
+): [shown: string, type: (typed: string, read: V | undefined) => void] {
+	const [typed, setTyped] = useState<{ for: V | undefined; text: string }>({
+		for: undefined,
+		text: "",
+	});
+	return [
+		typed.for === value ? typed.text : text(value),
+		(next, read) => setTyped({ for: read, text: next }),
+	];
 }
 
 /**
