@@ -21,6 +21,7 @@ import type {
 	Vendor,
 } from "../src/content/types.ts";
 import { LOCAL_CURRENCY } from "../src/format.ts";
+import { refusal } from "./policy.ts";
 
 /**
  * Fixed by the owner for round 2, before its rows existed: round 1 failed at
@@ -181,7 +182,7 @@ export function logError(error: AskError): void {
  * language, each at its own route with its own catalog. Both languages'
  * local currency is USD, so "$" and "dólares" read as USD and "pesos" names
  * no currency. The provider is built by the caller, on the server, so the key
- * never reaches the browser.
+ * never reaches the browser. The demo's policy runs before every route.
  */
 export function createDemoHandler(
 	provider: Provider,
@@ -223,6 +224,7 @@ export function createDemoHandler(
 	);
 	return async (request) => {
 		const route = routes.get(new URL(request.url).pathname);
-		return route ? route(request) : new Response(null, { status: 404 });
+		if (!route) return new Response(null, { status: 404 });
+		return (await refusal(request)) ?? route(request);
 	};
 }
