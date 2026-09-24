@@ -146,7 +146,7 @@ async function askSearch<T>({
 	search,
 }: AskInput<T>): Promise<AskResult<T>> {
 	checkGate(search.gate, "the search's gate");
-	checkJoiners(search.joiners, "the search's");
+	checkJoiners(search.joiners, "search");
 	const candidates = await search.shortlist(request);
 	checkShortlist(candidates, SEARCH_LABELS);
 	const pair = findPair(request, candidates, search.joiners, {
@@ -198,7 +198,7 @@ async function askFilter<F extends Fields>({
 	timeoutMs,
 	filter,
 }: AskFilterInput<F>): Promise<AskFilterResult<F>> {
-	checkJoiners(filter.joiners, "the filter's");
+	checkJoiners(filter.joiners, "filter");
 	const names = Object.keys(filter.fields);
 	const field = (name: string) => filter.fields[name] as Field;
 	for (const name of names) {
@@ -291,7 +291,7 @@ async function askCard<F extends CardFields>({
 }: AskCardInput<F>): Promise<AskCardResult<F>> {
 	checkGate(card.gate, "the card's gate");
 	checkCommands(card.commands);
-	checkJoiners(card.joiners, "the card's");
+	checkJoiners(card.joiners, "card");
 	const names = Object.keys(card.fields);
 	const field = (name: string) => card.fields[name] as CardFields[string];
 	for (const name of names) {

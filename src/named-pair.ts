@@ -170,16 +170,16 @@ export function findPair(
 
 /**
  * Refuses a blank joiner, or one of several words, which the pair hold would
- * never read. `owner` names who declared them: "the card's".
+ * never read. `owner` is the flow that declared them.
  */
 export function checkJoiners(
 	joiners: Joiners | undefined,
-	owner: string,
+	owner: "search" | "filter" | "card",
 ): void {
 	for (const joiner of [...(joiners?.or ?? []), ...(joiners?.and ?? [])]) {
 		if (!/^\S+$/.test(joiner.trim())) {
 			throw new TypeError(
-				`justask: ${owner} joiner "${joiner}" is not one word`,
+				`justask: the ${owner}'s joiner "${joiner}" is not one word`,
 			);
 		}
 	}
