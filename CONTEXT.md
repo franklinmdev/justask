@@ -80,6 +80,10 @@ _Avoid_: Outage, flake, provider error (which covers both)
 A later run of only the rows a verdict run left pending on transport failures, whose answers replace theirs in that run's report. Not a later run of every row, which the latency rule asks for.
 _Avoid_: Retry (the product's one more call), rerun
 
+**Recovered**:
+A row `ask` called twice (ADR 0013) that ended with no error: the second call answered after the first found the provider unavailable. A report counts it inside the retried rows, as `retried N (recovered M)`. Not a remeasured row, whose answer came from a later run.
+_Avoid_: Fixed, rescued, retried (which counts every row called twice, answered or not)
+
 **Provider probe**:
 A fixed request an eval run sends straight to the provider before its rows and after, so the run log holds the provider's latency apart from the flow's. Not the diagnostic probe sets, which are eval rows, nor the warm-up.
 _Avoid_: Ping, health check

@@ -8,7 +8,9 @@ export {
 	type AskResult,
 	ask,
 	type Pick,
+	type Retried,
 	type SearchResult,
+	type Spent,
 } from "./ask.ts";
 export type {
 	Amount,

@@ -1,4 +1,4 @@
-import type { AskError } from "../ask.ts";
+import type { AskError, Retried } from "../ask.ts";
 import type { Provider, ProviderAnswer } from "../provider.ts";
 import { type Probes, probeWindow } from "./probe.ts";
 
@@ -70,7 +70,7 @@ export function transportFailures<R extends Row>(rows: R[]): R[] {
  * `ask` called twice (ADR 0013), and of those the second call recovered: a
  * retried row with no error.
  */
-export const transportCounts = (rows: (Row & { retried?: true })[]) => {
+export const transportCounts = (rows: (Row & Retried)[]) => {
 	const retried = rows.filter(({ retried }) => retried);
 	return {
 		transport: transportFailures(rows).length,

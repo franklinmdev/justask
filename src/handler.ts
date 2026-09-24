@@ -2,12 +2,13 @@ import {
 	type AskError,
 	type AskInput,
 	ask,
-	type Retried,
 	type SearchResult,
+	type Spent,
+	spent,
 } from "./ask.ts";
 import type { Card, CardFields, CardResult } from "./card.ts";
 import type { Fields, Filter, FilterResult } from "./filter.ts";
-import { type Facts, type Provider, type Usage, usageOf } from "./provider.ts";
+import type { Facts, Provider } from "./provider.ts";
 import type { Search } from "./search.ts";
 
 /**
@@ -54,25 +55,22 @@ export type HandlerError =
  * The call's cost and input tokens come only when the provider reports them,
  * and `retried` only when `ask` called the provider twice (ADR 0013).
  */
-export type SearchHandlerResponse<T> = Usage &
-	Retried & {
-		search: SearchResult<T>;
-		error?: HandlerError;
-	};
+export type SearchHandlerResponse<T> = Spent & {
+	search: SearchResult<T>;
+	error?: HandlerError;
+};
 
 /** The body of a 200 response from the filter handler. Catalog values must survive JSON. */
-export type FilterHandlerResponse<F extends Fields> = Usage &
-	Retried & {
-		filter: FilterResult<F>;
-		error?: HandlerError;
-	};
+export type FilterHandlerResponse<F extends Fields> = Spent & {
+	filter: FilterResult<F>;
+	error?: HandlerError;
+};
 
 /** The body of a 200 response from the card handler. Catalog values must survive JSON. */
-export type CardHandlerResponse<F extends CardFields> = Usage &
-	Retried & {
-		card: CardResult<F>;
-		error?: HandlerError;
-	};
+export type CardHandlerResponse<F extends CardFields> = Spent & {
+	card: CardResult<F>;
+	error?: HandlerError;
+};
 
 /** The body of a 400 response. */
 export type HandlerBadRequest = {
@@ -94,8 +92,7 @@ export function createSearchHandler<T>(
 		const result = await ask({ ...input, search });
 		const response: SearchHandlerResponse<T> = {
 			search: result.search,
-			...usageOf(result),
-			...(result.retried && { retried: true }),
+			...spent(result),
 		};
 		return { response, error: result.error };
 	});
@@ -114,8 +111,7 @@ export function createFilterHandler<F extends Fields>(
 		const result = await ask({ ...input, filter });
 		const response: FilterHandlerResponse<F> = {
 			filter: result.filter,
-			...usageOf(result),
-			...(result.retried && { retried: true }),
+			...spent(result),
 		};
 		return { response, error: result.error };
 	});
@@ -134,8 +130,7 @@ export function createCardHandler<F extends CardFields>(
 		const result = await ask({ ...input, card });
 		const response: CardHandlerResponse<F> = {
 			card: result.card,
-			...usageOf(result),
-			...(result.retried && { retried: true }),
+			...spent(result),
 		};
 		return { response, error: result.error };
 	});

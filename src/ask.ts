@@ -101,28 +101,31 @@ export type AskError =
 export type Retried = { retried?: true };
 
 /**
+ * What a result carries of its provider call: the figures the provider
+ * reported (ADR 0006) and the retry mark (ADR 0013), each left out when unset.
+ */
+export type Spent = Usage & Retried;
+
+/**
  * Each result carries what the provider call used, when the provider reports
  * it: left out when there was no call, when the call failed or timed out, or
  * when the adapter cannot know (ADR 0006). A retried call's figures are the
  * second call's, since the first threw and reported none.
  */
-export type AskResult<T> = Usage &
-	Retried & {
-		search: SearchResult<T>;
-		error?: AskError;
-	};
+export type AskResult<T> = Spent & {
+	search: SearchResult<T>;
+	error?: AskError;
+};
 
-export type AskFilterResult<F extends Fields> = Usage &
-	Retried & {
-		filter: FilterResult<F>;
-		error?: AskError;
-	};
+export type AskFilterResult<F extends Fields> = Spent & {
+	filter: FilterResult<F>;
+	error?: AskError;
+};
 
-export type AskCardResult<F extends CardFields> = Usage &
-	Retried & {
-		card: CardResult<F>;
-		error?: AskError;
-	};
+export type AskCardResult<F extends CardFields> = Spent & {
+	card: CardResult<F>;
+	error?: AskError;
+};
 
 const SEARCH = "search";
 
@@ -491,15 +494,8 @@ export async function answer(
 	input: { request: string; facts: Facts; questions: Question[] },
 	timeoutMs: number,
 	{ retry = true }: { retry?: boolean } = {},
-): Promise<
-	(
-		| { answer: ProviderAnswer; usage: Usage }
-		| { error: AskError; usage?: Usage }
-	) &
-		Retried
-> {
+): Promise<({ answer: ProviderAnswer } | { error: AskError }) & Spent> {
 	const controller = new AbortController();
-	let calls = 0;
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	const timeout = new Promise<{ error: AskError }>((resolve) => {
 		timer = setTimeout(() => {
@@ -516,10 +512,7 @@ export async function answer(
 	// Started inside a promise so an adapter that throws synchronously is caught too.
 	const once = () =>
 		Promise.resolve()
-			.then(() => {
-				calls++;
-				return provider.answer({ ...input, signal: controller.signal });
-			})
+			.then(() => provider.answer({ ...input, signal: controller.signal }))
 			.then(
 				(result) => {
 					const { answers } = result;
@@ -527,34 +520,30 @@ export async function answer(
 					const usage = usageOf(result);
 					const breach = contractBreach(input.questions, answers);
 					return breach
-						? { error: providerError(new Error(breach)), usage }
-						: { answer: answers, usage };
+						? { error: providerError(new Error(breach)), ...usage }
+						: { answer: answers, ...usage };
 				},
 				(cause: unknown) => ({ error: providerError(cause) }),
 			);
-	const call = once().then((outcome) =>
-		retry &&
-		"error" in outcome &&
-		outcome.error.kind === "provider" &&
-		outcome.error.transport &&
-		!controller.signal.aborted
-			? once()
-			: outcome,
-	);
+	// Each call races the one timeout, so a second call cut short is still marked.
+	const timed = () => Promise.race([once(), timeout]);
 	try {
-		const outcome = await Promise.race([call, timeout]);
-		return { ...outcome, ...(calls > 1 && { retried: true as const }) };
+		const first = await timed();
+		return retry &&
+			"error" in first &&
+			first.error.kind === "provider" &&
+			first.error.transport &&
+			!controller.signal.aborted
+			? { ...(await timed()), retried: true }
+			: first;
 	} finally {
 		clearTimeout(timer);
 	}
 }
 
-/** What a flow's result carries of its call: the figures it reported, and the retry mark. */
-function spent({
-	usage,
-	retried,
-}: { usage?: Usage } & Retried): Usage & Retried {
-	return { ...usage, ...(retried && { retried }) };
+/** Of an outcome or a result, only what it spent: the figures reported, and the retry mark. */
+export function spent(from: Spent): Spent {
+	return { ...usageOf(from), ...(from.retried && { retried: true }) };
 }
 
 function providerError(cause: unknown): AskError {

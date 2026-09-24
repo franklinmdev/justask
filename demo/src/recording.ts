@@ -2,6 +2,7 @@ import type {
 	CardHandlerResponse,
 	FilterHandlerResponse,
 	SearchHandlerResponse,
+	Spent,
 	Usage,
 } from "justask";
 import formEn from "../recordings/form-en.json" with { type: "json" };
@@ -69,7 +70,7 @@ export function traceOf({
 	request,
 	latencyMs,
 	response,
-}: Recording<Usage & { retried?: true }>): Trace {
+}: Recording<Spent>): Trace {
 	return {
 		request,
 		ms: latencyMs,

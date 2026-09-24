@@ -15,7 +15,7 @@ The second call changes what a visitor sees: a request the provider refused once
 
 ## Amendment (#97): counted everywhere, measured when a failure occurs
 
-Decided by the owner on 2026-09-24, after card round 8 (#97) met no transport failure in four runs of 168 rows, so no row called twice and the round measured nothing of the second call.
+Decided by the owner on 2026-09-24, after card round 8 (#97) met no transport failure in any of its runs (`docs/card-eval.md`, Round 8: result), so no row called twice and the round measured nothing of the second call.
 
 1. **The second call is counted in every run and in the demo**, not measured by a round of its own. Every eval run log marks it (`retried: true`) and every report counts it beside the errors, as above, and the demo counts it too (#102): `ask`'s result and each handler's response carry `retried: true`, and the hood's strip shows the second call beside latency and cost. A retried response's cost and tokens are the second call's: the first call threw, so the provider reported nothing for it, and whether a lost connection's first call was billed stays unknown.
 2. **It is measured whenever a transport failure occurs**, in whichever run meets one: that run's report counts the rows that retried, and those of them with no error in its run log are the ones the second call recovered, which each report prints beside them: `retried 3 (recovered 2)` (#102). No round is set aside for it, and no round waits for one.

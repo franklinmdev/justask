@@ -8,6 +8,13 @@ type CardSetInfo = SetInfo & {
 	shapes?: Record<string, Shape>;
 };
 
+/** A verdict set shaped as round 7's: four mixes, every row named by one of its shapes. */
+const ROUND7_SIZED: CardSetInfo = {
+	verdict: true,
+	mixes: 4,
+	shapes: ROUND7_SHAPES,
+};
+
 /**
  * The card eval's sets, listed once: the runner, its usage line and the set
  * tests read them here, so a new round's set is named in this file alone
@@ -25,11 +32,11 @@ export const CARD_SETS = {
 	round5: { verdict: true },
 	round6: { verdict: true },
 	/** Round 7's, four times the size, every row named by one approved shape (#86, #88). */
-	round7: { verdict: true, mixes: 4, shapes: ROUND7_SHAPES },
+	round7: ROUND7_SIZED,
 	/** Round 8's, fresh rows on round 7's shapes, the first under #93's retry and errors rule (#97). */
-	round8: { verdict: true, mixes: 4, shapes: ROUND7_SHAPES },
+	round8: ROUND7_SIZED,
 	/** Round 9's, fresh rows on round 7's shapes, after the copy label (#99). */
-	round9: { verdict: true, mixes: 4, shapes: ROUND7_SHAPES },
+	round9: ROUND7_SIZED,
 	/** The gates are fixed from its runs. */
 	dev: { verdict: false },
 	/** #57's probes: commands on a recorded expense, and records with the command words in them. */
