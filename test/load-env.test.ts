@@ -134,6 +134,38 @@ describe("loadKeyEnv", () => {
 		delete process.env[`OTHER_${NAME}`];
 	});
 
+	it("reads a quoted value whose lines end in base64 padding", () => {
+		writeFileSync(
+			join(worktree, ".env"),
+			`${NAME}="-----BEGIN-----\nMIIBabcdEF==\n-----END-----"\n`,
+		);
+		loadKeyEnv(worktree, NAME);
+		expect(process.env[NAME]).toBe(
+			"-----BEGIN-----\nMIIBabcdEF==\n-----END-----",
+		);
+	});
+
+	it("reports text after a closing quote, which Node would drop", () => {
+		for (const [text, line] of [
+			[`${NAME}="stand-in" stand-in-tail\n`, 1],
+			[`# a comment\n${NAME}="stand-in\nvalue"stand-in-tail\n`, 2],
+		] as const) {
+			writeFileSync(join(worktree, ".env"), text);
+			const error = errorOf(() => loadKeyEnv(worktree, NAME));
+			expect(error?.message).toContain(
+				`${join(worktree, ".env")} line ${line}`,
+			);
+			expect(error?.message).not.toContain("stand-in");
+		}
+		expect(process.env[NAME]).toBeUndefined();
+	});
+
+	it("reads a comment after a closing quote", () => {
+		writeFileSync(join(worktree, ".env"), `${NAME}="stand-in" # a note\n`);
+		loadKeyEnv(worktree, NAME);
+		expect(process.env[NAME]).toBe("stand-in");
+	});
+
 	it("reports a .env it cannot read instead of skipping it", () => {
 		mkdirSync(join(worktree, ".env"));
 		expect(() => loadKeyEnv(worktree, NAME)).toThrow(

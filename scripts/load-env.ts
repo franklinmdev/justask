@@ -59,10 +59,11 @@ const ASSIGNMENT = /^\s*(?:export\s+)?[A-Za-z_][\w.-]*\s*=\s*(.*)$/;
 
 /**
  * The number of the first line Node's parser would skip or misread: not a
- * comment, not blank and not NAME=value, or a quote that never closes, or
- * whose value runs into a line that reads as NAME=value. Node takes such
- * lines without a word, so a broken key would load as nothing, or as part of
- * the line above it.
+ * comment, not blank and not NAME=value, a quote that never closes, text
+ * after a closing quote other than a comment, or a quoted value that runs
+ * into a line that reads as NAME=value. Node takes such lines without a
+ * word, so a broken key would load as nothing, cut short, or as part of the
+ * line above it.
  */
 function malformedLine(text: string): number | undefined {
 	const lines = text.split(/\r?\n/);
@@ -73,16 +74,39 @@ function malformedLine(text: string): number | undefined {
 		if (value === undefined) return i + 1;
 		const quote = value[0];
 		if (quote !== '"' && quote !== "'" && quote !== "`") continue;
-		if (value.includes(quote, 1)) continue;
+		const end = value.indexOf(quote, 1);
+		if (end !== -1) {
+			if (!commentOnly(value.slice(end + 1))) return i + 1;
+			continue;
+		}
 		// A quoted value may run over lines, up to its closing quote.
 		const close = lines.findIndex((next, j) => j > i && next.includes(quote));
 		if (close === -1) return i + 1;
-		if (lines.slice(i + 1, close + 1).some((next) => ASSIGNMENT.test(next))) {
-			return i + 1;
-		}
+		const last = lines[close] as string;
+		const inside = [
+			...lines.slice(i + 1, close),
+			last.slice(0, last.indexOf(quote)),
+		];
+		if (inside.some(isAssignment)) return i + 1;
+		if (!commentOnly(last.slice(last.indexOf(quote) + 1))) return i + 1;
 		i = close;
 	}
 	return undefined;
+}
+
+/** Nothing but blanks, or a comment. */
+function commentOnly(text: string): boolean {
+	return /^\s*(?:#.*)?$/.test(text);
+}
+
+/**
+ * A line inside a quoted value that reads as NAME=value, so the quote likely
+ * never closed where it should have. A base64 line's padding (`MIIB==`)
+ * gives no value after the first `=`, so it does not count.
+ */
+function isAssignment(line: string): boolean {
+	const value = ASSIGNMENT.exec(line)?.[1];
+	return value !== undefined && value !== "" && !value.startsWith("=");
 }
 
 /** The main checkout, the first entry git lists, and whether it is bare. */
