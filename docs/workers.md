@@ -1,6 +1,6 @@
 # The demo on Cloudflare Workers
 
-**Status (2026-09-24, #107): deployed behind Access at `https://justask-demo.franklinmdev.workers.dev`, every flow answers there, and CPU is measured: search and filter fit the free plan's 10 ms with room (max 9 ms), the card does not. 8 of its 168 requests ran 10 to 29 ms, every one of them in rounds 1 and 2 of 3, none in round 3, and every one answered, since Cloudflare lets an isolate run over now and then. Verdict: not a clean fit. The owner decides between the free plan on that allowance and Workers Paid at $5 a month (Verdict, below).**
+**Status (2026-09-24, #107): deployed behind Access at `https://justask-demo.franklinmdev.workers.dev`, every flow answers there, and CPU is measured: search and filter fit the free plan's 10 ms with room (max 9 ms), the card does not cleanly. 8 of its 168 requests ran 10 to 29 ms, every one of them in rounds 1 and 2 of 3, none in round 3, and every one answered, since Cloudflare lets an isolate run over now and then. Verdict: the owner chose the free plan on 2026-09-24, and the demo's page sends a request Cloudflare stops on the CPU limit once more (Verdict, below).**
 
 ## Shape
 
@@ -92,10 +92,16 @@ Rows 1 are the first card request of a round, right after 40 filter requests; ro
 
 **Search and filter fit the free plan. The card does not fit cleanly:** 8 of 168 card requests (4.8%), 8 of 360 overall (2.2%), ran over 10 ms, up to 29 ms. None failed: Cloudflare's per-isolate allowance let every one through. Whether it keeps doing so for real visitors, who would hit fresh isolates more often than a 2-minute run on one location, is not known, and the docs do not say how often is too often. A refusal would show the visitor error 1102 on the card, which the demo cannot tell from a provider failure.
 
-By the ticket's rule, the demo stops here for the owner's decision:
+**The owner chose the free plan on 2026-09-24, not Workers Paid.** The reason: the demo is an open-source developer tool with low traffic, and a card that fails now and then is acceptable there. Workers Paid, for the record, re-read that day from https://developers.cloudflare.com/workers/platform/pricing/: $5 a month minimum for the account, 10 million requests and 30 million CPU ms a month included, then $0.30 per additional million requests and $0.02 per additional million CPU ms, with 30 s of CPU per request by default. Under #29's limits the demo would stay inside what is included (estimate, not measured: its $1 a day budget is about 7,700 card calls a day, 230,000 a month, at about 3 ms each), so that bill would be the $5.
 
-- **Stay on the free plan**, relying on the allowance. It costs nothing, and the answer cache and replays of #29 cut the card's calls. The risk is a card that fails now and then with no cause the demo can show.
-- **Workers Paid**, re-read on 2026-09-24 from https://developers.cloudflare.com/workers/platform/pricing/: $5 a month minimum for the account, 10 million requests and 30 million CPU ms a month included, then $0.30 per additional million requests and $0.02 per additional million CPU ms. The CPU limit is 30 s per request by default. Under #29's limits the demo stays inside what is included (estimate, not measured: its $1 a day budget is about 7,700 card calls a day, 230,000 a month, at about 3 ms each), so the bill would be the $5.
+**Revisit:** if #114's owner alert shows real 1102s, reconsider Workers Paid. #114 as written alerts on the key switch and the spent budget only, and a Worker stopped on its CPU limit cannot report its own stop, so the alert needs a cause of its own, read from outside the stopped request: Workers Logs, where a stopped request has its own outcome, or a Tail Worker. Until then, the Observability tab shows them.
+
+### The CPU limit's retry
+
+The demo's page sends a request Cloudflare stopped on the CPU limit once more, and never a third time; a second stop shows the page's usual error (`demo/src/cpu-limit.ts`, around the `fetch` every page gets, tested in `test/demo-card.test.tsx`). It works for every flow, though only the card has run over.
+
+- **How a stop is known:** error 1102 is Cloudflare's own answer, not the handler's. Its HTTP status and page are not in Cloudflare's docs (read on 2026-09-24), and local workerd does not enforce a CPU limit, so none was seen here. The page takes a 5xx whose body is not JSON and names `1102` as the stop. If Cloudflare's answer does not name the code, the retry never fires and the visitor sees the usual error, as before. Unverified until a real 1102 is seen.
+- **Whether a retried card spends the key twice:** it can. The card's own CPU runs both before the Jev call (reading the request, the shortlist, the questions) and after it (the gates, the card). A request stopped after the call has already been answered and charged for, and the retry calls Jev again; one stopped before it spent nothing. The trace events do not say which of the 8 overruns was which. At about $0.00013 a card call ($1 for 7,700), a second call costs next to nothing, but once #29's budget adds each call's `costUsd` after the call, a stopped request never adds the first call's cost, so the budget undercounts by it. That is for the budget's ticket to know, not to fix here.
 
 ## Testing the Worker side
 
