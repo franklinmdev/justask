@@ -42,6 +42,9 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 	const round5Set = parseCardEvalSet(
 		read(`card-${content.language}.round5.jsonl`),
 	);
+	const round6Set = parseCardEvalSet(
+		read(`card-${content.language}.round6.jsonl`),
+	);
 	const diagSet = parseCardEvalSet(read(`card-${content.language}.diag.jsonl`));
 	const pairSet = parseCardEvalSet(read(`card-${content.language}.pair.jsonl`));
 	const officeSet = parseCardEvalSet(
@@ -57,6 +60,7 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 		...round3Set,
 		...round4Set,
 		...round5Set,
+		...round6Set,
 		...diagSet,
 		...pairSet,
 		...officeSet,
@@ -91,6 +95,7 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 		["round 3", round3Set],
 		["round 4", round4Set],
 		["round 5", round5Set],
+		["round 6", round6Set],
 	])(
 		"give the %s set 28 records, 2 ambiguous rows per field and 6 with nothing to record",
 		(_, set) => {
@@ -202,7 +207,7 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 });
 
 /**
- * Frozen on the owner's approval, 2026-09-23 (#20, round 2 #44, round 3 #57, round 4 #63, round 5 #73, #77's office probes, #79's false-fill probes), before any call. A
+ * Frozen on the owner's approval, 2026-09-23 (#20, round 2 #44, round 3 #57, round 4 #63, round 5 #73, #77's office probes, #79's false-fill probes and round 6), before any call. A
  * failure here means the verdict's inputs changed after the fact: revert the
  * edit, or log the owner's call in docs/card-eval.md with a new checksum or
  * value.
@@ -252,6 +257,15 @@ describe("the frozen card eval", () => {
 		[
 			"card-es.round5.jsonl",
 			"66147a3d8de451c56268334ed05bbba6d294fc87882692400d7de6bceca06c6e",
+		],
+		// Round 6, approved in five batches on 2026-09-23 (#79), before any call.
+		[
+			"card-en.round6.jsonl",
+			"d33a3f60caacc318c6564071f1cb031a839360aa4ecf49e252383e775e1a656e",
+		],
+		[
+			"card-es.round6.jsonl",
+			"3b3a92fcbfb0da04e0a238fc29f21dae8a4b8adf3577243b56bb400c999c768f",
 		],
 		// #63's pair probes, approved before any call: the pair rule was chosen from their runs.
 		[

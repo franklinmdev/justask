@@ -1,18 +1,18 @@
 // The demo's card eval, by hand with the key in .env, never in CI: every
 // row is a real Jev call.
 //
-//   node --conditions=source demo/eval/card.ts run <en|es> <eval|round2|round3|round4|round5|dev|diag|pair> <n>
+//   node --conditions=source demo/eval/card.ts run <en|es> <eval|round2|round3|round4|round5|round6|dev|diag|pair> <n>
 //   node --conditions=source demo/eval/card.ts run <en|es> office <n> <label>
 //   node --conditions=source demo/eval/card.ts office <en|es> <label> <n>
 //   node --conditions=source demo/eval/card.ts run <en|es> notoffice <n>
 //   node --conditions=source demo/eval/card.ts gaps <en|es> <n>
-//   node --conditions=source demo/eval/card.ts compare <en|es> <eval|round2|round3|round4|round5> <first n> <second n>
+//   node --conditions=source demo/eval/card.ts compare <en|es> <eval|round2|round3|round4|round5|round6> <first n> <second n>
 //   node --conditions=source demo/eval/card.ts gates <dev n>
 //
 // `run` writes
-// demo/eval/runs/card-<language>[-round2|-round3|-round4|-round5|-dev|-diag|-pair|-office-<label>|-notoffice]-<n>.jsonl,
+// demo/eval/runs/card-<language>[-round2|-round3|-round4|-round5|-round6|-dev|-diag|-pair|-office-<label>|-notoffice]-<n>.jsonl,
 // which it never overwrites, and prints its report. `eval` is round 1's
-// set, `round2` to `round5` the fresh sets of rounds 2 to 5,
+// set, `round2` to `round6` the fresh sets of rounds 2 to 6,
 // `diag` the probes of #57: commands on a recorded expense, and records with
 // the command words in them, and `pair` the probes of #63: two vendors named
 // with "and" or "or", as a pair or beside the vendor paid, and `office` the
@@ -57,6 +57,7 @@ const SETS = {
 	round3: { file: ".round3", log: "-round3" },
 	round4: { file: ".round4", log: "-round4" },
 	round5: { file: ".round5", log: "-round5" },
+	round6: { file: ".round6", log: "-round6" },
 	dev: { file: ".dev", log: "-dev" },
 	diag: { file: ".diag", log: "-diag" },
 	pair: { file: ".pair", log: "-pair" },
@@ -190,7 +191,7 @@ function printTagGaps(run: CardRun) {
 
 function usage(): never {
 	console.error(
-		"usage: card.ts run <en|es> <eval|round2|round3|round4|round5|dev|diag|pair|notoffice> <n> | run <en|es> office <n> <label> | office <en|es> <label> <n> | gaps <en|es> <n> | compare <en|es> <eval|round2|round3|round4|round5> <first n> <second n> | gates <dev n>",
+		"usage: card.ts run <en|es> <eval|round2|round3|round4|round5|round6|dev|diag|pair|notoffice> <n> | run <en|es> office <n> <label> | office <en|es> <label> <n> | gaps <en|es> <n> | compare <en|es> <eval|round2|round3|round4|round5|round6> <first n> <second n> | gates <dev n>",
 	);
 	process.exit(1);
 }
