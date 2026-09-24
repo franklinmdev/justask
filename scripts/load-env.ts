@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 /** This checkout, found from the loader's own file, whatever the cwd. */
-const HERE = fileURLToPath(new URL("..", import.meta.url));
+const CHECKOUT = fileURLToPath(new URL("..", import.meta.url));
 
 /**
  * Loads the key's .env into process.env, never overriding what is already
@@ -16,7 +16,7 @@ const HERE = fileURLToPath(new URL("..", import.meta.url));
  * in a bare-repository layout, which has no main checkout to share a .env.
  */
 export function loadKeyEnv(
-	dir: string = HERE,
+	dir: string = CHECKOUT,
 	key: string = "TYPESAFE_API_KEY",
 ): void {
 	if (Object.hasOwn(process.env, key)) return;
@@ -28,7 +28,9 @@ export function loadKeyEnv(
 	if (main === undefined) return;
 	if (main.bare) {
 		throw new Error(
-			`justask: ${top} has no .env, and its repository ${main.path} is bare, so there is no main checkout to share one; put a .env in the worktree or set the key in the environment`,
+			main.path === top
+				? `justask: ${top} is a bare repository with no .env, so there is no main checkout to share one; put a .env in a worktree or set the key in the environment`
+				: `justask: ${top} has no .env, and its repository ${main.path} is bare, so there is no main checkout to share one; put a .env in the worktree or set the key in the environment`,
 		);
 	}
 	const shared = join(main.path, ".env");
