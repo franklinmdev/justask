@@ -1,25 +1,19 @@
-import type { CardEvalKind } from "justask/eval";
-import type { Language } from "../src/content/types.ts";
-import { ROUND7_SHAPES } from "./card-shapes.ts";
+import { ROUND7_SHAPES, type Shape } from "./card-shapes.ts";
+import { evalSets, type SetInfo } from "./sets.ts";
 
-type SetInfo = {
-	verdict: boolean;
-	labelled?: true;
-	/** A verdict set's size in rounds 1 to 6's mix of 42 rows: round 7's is 4. */
-	scale?: number;
-	/** Every row names one of the listed shapes, as many rows as it lists (#86). */
-	shapes?: Record<string, { kind: CardEvalKind; rows: number }>;
+type CardSetInfo = SetInfo & {
+	/** How many of rounds 1 to 6's 42-row mixes a verdict set holds: round 7's holds 4. */
+	mixes?: number;
+	/** Every row names one of the listed shapes, as many rows as it lists (#86, #88). */
+	shapes?: Record<string, Shape>;
 };
 
 /**
  * The card eval's sets, listed once: the runner, its usage line and the set
  * tests read them here, so a new round's set is named in this file alone
- * (its checksum is still frozen by hand in the test). A set named `<set>`
- * lives in demo/eval/card-<language>.<set>.jsonl, round 1's `eval` in
- * card-<language>.jsonl, and its runs log to
- * demo/eval/runs/card-<language>-<set>-<n>.jsonl, `eval`'s with no `-<set>`.
- * A set with no verdict tunes or diagnoses, it never decides; a labelled one
- * is run under one of #77's office labels (office.ts), which its log names.
+ * (its checksum is still frozen by hand in the test). Where each set and
+ * its runs live: sets.ts. `office` is run under one of #77's office labels
+ * (office.ts), which its log names.
  */
 export const CARD_SETS = {
 	/** Round 1's set. */
@@ -31,9 +25,9 @@ export const CARD_SETS = {
 	round5: { verdict: true },
 	round6: { verdict: true },
 	/** Round 7's, four times the size, every row named by one approved shape (#86, #88). */
-	round7: { verdict: true, scale: 4, shapes: ROUND7_SHAPES },
+	round7: { verdict: true, mixes: 4, shapes: ROUND7_SHAPES },
 	/** Round 8's, fresh rows on round 7's shapes, the first under #93's retry and errors rule (#97). */
-	round8: { verdict: true, scale: 4, shapes: ROUND7_SHAPES },
+	round8: { verdict: true, mixes: 4, shapes: ROUND7_SHAPES },
 	/** The gates are fixed from its runs. */
 	dev: { verdict: false },
 	/** #57's probes: commands on a recorded expense, and records with the command words in them. */
@@ -41,46 +35,25 @@ export const CARD_SETS = {
 	/** #63's probes: two vendors named with "and" or "or", as a pair or beside the vendor paid. */
 	pair: { verdict: false },
 	/** #77's probes: office services, run with the office tag read by one of #77's labels. */
-	office: { verdict: false, labelled: true },
+	office: { verdict: false },
 	/** #79's probes: records at an office vendor that bought something else. */
 	notoffice: { verdict: false },
-} satisfies Record<string, SetInfo>;
+} satisfies Record<string, CardSetInfo>;
 
 export type CardSet = keyof typeof CARD_SETS;
 
-export const CARD_SET_NAMES = Object.keys(CARD_SETS) as CardSet[];
+export const {
+	names: CARD_SET_NAMES,
+	isSet: isCardSet,
+	givesVerdict,
+	file: cardSetFile,
+	runLog: cardRunLog,
+} = evalSets("card", CARD_SETS);
 
-export const isCardSet = (set: string | undefined): set is CardSet =>
-	set !== undefined && Object.hasOwn(CARD_SETS, set);
+const info = (set: CardSet): CardSetInfo => CARD_SETS[set];
 
-export const givesVerdict = (set: CardSet): boolean => CARD_SETS[set].verdict;
-
-export function isLabelled(set: CardSet): boolean {
-	const info: SetInfo = CARD_SETS[set];
-	return info.labelled === true;
-}
-
-/** How many times rounds 1 to 6's mix of 42 rows the verdict set holds. */
-export function scaleOf(set: CardSet): number {
-	const info: SetInfo = CARD_SETS[set];
-	return info.scale ?? 1;
-}
+/** How many of rounds 1 to 6's 42-row mixes the verdict set holds. */
+export const mixesOf = (set: CardSet): number => info(set).mixes ?? 1;
 
 /** The shapes every row of the set names, when it names them. */
-export function shapesOf(set: CardSet): SetInfo["shapes"] {
-	const info: SetInfo = CARD_SETS[set];
-	return info.shapes;
-}
-
-/** The set's file, relative to demo/eval. */
-export const cardSetFile = (language: Language, set: CardSet) =>
-	`card-${language}${set === "eval" ? "" : `.${set}`}.jsonl`;
-
-/** Run <n>'s log, relative to demo/eval. */
-export const cardRunLog = (
-	language: Language,
-	set: CardSet,
-	n: string,
-	label?: string,
-) =>
-	`runs/card-${language}${set === "eval" ? "" : `-${set}`}${label ? `-${label}` : ""}-${n}.jsonl`;
+export const shapesOf = (set: CardSet) => info(set).shapes;

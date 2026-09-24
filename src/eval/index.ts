@@ -46,6 +46,7 @@ export {
 	formatFilterReport,
 	formatReport,
 } from "./format.ts";
+export { HELD } from "./held.ts";
 export type { KillLines, Measure } from "./kill-lines.ts";
 export {
 	type Probe,

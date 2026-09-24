@@ -23,5 +23,5 @@ export async function warmUp(
 		provider,
 		{ ...probe(), warmUp: times },
 		timeoutMs,
-	)?.warmUp();
+	).warmUp();
 }

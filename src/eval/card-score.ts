@@ -33,7 +33,7 @@ import {
 	ratio,
 	type Verdict,
 } from "./score.ts";
-import { transportFailures } from "./transport.ts";
+import { transportCounts } from "./transport.ts";
 
 /** A field the card got wrong, or the intent when it held a record or let a nothing row through. */
 export type CardMiss = {
@@ -410,7 +410,7 @@ export function scoreCardRun(
 		(name) => gates[name] !== run.gates[name],
 	);
 	const window = probeWindow(run.probes);
-	const transport = transportFailures(run.rows).length;
+	const calls = transportCounts(run.rows);
 	return {
 		gates,
 		retuned,
@@ -436,11 +436,12 @@ export function scoreCardRun(
 			]),
 		),
 		costPerCallUsd: costPerCall(run.rows),
-		transport,
-		retried: run.rows.filter(({ retried }) => retried).length,
+		...calls,
 		misses,
 		window,
-		verdict: retuned ? null : judge(run.killLines, measures, window, transport),
+		verdict: retuned
+			? null
+			: judge(run.killLines, measures, window, calls.transport),
 	};
 }
 

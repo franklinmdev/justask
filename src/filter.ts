@@ -26,7 +26,8 @@ export type CatalogField<T> = {
 	/**
 	 * False when a named pair never holds the field, which then fills on its
 	 * pick alone: for a field whose gate already holds every pair, where the
-	 * hold only costs the requests it misreads (ADR 0011). Default true.
+	 * hold would only hold requests the provider reads right, such as one
+	 * value negated beside another (ADR 0011, #80). Default true.
 	 */
 	heldByPair?: boolean;
 };

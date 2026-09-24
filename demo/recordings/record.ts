@@ -19,6 +19,7 @@ import {
 	type CardEvalRow,
 	type EvalRow,
 	type FilterEvalRow,
+	HELD,
 	parseCardEvalSet,
 	parseEvalSet,
 	parseFilterEvalSet,
@@ -221,7 +222,7 @@ function checkForm(
 	return (Object.keys(got) as ExpenseName[]).flatMap((name) => {
 		const value = row.expected[name];
 		const want =
-			value === undefined || value === "held"
+			value === undefined || value === HELD
 				? undefined
 				: Array.isArray(value)
 					? [...value].sort()

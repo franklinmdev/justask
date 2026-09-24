@@ -21,45 +21,56 @@
 import { readFile } from "node:fs/promises";
 import {
 	compareRuns,
+	type EvalRow,
 	formatReport,
-	mergeRemeasure,
 	parseEvalSet,
+	type Run,
 	readRun,
 	remeasureSet,
 	runEval,
 	scoreRun,
-	transportFailures,
 } from "justask/eval";
 import { jevProvider } from "justask/jev";
 import { loadKeyEnv } from "../../scripts/load-env.ts";
 import { contents, demoSearch, FACTS, TIMEOUT_MS } from "../server/handler.ts";
-import type { Language } from "../src/content/types.ts";
+import type { Content, Language } from "../src/content/types.ts";
 import { KILL_LINES } from "./kill-lines.ts";
 import { needBaseline, probe } from "./probe.ts";
+import { printRemeasure } from "./remeasure.ts";
+import { evalSets } from "./sets.ts";
 
 /** Fixed, so every run reads the same day. */
 const TODAY = "Today is Tuesday 2026-09-22 (martes 22 de septiembre de 2026).";
 
-/** Each set's file suffix and run log suffix. */
-const SETS = {
-	eval: { file: "", log: "" },
-	round2: { file: ".round2", log: "-round2" },
-	round3: { file: ".round3", log: "-round3" },
-	round4: { file: ".round4", log: "-round4" },
-	dev: { file: ".dev", log: "-dev" },
-} as const;
-type SetKind = keyof typeof SETS;
-const isSet = (set: string | undefined): set is SetKind =>
-	set !== undefined && Object.hasOwn(SETS, set);
-
-/** The sets that tune: their runs never give a verdict. */
-const NO_VERDICT = new Set<SetKind>(["dev"]);
+const SETS = evalSets("search", {
+	/** Round 1's set. */
+	eval: { verdict: true },
+	/** The fresh sets of rounds 2 to 4. */
+	round2: { verdict: true },
+	round3: { verdict: true },
+	round4: { verdict: true },
+	/** It tunes, it never decides. */
+	dev: { verdict: false },
+});
+type SetKind = (typeof SETS.names)[number];
 
 const here = (path: string) => new URL(path, import.meta.url).pathname;
-const setPath = (language: Language, set: SetKind) =>
-	here(`search-${language}${SETS[set].file}.jsonl`);
+const readSet = async (language: Language, set: SetKind) =>
+	parseEvalSet(await readFile(here(SETS.file(language, set)), "utf8"));
 const runLogPath = (language: Language, set: SetKind, n: string) =>
-	here(`runs/search-${language}${SETS[set].log}-${n}.jsonl`);
+	here(SETS.runLog(language, set, n));
+/** Sends the rows through the demo's search, into run log `log`. */
+const sendRows = (content: Content, set: EvalRow[], log: string) =>
+	runEval({
+		set,
+		search: demoSearch(content),
+		provider: jevProvider(),
+		facts: { today: TODAY, ...FACTS },
+		timeoutMs: TIMEOUT_MS,
+		killLines: KILL_LINES,
+		log,
+		probe: probe(),
+	});
 
 const [command, language, ...rest] = process.argv.slice(2);
 const content = contents[language as Language];
@@ -67,78 +78,56 @@ if (!content) usage();
 
 if (command === "run") {
 	const [set, n] = rest;
-	if (!isSet(set) || !n) usage();
-	if (!NO_VERDICT.has(set)) needBaseline();
+	if (!SETS.isSet(set) || !n) usage();
+	if (SETS.givesVerdict(set)) needBaseline();
 	loadKeyEnv();
-	const run = await runEval({
-		set: parseEvalSet(await readFile(setPath(content.language, set), "utf8")),
-		search: demoSearch(content),
-		provider: jevProvider(),
-		facts: { today: TODAY, ...FACTS },
-		timeoutMs: TIMEOUT_MS,
-		killLines: KILL_LINES,
-		log: runLogPath(content.language, set, n),
-		probe: probe(),
-	});
+	const run = await sendRows(
+		content,
+		await readSet(content.language, set),
+		runLogPath(content.language, set, n),
+	);
 	const report = scoreRun(run);
 	console.log(
-		formatReport(NO_VERDICT.has(set) ? { ...report, verdict: null } : report),
+		formatReport(
+			SETS.givesVerdict(set) ? report : { ...report, verdict: null },
+		),
 	);
 } else if (command === "compare") {
 	const [set, first, second] = rest;
-	if (!isSet(set) || NO_VERDICT.has(set) || !first || !second) usage();
+	if (!SETS.isSet(set) || !SETS.givesVerdict(set) || !first || !second) usage();
 	const before = await readRun(runLogPath(content.language, set, first));
 	const after = await readRun(runLogPath(content.language, set, second));
 	console.log(formatReport(scoreRun(after), compareRuns(before, after)));
 } else if (command === "remeasure" || command === "merge") {
 	const [set, first, ...later] = rest;
-	const n = later.at(-1);
-	if (!isSet(set) || NO_VERDICT.has(set) || !first || !n) usage();
-	const firstRun = await readRun(runLogPath(content.language, set, first));
-	// The remeasures run before the last one, merged in order.
-	const merged = mergeRemeasure(
-		firstRun,
-		...(await Promise.all(
-			later
-				.slice(0, -1)
-				.map((m) => readRun(runLogPath(content.language, set, m))),
-		)),
-	);
-	if (command === "remeasure") {
-		needBaseline();
-		loadKeyEnv();
-	}
-	const again =
-		command === "remeasure"
-			? await runEval({
-					set: remeasureSet(
-						merged,
-						parseEvalSet(
-							await readFile(setPath(content.language, set), "utf8"),
-						),
-					),
-					search: demoSearch(content),
-					provider: jevProvider(),
-					facts: { today: TODAY, ...FACTS },
-					timeoutMs: TIMEOUT_MS,
-					killLines: KILL_LINES,
-					log: runLogPath(content.language, set, n),
-					probe: probe(),
-				})
-			: await readRun(runLogPath(content.language, set, n));
-	console.log(
-		`Run ${first}, its transport failures (${transportFailures(firstRun.rows)
-			.map(({ id }) => id)
-			.join(", ")}) answered by run ${later.join(", then ")}\n`,
-	);
-	console.log(formatReport(scoreRun(mergeRemeasure(merged, again))));
+	if (!SETS.isSet(set) || !SETS.givesVerdict(set) || !first || !later.at(-1))
+		usage();
+	await printRemeasure<Run>({
+		first,
+		later,
+		read: (n) => readRun(runLogPath(content.language, set, n)),
+		...(command === "remeasure" && {
+			send: async (merged, n) => {
+				needBaseline();
+				loadKeyEnv();
+				return sendRows(
+					content,
+					remeasureSet(merged, await readSet(content.language, set)),
+					runLogPath(content.language, set, n),
+				);
+			},
+		}),
+		report: (run) => formatReport(scoreRun(run)),
+	});
 } else {
 	usage();
 }
 
 function usage(): never {
+	const sets = (keep: (set: SetKind) => boolean) =>
+		SETS.names.filter(keep).join("|");
 	console.error(
-		"usage: search.ts run <en|es> <eval|round2|round3|round4|dev> <n> | compare <en|es> <eval|round2|round3|round4> <first n> <second n> | remeasure|merge <en|es> <eval|round2|round3|round4> <first n> <n>...",
+		`usage: search.ts run <en|es> <${sets(() => true)}> <n> | compare <en|es> <${sets(SETS.givesVerdict)}> <first n> <second n> | remeasure|merge <en|es> <${sets(SETS.givesVerdict)}> <first n> <n>...`,
 	);
 	process.exit(1);
 }

@@ -57,6 +57,7 @@ describe("loadKeyEnv", () => {
 
 	afterEach(() => {
 		delete process.env[NAME];
+		delete process.env[`OTHER_${NAME}`];
 		rmSync(root, { recursive: true, force: true });
 	});
 
@@ -131,7 +132,6 @@ describe("loadKeyEnv", () => {
 		);
 		loadKeyEnv(worktree, NAME);
 		expect(process.env[NAME]).toBe("stand-in\nvalue");
-		delete process.env[`OTHER_${NAME}`];
 	});
 
 	it("reads a quoted value whose lines end in base64 padding", () => {
@@ -186,6 +186,15 @@ describe("loadKeyEnv", () => {
 		writeFileSync(join(linked, ".env"), `${NAME}=linked\n`);
 		loadKeyEnv(linked, NAME);
 		expect(process.env[NAME]).toBe("linked");
+	});
+
+	it("names the bare repository itself, not a worktree, when called from inside it", () => {
+		const { bare } = bareLayout();
+
+		expect(() => loadKeyEnv(bare, NAME)).toThrow(
+			`justask: ${bare} is a bare repository with no .env, so there is no main checkout to share one; put a .env in a worktree or set the key in the environment`,
+		);
+		expect(process.env[NAME]).toBeUndefined();
 	});
 
 	it("skips the lookup when the key is already in the environment, even in a bare-repository layout", () => {
