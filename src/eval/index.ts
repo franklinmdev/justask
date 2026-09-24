@@ -76,3 +76,9 @@ export {
 	type VerdictLine,
 } from "./score.ts";
 export { type EvalKind, type EvalRow, parseEvalSet } from "./set.ts";
+export {
+	type LoggedError,
+	mergeRemeasure,
+	remeasureSet,
+	transportFailures,
+} from "./transport.ts";

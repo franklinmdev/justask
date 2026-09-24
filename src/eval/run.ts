@@ -6,6 +6,7 @@ import { checkKillLines, type KillLines } from "./kill-lines.ts";
 import { readRunLog, writeRunLog } from "./log.ts";
 import { type Probe, type Probes, probeSender } from "./probe.ts";
 import type { EvalRow } from "./set.ts";
+import { type LoggedError, loggedError } from "./transport.ts";
 
 /** One row of a run: the eval row and everything needed to rescore it without a call. */
 export type RunRow = EvalRow & {
@@ -17,11 +18,13 @@ export type RunRow = EvalRow & {
 	latencyMs: number;
 	/** False when the shortlist was empty, so the provider was never asked. */
 	called: boolean;
+	/** The provider was unavailable on the first call and called once more (ADR 0013); absent otherwise, and from logs written before it. */
+	retried?: true;
 	/** The named pair that held the item whatever its pick (ADR 0011); absent when none did, and from logs written before it. */
 	pair?: NamedPair;
 	/** What the call cost, when the provider reports it (ADR 0006). */
 	costUsd?: number;
-	error?: { kind: "provider" | "timeout"; message: string };
+	error?: LoggedError;
 };
 
 /** A saved run: the gate and kill lines it was run under, and its raw rows. */
@@ -84,11 +87,11 @@ async function runRow<T>(
 		timeoutMs,
 	}: Pick<RunEvalInput<T>, "search" | "provider" | "facts" | "timeoutMs">,
 ): Promise<RunRow> {
-	let called = false;
-	// The provider as the flow calls it, noting that it was called.
+	let calls = 0;
+	// The provider as the flow calls it, noting each call.
 	const watched: Provider = {
 		async answer(input) {
-			called = true;
+			calls++;
 			const result = await provider.answer(input);
 			return result;
 		},
@@ -115,9 +118,10 @@ async function runRow<T>(
 		probabilities: result.probabilities,
 		...(result.pair && { pair: result.pair }),
 		latencyMs,
-		called,
+		called: calls > 0,
+		...(calls > 1 && { retried: true }),
 		...(costUsd !== undefined && { costUsd }),
-		...(error && { error: { kind: error.kind, message: error.message } }),
+		...(error && { error: loggedError(error) }),
 	};
 }
 

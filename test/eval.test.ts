@@ -253,6 +253,7 @@ describe("runEval", () => {
 		expect(late.rows[0]?.error).toEqual({
 			kind: "timeout",
 			message: "The provider did not answer within 20 ms",
+			transport: true,
 		});
 	});
 

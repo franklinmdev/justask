@@ -6,6 +6,8 @@
 //   node --conditions=source demo/eval/card.ts office <en|es> <n> <label>
 //   node --conditions=source demo/eval/card.ts gaps <en|es> <n>
 //   node --conditions=source demo/eval/card.ts compare <en|es> <set> <first n> <second n>
+//   node --conditions=source demo/eval/card.ts remeasure <en|es> <set> <first n> <n>
+//   node --conditions=source demo/eval/card.ts merge <en|es> <set> <first n> <n>
 //   node --conditions=source demo/eval/card.ts gates <dev n>
 //
 // The sets, where each one's file and logs live, and which give a verdict
@@ -16,7 +18,11 @@
 // prints where the tags left the gap the vendor fills (ADR 0012), both with
 // no call; a run of either set prints the same after its report. `compare`
 // reads two saved runs of a set with a verdict and prints the second one's
-// measures and flips, with no call. `gates` reads dev run <n> of both
+// measures and flips, with no call. `remeasure` sends again only the rows
+// run <first n> of a set with a verdict left pending on transport failures
+// (#93), into run <n>, and prints run <first n>'s report with their answers
+// in place; `merge` prints that report again, with no call. `gates` reads
+// dev run <n> of both
 // languages and prints the intent's and each field's gate by the rule in
 // gates.ts, with no call.
 
@@ -25,10 +31,13 @@ import {
 	type CardRun,
 	compareCardRuns,
 	formatCardReport,
+	mergeRemeasure,
 	parseCardEvalSet,
 	readCardRun,
+	remeasureSet,
 	runCardEval,
 	scoreCardRun,
+	transportFailures,
 } from "justask/eval";
 import { jevProvider } from "justask/jev";
 import { loadKeyEnv } from "../../scripts/load-env.ts";
@@ -124,6 +133,40 @@ if (command === "run") {
 	console.log(
 		formatCardReport(scoreCardRun(after), compareCardRuns(before, after)),
 	);
+} else if (command === "remeasure" || command === "merge") {
+	const [language, set, first, n] = rest;
+	const content = contents[language as Language];
+	if (!content || !isCardSet(set) || !givesVerdict(set) || !first || !n)
+		usage();
+	const firstRun = await readCardRun(runLogPath(content.language, set, first));
+	if (command === "remeasure") {
+		needBaseline();
+		loadKeyEnv();
+	}
+	const again =
+		command === "remeasure"
+			? await runCardEval({
+					set: remeasureSet(
+						firstRun,
+						parseCardEvalSet(
+							await readFile(here(cardSetFile(content.language, set)), "utf8"),
+						),
+					),
+					card: demoCard(content),
+					provider: jevProvider(),
+					facts: { today: TODAY, ...FACTS },
+					timeoutMs: TIMEOUT_MS,
+					killLines: CARD_KILL_LINES,
+					log: runLogPath(content.language, set, n),
+					probe: probe(),
+				})
+			: await readCardRun(runLogPath(content.language, set, n));
+	console.log(
+		`Run ${first}, its transport failures (${transportFailures(firstRun.rows)
+			.map(({ id }) => id)
+			.join(", ")}) answered by run ${n}\n`,
+	);
+	console.log(formatCardReport(scoreCardRun(mergeRemeasure(firstRun, again))));
 } else if (command === "gates") {
 	const [n] = rest;
 	if (!n) usage();
@@ -176,7 +219,7 @@ function usage(): never {
 	const sets = (keep: (set: CardSet) => boolean) =>
 		CARD_SET_NAMES.filter(keep).join("|");
 	console.error(
-		`usage: card.ts run <en|es> <${sets((set) => !isLabelled(set))}> <n> | run <en|es> <${sets(isLabelled)}> <n> <${OFFICE_LABEL_NAMES.join("|")}> | office <en|es> <n> <${OFFICE_LABEL_NAMES.join("|")}> | gaps <en|es> <n> | compare <en|es> <${sets(givesVerdict)}> <first n> <second n> | gates <dev n>`,
+		`usage: card.ts run <en|es> <${sets((set) => !isLabelled(set))}> <n> | run <en|es> <${sets(isLabelled)}> <n> <${OFFICE_LABEL_NAMES.join("|")}> | office <en|es> <n> <${OFFICE_LABEL_NAMES.join("|")}> | gaps <en|es> <n> | compare <en|es> <${sets(givesVerdict)}> <first n> <second n> | remeasure|merge <en|es> <${sets(givesVerdict)}> <first n> <n> | gates <dev n>`,
 	);
 	process.exit(1);
 }

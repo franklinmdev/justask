@@ -12,6 +12,7 @@ import { HELD } from "./held.ts";
 import { checkKillLines, type KillLines } from "./kill-lines.ts";
 import { readRunLog, writeRunLog } from "./log.ts";
 import { type Probe, type Probes, probeSender } from "./probe.ts";
+import { type LoggedError, loggedError } from "./transport.ts";
 
 /**
  * A field's candidates as the provider read them. A date or amount
@@ -47,9 +48,11 @@ export type FilterRunRow = FilterEvalRow & {
 	latencyMs: number;
 	/** False when no field had a candidate, so the provider was never asked. */
 	called: boolean;
+	/** The provider was unavailable on the first call and called once more (ADR 0013); absent otherwise, and from logs written before it. */
+	retried?: true;
 	/** What the call cost, when the provider reports it (ADR 0006). */
 	costUsd?: number;
-	error?: { kind: "provider" | "timeout"; message: string };
+	error?: LoggedError;
 };
 
 /** A saved filter run: each field's gate and the kill lines it ran under, and its raw rows. */
@@ -142,12 +145,12 @@ async function runRow<F extends Fields>(
 		timeoutMs,
 	}: Pick<RunFilterEvalInput<F>, "filter" | "provider" | "facts" | "timeoutMs">,
 ): Promise<FilterRunRow> {
-	let called = false;
+	let calls = 0;
 	let answers: ProviderAnswer = {};
-	// The provider as the flow calls it, noting that it was called and what it answered.
+	// The provider as the flow calls it, noting each call and what it answered.
 	const watched: Provider = {
 		async answer(input) {
-			called = true;
+			calls++;
 			const result = await provider.answer(input);
 			answers = result.answers;
 			return result;
@@ -191,9 +194,10 @@ async function runRow<F extends Fields>(
 		answers: error ? {} : answers,
 		...(Object.keys(pairs).length > 0 && { pairs }),
 		latencyMs,
-		called,
+		called: calls > 0,
+		...(calls > 1 && { retried: true }),
 		...(costUsd !== undefined && { costUsd }),
-		...(error && { error: { kind: error.kind, message: error.message } }),
+		...(error && { error: loggedError(error) }),
 	};
 }
 

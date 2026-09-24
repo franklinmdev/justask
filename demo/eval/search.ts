@@ -3,6 +3,8 @@
 //
 //   node --conditions=source demo/eval/search.ts run <en|es> <eval|round2|round3|round4|dev> <n>
 //   node --conditions=source demo/eval/search.ts compare <en|es> <eval|round2|round3|round4> <first n> <second n>
+//   node --conditions=source demo/eval/search.ts remeasure <en|es> <eval|round2|round3|round4> <first n> <n>
+//   node --conditions=source demo/eval/search.ts merge <en|es> <eval|round2|round3|round4> <first n> <n>
 //
 // `run` writes demo/eval/runs/search-<language>[-round2|-round3|-round4|-dev]-<n>.jsonl,
 // which it never overwrites, and prints its report. `eval` is round 1's set,
@@ -10,15 +12,22 @@
 // the first with the named-pair hold (ADR 0011). A dev run gets no
 // verdict: it tunes, it never decides. `compare` reads two saved runs of one set
 // and prints the second one's measures and flips, with no call.
+// `remeasure` sends again only the rows run <first n> left pending on
+// transport failures (#93), into run <n>, and prints run <first n>'s report
+// with their answers in place; `merge` prints that report again, with no
+// call.
 
 import { readFile } from "node:fs/promises";
 import {
 	compareRuns,
 	formatReport,
+	mergeRemeasure,
 	parseEvalSet,
 	readRun,
+	remeasureSet,
 	runEval,
 	scoreRun,
+	transportFailures,
 } from "justask/eval";
 import { jevProvider } from "justask/jev";
 import { loadKeyEnv } from "../../scripts/load-env.ts";
@@ -80,13 +89,45 @@ if (command === "run") {
 	const before = await readRun(runLogPath(content.language, set, first));
 	const after = await readRun(runLogPath(content.language, set, second));
 	console.log(formatReport(scoreRun(after), compareRuns(before, after)));
+} else if (command === "remeasure" || command === "merge") {
+	const [set, first, n] = rest;
+	if (!isSet(set) || NO_VERDICT.has(set) || !first || !n) usage();
+	const firstRun = await readRun(runLogPath(content.language, set, first));
+	if (command === "remeasure") {
+		needBaseline();
+		loadKeyEnv();
+	}
+	const again =
+		command === "remeasure"
+			? await runEval({
+					set: remeasureSet(
+						firstRun,
+						parseEvalSet(
+							await readFile(setPath(content.language, set), "utf8"),
+						),
+					),
+					search: demoSearch(content),
+					provider: jevProvider(),
+					facts: { today: TODAY, ...FACTS },
+					timeoutMs: TIMEOUT_MS,
+					killLines: KILL_LINES,
+					log: runLogPath(content.language, set, n),
+					probe: probe(),
+				})
+			: await readRun(runLogPath(content.language, set, n));
+	console.log(
+		`Run ${first}, its transport failures (${transportFailures(firstRun.rows)
+			.map(({ id }) => id)
+			.join(", ")}) answered by run ${n}\n`,
+	);
+	console.log(formatReport(scoreRun(mergeRemeasure(firstRun, again))));
 } else {
 	usage();
 }
 
 function usage(): never {
 	console.error(
-		"usage: search.ts run <en|es> <eval|round2|round3|round4|dev> <n> | compare <en|es> <eval|round2|round3|round4> <first n> <second n>",
+		"usage: search.ts run <en|es> <eval|round2|round3|round4|dev> <n> | compare <en|es> <eval|round2|round3|round4> <first n> <second n> | remeasure|merge <en|es> <eval|round2|round3|round4> <first n> <n>",
 	);
 	process.exit(1);
 }
