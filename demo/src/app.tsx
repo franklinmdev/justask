@@ -12,7 +12,12 @@ import type { Case, Language } from "./content/types.ts";
 import { FilterPage } from "./filter-page.tsx";
 import { type Recordings, recordings as recorded } from "./recording.ts";
 import { SearchPage } from "./search-page.tsx";
-import { HoodPlaceContext, type HoodView, nextTab } from "./showcase.tsx";
+import {
+	HoodPlaceContext,
+	type HoodShown,
+	type HoodView,
+	nextTab,
+} from "./showcase.tsx";
 import { ThemeToggle } from "./theme.tsx";
 
 const contents = { en: english, es: spanish };
@@ -61,7 +66,7 @@ export function App({
 }) {
 	const [view, setView] = useState(viewFromUrl);
 	const [open, setOpen] = useState(true);
-	const [shown, setShown] = useState<"app" | "hood">("app");
+	const [shown, setShown] = useState<HoodShown>("app");
 	const [hoodView, setHoodView] = useState<HoodView>("trace");
 	// The calculator's starting point, a round figure for the person to change.
 	const [users, setUsers] = useState("1000");

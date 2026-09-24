@@ -35,6 +35,11 @@ export const hoodViews = ["trace", "json", "code"] as const;
 
 export type HoodView = (typeof hoodViews)[number];
 
+/** What a phone shows of a case, in the switch's order: the app first. */
+const hoodShown = ["app", "hood"] as const;
+
+export type HoodShown = (typeof hoodShown)[number];
+
 /**
  * Where the hood is, kept by the page so it holds across the cases: open or
  * hidden beside the app on a desktop, on a phone which of the two shows, and
@@ -43,8 +48,8 @@ export type HoodView = (typeof hoodViews)[number];
 export type HoodPlace = {
 	open: boolean;
 	setOpen: (open: boolean) => void;
-	shown: "app" | "hood";
-	setShown: (shown: "app" | "hood") => void;
+	shown: HoodShown;
+	setShown: (shown: HoodShown) => void;
 	view: HoodView;
 	setView: (view: HoodView) => void;
 };
@@ -144,7 +149,7 @@ export function CaseLayout({
 						</button>
 					) : (
 						<fieldset className="show" aria-label={copy.showLabel}>
-							{(["app", "hood"] as const).map((option) => (
+							{hoodShown.map((option) => (
 								<button
 									key={option}
 									type="button"
@@ -194,26 +199,10 @@ export function CaseLayout({
 							</button>
 						))}
 					</div>
-					<div
-						role="tabpanel"
-						id="hood-trace"
-						aria-labelledby="hood-tab-trace"
-						className="hood-panel"
-						// biome-ignore lint/a11y/noNoninteractiveTabindex: a tab panel is a tab stop, so keys reach it when nothing inside takes the focus (ARIA tabs pattern).
-						tabIndex={0}
-						hidden={place.view !== "trace"}
-					>
+					<HoodPanel view="trace" shown={place.view}>
 						{hood}
-					</div>
-					<div
-						role="tabpanel"
-						id="hood-json"
-						aria-labelledby="hood-tab-json"
-						className="hood-panel"
-						// biome-ignore lint/a11y/noNoninteractiveTabindex: a tab panel is a tab stop, so keys reach it when nothing inside takes the focus (ARIA tabs pattern).
-						tabIndex={0}
-						hidden={place.view !== "json"}
-					>
+					</HoodPanel>
+					<HoodPanel view="json" shown={place.view}>
 						{call.trace ? (
 							<CodeFile
 								file={{
@@ -225,23 +214,40 @@ export function CaseLayout({
 						) : (
 							<p className="muted">{copy.jsonIdle}</p>
 						)}
-					</div>
-					<div
-						role="tabpanel"
-						id="hood-code"
-						aria-labelledby="hood-tab-code"
-						className="hood-panel"
-						// biome-ignore lint/a11y/noNoninteractiveTabindex: a tab panel is a tab stop, so keys reach it when nothing inside takes the focus (ARIA tabs pattern).
-						tabIndex={0}
-						hidden={place.view !== "code"}
-					>
+					</HoodPanel>
+					<HoodPanel view="code" shown={place.view}>
 						<CodeFile file={snippet.server} />
 						<CodeFile file={snippet.client} />
-					</div>
+					</HoodPanel>
 				</aside>
 			</div>
 			<Calculator content={content} trace={call.trace} loading={call.loading} />
 		</>
+	);
+}
+
+/** One of the hood's tab panels, hidden while another tab is chosen. */
+function HoodPanel({
+	view,
+	shown,
+	children,
+}: {
+	view: HoodView;
+	shown: HoodView;
+	children: ReactNode;
+}) {
+	return (
+		<div
+			role="tabpanel"
+			id={`hood-${view}`}
+			aria-labelledby={`hood-tab-${view}`}
+			className="hood-panel"
+			// biome-ignore lint/a11y/noNoninteractiveTabindex: a tab panel is a tab stop, so keys reach it when nothing inside takes the focus (ARIA tabs pattern).
+			tabIndex={0}
+			hidden={view !== shown}
+		>
+			{children}
+		</div>
 	);
 }
 
