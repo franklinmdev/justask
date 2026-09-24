@@ -6,7 +6,8 @@ import type { Content, Language } from "../src/content/types.ts";
 const OFFICE = "office";
 const QUESTION = `tags_${OFFICE}`;
 
-const servedLabel = (content: Content) => {
+/** The office tag's label, as this content serves it. */
+export const servedLabel = (content: Content) => {
 	const label = content.tags.find(({ id }) => id === OFFICE)?.description;
 	if (label === undefined) throw new Error("the demo serves no office tag");
 	return label;
@@ -55,7 +56,7 @@ export type OfficePick = {
 	request: string;
 	/** The label that won the office tag's question, and its probability. */
 	pick: string;
-	p: number;
+	probability: number;
 	/** The intent's `new_record`, which gates the card but not the tag's question. */
 	newRecord: number | undefined;
 };
@@ -81,14 +82,14 @@ export function officePicks(run: CardRun): OfficePicks {
 	for (const row of run.rows) {
 		const answer = row.answers[QUESTION];
 		if (!answer) continue;
-		const [pick, p] = Object.entries(answer).reduce((best, next) =>
+		const [pick, probability] = Object.entries(answer).reduce((best, next) =>
 			next[1] > best[1] ? next : best,
 		);
 		rows.push({
 			id: row.id,
 			request: row.request,
 			pick,
-			p,
+			probability,
 			newRecord: row.answers.intent?.new_record,
 		});
 	}
@@ -96,7 +97,9 @@ export function officePicks(run: CardRun): OfficePicks {
 	for (const { pick } of rows) won[pick] = (won[pick] ?? 0) + 1;
 	return {
 		asked: rows.length,
-		yes: rows.filter(({ pick, p }) => pick === "yes" && p >= gate).length,
+		yes: rows.filter(
+			({ pick, probability }) => pick === "yes" && probability >= gate,
+		).length,
 		won,
 		rows,
 	};

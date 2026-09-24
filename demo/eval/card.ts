@@ -142,7 +142,7 @@ function printOfficePicks(run: CardRun) {
 	);
 	for (const row of rows) {
 		console.log(
-			`  ${row.id}  ${row.pick} ${row.p.toFixed(2)}  new_record ${row.newRecord?.toFixed(2) ?? "none"}  ${row.request}`,
+			`  ${row.id}  ${row.pick} ${row.probability.toFixed(2)}  new_record ${row.newRecord?.toFixed(2) ?? "none"}  ${row.request}`,
 		);
 	}
 }

@@ -4,27 +4,29 @@ import { CARD_KILL_LINES } from "../demo/eval/kill-lines.ts";
 import {
 	OFFICE_LABELS,
 	officePicks,
+	servedLabel,
 	tagGaps,
 	withOfficeLabel,
 } from "../demo/eval/office.ts";
 import { english } from "../demo/src/content/en.ts";
 import { spanish } from "../demo/src/content/es.ts";
 
-const officeOf = (content: typeof english) =>
-	content.tags.find(({ id }) => id === "office")?.description;
-
 describe.each([english, spanish])(
 	"#77's office labels in $language",
 	(content) => {
 		it("start from the label the demo serves", () => {
-			expect(OFFICE_LABELS[content.language].current).toBe(officeOf(content));
+			expect(OFFICE_LABELS[content.language].current).toBe(
+				servedLabel(content),
+			);
 		});
 
 		it.each(Object.keys(OFFICE_LABELS[content.language]))(
 			"change the office tag alone, to %s",
 			(label) => {
 				const changed = withOfficeLabel(content, label);
-				expect(officeOf(changed)).toBe(OFFICE_LABELS[content.language][label]);
+				expect(servedLabel(changed)).toBe(
+					OFFICE_LABELS[content.language][label],
+				);
 				expect(changed.tags.filter(({ id }) => id !== "office")).toEqual(
 					content.tags.filter(({ id }) => id !== "office"),
 				);
@@ -85,7 +87,9 @@ describe("the office tag's picks", () => {
 		expect(picks.asked).toBe(4);
 		expect(picks.yes).toBe(1);
 		expect(picks.won).toEqual({ yes: 2, not_mentioned: 1, not_available: 1 });
-		expect(picks.rows.map(({ id, pick, p }) => [id, pick, p])).toEqual([
+		expect(
+			picks.rows.map(({ id, pick, probability }) => [id, pick, probability]),
+		).toEqual([
 			["yes", "yes", 0.62],
 			["weak yes", "yes", 0.38],
 			["not mentioned", "not_mentioned", 0.85],
