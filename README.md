@@ -273,7 +273,7 @@ Keep a separate dev set for tuning descriptions and shortlists, and never let it
 
 ### A filter's gates
 
-A filter has one gate per field, so its eval set names the filter object a person expects. A `filterable` row gives each field it mentions a value: a catalog field's candidate id, a date field's `{ from, to }`, an amount field's `{ min, max, exact, currency }`. A field left out is not mentioned and must stay empty. An `ambiguous` row marks at least one field `"held"`; a `nothing` row expects no field at all:
+A filter has one gate per field, so its eval set names the filter object a person expects. A `filterable` row gives each field it mentions a value: a catalog field's candidate id, a date field's `{ from, to }`, an amount field's `{ min, max, exact, currency }`. A field left out is not mentioned and must stay empty. An `ambiguous` row marks at least one field `"held"` (`HELD`, exported by `justask/eval` for code that reads a set); a `nothing` row expects no field at all:
 
 ```jsonl
 {"id": "f01", "request": "Acme invoices over $500 last month", "kind": "filterable", "expected": {"vendor": "acme", "date": {"from": "2026-08-01", "to": "2026-08-31"}, "amount": {"min": 500, "currency": "USD"}}}

@@ -10,8 +10,8 @@
 //   node --conditions=source demo/eval/card.ts merge <en|es> <set> <first n> <n>...
 //   node --conditions=source demo/eval/card.ts gates <dev n>
 //
-// The sets and which give a verdict are in card-sets.ts, where each one's
-// file and logs live in sets.ts. `run` writes its set's log, which it never
+// The sets and which give a verdict are listed in card-sets.ts; where each
+// set's file and run logs live is in sets.ts. `run` writes its set's log, which it never
 // overwrites, and prints its report; `office` also takes
 // one of #77's office labels (office.ts). `office` reads a saved office run
 // and prints the office tag's picks, and `gaps` a saved notoffice run and
