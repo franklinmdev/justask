@@ -1,4 +1,4 @@
-import type { AmountRange, DateRange, FieldValue, FilterValue } from "justask";
+import type { AmountRange, DateRange, FieldValue } from "justask";
 import {
 	FilterBox,
 	FilterConfirm,
@@ -26,34 +26,23 @@ import {
 	settleAt,
 	useTypedText,
 } from "./parts.tsx";
-import type { TableRecording } from "./recording.ts";
+import { dayShown, type TableRecording } from "./recording.ts";
 import { useReplay } from "./replay.ts";
 import { costOf, tableControls } from "./saved.ts";
 import { CaseLayout } from "./showcase.tsx";
 import { useSuggest } from "./trace.ts";
-
-type Applied = FilterValue<TransactionFields>;
+import {
+	type Applied,
+	applyTo,
+	matches,
+	transactionsOn,
+} from "./transactions.ts";
 
 /** The table's controls in the order they show, which Apply sets them in. */
 const fieldOrder: FieldName[] = ["vendor", "status", "date", "amount"];
 
 /** The controls one Apply set, in field order; the round restarts their motion. */
 type Settling = { round: number; names: FieldName[] };
-
-/** Every row the table's controls keep. The table's amounts are in the local currency, so another one keeps none. */
-function matches(row: Transaction, filter: Applied): boolean {
-	const { vendor, status, date, amount } = filter;
-	if (vendor && row.vendorId !== vendor.id) return false;
-	if (status && row.status !== status) return false;
-	if (date?.from && row.date < date.from) return false;
-	if (date?.to && row.date > date.to) return false;
-	if (amount) {
-		if (amount.currency && amount.currency !== LOCAL_CURRENCY) return false;
-		if (amount.min !== undefined && row.amount < amount.min) return false;
-		if (amount.max !== undefined && row.amount > amount.max) return false;
-	}
-	return true;
-}
 
 /** One field's filter in the page's own words, for the proposed and the applied filters alike. */
 function fieldWords(content: Content) {
@@ -68,20 +57,6 @@ function fieldWords(content: Content) {
 		amount: (range) => copy.filter.amountRange(range, format.amount),
 	};
 	return words;
-}
-
-/**
- * The table's controls once Apply is pressed: a filled field replaces its
- * control's value, a held one leaves it as it was. The amount control is two
- * bounds, so an exact amount sets both.
- */
-function applyTo(table: Applied, value: Applied): Applied {
-	const next = { ...table, ...value };
-	if (value.amount?.exact !== undefined) {
-		const { exact, ...rest } = value.amount;
-		next.amount = { ...rest, min: exact, max: exact };
-	}
-	return next;
 }
 
 /** A copy with `key` set to `value`, or left out when `value` is undefined. */
@@ -193,7 +168,11 @@ export function FilterPage({
 		(value: FieldValue<TransactionFields[K]>) => (
 			<FieldChip name={copy.filter.fields[name]} text={words[name](value)} />
 		);
-	const rows = content.transactions.filter((row) => matches(row, applied));
+	const transactions = transactionsOn(
+		content.transactions,
+		dayShown(recording, replay.recorded),
+	);
+	const rows = transactions.filter((row) => matches(row, applied));
 
 	return (
 		<CaseLayout
@@ -285,7 +264,7 @@ export function FilterPage({
 						{copy.filter.applied}
 					</h3>
 					<p className="applied-count" role="status">
-						{copy.filter.showing(rows.length, content.transactions.length)}
+						{copy.filter.showing(rows.length, transactions.length)}
 					</p>
 					{Object.keys(applied).length > 0 && (
 						<button

@@ -17,6 +17,7 @@ import { spanish } from "../demo/src/content/es.ts";
 import type { Language } from "../demo/src/content/types.ts";
 import { formats } from "../demo/src/format.ts";
 import { dayOf, type Recording, recordings } from "../demo/src/recording.ts";
+import { applyTo, matches, transactionsOn } from "../demo/src/transactions.ts";
 import { expectNoAxeViolations as expectNoAxe } from "./checks.ts";
 import { failingProvider, fakeProvider } from "./fake-provider.ts";
 
@@ -301,6 +302,37 @@ describe("the Table case's recorded run", () => {
 		expect(control("Vendor").value).toBe("");
 		// "x" went live, to the provider that fails.
 		expect(provider.calls).toHaveLength(1);
+	});
+
+	it("shows the rows it ran on a year later, then today's once the person takes over (#122)", async () => {
+		vi.setSystemTime(new Date("2027-09-24T15:00:00Z"));
+		const { user } = renderDemo();
+		const date = formats("en").date;
+		/** The dates the table shows, in its order. */
+		const shown = () =>
+			within(screen.getByRole("table", { name: "Transactions" }))
+				.getAllByRole("row")
+				.slice(1)
+				.map((row) => within(row).getAllByRole("cell")[2]?.textContent);
+		await replayApplied();
+
+		const applied = applyTo({}, table.response.filter.value);
+		const ranOn = transactionsOn(english.transactions, dayOf(table)).filter(
+			(row) => matches(row, applied),
+		);
+		expect(ranOn.length).toBeGreaterThan(0);
+		expect(shown()).toEqual(ranOn.map((row) => date(row.date)));
+
+		await user.click(screen.getByRole("button", { name: "Clear filters" }));
+
+		expect(shown()).toEqual(
+			transactionsOn(english.transactions, "2027-09-24").map((row) =>
+				date(row.date),
+			),
+		);
+		expect(shown()).not.toEqual(
+			english.transactions.map((row) => date(row.date)),
+		);
 	});
 });
 

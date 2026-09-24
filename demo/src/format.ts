@@ -76,3 +76,11 @@ export function parseAmount(text: string): number | undefined {
 	const number = Number(decimal);
 	return Number.isFinite(number) ? number : undefined;
 }
+
+/** Today on the person's own calendar, YYYY-MM-DD. */
+export function today(): string {
+	const now = new Date();
+	return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))
+		.toISOString()
+		.slice(0, 10);
+}

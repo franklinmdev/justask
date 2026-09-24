@@ -17,6 +17,7 @@ import type {
 	TransactionFields,
 	Vendor,
 } from "./content/types.ts";
+import { today } from "./format.ts";
 import type { Trace } from "./trace.ts";
 
 /**
@@ -87,4 +88,15 @@ export function dayOf({ recordedAt, timeZone }: Recording<Usage>): string {
 	return new Intl.DateTimeFormat("en-CA", { timeZone }).format(
 		new Date(recordedAt),
 	);
+}
+
+/**
+ * The day a case's fictional app is on: the recording's while the display is
+ * the recording's, so a replay shows the rows it ran on, and today otherwise.
+ */
+export function dayShown(
+	recording: Recording<Usage> | null,
+	recorded: boolean,
+): string {
+	return recording && recorded ? dayOf(recording) : today();
 }

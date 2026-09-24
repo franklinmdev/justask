@@ -1,5 +1,6 @@
 import { type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
 import type { CalendarCopy } from "./content/types.ts";
+import { today } from "./format.ts";
 
 // Days are ISO strings, YYYY-MM-DD, and their arithmetic runs in UTC.
 function dateOf(iso: string): Date {
@@ -27,14 +28,6 @@ function addMonths(iso: string, months: number): string {
 	).getUTCDate();
 	date.setUTCDate(Math.min(day, last));
 	return isoOf(date);
-}
-
-/** Today on the person's own calendar. */
-function today(): string {
-	const now = new Date();
-	return isoOf(
-		new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())),
-	);
 }
 
 /** The month's weeks, each seven days, padded with the days around it. */
