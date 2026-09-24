@@ -40,7 +40,7 @@ const nothingAnswer = {
 };
 
 /**
- * Per request: `busy` is unavailable on every call, `flaky` on its first
+ * Per request: `busy` is unavailable on every call, `busy once` on its first
  * one only, `late` never answers,
  * `broken` answers against the contract, `down` throws a plain error, and
  * any other request is answered as a nothing row.
@@ -53,7 +53,7 @@ function troubled(): Provider {
 			const first = !seen.has(input.request);
 			seen.add(input.request);
 			switch (input.request) {
-				case "flaky":
+				case "busy once":
 					return first
 						? Promise.reject(new ProviderUnavailableError("529 busy"))
 						: fake.answer(input);
@@ -96,7 +96,7 @@ describe("a run's errors", () => {
 	});
 
 	it("are logged as transport failures when the provider is unavailable or late, and not when an answer breaks the contract or an adapter throws otherwise, in every flow", async () => {
-		const set = rows("busy", "late", "broken", "down", "flaky", "hello");
+		const set = rows("busy", "late", "broken", "down", "busy once", "hello");
 		const common = {
 			facts,
 			timeoutMs: 30,

@@ -109,7 +109,7 @@ export function jevProvider({ client }: JevProviderOptions = {}): Provider {
 }
 
 /** The service failed to answer, not the answer: a 5xx or no connection. */
-function unavailable(error: unknown): error is Error {
+function unavailable(error: unknown): error is APIError | APIConnectionError {
 	return (
 		(error instanceof APIError && error.status >= 500) ||
 		error instanceof APIConnectionError

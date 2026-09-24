@@ -189,7 +189,7 @@ export function slowFirstProvider(
  * then answers every later call from `answers`, or never when it is
  * `"hang"`.
  */
-export function flakyProvider(
+export function unavailableFirstProvider(
 	causes: unknown[],
 	answers: FakeAnswers | "hang",
 	{ delayMs = 0 } = {},

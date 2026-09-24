@@ -9,9 +9,9 @@ import { describe, expect, it } from "vitest";
 import {
 	failingProvider,
 	fakeProvider,
-	flakyProvider,
 	hangingProvider,
 	rawProvider,
+	unavailableFirstProvider,
 } from "./fake-provider.ts";
 
 type Vendor = { id: number; name: string };
@@ -204,7 +204,7 @@ describe("ask: search", () => {
 		};
 
 		it("calls it once more within the timeout, and fills from the second answer", async () => {
-			const provider = flakyProvider([unavailable()], answers);
+			const provider = unavailableFirstProvider([unavailable()], answers);
 			const result = await ask({ ...base, provider, search: vendorSearch() });
 
 			expect(provider.calls).toHaveLength(2);
@@ -215,7 +215,10 @@ describe("ask: search", () => {
 
 		it("holds and returns a transport error when the second call fails too, with no third", async () => {
 			const second = unavailable();
-			const provider = flakyProvider([unavailable(), second], answers);
+			const provider = unavailableFirstProvider(
+				[unavailable(), second],
+				answers,
+			);
 			const result = await ask({ ...base, provider, search: vendorSearch() });
 
 			expect(provider.calls).toHaveLength(2);
@@ -229,7 +232,9 @@ describe("ask: search", () => {
 		});
 
 		it("keeps one timeout over both calls", async () => {
-			const provider = flakyProvider([unavailable()], "hang", { delayMs: 10 });
+			const provider = unavailableFirstProvider([unavailable()], "hang", {
+				delayMs: 10,
+			});
 			const started = performance.now();
 			const result = await ask({
 				...base,
@@ -245,7 +250,7 @@ describe("ask: search", () => {
 		});
 
 		it("does not call again once the timeout has run out", async () => {
-			const provider = flakyProvider([unavailable()], answers, {
+			const provider = unavailableFirstProvider([unavailable()], answers, {
 				delayMs: 40,
 			});
 			const result = await ask({
