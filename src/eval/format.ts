@@ -19,6 +19,20 @@ const probability = (none: number | null, several: number | null) =>
 const errorCount = (errors: number | null, transport = 0) =>
 	`${number(errors)}${transport ? ` (${transport} transport)` : ""}`;
 
+/** Each way a verdict can wait, in the order its outcome names them. */
+const PENDING = [
+	{
+		kind: "latencyPending",
+		line: "LATENCY",
+		why: "slow window: the latency line is measured again in a normal one",
+	},
+	{
+		kind: "errorsPending",
+		line: "ERRORS",
+		why: "transport failures: those rows are sent again in a normal window",
+	},
+] as const satisfies { kind: keyof Verdict; line: string; why: string }[];
+
 /**
  * The verdict and its lines. A run in a slow window whose quality lines
  * pass waits on its latency line, measured again in a normal window, and
@@ -26,22 +40,12 @@ const errorCount = (errors: number | null, transport = 0) =>
  * sent again (#93).
  */
 function verdictLines(verdict: Verdict): string[] {
-	const waiting = [
-		verdict.latencyPending && "LATENCY",
-		verdict.errorsPending && "ERRORS",
-	].filter(Boolean);
+	const waiting = PENDING.filter(({ kind }) => verdict[kind]);
 	const outcome = verdict.pass
 		? "PASS"
 		: waiting.length === 0
 			? "FAIL"
-			: `${waiting.join(" AND ")} PENDING (${[
-					verdict.latencyPending &&
-						"slow window: the latency line is measured again in a normal one",
-					verdict.errorsPending &&
-						"transport failures: those rows are sent again in a normal window",
-				]
-					.filter(Boolean)
-					.join("; ")})`;
+			: `${waiting.map(({ line }) => line).join(" AND ")} PENDING (${waiting.map(({ why }) => why).join("; ")})`;
 	return [
 		`## Verdict: ${outcome}`,
 		"",
