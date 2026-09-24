@@ -79,6 +79,16 @@ export type ProbeSender = {
 /** Checks the probe before any call, and sends it through the run's provider under the run's timeout. */
 export function probeSender(
 	provider: Provider,
+	probe: Probe,
+	timeoutMs: number,
+): ProbeSender;
+export function probeSender(
+	provider: Provider,
+	probe: Probe | undefined,
+	timeoutMs: number,
+): ProbeSender | undefined;
+export function probeSender(
+	provider: Provider,
 	probe: Probe | undefined,
 	timeoutMs: number,
 ): ProbeSender | undefined {
