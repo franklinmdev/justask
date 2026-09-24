@@ -1234,7 +1234,7 @@ Each rescores with `scoreCardRun(await readCardRun(path), { gates })` and no cal
 
 ## Round 8: the retry, under the errors rule
 
-Carried by [#97](https://github.com/franklinmdev/justask/issues/97). The card's first verdict under #93's errors rule and `ask`'s one retry on a provider-unavailable error ([ADR 0013](adr/0013-ask-calls-an-unavailable-provider-once-more.md)). Nothing else changes: the card, gates, labels, kill lines and `PROBE_BASELINE_MS` are round 7's. The retry changes what a visitor sees, so the round measures it: each report gives the rows that retried and how many of those the retry recovered.
+Carried by [#97](https://github.com/franklinmdev/justask/issues/97). The card's first verdict under #93's errors rule and `ask`'s one retry on a provider-unavailable error ([ADR 0013](adr/0013-ask-calls-an-unavailable-provider-once-more.md)). Nothing else changes: the card, gates, labels, kill lines and `PROBE_BASELINE_MS` are round 7's. The retry changes what a visitor sees, so the round set out to measure it: each report counts the rows that retried, and those of them with no error are the ones the retry recovered, read from the run log. The round met no transport failure, so it measured nothing of the retry (Round 8: result, below).
 
 **Code freeze:** the round runs on main `ff6eb4a` (the merge of #96). If a commit lands on main between this freeze and run 1, every saved card log is rescored first and must score as before.
 
@@ -1273,7 +1273,8 @@ As #86 wrote for round 7, the rows changed and the card did not: a result on rew
 | retried, recovered | | 0, 0 | 0, 0 |
 
 - **The invented card:** `en-r8-060`, `copy accounting on the Cloudberth bill`, a send no list names. The intent picked `new_record` at 0.70 over `not_available` at 0.27, the vendor filled Cloudberth at 0.89, and the tags filled `office` from the vendor (ADR 0012), since every tag answered `not_mentioned`. Its Spanish row (`ponga en copia a contabilidad con la factura de Nubalia`) held. Round 7's two rows of the same shape held in both languages.
-- **The retry and the errors rule:** no row of the four runs errored, and none called twice (`retried` is absent from every report). The round cannot say whether the retry helps a visitor: the provider answered every first call.
+- **The retry and the errors rule:** no row of the four runs errored, and none called twice (`retried` is absent from every report). The round cannot say whether the retry helps a visitor: the provider answered every first call. The recovered count is read by hand from the run logs, as retried rows with no error; the reports count only the rows that retried.
+- **Retried rows and their cost (the owner's request on #97, from #98):** no row retried, so there is no retried row's `costUsd` to compare against the TypeSafe dashboard, and this round does not settle whether a retry after a lost connection under-reports cost.
 
 ### Filled and wrong
 
