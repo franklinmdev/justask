@@ -496,7 +496,6 @@ export async function answer(
 	{ retry = true }: { retry?: boolean } = {},
 ): Promise<({ answer: ProviderAnswer } | { error: AskError }) & Spent> {
 	const controller = new AbortController();
-	let calls = 0;
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	const timeout = new Promise<{ error: AskError }>((resolve) => {
 		timer = setTimeout(() => {
@@ -513,10 +512,7 @@ export async function answer(
 	// Started inside a promise so an adapter that throws synchronously is caught too.
 	const once = () =>
 		Promise.resolve()
-			.then(() => {
-				calls++;
-				return provider.answer({ ...input, signal: controller.signal });
-			})
+			.then(() => provider.answer({ ...input, signal: controller.signal }))
 			.then(
 				(result) => {
 					const { answers } = result;
@@ -529,18 +525,17 @@ export async function answer(
 				},
 				(cause: unknown) => ({ error: providerError(cause) }),
 			);
-	const call = once().then((outcome) =>
-		retry &&
-		"error" in outcome &&
-		outcome.error.kind === "provider" &&
-		outcome.error.transport &&
-		!controller.signal.aborted
-			? once()
-			: outcome,
-	);
+	// Each call races the one timeout, so a second call cut short is still marked.
+	const timed = () => Promise.race([once(), timeout]);
 	try {
-		const outcome = await Promise.race([call, timeout]);
-		return { ...outcome, ...(calls > 1 && { retried: true as const }) };
+		const first = await timed();
+		return retry &&
+			"error" in first &&
+			first.error.kind === "provider" &&
+			first.error.transport &&
+			!controller.signal.aborted
+			? { ...(await timed()), retried: true }
+			: first;
 	} finally {
 		clearTimeout(timer);
 	}
