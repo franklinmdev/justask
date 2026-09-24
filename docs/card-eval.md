@@ -1248,7 +1248,7 @@ Round 7's shapes, reused as the owner approved on 2026-09-24: every row names on
 | `card-es.round8.jsonl` | 168 | 112 | 32 | 24 |
 
 - **Quotas as round 7:** tags in all 112 records, the day in 96, the amount in 108, the vendor in 84, every vendor in four records or more, 28 records with no vendor of the catalog; eight ambiguous rows hold each field.
-- **No order carried over:** drafted by shape and shuffled once, with the same order in both languages; no row shares its shape with round 7's row at the same position.
+- **No order carried over:** drafted by shape and shuffled once, with the same order in both languages; no row shares its shape with round 7's row at the same position, checked with no call.
 - **Checked with no call:** the code holds the eight nothing rows with a listed verb and a reference and the vendor of the four named-pair rows in each language, and no record. One nothing row names two tags with `or` in both languages (`is a parking fee travel or office?`); it expects nothing either way.
 - The same checks as rounds 1 to 7 hold: no request repeats any other set, probe, suggestion or recording, every expected day and amount is one the parser builds on Wednesday 2026-09-23, and every held one is held by the parser's reading or by two candidates.
 
