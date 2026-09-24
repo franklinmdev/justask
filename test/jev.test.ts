@@ -1,9 +1,11 @@
 import {
 	APIConnectionError,
+	APIError,
 	APIUserAbortError,
+	BadRequestError,
 	RateLimitError,
 } from "@typesafe-ai/sdk";
-import { ask, type Question } from "justask";
+import { ask, ProviderUnavailableError, type Question } from "justask";
 import { JEV_MODEL, jevProvider } from "justask/jev";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PRICE } from "../demo/src/calculator.tsx";
@@ -162,9 +164,12 @@ describe("jevProvider", () => {
 			"a rate limit",
 			new RateLimitError(429, { error: "slow down" }, new Headers()),
 		],
-		["a lost connection", new APIConnectionError("socket hang up")],
+		[
+			"a bad request",
+			new BadRequestError(400, { error: "no model" }, new Headers()),
+		],
 	])(
-		"maps %s to the typed provider error, keeping the SDK's error as the cause",
+		"maps %s to the typed provider error, keeping the SDK's error as the cause, with no second call",
 		async (_, cause) => {
 			const client = fakeJevClient(() => Promise.reject(cause));
 
@@ -182,6 +187,45 @@ describe("jevProvider", () => {
 			expect(result.search.item).toBeNull();
 		},
 	);
+
+	it.each([
+		[
+			"a 529 high-traffic answer",
+			APIError.fromResponse(529, { error: "high traffic" }, new Headers()),
+		],
+		["a 503", APIError.fromResponse(503, "unavailable", new Headers())],
+		["a lost connection", new APIConnectionError("socket hang up")],
+	])(
+		"throws %s as ProviderUnavailableError, the SDK's error as its cause, so ask calls once more (ADR 0013)",
+		async (_, cause) => {
+			const client = fakeJevClient(() => Promise.reject(cause));
+
+			const failed = jevProvider({ client }).answer(input);
+			await expect(failed).rejects.toBeInstanceOf(ProviderUnavailableError);
+			await expect(failed).rejects.toMatchObject({
+				message: cause.message,
+				cause,
+			});
+
+			const result = await ask({
+				...base,
+				provider: jevProvider({ client }),
+			});
+			expect(client.calls).toHaveLength(3);
+			expect(result.error).toMatchObject({
+				kind: "provider",
+				message: cause.message,
+				transport: true,
+			});
+		},
+	);
+
+	it("rethrows the SDK's abort as it is, since only ask's timeout aborts a call", async () => {
+		const cause = new APIUserAbortError();
+		const client = fakeJevClient(() => Promise.reject(cause));
+
+		await expect(jevProvider({ client }).answer(input)).rejects.toBe(cause);
+	});
 
 	it("maps an answer that leaves a label out to the typed provider error", async () => {
 		const client = fakeJevClient(async () =>
@@ -227,7 +271,7 @@ describe("jevProvider", () => {
 		expect(result.error?.message).toContain("TYPESAFE_API_KEY");
 	});
 
-	it("sends the key from TYPESAFE_API_KEY and makes one attempt, without retries", async () => {
+	it("sends the key from TYPESAFE_API_KEY, and the SDK makes one attempt per call: a 503's second send is ask's one retry (ADR 0013)", async () => {
 		vi.stubEnv("TYPESAFE_API_KEY", "key-from-the-server-environment");
 		vi.stubEnv("TYPESAFE_BASE_URL", "");
 		const sent: Request[] = [];
@@ -241,12 +285,12 @@ describe("jevProvider", () => {
 			provider: jevProvider(),
 		});
 
-		expect(sent).toHaveLength(1);
+		expect(sent).toHaveLength(2);
 		expect(sent[0]?.url).toBe("https://api.typesafe.ai/v1/systemone");
 		expect(sent[0]?.headers.get("authorization")).toBe(
 			"Bearer key-from-the-server-environment",
 		);
 		expect(await sent[0]?.json()).toMatchObject({ model: "jev-1.13.0" });
-		expect(result.error?.kind).toBe("provider");
+		expect(result.error).toMatchObject({ kind: "provider", transport: true });
 	});
 });

@@ -42,6 +42,7 @@ import {
 	type Probabilities,
 	type Provider,
 	type ProviderAnswer,
+	ProviderUnavailableError,
 	type Question,
 	type Usage,
 	usageOf,
@@ -84,9 +85,13 @@ export type SearchResult<T> = {
 	pair?: NamedPair;
 };
 
-/** Why the provider gave no usable answer. Every field is held when present. */
+/**
+ * Why the provider gave no usable answer. Every field is held when present.
+ * `transport` marks a provider that was unavailable on both calls (ADR 0013),
+ * not one whose answer broke the contract or that threw otherwise.
+ */
 export type AskError =
-	| { kind: "provider"; message: string; cause: unknown }
+	| { kind: "provider"; message: string; cause: unknown; transport?: true }
 	| { kind: "timeout"; message: string; timeoutMs: number };
 
 /**
@@ -116,7 +121,8 @@ const SEARCH = "search";
  * candidates, the provider picks in one call, code builds the result (ADR
  * 0002). A search resolves to one item or none; a filter to the filter object
  * its table understands; a card to a new record, or to nothing when the
- * request asks for none. A failed or late provider holds everything; no retries.
+ * request asks for none. A failed or late provider holds everything; an
+ * unavailable one is called once more within the same timeout (ADR 0013).
  */
 export function ask<T>(input: AskInput<T>): Promise<AskResult<T>>;
 // The filter's overload stays last: a call that matches none reports against it.
@@ -465,11 +471,16 @@ function readCandidates(
 	};
 }
 
-/** One call to the provider under the timeout; the eval's probes make theirs through it too. */
+/**
+ * One call to the provider under the timeout, and one more within it when
+ * the provider was unavailable (ADR 0013). The eval's probes make theirs
+ * through it too, with `retry` off, since they time the provider's one call.
+ */
 export async function answer(
 	provider: Provider,
 	input: { request: string; facts: Facts; questions: Question[] },
 	timeoutMs: number,
+	{ retry = true }: { retry?: boolean } = {},
 ): Promise<
 	{ answer: ProviderAnswer; usage: Usage } | { error: AskError; usage?: Usage }
 > {
@@ -488,20 +499,30 @@ export async function answer(
 		}, timeoutMs);
 	});
 	// Started inside a promise so an adapter that throws synchronously is caught too.
-	const call = Promise.resolve()
-		.then(() => provider.answer({ ...input, signal: controller.signal }))
-		.then(
-			(result) => {
-				const { answers } = result;
-				// A call that broke the contract was still made, and still cost.
-				const usage = usageOf(result);
-				const breach = contractBreach(input.questions, answers);
-				return breach
-					? { error: providerError(new Error(breach)), usage }
-					: { answer: answers, usage };
-			},
-			(cause: unknown) => ({ error: providerError(cause) }),
-		);
+	const once = () =>
+		Promise.resolve()
+			.then(() => provider.answer({ ...input, signal: controller.signal }))
+			.then(
+				(result) => {
+					const { answers } = result;
+					// A call that broke the contract was still made, and still cost.
+					const usage = usageOf(result);
+					const breach = contractBreach(input.questions, answers);
+					return breach
+						? { error: providerError(new Error(breach)), usage }
+						: { answer: answers, usage };
+				},
+				(cause: unknown) => ({ error: providerError(cause) }),
+			);
+	const call = once().then((outcome) =>
+		retry &&
+		"error" in outcome &&
+		outcome.error.kind === "provider" &&
+		outcome.error.transport &&
+		!controller.signal.aborted
+			? once()
+			: outcome,
+	);
 	try {
 		return await Promise.race([call, timeout]);
 	} finally {
@@ -514,6 +535,7 @@ function providerError(cause: unknown): AskError {
 		kind: "provider",
 		message: cause instanceof Error ? cause.message : String(cause),
 		cause,
+		...(cause instanceof ProviderUnavailableError && { transport: true }),
 	};
 }
 

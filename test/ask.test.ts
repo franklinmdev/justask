@@ -3,11 +3,13 @@ import {
 	type Candidate,
 	fuzzyShortlist,
 	type ProviderAnswer,
+	ProviderUnavailableError,
 } from "justask";
 import { describe, expect, it } from "vitest";
 import {
 	failingProvider,
 	fakeProvider,
+	flakyProvider,
 	hangingProvider,
 	rawProvider,
 } from "./fake-provider.ts";
@@ -191,6 +193,79 @@ describe("ask: search", () => {
 			pick: null,
 			probabilities: {},
 			gate: 0.5,
+		});
+	});
+
+	describe("when the provider is unavailable (ADR 0013)", () => {
+		const unavailable = () =>
+			new ProviderUnavailableError("529 high traffic", { cause: 529 });
+		const answers = {
+			search: { acme: 0.93, northwind: 0.05, none: 0.02, several: 0 },
+		};
+
+		it("calls it once more within the timeout, and fills from the second answer", async () => {
+			const provider = flakyProvider([unavailable()], answers);
+			const result = await ask({ ...base, provider, search: vendorSearch() });
+
+			expect(provider.calls).toHaveLength(2);
+			expect(provider.calls[1]?.signal).toBe(provider.calls[0]?.signal);
+			expect(result.error).toBeUndefined();
+			expect(result.search.item).toEqual({ id: 1, name: "Acme Supplies" });
+		});
+
+		it("holds and returns a transport error when the second call fails too, with no third", async () => {
+			const second = unavailable();
+			const provider = flakyProvider([unavailable(), second], answers);
+			const result = await ask({ ...base, provider, search: vendorSearch() });
+
+			expect(provider.calls).toHaveLength(2);
+			expect(result.error).toEqual({
+				kind: "provider",
+				message: "529 high traffic",
+				cause: second,
+				transport: true,
+			});
+			expect(result.search.item).toBeNull();
+		});
+
+		it("keeps one timeout over both calls", async () => {
+			const provider = flakyProvider([unavailable()], "hang", { delayMs: 10 });
+			const started = performance.now();
+			const result = await ask({
+				...base,
+				timeoutMs: 60,
+				provider,
+				search: vendorSearch(),
+			});
+
+			expect(result.error).toMatchObject({ kind: "timeout", timeoutMs: 60 });
+			expect(performance.now() - started).toBeLessThan(120);
+			expect(provider.calls).toHaveLength(2);
+			expect(provider.calls[1]?.signal.aborted).toBe(true);
+		});
+
+		it("does not call again once the timeout has run out", async () => {
+			const provider = flakyProvider([unavailable()], answers, {
+				delayMs: 40,
+			});
+			const result = await ask({
+				...base,
+				timeoutMs: 20,
+				provider,
+				search: vendorSearch(),
+			});
+			await new Promise((resolve) => setTimeout(resolve, 60));
+
+			expect(result.error?.kind).toBe("timeout");
+			expect(provider.calls).toHaveLength(1);
+		});
+
+		it("does not call again after an answer that breaks the contract", async () => {
+			const provider = rawProvider({});
+			const result = await ask({ ...base, provider, search: vendorSearch() });
+
+			expect(provider.calls).toHaveLength(1);
+			expect(result.error).not.toHaveProperty("transport");
 		});
 	});
 

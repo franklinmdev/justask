@@ -69,15 +69,16 @@ export {
 	type Reads,
 	type TimeReading,
 } from "./parse.ts";
-export type {
-	Facts,
-	Label,
-	Probabilities,
-	Provider,
-	ProviderAnswer,
-	ProviderInput,
-	ProviderResult,
-	Question,
-	Usage,
+export {
+	type Facts,
+	type Label,
+	type Probabilities,
+	type Provider,
+	type ProviderAnswer,
+	type ProviderInput,
+	type ProviderResult,
+	ProviderUnavailableError,
+	type Question,
+	type Usage,
 } from "./provider.ts";
 export type { Candidate, Search, Shortlist } from "./search.ts";
