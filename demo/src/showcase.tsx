@@ -252,8 +252,9 @@ function HoodPanel({
 }
 
 /**
- * The strip over the hood's tabs: the displayed call's latency, then its
- * input tokens and cost, each saying so when the provider did not report it.
+ * The strip over the hood's tabs: the displayed call's latency, the second
+ * call when `ask` made one (ADR 0013), then its input tokens and cost, each
+ * saying so when the provider did not report it.
  */
 function Strip({ content, call }: { content: Content; call: ShownCall }) {
 	const { copy } = content;
@@ -271,6 +272,15 @@ function Strip({ content, call }: { content: Content; call: ShownCall }) {
 						<dt>{copy.latency}</dt>
 						<dd className="data">{trace.ms} ms</dd>
 					</div>
+					{trace.retried && (
+						<div>
+							<dt>{copy.calls}</dt>
+							<dd>
+								<span className="data">2</span>{" "}
+								<span className="strip-note">{copy.retried}</span>
+							</dd>
+						</div>
+					)}
 					<div>
 						<dt>{copy.inputTokens}</dt>
 						{trace.inputTokens === undefined ? (

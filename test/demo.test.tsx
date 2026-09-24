@@ -7,7 +7,7 @@ import {
 	within,
 } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
-import type { Provider } from "justask";
+import { type Provider, ProviderUnavailableError } from "justask";
 import { afterEach, describe, expect, it } from "vitest";
 import { createDemoHandler } from "../demo/server/handler.ts";
 import { App } from "../demo/src/app.tsx";
@@ -19,6 +19,7 @@ import {
 	failingProvider,
 	fakeProvider,
 	perRequest,
+	unavailableFirstProvider,
 } from "./fake-provider.ts";
 
 /** Every vendor of both sets and several at zero, so the fake answers any shortlist. */
@@ -174,6 +175,32 @@ describe("the demo's Search case", () => {
 		expect(await figure(state, "Input tokens")).toBe("120");
 		expect(await figure(state, "Cost")).toBe("$0.000005");
 		expect(await figure(state, "Latency")).toMatch(/^\d+ ms$/);
+		// One call, so the strip has no figure for calls.
+		expect(state.queryByText("Calls")).toBeNull();
+		await expectNoAxeViolations(container);
+	});
+
+	it("shows in the strip when ask called the provider twice, the first time unavailable (ADR 0013)", async () => {
+		const { container, user } = renderDemo({
+			provider: unavailableFirstProvider(
+				[new ProviderUnavailableError("529 high traffic")],
+				fixtureFor,
+				{ costUsd: 0.000005, inputTokens: 120 },
+			),
+		});
+
+		await user.click(
+			screen.getByRole("button", { name: "the catering people" }),
+		);
+
+		const state = panel("This call");
+		expect(await figure(state, "Calls")).toBe("2 (retried)");
+		expect(await figure(state, "Cost")).toBe("$0.000005");
+		expect(await figure(state, "Latency")).toMatch(/^\d+ ms$/);
+		// The second call answered, so the search filled.
+		expect(
+			await screen.findByRole("button", { name: /Larkspur Catering/ }),
+		).toBeDefined();
 		await expectNoAxeViolations(container);
 	});
 
@@ -201,6 +228,21 @@ describe("the demo's Search case", () => {
 		const state = within(screen.getByRole("region", { name: "Esta llamada" }));
 		expect(await figure(state, "Tokens de entrada")).toBe("120");
 		expect(await figure(state, "Costo")).toBe("0,000005\u00a0US$");
+	});
+
+	it("shows a retried call in the strip in Spanish", async () => {
+		const { user } = renderDemo({
+			provider: unavailableFirstProvider(
+				[new ProviderUnavailableError("529 high traffic")],
+				fixtureFor,
+			),
+			url: "/?case=search&lang=es",
+		});
+
+		await user.click(screen.getByRole("button", { name: "los del catering" }));
+
+		const state = within(screen.getByRole("region", { name: "Esta llamada" }));
+		expect(await figure(state, "Llamadas")).toBe("2 (con reintento)");
 	});
 
 	it("shows the displayed call's result in the JSON tab, as the hook hands it to the app", async () => {
