@@ -1,9 +1,10 @@
 import type {
 	AmountRange,
+	CatalogField,
 	CatalogFieldResult,
 	FieldAnswer,
+	FieldResult,
 	FilterResult,
-	NamedPair,
 	ParsedFieldResult,
 	Pick,
 } from "justask";
@@ -69,9 +70,7 @@ function unresolvedOf(
  * minimum.
  */
 function heldReasonOf(
-	result:
-		| (CatalogFieldResult<unknown> & { pair?: NamedPair })
-		| ParsedFieldResult<unknown>,
+	result: FieldResult<CatalogField<unknown>> | ParsedFieldResult<unknown>,
 	unresolved: string | undefined,
 	format: Format,
 ): FieldHeldReason {

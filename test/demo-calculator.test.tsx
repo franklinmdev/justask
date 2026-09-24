@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
-import axe from "axe-core";
 import type { Provider } from "justask";
 import { afterEach, describe, expect, it } from "vitest";
 import { createDemoHandler } from "../demo/server/handler.ts";
@@ -9,7 +8,8 @@ import { App } from "../demo/src/app.tsx";
 import { monthlyCost, PRICE } from "../demo/src/calculator.tsx";
 import { english } from "../demo/src/content/en.ts";
 import { spanish } from "../demo/src/content/es.ts";
-import { type FakeAnswers, fakeProvider } from "./fake-provider.ts";
+import { expectNoAxeViolations } from "./checks.ts";
+import { type FakeAnswers, fakeProvider, perRequest } from "./fake-provider.ts";
 
 /** Every vendor of both sets and several at zero, so the fake answers any shortlist. */
 const nobody = {
@@ -26,11 +26,7 @@ const answers: Record<string, FakeAnswers> = {
 	"los del catering": { search: { ...nobody, cazuela: 0.92, none: 0.02 } },
 };
 
-function fixtureFor(request: string): FakeAnswers {
-	const fixture = answers[request];
-	if (!fixture) throw new Error(`no fixture for "${request}"`);
-	return fixture;
-}
+const fixtureFor = perRequest(answers);
 
 /** A provider that reports what each call cost. */
 const priced = fakeProvider(fixtureFor, {
@@ -80,14 +76,6 @@ function figure(term: string, name?: string) {
 
 function month(name?: string) {
 	return text(calculator(name).getByRole("status"));
-}
-
-async function expectNoAxeViolations(container: Element) {
-	// jsdom paints nothing: contrast is checked in the browser.
-	const { violations } = await axe.run(container, {
-		rules: { "color-contrast": { enabled: false } },
-	});
-	expect(violations.map(({ id, help }) => `${id}: ${help}`)).toEqual([]);
 }
 
 afterEach(cleanup);

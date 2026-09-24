@@ -2,6 +2,7 @@ import type {
 	AmountField,
 	AmountRange,
 	Candidate,
+	CardCommand,
 	CardCommands,
 	CardDateField,
 	CatalogField,
@@ -10,9 +11,10 @@ import type {
 	Joiners,
 	SeveralCatalogField,
 } from "justask";
-import type { Cost } from "../saved.ts";
-
 export type Language = "en" | "es";
+
+/** The clicks and menus the person works through to set controls by hand. */
+export type Cost = { clicks: number; menus: number };
 
 /** The showcase's cases, in the order the tabs show them. */
 export type Case = "table" | "form" | "search";
@@ -88,7 +90,7 @@ export type IntentReason =
 	| { kind: "not-available" }
 	| { kind: "tie" }
 	| { kind: "failed" }
-	| { kind: "command"; verb: string; reference: string };
+	| ({ kind: "command" } & CardCommand);
 
 /** A calendar popover's words: its name, the month steps and the clear button. */
 export type CalendarCopy = {
@@ -165,15 +167,21 @@ export type FilterCopy = {
 	controls: {
 		allVendors: string;
 		allStatuses: string;
-		/** The date range's two days: each one's name, and what its button shows while empty. */
+		/** The date range's first day, by name. */
 		from: string;
+		/** Its last day, by name. */
 		to: string;
+		/** What the first day's button shows while empty. */
 		fromEmpty: string;
+		/** What the last day's button shows while empty. */
 		toEmpty: string;
-		/** The amount range's two bounds: each one's name, and its placeholder. */
+		/** The amount range's lower bound, by name. */
 		min: string;
+		/** Its upper bound, by name. */
 		max: string;
+		/** The lower bound's placeholder. */
 		minEmpty: string;
+		/** The upper bound's placeholder. */
 		maxEmpty: string;
 		calendar: CalendarCopy;
 	};
@@ -271,7 +279,7 @@ export type Copy = {
 	recorded: (date: string) => string;
 	/** What a screen reader hears as the recorded run starts. */
 	replaying: (date: string, request: string) => string;
-	/** Beside the box: one sentence against the clicks and menus that the controls the answer set take by hand. */
+	/** Beside the box: one sentence against the clicks and menus it takes to fill by hand the controls the answer filled. */
 	saved: (cost: Cost) => string;
 	filter: FilterCopy;
 	card: CardCopy;

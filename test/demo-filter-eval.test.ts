@@ -9,7 +9,7 @@ import {
 	readFilterRun,
 	scoreFilterRun,
 } from "justask/eval";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { fixGate, poolFields } from "../demo/eval/gates.ts";
 import { FILTER_KILL_LINES } from "../demo/eval/kill-lines.ts";
 import { demoFilter, FACTS, FILTER_GATES } from "../demo/server/handler.ts";
@@ -74,12 +74,13 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 	);
 	const filter = demoFilter(content);
 	const everyRow = [...devSet, ...evalSet, ...round2, ...pairSet, ...round3];
-	const pairHeld = (request: string) => pairHeldBy(filter, request);
 	/** Each row's held fields, as "<row id> <field>". */
 	const pairHeldIn = async (set: FilterEvalRow[]) => {
 		const held: string[] = [];
 		for (const { id, request } of set) {
-			for (const name of await pairHeld(request)) held.push(`${id} ${name}`);
+			for (const name of await pairHeldBy(filter, request)) {
+				held.push(`${id} ${name}`);
+			}
 		}
 		return held;
 	};
@@ -219,8 +220,8 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 	// In Spanish the statuses declare no names, so no request names a pair of
 	// them: the declaration is what keeps the status out if names return.
 	it("declare the status out of the pair hold, and the vendor in it (#80)", () => {
-		expect(filter.fields.status.holdsPair).toBe(false);
-		expect(filter.fields.vendor).not.toHaveProperty("holdsPair");
+		expect(filter.fields.status.heldByPair).toBe(false);
+		expect(filter.fields.vendor).not.toHaveProperty("heldByPair");
 	});
 
 	it.each([
@@ -249,7 +250,7 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 		"hold the vendor on a named pair and never the status, as $en is written in each language (#80)",
 		async (row) => {
 			const request = content.language === "es" ? row.es : row.en;
-			expect(await pairHeld(request)).toEqual(row.held);
+			expect(await pairHeldBy(filter, request)).toEqual(row.held);
 		},
 	);
 
@@ -394,7 +395,9 @@ describe("the saved filter runs, rescored with the status out of the pair hold",
 		es: demoFilter(spanish),
 	};
 	const rescore = async (file: string) => {
-		const language = /^filter-(en|es)-/.exec(file)?.[1] as "en" | "es";
+		const named = /^filter-(en|es)-/.exec(file);
+		if (!named) throw new Error(`${file} names no language`);
+		const language = named[1] as "en" | "es";
 		const run = await readFilterRun(evalFile(`runs/${file}`).pathname);
 		const rows = await Promise.all(
 			run.rows.map(async ({ pairs, ...row }) => {
@@ -407,17 +410,22 @@ describe("the saved filter runs, rescored with the status out of the pair hold",
 			}),
 		);
 		return {
+			file,
 			before: scoreFilterRun(run),
 			after: scoreFilterRun({ ...run, rows }),
 		};
 	};
+	// Rescored once, for both checks below.
+	let rescored: Awaited<ReturnType<typeof rescore>>[] = [];
+	beforeAll(async () => {
+		rescored = await Promise.all(logs.map(rescore));
+	});
 	const missKey = ({ id, field, got }: FilterMiss) =>
 		`${id} ${field} ${JSON.stringify(got)}`;
 
 	it("fill the status of the probes' negated rows, and gain no miss anywhere", async () => {
 		const gone: string[] = [];
-		for (const file of logs) {
-			const { before, after } = await rescore(file);
+		for (const { file, before, after } of rescored) {
 			const now = new Set(after.misses.map(missKey));
 			const was = new Set(before.misses.map(missKey));
 			expect(
@@ -442,8 +450,8 @@ describe("the saved filter runs, rescored with the status out of the pair hold",
 	});
 
 	it("change no verdict, and no measure outside the probes' coverage", async () => {
-		for (const file of logs) {
-			const { before, after } = await rescore(file);
+		expect(rescored.map(({ file }) => file)).toEqual(logs);
+		for (const { file, before, after } of rescored) {
 			if (file.includes("-pair-")) {
 				expect(after.measures, file).toEqual({
 					...before.measures,

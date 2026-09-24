@@ -17,7 +17,7 @@ export type RunRow = EvalRow & {
 	latencyMs: number;
 	/** False when the shortlist was empty, so the provider was never asked. */
 	called: boolean;
-	/** The named pair that held the item whatever its pick (ADR 0010); absent when none did, and from logs written before it. */
+	/** The named pair that held the item whatever its pick (ADR 0011); absent when none did, and from logs written before it. */
 	pair?: NamedPair;
 	/** What the call cost, when the provider reports it (ADR 0006). */
 	costUsd?: number;
@@ -85,20 +85,23 @@ async function runRow<T>(
 	}: Pick<RunEvalInput<T>, "search" | "provider" | "facts" | "timeoutMs">,
 ): Promise<RunRow> {
 	let called = false;
-	let costUsd: number | undefined;
-	const counted: Provider = {
+	// The provider as the flow calls it, noting that it was called.
+	const watched: Provider = {
 		async answer(input) {
 			called = true;
 			const result = await provider.answer(input);
-			costUsd = result.costUsd;
 			return result;
 		},
 	};
 	const started = performance.now();
-	const { search: result, error } = await ask({
+	const {
+		search: result,
+		error,
+		costUsd,
+	} = await ask({
 		request: row.request,
 		facts,
-		provider: counted,
+		provider: watched,
 		timeoutMs,
 		search,
 	});

@@ -140,6 +140,7 @@ describe("ask: card", () => {
 			pick: { label: "new_record", probability: 0.97 },
 			probabilities: answer(INTENT, "new_record", 0.97),
 			gate: 0.8,
+			passes: true,
 		});
 		expectTypeOf(result.card.value).toEqualTypeOf<{
 			vendor?: Vendor;
@@ -192,6 +193,7 @@ describe("ask: card", () => {
 				label: pick,
 				probability: 0.95,
 			});
+			expect(result.card.intent.passes).toBe(false);
 			// The answers stay in the result, for an inspector.
 			expect(result.card.fields.vendor.pick).toEqual({
 				label: "northwind",
@@ -212,8 +214,12 @@ describe("ask: card", () => {
 				card: expenseCard({ gate: 0.9 }),
 			});
 
-		expect((await at(0.89)).card.value).toEqual({});
-		expect(Object.keys((await at(0.9)).card.value)).toEqual([
+		const below = await at(0.89);
+		const on = await at(0.9);
+		expect(below.card.value).toEqual({});
+		expect(below.card.intent.passes).toBe(false);
+		expect(on.card.intent.passes).toBe(true);
+		expect(Object.keys(on.card.value)).toEqual([
 			"vendor",
 			"tags",
 			"spent_on",
@@ -270,6 +276,7 @@ describe("ask: card", () => {
 				pick: { label: "new_record", probability: 0.99 },
 				probabilities: answer(INTENT, "new_record", 0.99),
 				gate: 0.8,
+				passes: false,
 				command: { verb: "Quite", reference: "el gasto" },
 			});
 			// Still asked, so every pick is reported.
@@ -1045,6 +1052,7 @@ describe("ask: card", () => {
 			pick: null,
 			probabilities: {},
 			gate: 0.8,
+			passes: false,
 		});
 		expect(result.card.fields.tags.answers).toEqual({});
 	});

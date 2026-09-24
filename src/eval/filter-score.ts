@@ -48,7 +48,7 @@ export type FilterMiss = {
 	/**
 	 * `shortlist` or `parser` when no candidate could build the expected value,
 	 * so no pick could have been right; `pair` when a named pair held the
-	 * field (ADR 0010); `provider` otherwise.
+	 * field (ADR 0011); `provider` otherwise.
 	 */
 	blame: "shortlist" | "parser" | "pair" | "provider";
 };
@@ -104,7 +104,7 @@ const UNASKED: FieldReading = { value: null, probability: null, label: null };
 /**
  * A field's value at a gate, as `ask` builds it: a catalog field's candidate
  * id, a date range or an amount. Null when the field is held, as it is at
- * every gate when a named pair held it (ADR 0010).
+ * every gate when a named pair held it (ADR 0011).
  */
 export function readField(
 	row: FilterRunRow,
@@ -114,9 +114,13 @@ export function readField(
 	const logged = row.fields[name];
 	if (!logged || row.error || logged.candidates.length === 0) return UNASKED;
 	if (logged.kind === "catalog") {
-		const { pick, filled } = gateField(row.answers[name] ?? {}, gate);
+		const { pick, filled } = gateField(
+			row.answers[name] ?? {},
+			gate,
+			row.pairs?.[name],
+		);
 		return {
-			value: row.pairs?.[name] ? null : filled,
+			value: filled,
 			probability: pick?.probability ?? null,
 			label: pick?.label ?? null,
 		};
@@ -296,8 +300,7 @@ function fieldStats(
 			if (got !== null && sameValue(got, expected)) stats.right++;
 		}
 		if (got !== null && !sameValue(got, expected)) stats.wrong++;
-		// No gate lets a field a pair held through, so its pick fixes none.
-		if (row.pairs?.[name]) continue;
+		// A field a pair held reads null at every gate, so its pick fixes none.
 		const bare = readField(row, name, NO_GATE);
 		if (bare.value === null || bare.probability === null) continue;
 		notePick(stats, sameValue(bare.value, expected), bare.probability);

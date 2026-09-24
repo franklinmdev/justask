@@ -145,6 +145,17 @@ describe("the showcase's Code tab snippets", () => {
 		["en", english],
 		["es", spanish],
 	] as const)(
+		"write the status out of the pair hold as the demo declares it, in %s (#80)",
+		(_, content) => {
+			const table = snippetOf("table", content).server.code;
+			expect(table.match(/heldByPair: false/g)).toHaveLength(1);
+		},
+	);
+
+	it.each([
+		["en", english],
+		["es", spanish],
+	] as const)(
 		"show the Form's held-field pattern with one CardEntry around the host's own input, in %s",
 		(_language, content) => {
 			const client = snippetOf("form", content).client.code;

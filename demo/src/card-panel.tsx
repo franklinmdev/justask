@@ -15,14 +15,6 @@ import type { Trace } from "./trace.ts";
 type Format = ReturnType<typeof formats>;
 type Result = CardResult<ExpenseFields>;
 
-function intentPassed({ intent }: Result): boolean {
-	return (
-		!intent.command &&
-		intent.pick?.label === "new_record" &&
-		intent.pick.probability >= intent.gate
-	);
-}
-
 /** Why the intent question let the fields fill, or held them all. */
 function intentReasonOf(
 	result: Result,
@@ -60,7 +52,7 @@ function heldReasonOf(
 ): CardHeldReason {
 	const field = result.fields[name];
 	if (field.candidates.length === 0) return { kind: "no-candidates" };
-	if (!intentPassed(result)) return { kind: "not-a-record" };
+	if (!result.intent.passes) return { kind: "not-a-record" };
 	if ("pair" in field && field.pair) {
 		return { kind: "pair", text: field.pair.text };
 	}

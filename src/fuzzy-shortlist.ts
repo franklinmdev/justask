@@ -1,3 +1,4 @@
+import { fold } from "./fold.ts";
 import type { Candidate, Shortlist } from "./search.ts";
 
 /**
@@ -28,10 +29,7 @@ const MINIMUM_SCORE = 0.15;
 
 /** Lowercase, strip accents, split on anything that is not a letter, digit or hyphen. */
 function tokens(text: string): string[] {
-	return text
-		.normalize("NFD")
-		.replace(/\p{M}/gu, "")
-		.toLowerCase()
+	return fold(text)
 		.split(/[^a-z0-9-]+/)
 		.filter(Boolean);
 }

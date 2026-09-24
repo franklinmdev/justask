@@ -23,7 +23,7 @@ export type Miss = {
 	/**
 	 * `shortlist` when the expected candidate never reached the provider, so
 	 * no pick could have been right; `pair` when a named pair held the item
-	 * (ADR 0010); `provider` otherwise.
+	 * (ADR 0011); `provider` otherwise.
 	 */
 	blame: "shortlist" | "pair" | "provider";
 };
@@ -207,16 +207,13 @@ function blame(row: RunRow): Miss["blame"] {
 		: "shortlist";
 }
 
-/**
- * The candidate id the item fills with at this gate, as `ask` reads it. No
- * gate lets an item a named pair held through.
- */
+/** The candidate id the item fills with at this gate, as `ask` reads it. */
 function readRow(
 	row: RunRow,
 	gate: number,
 ): { item: string | null; none: number | null; several: number | null } {
 	return {
-		item: row.pair ? null : gateSearch(row.probabilities, gate).filled,
+		item: gateSearch(row.probabilities, gate, row.pair).filled,
 		none: row.probabilities[NONE] ?? null,
 		several: row.probabilities[SEVERAL] ?? null,
 	};
@@ -255,7 +252,7 @@ export function measuresOf(
 export function judge(
 	killLines: KillLines,
 	measures: Measures,
-	window: ProbeWindow | null = null,
+	window: ProbeWindow | null,
 ): Verdict {
 	const slowWindow = window?.slow ?? false;
 	const lines = MEASURES.map(({ measure, atLeast }): VerdictLine => {

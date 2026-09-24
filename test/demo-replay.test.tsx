@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import {
+	act,
 	cleanup,
 	render,
 	screen,
@@ -7,7 +8,6 @@ import {
 	within,
 } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
-import axe from "axe-core";
 import type { Probabilities, Provider } from "justask";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createDemoHandler } from "../demo/server/handler.ts";
@@ -17,6 +17,7 @@ import { spanish } from "../demo/src/content/es.ts";
 import type { Language } from "../demo/src/content/types.ts";
 import { formats } from "../demo/src/format.ts";
 import { dayOf, type Recording, recordings } from "../demo/src/recording.ts";
+import { expectNoAxeViolations as expectNoAxe } from "./checks.ts";
 import { failingProvider, fakeProvider } from "./fake-provider.ts";
 
 // The recording files themselves: a rerun of the script changes their
@@ -69,7 +70,11 @@ function renderDemo({
 			}
 		/>,
 	);
-	return { container, provider, user: userEvent.setup() };
+	return {
+		container,
+		provider,
+		user: userEvent.setup({ advanceTimers: vi.advanceTimersByTime }),
+	};
 }
 
 const contents = { en: english, es: spanish };
@@ -93,7 +98,10 @@ function picking(candidates: { id: string }[], pick: string): Probabilities {
 	);
 }
 
-/** A replay runs on real timers: a start pause, the box's pause, the proposal, the press. */
+/**
+ * Past the whole replay, on the faked clock: a start pause, the sentence,
+ * the box's pause or Enter, the proposal and the press.
+ */
 const REPLAY = { timeout: 4_000 };
 
 /** Everything the page's live regions say, together. */
@@ -130,22 +138,26 @@ function replayApplied() {
 	);
 }
 
-async function expectNoAxeViolations(container: Element) {
-	// jsdom paints nothing: contrast is checked in the browser.
-	const { violations } = await axe.run(container, {
-		rules: { "color-contrast": { enabled: false } },
-	});
-	expect(violations.map(({ id, help }) => `${id}: ${help}`)).toEqual([]);
+function expectNoAxeViolations(container: Element) {
+	// axe paces its own work with timers: the real clock runs it.
+	vi.useRealTimers();
+	return expectNoAxe(container);
 }
 
-// The date control's year reads today, fixed here; Date alone is faked.
+// A replay is paced by timers, which run on a faked clock: under load, real
+// ones ran past the test's time and let a replay step overtake the person's.
+// Testing Library steps that clock only for Jest's fake timers, so `jest`
+// here is Vitest's. The date control's year reads today, fixed here.
 beforeEach(() => {
+	vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
+	vi.stubGlobal("jest", { advanceTimersByTime: vi.advanceTimersByTime });
 	vi.setSystemTime(new Date("2026-09-23T15:00:00Z"));
 });
 
 afterEach(() => {
 	cleanup();
 	vi.useRealTimers();
+	vi.unstubAllGlobals();
 	// @ts-expect-error jsdom has no matchMedia of its own.
 	delete window.matchMedia;
 });
@@ -269,12 +281,12 @@ describe("the Table case's recorded run", () => {
 		await screen.findByRole("list", { name: "Filters to apply" }, REPLAY);
 
 		await user.selectOptions(control("Status"), "paid");
-		await new Promise((resolve) => setTimeout(resolve, 1_500));
+		await act(() => vi.advanceTimersByTimeAsync(1_500));
 
 		expect(control("Status").value).toBe("paid");
 		expect(control("Vendor").value).toBe("");
 		expect(announced()).not.toContain("Replaying a recorded run");
-	}, 8_000);
+	});
 
 	it("stops when the person types first, and applies nothing", async () => {
 		const { user, provider } = renderDemo();
@@ -282,14 +294,14 @@ describe("the Table case's recorded run", () => {
 
 		await user.type(box, "x");
 		// Past the whole replay: nothing more types in, and nothing is applied.
-		await new Promise((resolve) => setTimeout(resolve, 2_500));
+		await act(() => vi.advanceTimersByTimeAsync(2_500));
 
 		expect(box.value).toBe("x");
 		expect(screen.queryByText(label("en", table))).toBeNull();
 		expect(control("Vendor").value).toBe("");
 		// "x" went live, to the provider that fails.
 		expect(provider.calls).toHaveLength(1);
-	}, 6_000);
+	});
 });
 
 describe("the Search case's recorded run", () => {
@@ -451,24 +463,24 @@ describe("the Form case's recorded run", () => {
 
 		await user.selectOptions(control("Vendor"), "papergrove");
 		// Past the whole replay: Enter is never pressed, so nothing fills.
-		await new Promise((resolve) => setTimeout(resolve, 2_500));
+		await act(() => vi.advanceTimersByTimeAsync(2_500));
 
 		expect(control("Vendor").value).toBe("papergrove");
 		expect(textbox("Amount").value).toBe("");
 		expect(screen.queryByText(label("en", form))).toBeNull();
 		expect(announced()).not.toContain("Replaying a recorded run");
-	}, 6_000);
+	});
 
 	it("stops when the person types first, and fills nothing", async () => {
 		const { user, provider } = renderDemo({ url: "/?case=form" });
 
 		await user.type(box(), "x");
 		// Past the whole replay: nothing more types in, and nothing fills.
-		await new Promise((resolve) => setTimeout(resolve, 2_500));
+		await act(() => vi.advanceTimersByTimeAsync(2_500));
 
 		expect(box().value).toBe("x");
 		expect(screen.queryByText(label("en", form))).toBeNull();
 		expect(textbox("Amount").value).toBe("");
 		expect(provider.calls).toHaveLength(0);
-	}, 6_000);
+	});
 });

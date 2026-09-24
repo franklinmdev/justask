@@ -3,7 +3,7 @@
 Extends ADR 0010 to the other two flows, as its Consequences left open. The ticket's decision (#68): the search holds its one item; the filter holds its vendor field.
 
 1. **A search may declare `joiners`**, the card's shape. A request that names two of its candidates with an `or` or an `and` word between them, and no third, holds the item whatever the pick: the search takes one item, so "and" holds it as "or" does. The result names the pair's ids and words, and the provider is still asked, so the pick is reported.
-2. **A filter may declare `joiners`**, and a pair holds any of its catalog fields by the same rule. Every filter catalog field takes one item, so both joiners hold. The demo's filter has two: the vendor, which the ticket names, and the status, whose ids (`paid`, `open`, `overdue`) the rule reads exactly. So "paid or overdue invoices" holds the status in English. From #75 the Spanish statuses declare `names` (`pagadas`, `pendientes`, `vencidas`), so "pagadas o vencidas" holds it too; plural, since `pagada` would also read `pasada`, as in "la semana pasada".
+2. **A filter may declare `joiners`**, and a pair holds any of its catalog fields by the same rule. Every filter catalog field takes one item, so both joiners hold. The demo's filter has two: the vendor, which the ticket names, and the status, whose ids (`paid`, `open`, `overdue`) the rule reads exactly. So "paid or overdue invoices" holds the status in English. From #75 the Spanish statuses declare `names` (`pagadas`, `pendientes`, `vencidas`), so "pagadas o vencidas" holds it too; plural, since `pagada` would also read `pasada`, as in "la semana pasada". The status half of this point is superseded by the Amendment (#80) below: the status opts out of the hold, and its Spanish names are gone.
 3. **The matcher, the typo rule and the third item are ADR 0010's, unchanged.** Its known limits hold here too.
 
 The demo's three flows share one list of joiners per language (`joiners` in `demo/src/content/`, which was `cardJoiners`).
@@ -27,14 +27,14 @@ Checked with no call over every set in `demo/eval/` and the demo's suggestions:
 
 ## Considered Options
 
-- The filter's vendor field alone: a per-field switch no other flow has, to leave out a status pair that no set names. Not taken; a pair of statuses is as unfillable as a pair of vendors.
+- The filter's vendor field alone: a per-field switch no other flow has, to leave out a status pair that no set names. Not taken; a pair of statuses is as unfillable as a pair of vendors. (Taken later by the Amendment below, on #75's evidence.)
 - The search's `several` label alone: it held every search pair so far, but the label is the provider's judgment and structure goes in code (ADR 0010). Not taken.
 
 ## Amendment (#80): the filter's status field opts out
 
 Decided by the owner on 2026-09-23, after #75 measured the status hold.
 
-1. **A filter's catalog field may declare `holdsPair: false`.** A named pair then never holds it, and it fills on its pick alone. Default true, so every other field holds as above. The card and the search have no such switch; no evidence asks for one.
+1. **A filter's catalog field may declare `heldByPair: false`** (named `holdsPair` until #83). A named pair then never holds it, and it fills on its pick alone. Default true, so every other field holds as above. The card and the search have no such switch; no evidence asks for one.
 2. **The demo's status field declares it, in both languages.** The vendor field keeps the hold.
 3. **The Spanish status names from #75 are gone.** Only the pair hold read them; the provider reads a status's id and description. With the status out of the hold nothing reads them, so `status()` in `demo/src/content/types.ts` takes no names again. So no Spanish request names a status pair at all; the declaration is what keeps the status out if names ever return, and the tests pin it in both languages.
 

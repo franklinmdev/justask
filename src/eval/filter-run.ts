@@ -41,7 +41,7 @@ export type FilterRunRow = FilterEvalRow & {
 	fields: Record<string, LoggedField>;
 	/** The provider's raw answer, per question id; empty when there was none. */
 	answers: ProviderAnswer;
-	/** Per field, the named pair that held it whatever its pick (ADR 0010); absent when none did, and from logs written before it. */
+	/** Per field, the named pair that held it whatever its pick (ADR 0011); absent when none did, and from logs written before it. */
 	pairs?: Record<string, NamedPair>;
 	/** The whole pipeline, parsing and shortlists included. */
 	latencyMs: number;
@@ -143,22 +143,25 @@ async function runRow<F extends Fields>(
 	}: Pick<RunFilterEvalInput<F>, "filter" | "provider" | "facts" | "timeoutMs">,
 ): Promise<FilterRunRow> {
 	let called = false;
-	let costUsd: number | undefined;
 	let answers: ProviderAnswer = {};
-	const counted: Provider = {
+	// The provider as the flow calls it, noting that it was called and what it answered.
+	const watched: Provider = {
 		async answer(input) {
 			called = true;
 			const result = await provider.answer(input);
-			costUsd = result.costUsd;
 			answers = result.answers;
 			return result;
 		},
 	};
 	const started = performance.now();
-	const { filter: result, error } = await ask({
+	const {
+		filter: result,
+		error,
+		costUsd,
+	} = await ask({
 		request: row.request,
 		facts,
-		provider: counted,
+		provider: watched,
 		timeoutMs,
 		filter,
 	});

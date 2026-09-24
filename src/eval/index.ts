@@ -50,9 +50,11 @@ export type { KillLines, Measure } from "./kill-lines.ts";
 export {
 	type Probe,
 	type ProbeResult,
+	type ProbeSender,
 	type Probes,
 	type ProbeWindow,
 	probeMedian,
+	probeSender,
 	readProbes,
 } from "./probe.ts";
 export {

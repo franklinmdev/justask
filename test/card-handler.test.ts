@@ -83,6 +83,7 @@ describe("createCardHandler", () => {
 			pick: { label: "new_record", probability: 0.96 },
 			probabilities: picks.intent,
 			gate: 0.8,
+			passes: true,
 		});
 		expect(body.card.fields.vendor.candidates).toEqual([northwind]);
 	});

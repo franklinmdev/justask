@@ -1,21 +1,19 @@
 import type { CardValue, FilterValue } from "justask";
 import type {
+	Cost,
 	ExpenseFields,
 	TransactionFields,
 	Vendor,
 } from "./content/types.ts";
 
-/** What the person works to set one control by hand. */
-export type Cost = { clicks: number; menus: number };
-
 /** The kinds of control the showcase's apps set from an answer. */
-export type ControlKind = "menu" | "calendar" | "box" | "checkbox";
+type ControlKind = "menu" | "calendar" | "box" | "checkbox";
 
 /**
  * What setting one control of each kind takes by hand. A floor: the steps
  * between a calendar's months, and the typing, are not counted.
  */
-export const costs: Record<ControlKind, Cost> = {
+const costs: Record<ControlKind, Cost> = {
 	// Open the menu, pick the option.
 	menu: { clicks: 2, menus: 1 },
 	// Open the calendar, pick the day.
@@ -51,7 +49,7 @@ export function tableControls(
 export function formControls(value: CardValue<ExpenseFields>): ControlKind[] {
 	const kinds: ControlKind[] = [];
 	if (value.vendor) kinds.push("menu");
-	for (const _ of value.tags ?? []) kinds.push("checkbox");
+	kinds.push(...(value.tags ?? []).map(() => "checkbox" as const));
 	if (value.spent_on) kinds.push("calendar");
 	if (value.total) kinds.push("box");
 	return kinds;

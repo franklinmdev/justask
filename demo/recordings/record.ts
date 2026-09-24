@@ -14,8 +14,11 @@
 
 import { execFileSync } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
-import type { AmountRange, DateRange, FieldValue } from "justask";
+import type { AmountRange, DateRange, FieldValue, Usage } from "justask";
 import {
+	type CardEvalRow,
+	type EvalRow,
+	type FilterEvalRow,
 	parseCardEvalSet,
 	parseEvalSet,
 	parseFilterEvalSet,
@@ -32,6 +35,7 @@ import type {
 } from "../src/content/types.ts";
 import type {
 	FormRecording,
+	Recording,
 	SearchRecording,
 	TableRecording,
 } from "../src/recording.ts";
@@ -79,8 +83,15 @@ const handler = createDemoHandler(provider, {
 });
 const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-/** One real call through the handler, timed from the request to the response. */
-async function call(endpoint: string, request: string) {
+/**
+ * One real call through the handler for a row, as the recording it writes,
+ * timed from the request to the response.
+ */
+async function recordRow<R extends Usage>(
+	set: string,
+	{ id, request }: { id: string; request: string },
+	endpoint: string,
+): Promise<Recording<R>> {
 	const recordedAt = new Date().toISOString();
 	const started = performance.now();
 	const response = await handler(
@@ -95,11 +106,13 @@ async function call(endpoint: string, request: string) {
 		throw new Error(`${endpoint} answered ${response.status}`);
 	}
 	return {
+		set,
+		row: id,
 		recordedAt,
 		timeZone,
 		request,
 		latencyMs,
-		body: await response.json(),
+		response: await response.json(),
 	};
 }
 
@@ -119,96 +132,85 @@ function sameRange(
 	);
 }
 
-type Recorded = TableRecording | SearchRecording | FormRecording;
-
 const problems: string[] = [];
-const written: { file: string; recording: Recorded }[] = [];
+const written: { file: string; recording: Recording<Usage> }[] = [];
 
-async function recordTable(language: Language) {
-	const { file, text } = await evalSet("table", language);
-	const row = parseFilterEvalSet(text).find(
-		({ id }) => id === ROWS.table[language],
-	);
-	if (!row) throw new Error(`No row ${ROWS.table[language]}`);
-	const table = await call(filterEndpoint(language), row.request);
-	const recording: TableRecording = {
-		set: file,
-		row: row.id,
-		recordedAt: table.recordedAt,
-		timeZone: table.timeZone,
-		request: table.request,
-		latencyMs: table.latencyMs,
-		response: table.body,
-	};
-	const { filter, error } = recording.response;
+/**
+ * Records a case's row in a language: its eval set's row, one real call, and
+ * what `check` finds wrong with the response against the row's expected
+ * result. A failed call is a problem whatever the case.
+ */
+async function record<
+	Row extends { id: string; request: string },
+	R extends Usage & { error?: { message: string } },
+>(
+	name: Case,
+	language: Language,
+	{
+		parse,
+		endpoint,
+		check,
+	}: {
+		parse: (text: string) => Row[];
+		endpoint: (language: Language) => string;
+		check: (row: Row, response: R) => string[];
+	},
+) {
+	const { file, text } = await evalSet(name, language);
+	const row = parse(text).find(({ id }) => id === ROWS[name][language]);
+	if (!row) throw new Error(`No row ${ROWS[name][language]}`);
+	const recording = await recordRow<R>(file, row, endpoint(language));
+	const { error } = recording.response;
 	if (error) problems.push(`${row.id}: ${error.message}`);
+	problems.push(...check(row, recording.response));
+	written.push({ file: `${name}-${language}.json`, recording });
+}
+
+/** Each field as the row expects it: a catalog field by its pick's label, a range bound for bound. */
+function checkTable(
+	row: FilterEvalRow,
+	{ filter }: TableRecording["response"],
+): string[] {
 	const expected = row.expected as Record<string, unknown>;
-	for (const name of Object.keys(
-		filter.fields,
-	) as (keyof TransactionFields)[]) {
-		const value = filter.value[name];
-		const same =
-			name === "vendor" || name === "status"
-				? (value === undefined
-						? undefined
-						: filter.fields[name].pick?.label) === expected[name]
-				: sameRange(
-						value as FieldValue<TransactionFields["date" | "amount"]>,
-						expected[name],
-					);
-		if (!same) {
-			problems.push(
-				`${row.id} ${name}: expected ${JSON.stringify(expected[name])}, got ${JSON.stringify(value)}`,
-			);
-		}
-	}
-	written.push({ file: `table-${language}.json`, recording });
-}
-
-async function recordSearch(language: Language) {
-	const { file, text } = await evalSet("search", language);
-	const row = parseEvalSet(text).find(({ id }) => id === ROWS.search[language]);
-	if (!row) throw new Error(`No row ${ROWS.search[language]}`);
-	const search = await call(searchEndpoint(language), row.request);
-	const recording: SearchRecording = {
-		set: file,
-		row: row.id,
-		recordedAt: search.recordedAt,
-		timeZone: search.timeZone,
-		request: search.request,
-		latencyMs: search.latencyMs,
-		response: search.body,
-	};
-	const item = recording.response.search.item?.id ?? null;
-	if (recording.response.error) {
-		problems.push(`${row.id}: ${recording.response.error.message}`);
-	}
-	if (item !== row.expected) {
-		problems.push(`${row.id}: expected ${row.expected}, got ${item}`);
-	}
-	written.push({ file: `search-${language}.json`, recording });
-}
-
-async function recordForm(language: Language) {
-	const { file, text } = await evalSet("form", language);
-	const row = parseCardEvalSet(text).find(
-		({ id }) => id === ROWS.form[language],
+	return (Object.keys(filter.fields) as (keyof TransactionFields)[]).flatMap(
+		(name) => {
+			const value = filter.value[name];
+			const same =
+				name === "vendor" || name === "status"
+					? (value === undefined
+							? undefined
+							: filter.fields[name].pick?.label) === expected[name]
+					: sameRange(
+							value as FieldValue<TransactionFields["date" | "amount"]>,
+							expected[name],
+						);
+			return same
+				? []
+				: [
+						`${row.id} ${name}: expected ${JSON.stringify(expected[name])}, got ${JSON.stringify(value)}`,
+					];
+		},
 	);
-	if (!row) throw new Error(`No row ${ROWS.form[language]}`);
-	const form = await call(cardEndpoint(language), row.request);
-	const recording: FormRecording = {
-		set: file,
-		row: row.id,
-		recordedAt: form.recordedAt,
-		timeZone: form.timeZone,
-		request: form.request,
-		latencyMs: form.latencyMs,
-		response: form.body,
-	};
-	const { card, error } = recording.response;
-	if (error) problems.push(`${row.id}: ${error.message}`);
-	// Each field as the eval set writes it: a catalog field by its ids, a held
-	// or unmentioned one as nothing.
+}
+
+function checkSearch(
+	row: EvalRow,
+	{ search }: SearchRecording["response"],
+): string[] {
+	const item = search.item?.id ?? null;
+	return item === row.expected
+		? []
+		: [`${row.id}: expected ${row.expected}, got ${item}`];
+}
+
+/**
+ * Each field as the eval set writes it: a catalog field by its ids, a held
+ * or unmentioned one as nothing.
+ */
+function checkForm(
+	row: CardEvalRow,
+	{ card }: FormRecording["response"],
+): string[] {
 	const { vendor, tags, spent_on, total } = card.value;
 	const got: Record<ExpenseName, unknown> = {
 		vendor: vendor?.id,
@@ -216,7 +218,7 @@ async function recordForm(language: Language) {
 		spent_on,
 		total: total && { value: total.value, currency: total.currency },
 	};
-	for (const name of Object.keys(got) as ExpenseName[]) {
+	return (Object.keys(got) as ExpenseName[]).flatMap((name) => {
 		const value = row.expected[name];
 		const want =
 			value === undefined || value === "held"
@@ -224,19 +226,37 @@ async function recordForm(language: Language) {
 				: Array.isArray(value)
 					? [...value].sort()
 					: value;
-		if (JSON.stringify(got[name]) !== JSON.stringify(want)) {
-			problems.push(
-				`${row.id} ${name}: expected ${JSON.stringify(value)}, got ${JSON.stringify(got[name])}`,
-			);
-		}
-	}
-	written.push({ file: `form-${language}.json`, recording });
+		return JSON.stringify(got[name]) === JSON.stringify(want)
+			? []
+			: [
+					`${row.id} ${name}: expected ${JSON.stringify(value)}, got ${JSON.stringify(got[name])}`,
+				];
+	});
 }
 
-const record = { table: recordTable, search: recordSearch, form: recordForm };
+const recorders: Record<Case, (language: Language) => Promise<void>> = {
+	table: (language) =>
+		record("table", language, {
+			parse: parseFilterEvalSet,
+			endpoint: filterEndpoint,
+			check: checkTable,
+		}),
+	search: (language) =>
+		record("search", language, {
+			parse: parseEvalSet,
+			endpoint: searchEndpoint,
+			check: checkSearch,
+		}),
+	form: (language) =>
+		record("form", language, {
+			parse: parseCardEvalSet,
+			endpoint: cardEndpoint,
+			check: checkForm,
+		}),
+};
 await warmUp(provider);
 for (const language of ["en", "es"] as Language[]) {
-	for (const name of cases) await record[name](language);
+	for (const name of cases) await recorders[name](language);
 }
 
 if (problems.length > 0) {

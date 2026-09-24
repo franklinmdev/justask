@@ -10,6 +10,7 @@ import {
 	fillGap,
 	findCommand,
 	INTENT,
+	type IntentResult,
 	intentQuestion,
 	NO_READINGS,
 	readIntent,
@@ -36,13 +37,14 @@ import { checkGate } from "./gate.ts";
 import { checkJoiners, findPair, type NamedPair } from "./named-pair.ts";
 import { type Parser, parseRequest, type Reads } from "./parse.ts";
 import type { Pick } from "./pick.ts";
-import type {
-	Facts,
-	Probabilities,
-	Provider,
-	ProviderAnswer,
-	Question,
-	Usage,
+import {
+	type Facts,
+	type Probabilities,
+	type Provider,
+	type ProviderAnswer,
+	type Question,
+	type Usage,
+	usageOf,
 } from "./provider.ts";
 import {
 	type Candidate,
@@ -146,7 +148,7 @@ async function askSearch<T>({
 	search,
 }: AskInput<T>): Promise<AskResult<T>> {
 	checkGate(search.gate, "the search's gate");
-	checkJoiners(search.joiners, "the search's");
+	checkJoiners(search.joiners, "search");
 	const candidates = await search.shortlist(request);
 	checkShortlist(candidates, SEARCH_LABELS);
 	const pair = findPair(request, candidates, search.joiners, {
@@ -173,8 +175,8 @@ async function askSearch<T>({
 	}
 
 	const probabilities = outcome.answer[SEARCH] ?? {};
-	const { pick, filled } = gateSearch(probabilities, search.gate);
-	const winner = pair ? undefined : candidates.find(({ id }) => id === filled);
+	const { pick, filled } = gateSearch(probabilities, search.gate, pair);
+	const winner = candidates.find(({ id }) => id === filled);
 	return {
 		search: {
 			...held,
@@ -198,7 +200,7 @@ async function askFilter<F extends Fields>({
 	timeoutMs,
 	filter,
 }: AskFilterInput<F>): Promise<AskFilterResult<F>> {
-	checkJoiners(filter.joiners, "the filter's");
+	checkJoiners(filter.joiners, "filter");
 	const names = Object.keys(filter.fields);
 	const field = (name: string) => filter.fields[name] as Field;
 	for (const name of names) {
@@ -231,7 +233,7 @@ async function askFilter<F extends Fields>({
 					filter,
 					declared,
 					candidates,
-					declared.holdsPair === false
+					declared.heldByPair === false
 						? undefined
 						: findPair(request, candidates, filter.joiners, {
 								several: false,
@@ -291,7 +293,7 @@ async function askCard<F extends CardFields>({
 }: AskCardInput<F>): Promise<AskCardResult<F>> {
 	checkGate(card.gate, "the card's gate");
 	checkCommands(card.commands);
-	checkJoiners(card.joiners, "the card's");
+	checkJoiners(card.joiners, "card");
 	const names = Object.keys(card.fields);
 	const field = (name: string) => card.fields[name] as CardFields[string];
 	for (const name of names) {
@@ -343,7 +345,12 @@ async function askCard<F extends CardFields>({
 		}),
 	);
 	const planOf = (name: string) => plans[name] as FieldPlan;
-	const intentHeld = { pick: null, probabilities: {}, gate: card.gate };
+	const intentHeld: IntentResult = {
+		pick: null,
+		probabilities: {},
+		gate: card.gate,
+		passes: false,
+	};
 	const held = () =>
 		({
 			intent: intentHeld,
@@ -385,7 +392,7 @@ async function askCard<F extends CardFields>({
 	}
 	if (intent.passes) fillImplied(names, fields, value);
 	return {
-		card: { intent: intent.result, value, fields } as CardResult<F>,
+		card: { intent, value, fields } as CardResult<F>,
 		...outcome.usage,
 	};
 }
@@ -484,12 +491,10 @@ export async function answer(
 	const call = Promise.resolve()
 		.then(() => provider.answer({ ...input, signal: controller.signal }))
 		.then(
-			({ answers, costUsd, inputTokens }) => {
+			(result) => {
+				const { answers } = result;
 				// A call that broke the contract was still made, and still cost.
-				const usage: Usage = {
-					...(costUsd !== undefined && { costUsd }),
-					...(inputTokens !== undefined && { inputTokens }),
-				};
+				const usage = usageOf(result);
 				const breach = contractBreach(input.questions, answers);
 				return breach
 					? { error: providerError(new Error(breach)), usage }

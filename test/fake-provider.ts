@@ -67,6 +67,17 @@ export function fakeProvider(
 	};
 }
 
+/** Each request's fixtures, for `fakeProvider`; a request with none throws, as an unset question does. */
+export function perRequest(
+	answers: Record<string, FakeAnswers>,
+): (request: string) => FakeAnswers {
+	return (request) => {
+		const fixture = answers[request];
+		if (!fixture) throw new Error(`no fixture for "${request}"`);
+		return fixture;
+	};
+}
+
 type RecordingProvider = Provider & { calls: ProviderInput[] };
 
 function recording(answer: Provider["answer"]): RecordingProvider {

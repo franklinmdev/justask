@@ -4,18 +4,17 @@ import type { ProbeSender, Probes } from "./probe.ts";
 
 /**
  * Writes a run log: its header as the first line, then each row as soon as
- * `answer` returns it, so a crash keeps every call already paid for. Given
- * probes, it sends the warm-up and then the probes before the rows, into the
- * header, and the probes again after,
- * on a last line of their own. The log must not exist yet: a saved run is
- * never overwritten.
+ * `answer` returns it, so a crash keeps every call already paid for. Given a
+ * probe sender, it sends the warm-up and then the probes before the rows,
+ * into the header, and the probes again after, on a last line of their own.
+ * The log must not exist yet: a saved run is never overwritten.
  */
 export async function writeRunLog<H extends object, In, Out>(
 	log: string,
 	header: H,
 	set: In[],
 	answer: (row: In) => Promise<Out>,
-	probes?: ProbeSender,
+	sender?: ProbeSender,
 ): Promise<{ startedAt: string; probes?: Probes } & H & { rows: Out[] }> {
 	await mkdir(dirname(log), { recursive: true });
 	const file = await open(log, "wx").catch((error: unknown) => {
@@ -28,14 +27,15 @@ export async function writeRunLog<H extends object, In, Out>(
 	});
 	try {
 		const startedAt = new Date().toISOString();
-		const before = probes && {
+		// The header's probes: the baseline, the warm-up and the probes before the rows.
+		const probed = sender && {
 			probes: {
-				baselineMs: probes.baselineMs,
-				warmUp: await probes.warmUp(),
-				before: await probes.send(),
+				baselineMs: sender.baselineMs,
+				warmUp: await sender.warmUp(),
+				before: await sender.send(),
 			},
 		};
-		const started = { startedAt, ...header, ...before };
+		const started = { startedAt, ...header, ...probed };
 		await file.write(`${JSON.stringify(started)}\n`);
 		const rows: Out[] = [];
 		for (const row of set) {
@@ -43,12 +43,12 @@ export async function writeRunLog<H extends object, In, Out>(
 			rows.push(answered);
 			await file.write(`${JSON.stringify(answered)}\n`);
 		}
-		if (!before) return { ...started, rows };
-		const after = await probes.send();
+		if (!probed) return { ...started, rows };
+		const after = await sender.send();
 		await file.write(`${JSON.stringify({ [PROBES_AFTER]: after })}\n`);
 		return {
 			...started,
-			probes: { ...before.probes, after },
+			probes: { ...probed.probes, after },
 			rows,
 		};
 	} finally {

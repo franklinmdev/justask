@@ -7,17 +7,18 @@ import {
 	within,
 } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
-import axe from "axe-core";
 import type { Provider } from "justask";
 import { afterEach, describe, expect, it } from "vitest";
 import { createDemoHandler } from "../demo/server/handler.ts";
 import { App } from "../demo/src/app.tsx";
 import { english } from "../demo/src/content/en.ts";
 import { spanish } from "../demo/src/content/es.ts";
+import { counter, expectNoAxeViolations, figure } from "./checks.ts";
 import {
 	type FakeAnswers,
 	failingProvider,
 	fakeProvider,
+	perRequest,
 } from "./fake-provider.ts";
 
 /** Every vendor of both sets and several at zero, so the fake answers any shortlist. */
@@ -82,11 +83,7 @@ const answers: Record<string, FakeAnswers> = {
 	}),
 };
 
-function fixtureFor(request: string): FakeAnswers {
-	const fixture = answers[request];
-	if (!fixture) throw new Error(`no fixture for "${request}"`);
-	return fixture;
-}
+const fixtureFor = perRequest(answers);
 
 const byRequest = fakeProvider(fixtureFor);
 
@@ -130,31 +127,12 @@ async function hoodView(
 	return within(screen.getByRole("tabpanel", { name }));
 }
 
-/** The figure the state panel shows under a term, once the call has returned. */
-async function figure(state: ReturnType<typeof panel>, term: string) {
-	const dt = await state.findByText(term, { selector: "dt" });
-	return dt.nextElementSibling?.textContent;
-}
-
-/** What the sentence saved, as the counter beside the box says it; null when it shows none. */
-function counter() {
-	return screen.queryByText(/^1 (sentence|frase) /)?.textContent ?? null;
-}
-
-async function expectNoAxeViolations(container: Element) {
-	// jsdom paints nothing: contrast is checked in the browser.
-	const { violations } = await axe.run(container, {
-		rules: { "color-contrast": { enabled: false } },
-	});
-	expect(violations.map(({ id, help }) => `${id}: ${help}`)).toEqual([]);
-}
-
 afterEach(() => {
 	cleanup();
 	byRequest.calls.length = 0;
 });
 
-describe("the demo's search page", () => {
+describe("the demo's Search case", () => {
 	it("finds the vendor a suggested request names, and shows why in the state panel", async () => {
 		const { container, user } = renderDemo();
 
@@ -229,6 +207,12 @@ describe("the demo's search page", () => {
 		const { container, user } = renderDemo();
 
 		const json = await hoodView(user, "JSON");
+		// The JSON tab's result, parsed.
+		const shown = () =>
+			JSON.parse(
+				json.getByRole("figure", { name: "search.result" }).querySelector("pre")
+					?.textContent ?? "",
+			);
 		expect(
 			json.getByText("The result shows here after the first call."),
 		).toBeDefined();
@@ -238,10 +222,7 @@ describe("the demo's search page", () => {
 		);
 		await screen.findByRole("button", { name: /Larkspur Catering/ });
 
-		const result = JSON.parse(
-			json.getByRole("figure", { name: "search.result" }).querySelector("pre")
-				?.textContent ?? "",
-		);
+		const result = shown();
 		expect(result.item.name).toBe("Larkspur Catering");
 		expect(result.pick).toEqual({ label: "larkspur", probability: 0.94 });
 		expect(result.gate).toBe(0.15);
@@ -250,10 +231,7 @@ describe("the demo's search page", () => {
 		await user.click(screen.getByRole("button", { name: "the cleaners" }));
 		await screen.findByText("No vendor fits that request.");
 
-		const next = JSON.parse(
-			json.getByRole("figure", { name: "search.result" }).querySelector("pre")
-				?.textContent ?? "",
-		);
+		const next = shown();
 		expect(next.item).toBeNull();
 		expect(next.probabilities.several).toBe(0.43);
 	});

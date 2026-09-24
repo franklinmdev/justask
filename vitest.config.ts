@@ -17,5 +17,11 @@ export default defineConfig({
 	},
 	test: {
 		include: ["src/**/*.test.{ts,tsx}", "test/**/*.test.{ts,tsx}"],
+		// Half the cores, not one per core less one: the whole-App tests are
+		// CPU-bound, and under other sessions' load more workers ran them past
+		// their 5 s. Measured on #83 on 8 cores under 8 busy loops: 2 failures a
+		// run at the default, none at half; about a second slower idle. A share,
+		// not a count: 4 workers on CI's 4 cores failed the same tests.
+		maxWorkers: "50%",
 	},
 });

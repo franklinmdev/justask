@@ -24,7 +24,7 @@ function justaskHandler(): Plugin {
 	return {
 		name: "justask-handler",
 		configureServer(server) {
-			const dev = () => {
+			const devModule = () => {
 				const ssr = server.environments.ssr;
 				if (!isRunnableDevEnvironment(ssr)) {
 					throw new Error("The ssr environment cannot run modules");
@@ -38,7 +38,7 @@ function justaskHandler(): Plugin {
 				server.httpServer?.once("listening", async () => {
 					const started = performance.now();
 					try {
-						await (await dev()).warm();
+						await (await devModule()).warmOnStart();
 						server.config.logger.info(
 							`justask: provider warmed up in ${Math.round(performance.now() - started)} ms`,
 						);
@@ -53,7 +53,7 @@ function justaskHandler(): Plugin {
 			}
 			server.middlewares.use("/api", async (req, res, next) => {
 				try {
-					const { handle } = await dev();
+					const { handle } = await devModule();
 					const response = await handle(
 						new Request(`http://${req.headers.host}${req.originalUrl}`, {
 							method: req.method ?? "GET",

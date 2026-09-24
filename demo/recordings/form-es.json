@@ -1,23 +1,24 @@
 {
 	"set": "card-es.round4.jsonl",
 	"row": "es-r4-20",
-	"recordedAt": "2026-09-23T21:37:29.165Z",
+	"recordedAt": "2026-09-24T02:08:27.140Z",
 	"timeZone": "America/La_Paz",
 	"request": "posada en Savannah para la visita al proveedor, $156",
-	"latencyMs": 210,
+	"latencyMs": 263,
 	"response": {
 		"card": {
 			"intent": {
 				"pick": {
 					"label": "new_record",
-					"probability": 0.9
+					"probability": 0.89
 				},
 				"probabilities": {
-					"not_available": 0.02,
-					"new_record": 0.9,
-					"not_mentioned": 0.08
+					"not_mentioned": 0.09,
+					"new_record": 0.89,
+					"not_available": 0.02
 				},
-				"gate": 0.45
+				"gate": 0.45,
+				"passes": true
 			},
 			"value": {
 				"tags": ["travel"],
@@ -37,7 +38,10 @@
 								"name": "Papelería Tintaverde",
 								"supplies": "papel, tóner y artículos de oficina"
 							},
-							"names": ["Tintaverde"]
+							"names": ["Tintaverde"],
+							"implies": {
+								"tags": ["office"]
+							}
 						},
 						{
 							"id": "cazuela",
@@ -57,7 +61,10 @@
 								"name": "Nubalia Hosting",
 								"supplies": "alojamiento de páginas web y servidores en la nube"
 							},
-							"names": ["Nubalia"]
+							"names": ["Nubalia"],
+							"implies": {
+								"tags": ["office"]
+							}
 						},
 						{
 							"id": "brisamar",
@@ -67,7 +74,10 @@
 								"name": "Limpiezas Brisamar",
 								"supplies": "limpieza nocturna de oficinas"
 							},
-							"names": ["Brisamar"]
+							"names": ["Brisamar"],
+							"implies": {
+								"tags": ["office"]
+							}
 						},
 						{
 							"id": "relucir",
@@ -77,7 +87,10 @@
 								"name": "Relucir Servicios de Limpieza",
 								"supplies": "limpieza de oficinas y de ventanas"
 							},
-							"names": ["Relucir"]
+							"names": ["Relucir"],
+							"implies": {
+								"tags": ["office"]
+							}
 						},
 						{
 							"id": "letranueva",
@@ -87,7 +100,10 @@
 								"name": "Imprenta Letranueva",
 								"supplies": "tarjetas de presentación, volantes y letreros"
 							},
-							"names": ["Letranueva"]
+							"names": ["Letranueva"],
+							"implies": {
+								"tags": ["office"]
+							}
 						},
 						{
 							"id": "rumboclaro",
@@ -107,7 +123,10 @@
 								"name": "Cuentia Software",
 								"supplies": "licencias de software contable"
 							},
-							"names": ["Cuentia"]
+							"names": ["Cuentia"],
+							"implies": {
+								"tags": ["office"]
+							}
 						},
 						{
 							"id": "cafetal",
@@ -127,7 +146,10 @@
 								"name": "Mensajería Pieveloz",
 								"supplies": "mensajería el mismo día"
 							},
-							"names": ["Pieveloz"]
+							"names": ["Pieveloz"],
+							"implies": {
+								"tags": ["office"]
+							}
 						},
 						{
 							"id": "lindero",
@@ -137,7 +159,10 @@
 								"name": "Bufete Lindero",
 								"supplies": "revisión de contratos y asesoría legal"
 							},
-							"names": ["Lindero"]
+							"names": ["Lindero"],
+							"implies": {
+								"tags": ["office"]
+							}
 						},
 						{
 							"id": "tecnoria",
@@ -147,7 +172,10 @@
 								"name": "Tecnoria Soporte",
 								"supplies": "reparación de computadoras y soporte técnico"
 							},
-							"names": ["Tecnoria"]
+							"names": ["Tecnoria"],
+							"implies": {
+								"tags": ["office"]
+							}
 						},
 						{
 							"id": "serena",
@@ -157,7 +185,10 @@
 								"name": "Nómina Serena",
 								"supplies": "nómina y recursos humanos"
 							},
-							"names": ["Serena"]
+							"names": ["Serena"],
+							"implies": {
+								"tags": ["office"]
+							}
 						},
 						{
 							"id": "coberplena",
@@ -167,29 +198,32 @@
 								"name": "Seguros Cobertura Plena",
 								"supplies": "seguros para empresas"
 							},
-							"names": ["Cobertura Plena"]
+							"names": ["Cobertura Plena"],
+							"implies": {
+								"tags": ["office"]
+							}
 						}
 					],
 					"pick": {
 						"label": "not_mentioned",
-						"probability": 0.61
+						"probability": 0.6
 					},
 					"probabilities": {
-						"rumboclaro": 0.36,
-						"not_mentioned": 0.61,
-						"not_available": 0.03,
+						"rumboclaro": 0.37,
 						"tecnoria": 0,
-						"cafetal": 0,
 						"serena": 0,
-						"brisamar": 0,
-						"tintaverde": 0,
-						"lindero": 0,
-						"relucir": 0,
-						"cuentia": 0,
-						"pieveloz": 0,
 						"nubalia": 0,
 						"coberplena": 0,
 						"cazuela": 0,
+						"not_available": 0.03,
+						"relucir": 0,
+						"brisamar": 0,
+						"lindero": 0,
+						"cuentia": 0,
+						"not_mentioned": 0.6,
+						"pieveloz": 0,
+						"tintaverde": 0,
+						"cafetal": 0,
 						"letranueva": 0
 					},
 					"gate": 0.7
@@ -224,20 +258,20 @@
 								"probability": 0.99
 							},
 							"probabilities": {
+								"not_mentioned": 0.99,
 								"yes": 0,
-								"not_available": 0.01,
-								"not_mentioned": 0.99
+								"not_available": 0.01
 							}
 						},
 						"travel": {
 							"pick": {
 								"label": "yes",
-								"probability": 0.67
+								"probability": 0.7
 							},
 							"probabilities": {
-								"yes": 0.67,
-								"not_available": 0.24,
-								"not_mentioned": 0.09
+								"not_mentioned": 0.1,
+								"yes": 0.7,
+								"not_available": 0.2
 							}
 						},
 						"office": {
@@ -246,20 +280,20 @@
 								"probability": 1
 							},
 							"probabilities": {
+								"not_mentioned": 1,
 								"yes": 0,
-								"not_available": 0,
-								"not_mentioned": 1
+								"not_available": 0
 							}
 						},
 						"client": {
 							"pick": {
 								"label": "not_mentioned",
-								"probability": 0.93
+								"probability": 0.95
 							},
 							"probabilities": {
-								"yes": 0.03,
-								"not_available": 0.04,
-								"not_mentioned": 0.93
+								"not_mentioned": 0.95,
+								"yes": 0.02,
+								"not_available": 0.03
 							}
 						}
 					},
@@ -288,9 +322,9 @@
 						"probability": 1
 					},
 					"probabilities": {
+						"not_mentioned": 0,
 						"not_available": 0,
-						"a0": 1,
-						"not_mentioned": 0
+						"a0": 1
 					},
 					"gate": 0.9
 				}

@@ -8,14 +8,20 @@ import {
 	type FilledBy,
 	useCard,
 } from "justask/react";
-import { type CSSProperties, type ReactNode, useRef, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
 import { cardEndpoint } from "./api.ts";
 import { CardPanel } from "./card-panel.tsx";
 import type { Content, ExpenseFields, ExpenseName } from "./content/types.ts";
 import { DayPicker } from "./day-picker.tsx";
 import { formats, LOCAL_CURRENCY, parseAmount } from "./format.ts";
-import { RecordedLabel, Saved, Suggestions } from "./parts.tsx";
-import { dayOf, type FormRecording } from "./recording.ts";
+import {
+	CaseHead,
+	Saved,
+	Suggestions,
+	settleAt,
+	useTypedText,
+} from "./parts.tsx";
+import type { FormRecording } from "./recording.ts";
 import { useReplay } from "./replay.ts";
 import { costOf, formControls } from "./saved.ts";
 import { CaseLayout } from "./showcase.tsx";
@@ -59,7 +65,7 @@ export function CardPage({
 		fetch: replay.fetch,
 	});
 	replay.follow(card);
-	const box = replay.take(card);
+	const box = replay.stoppedBy(card);
 	const suggest = useSuggest(box);
 	// A field the person sets ends the replay, so its answer never writes over their choice.
 	const fields: typeof card = {
@@ -71,13 +77,7 @@ export function CardPage({
 	};
 	// The fields the answer filled, each settling in after the one before it.
 	const filled = fieldOrder.filter((name) => card.filledBy(name) === "answer");
-	const settle = (name: ExpenseName) =>
-		filled.includes(name)
-			? {
-					"data-settle": "",
-					style: { "--settle-at": filled.indexOf(name) } as CSSProperties,
-				}
-			: {};
+	const settle = (name: ExpenseName) => settleAt(filled.indexOf(name));
 
 	function undo() {
 		setExpenses((saved) => saved.slice(1));
@@ -120,17 +120,13 @@ export function CardPage({
 			labelledBy="card-title"
 			hood={<CardPanel content={content} card={card} trace={trace} />}
 		>
-			<div className="case-head">
-				<h2 id="card-title">{copy.card.title}</h2>
-				{recording && replay.recorded && (
-					<RecordedLabel content={content} recording={recording} />
-				)}
-			</div>
-			<p className="visually-hidden" role="status">
-				{recording && replay.started
-					? copy.replaying(format.date(dayOf(recording)), recording.request)
-					: ""}
-			</p>
+			<CaseHead
+				content={content}
+				id="card-title"
+				title={copy.card.title}
+				recording={recording}
+				replay={replay}
+			/>
 			<CardBox
 				card={box}
 				id="card-box"
@@ -378,14 +374,7 @@ function AmountInput({
 	value: Amount | undefined;
 	onChange: (value: Amount | undefined) => void;
 }) {
-	// The text the person typed, kept only while the field holds what it read.
-	const [typed, setTyped] = useState<{ for: Amount | undefined; text: string }>(
-		{
-			for: undefined,
-			text: "",
-		},
-	);
-	const text = typed.for === value ? typed.text : amountText(value);
+	const [text, type] = useTypedText(value, amountText);
 	const currency = value?.currency;
 	return (
 		<div className="amount">
@@ -406,7 +395,7 @@ function AmountInput({
 						number === undefined
 							? undefined
 							: { value: number, ...(currency && { currency }) };
-					setTyped({ for: amount, text: next });
+					type(next, amount);
 					onChange(amount);
 				}}
 			/>

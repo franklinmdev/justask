@@ -203,6 +203,9 @@ dd {
 	display: flex;
 	align-self: stretch;
 	gap: 4px;
+}
+
+.cases {
 	margin-left: 16px;
 }
 
@@ -273,10 +276,14 @@ dd {
 .show button,
 .hood-toggle {
 	margin: 0;
-	border: 0;
 	background: transparent;
 	font-family: inherit;
 	cursor: pointer;
+}
+
+.themes button,
+.show button {
+	border: 0;
 }
 
 /* The phone's switch: two equal halves across the case. */
@@ -369,8 +376,6 @@ dd {
 }
 
 .hood-tabs {
-	align-self: stretch;
-	margin-left: 0;
 	border-bottom: 1px solid var(--border);
 }
 
@@ -522,10 +527,6 @@ h2 {
 	min-height: 36px;
 }
 
-.calculator-results {
-	transition: opacity 150ms ease-out;
-}
-
 .calculator-month {
 	font-size: 1.0625rem;
 	font-weight: 500;
@@ -533,7 +534,6 @@ h2 {
 
 .calculator-note {
 	color: var(--muted);
-	transition: opacity 150ms ease-out;
 }
 
 .calculator-note[data-kind="formula"] {
@@ -544,6 +544,11 @@ h2 {
 
 .calculator-note[data-kind="invalid"] {
 	color: var(--destructive);
+}
+
+.calculator-results,
+.calculator-note {
+	transition: opacity 150ms ease-out;
 }
 
 /* While the next call is on its way, the last one's figures dim. */
@@ -1318,7 +1323,7 @@ h2 {
 	}
 }
 
-/* The state panel */
+/* The Trace tab: the state panel, what happened field by field */
 
 .panel {
 	display: flex;

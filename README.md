@@ -200,7 +200,7 @@ const { card } = await ask({
 
 ### Card over HTTP and in React
 
-`createCardHandler` takes the same `provider`, `timeoutMs`, `facts` and `onError` as the other handlers, plus the `card` declaration, and answers `200` with `{ card, error? }`: the record in `card.value`, the intent question's pick and gate in `card.intent`, and every field's candidates, picks and gate in `card.fields`.
+`createCardHandler` takes the same `provider`, `timeoutMs`, `facts` and `onError` as the other handlers, plus the `card` declaration, and answers `200` with `{ card, error? }`: the record in `card.value`, the intent question's pick, its gate and whether it passes in `card.intent`, and every field's candidates, picks and gate in `card.fields`.
 
 `useCard` from `justask/react` drives it from the host app's markup. It calls when the person presses Enter, unless `timing` says `{ on: "type", debounceMs }`. A successful answer starts the card over: the fields it filled, the held ones empty. A failed one leaves the card as it was, the person's changes included, and says why in `card.error`. The person fills or changes any field through `set`, and `onConfirm` receives the card only on Confirm. Saving and undo are the host app's: after Confirm the box and the card empty for the next record and the undo slot opens, and the host's undo control takes the record back its own way, then calls `card.restore()` to put the card back as it was.
 

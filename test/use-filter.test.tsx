@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
-import axe from "axe-core";
 import {
 	type AmountRange,
 	type Candidate,
@@ -19,6 +18,7 @@ import {
 	useFilter,
 } from "justask/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { expectNoAxeViolations } from "./checks.ts";
 import {
 	failingProvider,
 	fakeProvider,
@@ -151,14 +151,6 @@ function renderFilter({
 
 	const { container } = render(<Page />);
 	return { container, onConfirm, seen, user: userEvent.setup() };
-}
-
-async function expectNoAxeViolations(container: Element) {
-	// jsdom paints nothing, and the pieces ship unstyled: contrast is the host's.
-	const { violations } = await axe.run(container, {
-		rules: { "color-contrast": { enabled: false } },
-	});
-	expect(violations.map(({ id, help }) => `${id}: ${help}`)).toEqual([]);
 }
 
 /** What the live regions hold, which is what a screen reader announces. */

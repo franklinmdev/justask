@@ -1,9 +1,10 @@
 import type { Usage } from "justask";
 import type { SearchError } from "justask/react";
-import type { Content, HeldReason } from "./content/types.ts";
+import { type CSSProperties, useState } from "react";
+import type { Content, Cost, HeldReason } from "./content/types.ts";
 import { formats } from "./format.ts";
 import { dayOf, type Recording } from "./recording.ts";
-import type { Cost } from "./saved.ts";
+import type { Replay } from "./replay.ts";
 
 /**
  * Not measured yet: the demo is where the pause gets measured, so the round
@@ -68,21 +69,80 @@ export function Bar({ value, gate }: { value: number; gate?: number }) {
 	);
 }
 
-/** The label on a case while its display is the recorded run's, with the day it ran. */
-export function RecordedLabel({
-	content,
-	recording,
-}: {
-	content: Content;
-	recording: Recording<Usage>;
-}) {
-	const day = formats(content.locale).date(dayOf(recording));
-	return <p className="recorded">{content.copy.recorded(day)}</p>;
+/**
+ * A number box's text: what the person typed, kept while the value is still
+ * the one it read, so "86." stays on screen while it is typed; otherwise the
+ * value's own text, as when an answer or Clear filters set it.
+ */
+export function useTypedText<V>(
+	value: V | undefined,
+	text: (value: V | undefined) => string,
+): [shown: string, type: (typed: string, read: V | undefined) => void] {
+	const [typed, setTyped] = useState<{ for: V | undefined; text: string }>({
+		for: undefined,
+		text: "",
+	});
+	return [
+		typed.for === value ? typed.text : text(value),
+		(next, read) => setTyped({ for: read, text: next }),
+	];
 }
 
 /**
- * Beside the box: the one sentence against the clicks and menus the controls
- * the answer set take by hand. Nothing while the answer set none; dimmed
+ * What makes a control settle in `at` places after the first one an answer
+ * set; nothing for -1, a control it did not set.
+ */
+export function settleAt(at: number): Settle {
+	if (at === -1) return {};
+	return { "data-settle": "", style: { "--settle-at": at } as CSSProperties };
+}
+
+/** A settling control's props, spread on its outermost element. */
+export type Settle = { "data-settle"?: ""; style?: CSSProperties };
+
+/**
+ * A case's heading, labelled with the day its recorded run ran while the
+ * display is the recording's, then the live region that says the replay
+ * started. `said` goes first when the page has something newer to say.
+ */
+export function CaseHead({
+	content,
+	id,
+	title,
+	recording,
+	replay,
+	said = "",
+}: {
+	content: Content;
+	id: string;
+	title: string;
+	recording: Recording<Usage> | null;
+	replay: Pick<Replay, "recorded" | "started">;
+	said?: string;
+}) {
+	const { copy } = content;
+	const day = recording ? formats(content.locale).date(dayOf(recording)) : "";
+	return (
+		<>
+			<div className="case-head">
+				<h2 id={id}>{title}</h2>
+				{recording && replay.recorded && (
+					<p className="recorded">{copy.recorded(day)}</p>
+				)}
+			</div>
+			<p className="visually-hidden" role="status">
+				{said ||
+					(recording && replay.started
+						? copy.replaying(day, recording.request)
+						: "")}
+			</p>
+		</>
+	);
+}
+
+/**
+ * Beside the box: the one sentence against the clicks and menus it takes to
+ * fill by hand the controls the answer filled. Nothing while it filled none; dimmed
  * while the next answer is on its way.
  */
 export function Saved({

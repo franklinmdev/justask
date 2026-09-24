@@ -8,15 +8,19 @@ import { dirname, join } from "node:path";
  * which is fine when TYPESAFE_API_KEY is already in the environment.
  */
 export function loadKeyEnv(dir: string): void {
-	for (const find of [() => join(dir, ".env"), () => mainCheckoutEnv(dir)]) {
-		const file = find();
-		if (file === undefined) continue;
-		try {
-			process.loadEnvFile(file);
-			return;
-		} catch {
-			// No .env there; try the next place.
-		}
+	if (loaded(join(dir, ".env"))) return;
+	// Asked only now: git runs only when the checkout has no .env of its own.
+	const main = mainCheckoutEnv(dir);
+	if (main !== undefined) loaded(main);
+}
+
+/** Loads one .env file; false when there is none to load. */
+function loaded(file: string): boolean {
+	try {
+		process.loadEnvFile(file);
+		return true;
+	} catch {
+		return false;
 	}
 }
 
