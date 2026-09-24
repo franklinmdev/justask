@@ -64,12 +64,12 @@ export const recordings: Recordings = {
 	},
 };
 
-/** The recorded call as the hood shows a live one: its request, round trip and use. */
+/** The recorded call as the hood shows a live one: its request, round trip, use and retry. */
 export function traceOf({
 	request,
 	latencyMs,
 	response,
-}: Recording<Usage>): Trace {
+}: Recording<Usage & { retried?: true }>): Trace {
 	return {
 		request,
 		ms: latencyMs,
@@ -77,6 +77,7 @@ export function traceOf({
 		...(response.inputTokens !== undefined && {
 			inputTokens: response.inputTokens,
 		}),
+		...(response.retried && { retried: true }),
 	};
 }
 

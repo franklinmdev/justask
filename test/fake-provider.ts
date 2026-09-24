@@ -192,7 +192,7 @@ export function slowFirstProvider(
  */
 export function unavailableFirstProvider(
 	causes: unknown[],
-	answers: FakeAnswers | "hang",
+	answers: Parameters<typeof fakeProvider>[0] | "hang",
 	{
 		delayMs = 0,
 		...usage

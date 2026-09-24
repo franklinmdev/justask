@@ -113,6 +113,8 @@ export const spanish: Content = {
 		shortlistLabel: "Lista corta",
 		shortlist: (count, catalog) => `${count} de ${catalog} proveedores`,
 		latency: "Latencia",
+		calls: "Llamadas",
+		retried: "(con reintento)",
 		inputTokens: "Tokens de entrada",
 		cost: "Costo",
 		recorded: (date) => `Ejecución grabada · ${date}`,

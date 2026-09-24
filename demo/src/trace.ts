@@ -2,10 +2,14 @@ import type { Usage } from "justask";
 import { useEffect, useState } from "react";
 
 /**
- * The last call as the page timed it: what it asked, how long it took, and
- * what it used when the provider reported it.
+ * The last call as the page timed it: what it asked, how long it took, what
+ * it used when the provider reported it, and whether `ask` called the
+ * provider twice (ADR 0013).
  */
-export type Trace = Usage & { request: string; ms: number };
+export type Trace = Usage & { request: string; ms: number; retried?: true };
+
+/** What the handler's body says of its call: the figures it sent and the retry mark. */
+type Spent = Omit<Trace, "request" | "ms">;
 
 /**
  * A `fetch` that times each call for the hood, reads what the call used from
@@ -20,12 +24,12 @@ export function timed(
 	return async (input, init) => {
 		const started = performance.now();
 		const elapsed = () => Math.round(performance.now() - started);
-		const trace = (ms: number, usage: Usage) => {
+		const trace = (ms: number, spent: Spent) => {
 			if (init?.signal?.aborted) return;
 			const { request } = JSON.parse(String(init?.body)) as {
 				request: string;
 			};
-			onTrace({ request, ms, ...usage });
+			onTrace({ request, ms, ...spent });
 		};
 		let response: Response;
 		try {
@@ -38,19 +42,20 @@ export function timed(
 		const ms = elapsed();
 		// Read before the hook sees the response, so the hood never shows a
 		// new answer beside the last call's figures.
-		trace(ms, await usageOf(response.clone()));
+		trace(ms, await spentOf(response.clone()));
 		return response;
 	};
 }
 
-/** Each figure the handler sent, and none it left out. */
-async function usageOf(response: Response): Promise<Usage> {
+/** Each figure the handler sent, none it left out, and the retry mark when it sent one. */
+async function spentOf(response: Response): Promise<Spent> {
 	const body: unknown = await response.json().catch(() => null);
 	if (typeof body !== "object" || body === null) return {};
-	const { costUsd, inputTokens } = body as Record<string, unknown>;
+	const { costUsd, inputTokens, retried } = body as Record<string, unknown>;
 	return {
 		...(typeof costUsd === "number" && { costUsd }),
 		...(typeof inputTokens === "number" && { inputTokens }),
+		...(retried === true && { retried }),
 	};
 }
 
