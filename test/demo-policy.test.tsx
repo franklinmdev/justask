@@ -6,7 +6,8 @@ import { createDemoHandler } from "../demo/server/handler.ts";
 import { REQUEST_LIMIT, searchEndpoint } from "../demo/src/api.ts";
 import { App } from "../demo/src/app.tsx";
 import { english } from "../demo/src/content/en.ts";
-import { fakeProvider } from "./fake-provider.ts";
+import { expectNoAxeViolations } from "./checks.ts";
+import { failingProvider, fakeProvider } from "./fake-provider.ts";
 
 const DEMO = "http://localhost:5173";
 
@@ -20,6 +21,9 @@ const provider = fakeProvider({
 });
 
 const handler = createDemoHandler(provider);
+
+/** The boxes' tests need no answer: the provider fails, as the showcase's does. */
+const boxHandler = createDemoHandler(failingProvider(new Error("no call")));
 
 /** A search posted to the demo's English route, from `origin` when given. */
 function search(request: string, origin?: string): Promise<Response> {
@@ -105,7 +109,14 @@ describe.each([
 ])("the %s case's request box", (shownCase, label) => {
 	it(`stops at ${REQUEST_LIMIT} characters`, async () => {
 		history.replaceState(null, "", `/?case=${shownCase}`);
-		render(<App fetch={() => new Promise(() => {})} recordings={null} />);
+		const { container } = render(
+			<App
+				fetch={(input, init) =>
+					boxHandler(new Request(new URL(String(input), location.href), init))
+				}
+				recordings={null}
+			/>,
+		);
 		const user = userEvent.setup();
 		const box = screen.getByRole("searchbox", { name: label });
 
@@ -113,5 +124,6 @@ describe.each([
 		await user.paste("a".repeat(REQUEST_LIMIT + 50));
 
 		expect(box).toHaveProperty("value", "a".repeat(REQUEST_LIMIT));
+		await expectNoAxeViolations(container);
 	});
 });
