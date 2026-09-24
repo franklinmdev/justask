@@ -1357,7 +1357,7 @@ Runs of 2026-09-24 with `jev-1.13.0`, the card at round 8's gates (intent 0.45),
 
 Carried by [#99](https://github.com/franklinmdev/justask/issues/99). The card's first verdict with the intent's `not_available` label naming copying someone on a record, and the Spanish copy verbs on the command list, both from the copy probes above ([ADR 0009](adr/0009-card-holds-commands-on-existing-records.md), amended). Nothing else changes: gates, kill lines, the other labels and `PROBE_BASELINE_MS` are round 8's, and the retry is counted in every run as #102 left it.
 
-**Code freeze:** the sets were frozen at `c408d89`. Main then moved to `ffcdb6f` (#102's retry count), merged into the branch before any round 9 call, so the round runs on branch `eval/99-card-round9` at `23c9ca5`, main `ffcdb6f` with the label, the verbs and the frozen sets, as the owner chose on 2026-09-24. The full suite, which rescores every saved card log it pins, passed on that commit before run 1.
+**Code freeze:** the sets were frozen at `c408d89`. Main then moved to `ffcdb6f` (#102's retry count), merged into the branch before any round 9 call, so the round runs on branch `eval/99-card-round9` at `973f51c`, main `ffcdb6f` with the label, the verbs and the frozen sets, as the owner chose on 2026-09-24. The full suite, which rescores every saved card log it pins, passed on that commit before run 1.
 
 ### Round 9 sets
 
@@ -1375,7 +1375,7 @@ Round 7's shapes, reused as the owner chose on 2026-09-24, so rounds 7, 8 and 9 
 
 ## Round 9: result
 
-**Verdict: PASS in both languages, in both runs.** Runs of 2026-09-24 with `jev-1.13.0` on `23c9ca5`, round 8's gates (intent 0.45, vendor 0.7, tags 0.4, spent_on 0.8, total 0.9), the copy label and the Spanish copy verbs, the frozen round 9 sets, the same kill lines, and `PROBE_BASELINE_MS` of 235, today fixed at Wednesday 2026-09-23. Every run's probes were normal and no row errored, so no line is pending and nothing was remeasured.
+**Verdict: PASS in both languages, in both runs.** Runs of 2026-09-24 with `jev-1.13.0` on `973f51c`, round 8's gates (intent 0.45, vendor 0.7, tags 0.4, spent_on 0.8, total 0.9), the copy label and the Spanish copy verbs, the frozen round 9 sets, the same kill lines, and `PROBE_BASELINE_MS` of 235, today fixed at Wednesday 2026-09-23. Every run's probes were normal and no row errored, so no line is pending and nothing was remeasured.
 
 As #86 wrote for round 7, the rows changed: a pass on new rows says the card held on these, not that round 8's row would now hold. The copy probes are the evidence for that row's category.
 
