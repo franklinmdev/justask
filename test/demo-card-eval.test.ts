@@ -329,6 +329,15 @@ describe("the frozen card eval", () => {
 			"card-es.notoffice.jsonl",
 			"20b88aa279721a6829b80fa16ff07a59dfc69eae44dda0833d410ebe738fdfe1",
 		],
+		// #99's copy probes, approved in two batches on 2026-09-24, before any call.
+		[
+			"card-en.copy.jsonl",
+			"c85406d532565e903180a7da48995edf061c05ceb82d6608d106691d340da2c2",
+		],
+		[
+			"card-es.copy.jsonl",
+			"77ecfd388a2f5a8875090de8eac5d5600a6c6bd68cd99795447c1a895c79e46d",
+		],
 	])("keeps %s as approved", (name, sha256) => {
 		const bytes = readFileSync(evalFile(name));
 		expect(createHash("sha256").update(bytes).digest("hex")).toBe(sha256);

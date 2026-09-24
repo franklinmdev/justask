@@ -38,6 +38,8 @@ export const CARD_SETS = {
 	office: { verdict: false },
 	/** #79's probes: records at an office vendor that bought something else. */
 	notoffice: { verdict: false },
+	/** #99's probes: copying someone on a record that exists, and records that name a person with no send. */
+	copy: { verdict: false },
 } satisfies Record<string, CardSetInfo>;
 
 export type CardSet = keyof typeof CARD_SETS;
