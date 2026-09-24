@@ -12,3 +12,13 @@ This replaces the core's "no retries". The SDK's own retries stay off (`maxRetri
 ## Measured, not assumed
 
 The second call changes what a visitor sees: a request the provider refused once can now fill. The next verdict round measures it. Each run log marks a row where `ask` called twice (`retried: true`), and each report counts them beside the errors. No round before this one called twice, so their logs have no mark.
+
+## Amendment (#97): counted everywhere, measured when a failure occurs
+
+Decided by the owner on 2026-09-24, after card round 8 (#97) met no transport failure in four runs of 168 rows, so no row called twice and the round measured nothing of the second call.
+
+1. **The second call is counted in every run and in the demo**, not measured by a round of its own. Every eval run log marks it (`retried: true`) and every report counts it beside the errors, as above; the demo is to count it too. The demo does not count it yet: nothing in its server or trace reads a second call on `ff6eb4a`, and counting it there is not yet ticketed.
+2. **It is measured whenever a transport failure occurs**, in whichever run meets one: that run's report counts the rows that retried, and those of them with no error in its run log are the ones the second call recovered, a count no report prints yet. No round is set aside for it, and no round waits for one.
+3. **Its mechanics are covered by the stand-in provider tests** (`test/ask.test.ts`, "when the provider is unavailable (ADR 0013)"; `test/transport.test.ts`), which fail a first call on purpose and so cover what a verdict run cannot choose to meet.
+
+This replaces "the next verdict round measures it" above.
