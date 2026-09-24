@@ -109,5 +109,5 @@ A request that acts on a record that already exists ("quite el gasto de $75", "s
 _Avoid_: Edit request, action
 
 **Named pair**:
-Two items of one catalog field that a request names with a joiner between them, and no third item of that field: "Tallyroot or Cloudberth", "Lindero y Serena". An "or" word holds any catalog field, an "and" word only a field that takes one item. The search holds its item, and the filter and the card that field, before the gate, whatever the pick (ADR 0010, 0011). A filter's catalog field may opt out (ADR 0011).
+Two items of one catalog field that a request names with a joiner between them, and no third item of that field: "Tallyroot or Cloudberth", "Lindero y Serena". An "or" word holds any catalog field, an "and" word only a field that takes one item. The search holds its item, and the filter and the card that field, before the gate, whatever the pick (ADR 0010, 0011). A filter's catalog field may opt out with `heldByPair: false` (ADR 0011).
 _Avoid_: Choice, either-or

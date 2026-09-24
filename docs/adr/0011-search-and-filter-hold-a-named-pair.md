@@ -34,7 +34,7 @@ Checked with no call over every set in `demo/eval/` and the demo's suggestions:
 
 Decided by the owner on 2026-09-23, after #75 measured the status hold.
 
-1. **A filter's catalog field may declare `holdsPair: false`.** A named pair then never holds it, and it fills on its pick alone. Default true, so every other field holds as above. The card and the search have no such switch; no evidence asks for one.
+1. **A filter's catalog field may declare `heldByPair: false`** (named `holdsPair` until #83). A named pair then never holds it, and it fills on its pick alone. Default true, so every other field holds as above. The card and the search have no such switch; no evidence asks for one.
 2. **The demo's status field declares it, in both languages.** The vendor field keeps the hold.
 3. **The Spanish status names from #75 are gone.** Only the pair hold read them; the provider reads a status's id and description. With the status out of the hold nothing reads them, so `status()` in `demo/src/content/types.ts` takes no names again. So no Spanish request names a status pair at all; the declaration is what keeps the status out if names ever return, and the tests pin it in both languages.
 

@@ -448,7 +448,7 @@ describe("ask: filter with catalog fields", () => {
 					joiners,
 					fields: {
 						...filter.fields,
-						status: { ...filter.fields.status, holdsPair: false },
+						status: { ...filter.fields.status, heldByPair: false },
 					},
 				},
 			});

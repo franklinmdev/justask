@@ -220,8 +220,8 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 	// In Spanish the statuses declare no names, so no request names a pair of
 	// them: the declaration is what keeps the status out if names return.
 	it("declare the status out of the pair hold, and the vendor in it (#80)", () => {
-		expect(filter.fields.status.holdsPair).toBe(false);
-		expect(filter.fields.vendor).not.toHaveProperty("holdsPair");
+		expect(filter.fields.status.heldByPair).toBe(false);
+		expect(filter.fields.vendor).not.toHaveProperty("heldByPair");
 	});
 
 	it.each([

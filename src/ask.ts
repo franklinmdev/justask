@@ -232,7 +232,7 @@ async function askFilter<F extends Fields>({
 					filter,
 					declared,
 					candidates,
-					declared.holdsPair === false
+					declared.heldByPair === false
 						? undefined
 						: findPair(request, candidates, filter.joiners, {
 								several: false,

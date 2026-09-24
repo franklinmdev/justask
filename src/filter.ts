@@ -28,7 +28,7 @@ export type CatalogField<T> = {
 	 * pick alone: for a field whose gate already holds every pair, where the
 	 * hold only costs the requests it misreads (ADR 0011). Default true.
 	 */
-	holdsPair?: boolean;
+	heldByPair?: boolean;
 };
 
 /** A field whose candidates are the dates and periods the parsers read, filled as a range of days. */

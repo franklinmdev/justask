@@ -97,7 +97,7 @@ export function demoFilter(content: Content): Filter<TransactionFields> {
 				description: "the payment status of the invoices",
 				gate: FILTER_GATES.status,
 				shortlist: () => content.statuses,
-				holdsPair: false,
+				heldByPair: false,
 			},
 			date: {
 				kind: "date",
