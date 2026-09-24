@@ -25,6 +25,10 @@ The rule mistags a record at an office vendor that bought something else, where 
 
 The cost falls on a shape no frozen verdict set has: on every record the sets describe at an office vendor, the purchase is office. #77's rescore put the gain on Spanish round 5 at up to 0.08 of coverage, an upper bound; round 6 measures it on fresh rows.
 
+## Round 6
+
+The verdict FAILs on English exact alone (0.879 against 0.9), on four tags the provider picked, none of them the rule's; Spanish passes every line (docs/card-eval.md, Round 6: result). The rule filled 8 Spanish tags in each run and 1 to 2 English, all right, and moved no exact or held ambiguous figure. Without it, the same answers cover 0.702 and 0.677 in Spanish, the second below the line.
+
 ## Consequences
 
 - **`Candidate` gains an optional `implies`.** A search and a filter ignore it; a card checks it before the call. It refuses an item that implies a value for a field the card does not declare, or for one that takes one item, and an item of a field that takes several, since the gap reads one yes-or-no question per item and one filled item.

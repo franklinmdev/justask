@@ -12,6 +12,8 @@
 
 **Office tag diagnosis (#77): the office tag fills when a request names a service its label lists, and almost never from the service alone, in both languages.** Without its list the label fills no row, whether shortened or naming what office is not, and adding backups fills the backups row alone. The owner chose the vendor fix, filling a gap only, carried with round 6 by [#79](https://github.com/franklinmdev/justask/issues/79); nothing has landed. See Office tag diagnosis below; rounds 1 to 5 are unchanged.
 
+**Round 6 (#79): the card with the vendor's office fill fails on English exact alone; Spanish passes every line.** Office is filled from an office-only vendor where the tags left a gap ([ADR 0012](adr/0012-card-fills-an-implied-value-in-a-gap.md)), its false-fill cost measured first on probes. English covers 0.79 but fixes 29 of 33 cards (0.879 against 0.9), every correction a tag the provider picked; Spanish covers 0.766, against round 5's 0.694. The rule filled no field wrong in any run. See Round 6: result below; rounds 1 to 5 are unchanged.
+
 **Latency (#65): from the next verdict run on, every run sends a fixed provider probe before and after its rows, and a run whose probes are more than twice the baseline leaves a failing latency line pending, to be measured again in a normal window.** See Latency below; round 4 stays a FAIL.
 
 **Hypothesis:** on the demo's fictional vendors, the expense card turns a typed expense into the record a person means (vendor, tags, day, amount), leaves a field empty when it cannot tell, and fills nothing when the request asks for no new expense, in English and in Spanish, on Enter. The lab measured a salon appointment card; this is a new measurement.
@@ -844,3 +846,88 @@ Runs of 2026-09-23 with `jev-1.13.0`, the card as the demo serves it with the ru
 ### Run logs
 
 `demo/eval/runs/card-<en|es>-notoffice-<1|2>.jsonl`.
+
+## Round 6: the office tag from the vendor
+
+Carried by [#79](https://github.com/franklinmdev/justask/issues/79). Rounds 1 to 5 above stand as recorded. The one change from round 5 is the vendor's office fill of ADR 0012: the eleven office-only vendors imply the `office` tag, filled only where the tags left a gap (every tag `not_mentioned`, or office `yes` below the gate). Its cost was measured first, on the false-fill probes above. The gates are round 4's as `demo/server/handler.ts` serves them (intent 0.45, vendor 0.7, tags 0.4, spent_on 0.8, total 0.9), with the same labels, kill lines, and `PROBE_BASELINE_MS` of 235. No dev run is made: the rule asks no question, so every pick reads as before, and `fixGate` reads the tags' own picks, never the implied value.
+
+### Round 6 sets
+
+Files in `demo/eval/`, drafted against every set in `demo/eval/` (probes included) and the demo's suggestions and recordings, approved by the owner in five batches on 2026-09-23 (rows 1 to 10, 11 to 20, 21 to 30, 31 to 40, 41 and 42, English beside Spanish) and frozen by checksum in `test/demo-card-eval.test.ts` in the commit before the first round 6 call. Run logs `demo/eval/runs/card-<language>-round6-<n>.jsonl`.
+
+| File | Rows | record | ambiguous | nothing |
+|---|---|---|---|---|
+| `card-en.round6.jsonl` | 42 | 28 | 8 | 6 |
+| `card-es.round6.jsonl` | 42 | 28 | 8 | 6 |
+
+- **The same shape as rounds 4 and 5, row for row:** tags in all 28 records, the day in 24, the amount in 27, the vendor in 21, each of the 14 vendors at least once, 7 records with no vendor of the catalog (`a ramen shop`, `a furniture outlet`, `the port authority`), typos (`Tallyroo`, `Clausewud`; `Cuenttia`, `Lindeero`), paraphrases (`the tech support crew`, `the company that insures us`), one euro amount. Spanish row N has the same shape as English row N.
+- **ambiguous:** vendor, two named pairs no earlier set or probe names, one per arm of the rule: `Swiftlane and Inkhollow` (`Pieveloz y Letranueva`) and `Glasswell or Fixbright` (`Relucir o Tecnoria`). Tags `Beanhaven restock for the kitchenette` and `may end up billable to a client`; day `last Monday` and `in June`; amount `1,600 pesos` and `$22 or $25`.
+- **A record names a third vendor beside an "or" pair** (row 23, `Larkspur lunch for the Fixbright or Swiftlane walkthrough`), and row 24 is `billable to the client` again, the shape that dropped `office` in rounds 2 to 5; the rule cannot reach it, since `client` fills and the tags leave no gap.
+- **nothing:** a question about spending, a delete, a change that sets a value, a thank-you, a question about tags, and a send. The code holds the delete in both languages (`void that Inkhollow expense`, `anule ese gasto de Letranueva`); no list holds the change (`Monday's Papergrove receipt was really $44`) or the send (`pass Larkspur's receipt along to the bookkeeper`, `hágale llegar el recibo de Cazuela Azul a la contadora`). Checked with no call: the code holds no round 6 record, only the two pair rows' vendors and the delete.
+- The same checks as rounds 1 to 5 hold: no request repeats any other set, probe, suggestion or recording, every expected day and amount is one the parser builds on Wednesday 2026-09-23, and every held one is held by the parser's reading or by two candidates.
+- Kill lines, measures and procedure as round 5, under the latency rule. Run 1 gives the verdict; run 2 reports flips only.
+
+## Round 6: result
+
+**Verdict: FAIL.** Spanish clears every kill line; English fails exact alone, 0.879 (29 of 33 cards) against 0.9, in both runs. Runs of 2026-09-23 with `jev-1.13.0`, round 5's card plus ADR 0012 (gates intent 0.45, vendor 0.7, tags 0.4, spent_on 0.8, total 0.9), the frozen round 6 sets, the same kill lines, and `PROBE_BASELINE_MS` of 235, today fixed at Wednesday 2026-09-23. Every run's probes were normal, so no line is pending.
+
+### Run 1: the verdict
+
+| Measure | Kill line | English | Spanish |
+|---|---|---|---|
+| exact | at least 0.9 | **0.879** (29 of 33 cards) | 0.969 (31 of 32 cards) |
+| coverage | at least 0.7 | 0.79 (98 of 124 fields) | 0.766 (95 of 124 fields) |
+| invented | at most 0 | 0 | 0 |
+| held ambiguous | at least 0.75 | 0.75 (6 of 8) | 0.875 (7 of 8) |
+| p95 | at most 1000 ms | 402 ms | 365 ms |
+| errors | at most 0 | 0 | 0 |
+| cost per call | | $0.0000870 | $0.0000922 |
+| probes, median against 235 ms | | 252 ms, normal | 302 ms, normal |
+
+Per field, filled of expected: vendor 21 and 20 of 27; tags 26 of 34 English (four wrong, two of them on ambiguous rows that must hold their tags), 24 of 34 Spanish (one wrong, on an ambiguous row); day 20 and 21 of 30; amount 31 and 30 of 33. The intent passed 33 English and 32 Spanish cards, and no nothing row in either language.
+
+### What the vendor filled
+
+Rescored with no call, with the logged implications removed: the rule asks no question, so the same answers read as the card without it.
+
+| Office from the vendor | Tags filled by it | Coverage with | Coverage without | Exact, held ambiguous |
+|---|---|---|---|---|
+| English run 1 | 1 (`en-r6-33`) | 0.79 | 0.782 | unchanged |
+| English run 2 | 2 (`en-r6-02`, `33`) | 0.798 | 0.782 | unchanged |
+| Spanish run 1 | 8 | 0.766 | 0.702 | unchanged |
+| Spanish run 2 | 8 | 0.742 | 0.677 | unchanged |
+
+- **Every tag the vendor filled was right.** The same eight Spanish rows in both runs: an SSL certificate, name badges, a bank reconciliation add-on, a monitor pickup, a direct deposit setup, a shareholder agreement review, a parcel of brochures, and incorporation paperwork (`es-r6-02`, `05`, `07`, `09`, `12`, `25`, `27`, `34`). The provider answered `not_mentioned` on office there, as #77 found.
+- **Spanish passes coverage because of it.** Without the rule, Spanish run 1 covers 0.702, with 0.002 of slack, and run 2 would fail at 0.677. English's provider already filled office on most of its office rows, so the rule added one or two.
+- **The false fill the probes priced did not occur here:** no round 6 record at an office vendor bought something no tag fits.
+
+### Filled and wrong
+
+| Row | Request | Field | Expected | Got | Pick |
+|---|---|---|---|---|---|
+| en-r6-24 | Inkhollow event programs for the client's gala, billable to the client, $175 on September 12 | tags | office + client | client | office `not_mentioned` 0.78 |
+| en-r6-06 | Farwander hotel in Chicago for the client workshop, $362, September 8 | tags | travel + client | travel | client `not_mentioned` 0.55 |
+| en-r6-31 | Beanhaven restock for the kitchenette, $57 on Friday | tags | held | meals + office | office yes 0.54 |
+| en-r6-32 | Farwander shuttle to the expo, which may end up billable to a client, $64 yesterday | tags | held | travel | travel yes 0.40 |
+| es-r6-31 | reabastecimiento del Cafetal para la cocineta, $57 el viernes | tags | held | meals | meals yes 0.87 |
+
+Every correction is a tag the provider picked, as in every round before. None is the rule's: Beanhaven and Cafetal imply nothing, and on row 24 `client` fills, so no gap is left.
+
+### Run 2: flips only
+
+English: 1 flip, `Tallyroo bank reconciliation add-on` filled its day. Coverage 0.798, exact 0.879 again with the same four corrections, held ambiguous 0.75, p95 417 ms, probes 229 ms, normal. Spanish: 3 flips, all fields held in run 2 that filled in run 1: `complemento de conciliación bancaria de Cuenttia` and `lavado del toldo con Relucir` their days, and `estacionamiento del aeropuerto de Rumbo Claro` its vendor. Coverage 0.742, exact 0.969, held ambiguous 0.875, p95 424 ms, probes 213 ms, normal. Spanish passes every line in run 2 as well.
+
+### What the misses say
+
+- **The rule did what #77 predicted, in Spanish, and cost nothing.** It filled 8 of Spanish's 24 tags in each run and none wrong; exact, invented and held ambiguous moved by nothing.
+- **English fails on the provider's tags, not the rule.** Four corrections of 33 cards: `billable to the client` dropped `office` for the fifth round running, `for the client workshop` dropped `client`, and both tag rows that must hold leaked: coffee or beans filled `meals` and `office`, and `may end up billable` filled `travel` exactly at the gate of 0.4. Round 5's English had one correction; these rows are fresh, and the shapes are rounds 2 to 5's.
+- **English held ambiguous sits on its line,** 0.75 in both runs, the two leaks both tags.
+- **The Spanish intent held four cards** (a non-compete drafting at `not_mentioned` 0.65, fire coverage with no amount at 0.62, and two picks just under the gate, 0.40 and 0.39), none a nothing row read wrong.
+
+### Run logs
+
+- False-fill probes: `demo/eval/runs/card-<en|es>-notoffice-<1|2>.jsonl`
+- Run 1: `demo/eval/runs/card-en-round6-1.jsonl`, `demo/eval/runs/card-es-round6-1.jsonl`
+- Run 2: `demo/eval/runs/card-en-round6-2.jsonl`, `demo/eval/runs/card-es-round6-2.jsonl`
+
+Each rescores with `scoreCardRun(await readCardRun(path), { gates })` and no call; the scorer fills the vendor's office from the logged implications at any gate.
