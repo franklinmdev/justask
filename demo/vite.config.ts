@@ -13,7 +13,7 @@ import { loadKeyEnv } from "../scripts/load-env.ts";
 // The key lives in the repo's .env, or the main checkout's from a worktree,
 // read here on the server side. Vite hands the browser only VITE_-prefixed
 // variables, so it never reaches the bundle.
-loadKeyEnv(fileURLToPath(new URL("..", import.meta.url)));
+loadKeyEnv();
 
 /**
  * Mounts the demo's search handler as dev middleware under /api. The handler

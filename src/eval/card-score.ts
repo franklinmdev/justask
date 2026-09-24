@@ -9,7 +9,7 @@ import {
 	readIntent,
 } from "../card.ts";
 import type { FieldAnswer } from "../filter.ts";
-import { checkGate } from "../gate.ts";
+import { checkGate, overrideGates } from "../gate.ts";
 import { readPick } from "../pick.ts";
 import type { CardRun, CardRunRow, LoggedCardField } from "./card-run.ts";
 import {
@@ -306,7 +306,7 @@ export function scoreCardRun(
 	run: CardRun,
 	{ gates: overrides = {} }: { gates?: Record<string, number> } = {},
 ): CardReport {
-	const gates = { ...run.gates, ...overrides };
+	const gates = overrideGates(run.gates, overrides);
 	checkGates(gates);
 	const names = Object.keys(gates).filter((name) => name !== INTENT);
 	const answered = run.rows.filter((row) => !row.error);
@@ -550,7 +550,7 @@ export function compareCardRuns(
 	second: CardRun,
 	{ gates: overrides = {} }: { gates?: Record<string, number> } = {},
 ): CardFlip[] {
-	const gates = { ...first.gates, ...overrides };
+	const gates = overrideGates(first.gates, overrides);
 	checkGates(gates);
 	const again = new Map(second.rows.map((row) => [row.id, row]));
 	const flips: CardFlip[] = [];

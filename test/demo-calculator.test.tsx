@@ -167,6 +167,27 @@ describe("the showcase's cost calculator", () => {
 		).toBeDefined();
 	});
 
+	it("caps users at nine digits and actions at five, so a pasted huge number still prices a month to the cent", async () => {
+		const { user } = renderDemo();
+		await user.click(
+			screen.getByRole("button", { name: "the catering people" }),
+		);
+		await calculator().findByRole("status");
+
+		for (const [name, kept] of [
+			["Users", "999999999"],
+			["Actions per person a day", "99999"],
+		] as const) {
+			const input = calculator().getByRole("textbox", { name });
+			await user.clear(input);
+			await user.click(input);
+			await user.paste("9".repeat(400));
+			expect((input as HTMLInputElement).value).toBe(kept);
+		}
+		// 999,999,999 × 99,999 × $0.000005 × 30 days.
+		expect(month()).toBe("$14,999,849,985.00");
+	});
+
 	it("says the month cannot be priced when the provider did not report the call's cost", async () => {
 		const { container, user } = renderDemo({ provider: unpriced });
 

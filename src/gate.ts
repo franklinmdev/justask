@@ -9,3 +9,22 @@ export function checkGate(gate: number, what: string): void {
 		);
 	}
 }
+
+/**
+ * A run's gates with some set to other values, for rescoring. A gate for a
+ * field the run does not have throws, so a misspelled field cannot rescore
+ * the run at the gates it was run under and look like it changed nothing.
+ */
+export function overrideGates(
+	gates: Record<string, number>,
+	overrides: Record<string, number>,
+): Record<string, number> {
+	for (const name of Object.keys(overrides)) {
+		if (!Object.hasOwn(gates, name)) {
+			throw new TypeError(
+				`justask: the run has no field "${name}" to set a gate for; its gates are ${Object.keys(gates).join(", ")}`,
+			);
+		}
+	}
+	return { ...gates, ...overrides };
+}

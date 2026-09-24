@@ -74,7 +74,7 @@ async function evalSet(name: Case, language: Language) {
 	return { file, text: await readFile(here(`../eval/${file}`), "utf8") };
 }
 
-loadKeyEnv(process.cwd());
+loadKeyEnv();
 const provider = jevProvider();
 const handler = createDemoHandler(provider, {
 	onError(error) {

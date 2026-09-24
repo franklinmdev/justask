@@ -7,7 +7,7 @@ import {
 	type Filter,
 	gateField,
 } from "../filter.ts";
-import { checkGate } from "../gate.ts";
+import { checkGate, overrideGates } from "../gate.ts";
 import {
 	emptyStats,
 	type FieldStats,
@@ -177,7 +177,7 @@ export function scoreFilterRun(
 	run: FilterRun,
 	{ gates: overrides = {} }: { gates?: Record<string, number> } = {},
 ): FilterReport {
-	const gates = { ...run.gates, ...overrides };
+	const gates = overrideGates(run.gates, overrides);
 	for (const [name, gate] of Object.entries(gates)) {
 		checkGate(gate, `the gate of field "${name}"`);
 	}
@@ -359,7 +359,7 @@ export function compareFilterRuns(
 	second: FilterRun,
 	{ gates: overrides = {} }: { gates?: Record<string, number> } = {},
 ): FilterFlip[] {
-	const gates = { ...first.gates, ...overrides };
+	const gates = overrideGates(first.gates, overrides);
 	for (const [name, gate] of Object.entries(gates)) {
 		checkGate(gate, `the gate of field "${name}"`);
 	}

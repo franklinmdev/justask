@@ -48,6 +48,12 @@ export const CalculatorInputsContext = createContext<CalculatorInputs | null>(
 	null,
 );
 
+/**
+ * The most digits each input keeps: a billion users, and 99,999 actions a
+ * day. At both the month stays within what a double holds to the cent.
+ */
+const MAX_DIGITS = { users: 9, actions: 5 } as const;
+
 /** A whole number, or undefined while the field is empty. */
 function countOf(digits: string): number | undefined {
 	return digits === "" ? undefined : Number(digits);
@@ -102,7 +108,7 @@ export function Calculator({
 	const fields = [
 		{ name: "users", label: copy.users, ...inputs.users },
 		{ name: "actions", label: copy.actions, ...inputs.actions },
-	];
+	] as const;
 
 	return (
 		<section
@@ -128,7 +134,11 @@ export function Calculator({
 								aria-invalid={field.value === "" || undefined}
 								aria-describedby={`${id}-note`}
 								onChange={(event) =>
-									field.set(event.target.value.replace(/\D/g, ""))
+									field.set(
+										event.target.value
+											.replace(/\D/g, "")
+											.slice(0, MAX_DIGITS[field.name]),
+									)
 								}
 							/>
 						</div>

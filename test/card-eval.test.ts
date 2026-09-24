@@ -786,6 +786,19 @@ function savedRun(p: number): CardRun {
 	};
 }
 
+describe("gate overrides", () => {
+	it("throws on a gate for a field the run does not have, naming the fields it has", () => {
+		const run = savedRun(0.85);
+		const message =
+			'justask: the run has no field "vendr" to set a gate for; its gates are intent, vendor';
+
+		expect(() => scoreCardRun(run, { gates: { vendr: 0.9 } })).toThrow(message);
+		expect(() => compareCardRuns(run, run, { gates: { vendr: 0.9 } })).toThrow(
+			message,
+		);
+	});
+});
+
 describe("compareCardRuns", () => {
 	it("lists the fields whose value changed across a gate between two runs", () => {
 		expect(compareCardRuns(savedRun(0.85), savedRun(0.75))).toEqual([
