@@ -3,9 +3,11 @@ import type { Language } from "../src/content/types.ts";
 type SetInfo = { verdict: boolean; labelled?: true };
 
 /**
- * The card eval's sets, the one list a new round adds itself to. A set named
- * `<set>` lives in demo/eval/card-<language>.<set>.jsonl, round 1's `eval`
- * in card-<language>.jsonl, and its runs log to
+ * The card eval's sets, listed once: the runner, its usage line and the set
+ * tests read them here, so a new round's set is named in this file alone
+ * (its checksum is still frozen by hand in the test). A set named `<set>`
+ * lives in demo/eval/card-<language>.<set>.jsonl, round 1's `eval` in
+ * card-<language>.jsonl, and its runs log to
  * demo/eval/runs/card-<language>-<set>-<n>.jsonl, `eval`'s with no `-<set>`.
  * A set with no verdict tunes or diagnoses, it never decides; a labelled one
  * is run under one of #77's office labels (office.ts), which its log names.

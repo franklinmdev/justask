@@ -153,14 +153,17 @@ export function tagGaps(run: CardRun): TagGaps {
 			const [first, second] = sorted;
 			// A tie picks nothing, as the card reads it.
 			const label = first && first[1] !== second?.[1] ? first[0] : "tie";
-			return { id, label, p: first?.[1] ?? 0 };
+			return { id, label, probability: first?.[1] ?? 0 };
 		});
 		if (picks.length === 0) continue;
 		rows.push({
 			id: row.id,
 			request: row.request,
 			picks: picks
-				.map(({ id, label, p }) => `${id} ${label} ${p.toFixed(2)}`)
+				.map(
+					({ id, label, probability }) =>
+						`${id} ${label} ${probability.toFixed(2)}`,
+				)
 				.join(", "),
 			// A named pair holds the tags whatever their picks, as fillGap reads it.
 			gap:
