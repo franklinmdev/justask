@@ -107,6 +107,14 @@ function heldReasonOf(
 		: { kind: "conflict" };
 }
 
+/** The vendor whose every sale takes the tags the card filled, in a gap their answers left (ADR 0012). */
+function impliedByOf(name: ExpenseName, result: Result): string | undefined {
+	const implied = name === "tags" ? result.fields.tags.implied : undefined;
+	if (!implied) return undefined;
+	return result.fields.vendor.candidates.find(({ id }) => id === implied.id)
+		?.value.name;
+}
+
 function readoutsOf(
 	name: ExpenseName,
 	result: Result,
@@ -350,6 +358,7 @@ function FieldReadout({
 		...answersOf(field).map(({ pick }) => pick?.probability ?? 0),
 	);
 	const readouts = failed ? [] : readoutsOf(name, result, content, format);
+	const impliedBy = impliedByOf(name, result);
 	const heading = `field-${name}`;
 
 	return (
@@ -366,10 +375,17 @@ function FieldReadout({
 			</div>
 			<p className="field-reason">
 				{filled
-					? copy.filter.filledBecause(
-							format.probability(lowest),
-							format.probability(field.gate),
-						)
+					? impliedBy
+						? copy.card.impliedBecause(
+								impliedBy,
+								result.value.tags
+									?.map((tag) => copy.card.tags[tag])
+									.join(", ") ?? "",
+							)
+						: copy.filter.filledBecause(
+								format.probability(lowest),
+								format.probability(field.gate),
+							)
 					: copy.card.heldBecause(
 							failed ? { kind: "failed" } : heldReasonOf(name, result, format),
 						)}

@@ -1,6 +1,7 @@
 import {
 	type Content,
 	type FieldHeldReason,
+	OFFICE_ONLY,
 	status,
 	transaction as t,
 	tag,
@@ -231,6 +232,7 @@ export const english: Content = {
 			},
 			chooseVendor: "Choose a vendor",
 			fromRequest: "from the request",
+			fromVendor: "from the vendor",
 			announce: (filled, waiting) => {
 				const list = (names: string[]) =>
 					new Intl.ListFormat("en").format(
@@ -299,6 +301,8 @@ export const english: Content = {
 						return fieldHeldBecause(reason);
 				}
 			},
+			impliedBecause: (vendor, tags) =>
+				`Filled from the vendor: every sale at ${vendor} is tagged ${tags.toLowerCase()}, and no tag's answer said otherwise.`,
 			tagQuestion: (name) => `Tagged ${name.toLowerCase()}?`,
 			yes: "the request asks for it",
 			unresolved: (mark) => `“${mark}” is not the local currency`,
@@ -331,6 +335,7 @@ export const english: Content = {
 			"Papergrove Supplies",
 			"office paper, toner and stationery",
 			"Papergrove",
+			OFFICE_ONLY,
 		),
 		vendor(
 			"larkspur",
@@ -343,24 +348,28 @@ export const english: Content = {
 			"Cloudberth Hosting",
 			"website hosting and cloud servers",
 			"Cloudberth",
+			OFFICE_ONLY,
 		),
 		vendor(
 			"brightmop",
 			"Brightmop Cleaning",
 			"nightly office cleaning",
 			"Brightmop",
+			OFFICE_ONLY,
 		),
 		vendor(
 			"glasswell",
 			"Glasswell Janitorial",
 			"office cleaning and window washing",
 			"Glasswell",
+			OFFICE_ONLY,
 		),
 		vendor(
 			"inkhollow",
 			"Inkhollow Print",
 			"business cards, flyers and signs",
 			"Inkhollow",
+			OFFICE_ONLY,
 		),
 		vendor(
 			"farwander",
@@ -373,6 +382,7 @@ export const english: Content = {
 			"Tallyroot Software",
 			"accounting software licenses",
 			"Tallyroot",
+			OFFICE_ONLY,
 		),
 		vendor(
 			"beanhaven",
@@ -385,25 +395,35 @@ export const english: Content = {
 			"Swiftlane Couriers",
 			"same-day courier deliveries",
 			"Swiftlane",
+			OFFICE_ONLY,
 		),
 		vendor(
 			"clausewood",
 			"Clausewood Legal",
 			"contract review and legal advice",
 			"Clausewood",
+			OFFICE_ONLY,
 		),
 		vendor(
 			"fixbright",
 			"Fixbright IT",
 			"laptop repair and IT support",
 			"Fixbright",
+			OFFICE_ONLY,
 		),
-		vendor("paydale", "Paydale Payroll", "payroll and HR services", "Paydale"),
+		vendor(
+			"paydale",
+			"Paydale Payroll",
+			"payroll and HR services",
+			"Paydale",
+			OFFICE_ONLY,
+		),
 		vendor(
 			"sureharbor",
 			"Sureharbor Insurance",
 			"business insurance",
 			"Sureharbor",
+			OFFICE_ONLY,
 		),
 	],
 	transactions: [

@@ -15,6 +15,14 @@ export type Candidate<T> = {
 	 * reads exactly (ADR 0010).
 	 */
 	names?: string[];
+	/**
+	 * Values this row implies for another field of a card, by the field's
+	 * name and its items' ids: a vendor that sells only office services
+	 * implies the `office` tag. A card fills them when this row fills its own
+	 * field, only where the other field's questions left a gap; a search and a
+	 * filter ignore them (ADR 0012).
+	 */
+	implies?: Record<string, string[]>;
 };
 
 /** Returns the few catalog candidates for one request, from the host app's own catalog. */

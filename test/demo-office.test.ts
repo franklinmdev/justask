@@ -4,6 +4,7 @@ import { CARD_KILL_LINES } from "../demo/eval/kill-lines.ts";
 import {
 	OFFICE_LABELS,
 	officePicks,
+	tagGaps,
 	withOfficeLabel,
 } from "../demo/eval/office.ts";
 import { english } from "../demo/src/content/en.ts";
@@ -98,5 +99,80 @@ describe("the office tag's picks", () => {
 		);
 		expect(picks.yes).toBe(1);
 		expect(picks.rows[0]?.newRecord).toBe(0.2);
+	});
+});
+
+describe("the tags' gaps on #79's probes", () => {
+	const TAGS = ["meals", "travel", "office", "client"];
+	const answer = (winner: string, p = 0.9) => {
+		const labels = ["yes", "not_mentioned", "not_available"];
+		return Object.fromEntries(
+			labels.map((label) => [label, label === winner ? p : (1 - p) / 2]),
+		);
+	};
+	const row = (
+		id: string,
+		tags: Record<string, Record<string, number>>,
+		vendor = 0.9,
+	): CardRunRow => ({
+		id,
+		request: id,
+		kind: "record",
+		expected: { vendor: "brightmop" },
+		fields: {
+			vendor: {
+				kind: "catalog",
+				candidates: [
+					{ id: "brightmop", description: "", implies: { tags: ["office"] } },
+				],
+			},
+			tags: {
+				kind: "several",
+				candidates: TAGS.map((tag) => ({ id: tag, description: "" })),
+			},
+		},
+		answers: {
+			intent: { new_record: 0.9, not_mentioned: 0.05, not_available: 0.05 },
+			vendor: {
+				brightmop: vendor,
+				not_mentioned: 1 - vendor,
+				not_available: 0,
+			},
+			...Object.fromEntries(
+				TAGS.map((tag) => [
+					`tags_${tag}`,
+					tags[tag] ?? answer("not_mentioned"),
+				]),
+			),
+		},
+		latencyMs: 250,
+		called: true,
+	});
+	const run = (rows: CardRunRow[]): CardRun => ({
+		startedAt: "2026-09-23T00:00:00.000Z",
+		gates: { intent: 0.45, vendor: 0.7, tags: 0.4 },
+		killLines: CARD_KILL_LINES,
+		rows,
+	});
+
+	it("count the rows the tags left a gap on, and the ones the vendor filled office on", () => {
+		const gaps = tagGaps(
+			run([
+				row("empty", {}),
+				row("weak office", { office: answer("yes", 0.38) }),
+				row("empty, vendor held", {}, 0.5),
+				row("meals", { meals: answer("yes") }),
+				row("office maybe", { office: answer("not_available") }),
+			]),
+		);
+
+		expect(gaps.rows.map(({ id, gap, filled }) => [id, gap, filled])).toEqual([
+			["empty", true, true],
+			["weak office", true, true],
+			["empty, vendor held", true, false],
+			["meals", false, false],
+			["office maybe", false, false],
+		]);
+		expect(gaps).toMatchObject({ rows: expect.any(Array), gaps: 3, filled: 2 });
 	});
 });

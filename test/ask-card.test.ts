@@ -612,6 +612,238 @@ describe("ask: card", () => {
 		});
 	});
 
+	describe("an item that implies another field's value (ADR 0012)", () => {
+		const officeTags: Candidate<string>[] = [
+			...tags,
+			{
+				id: "office",
+				description: "Office: supplies and services",
+				value: "office",
+			},
+		];
+		const catalog: Candidate<Vendor>[] = [
+			vendors[0] as Candidate<Vendor>,
+			{ ...(vendors[1] as Candidate<Vendor>), implies: { tags: ["office"] } },
+		];
+		const card = () => {
+			const declared = expenseCard();
+			return {
+				...declared,
+				fields: {
+					...declared.fields,
+					vendor: { ...declared.fields.vendor, shortlist: () => catalog },
+					tags: { ...declared.fields.tags, shortlist: () => officeTags },
+				},
+			};
+		};
+		/** Every tag's question answered `not_mentioned`, but the ones given. */
+		const tagQuestions = (answers: Record<string, Probabilities> = {}) => ({
+			...Object.fromEntries(
+				officeTags.map(({ id }) => [
+					`tags_${id}`,
+					answer(YES, "not_mentioned"),
+				]),
+			),
+			...Object.fromEntries(
+				Object.entries(answers).map(([id, a]) => [`tags_${id}`, a]),
+			),
+		});
+		const fill = (
+			tagAnswers: Record<string, Probabilities> = {},
+			{
+				vendor = "acme",
+				vendorP = 0.9,
+				intentP = 0.97,
+				request = "Acme, $42 yesterday",
+			}: {
+				vendor?: string;
+				vendorP?: number;
+				intentP?: number;
+				request?: string;
+			} = {},
+		) =>
+			ask({
+				...base,
+				request,
+				provider: fakeProvider({
+					intent: answer(INTENT, "new_record", intentP),
+					vendor: answer(["northwind", "acme", ...MISSING], vendor, vendorP),
+					...tagQuestions(tagAnswers),
+					spent_on: answer(["d0", ...MISSING], "d0"),
+					total: answer(["a0", ...MISSING], "a0"),
+				}),
+				card: { ...card(), joiners: { or: ["or"], and: ["and"] } },
+			});
+
+		it("fills the implied item when the field's every item answered not_mentioned, and says which item implied it", async () => {
+			const { card } = await fill();
+
+			expect(card.value.vendor).toEqual({ name: "Acme" });
+			expect(card.value.tags).toEqual(["office"]);
+			expect(card.fields.tags.implied).toEqual({ field: "vendor", id: "acme" });
+			// The picks are reported as the provider gave them.
+			expect(card.fields.tags.answers.office?.pick).toEqual({
+				label: "not_mentioned",
+				probability: 0.9,
+			});
+		});
+
+		it("fills the implied item when the provider said yes to it below the gate: the item confirms it", async () => {
+			const { card } = await fill({ office: answer(YES, "yes", 0.38) });
+
+			expect(card.value.tags).toEqual(["office"]);
+			expect(card.fields.tags.implied).toEqual({ field: "vendor", id: "acme" });
+		});
+
+		it("leaves a field the provider filled as it is, and says nothing implied it", async () => {
+			const own = await fill({ office: answer(YES, "yes") });
+			const other = await fill({ meals: answer(YES, "yes") });
+
+			expect(own.card.value.tags).toEqual(["office"]);
+			expect(own.card.fields.tags).not.toHaveProperty("implied");
+			expect(other.card.value.tags).toEqual(["meals"]);
+			expect(other.card.fields.tags).not.toHaveProperty("implied");
+		});
+
+		it.each([
+			[
+				"the implied item could be it or another",
+				{ office: answer(YES, "not_available") },
+			],
+			[
+				"another item is held below the gate",
+				{ meals: answer(YES, "yes", 0.6) },
+			],
+			[
+				"another item could be it or another",
+				{ client: answer(YES, "not_available") },
+			],
+			[
+				"another item is filled beside a held one",
+				{
+					meals: answer(YES, "yes"),
+					office: answer(YES, "yes", 0.3),
+				},
+			],
+			[
+				"an item's pick is a tie",
+				{
+					travel: { yes: 0.45, not_mentioned: 0.45, not_available: 0.1 },
+				},
+			],
+		])("never fills over the provider when %s", async (_, answers) => {
+			const { card } = await fill(answers);
+
+			expect(card.value.tags ?? []).not.toContain("office");
+			expect(card.fields.tags).not.toHaveProperty("implied");
+		});
+
+		it("never fills from an item the field did not fill with, nor on a card the intent held", async () => {
+			const below = await fill({}, { vendorP: 0.6 });
+			const other = await fill({}, { vendor: "northwind" });
+			const held = await fill({}, { intentP: 0.5 });
+
+			for (const { card } of [below, other, held]) {
+				expect("tags" in card.value).toBe(false);
+				expect(card.fields.tags).not.toHaveProperty("implied");
+			}
+		});
+
+		it("never fills a field a named pair held", async () => {
+			const { card } = await fill(
+				{},
+				{ request: "Acme, meals or travel, $42" },
+			);
+
+			expect(card.fields.tags.pair?.ids).toEqual(["meals", "travel"]);
+			expect("tags" in card.value).toBe(false);
+			expect(card.value.vendor).toEqual({ name: "Acme" });
+		});
+
+		it("never fills an item the field's shortlist left out of this request", async () => {
+			const declared = card();
+			const { card: result } = await ask({
+				...base,
+				request: "Acme, $42 yesterday",
+				provider: fakeProvider({
+					intent: answer(INTENT, "new_record", 0.97),
+					vendor: answer(["northwind", "acme", ...MISSING], "acme"),
+					...tagAnswers([]),
+					spent_on: answer(["d0", ...MISSING], "d0"),
+					total: answer(["a0", ...MISSING], "a0"),
+				}),
+				card: {
+					...declared,
+					fields: {
+						...declared.fields,
+						tags: { ...declared.fields.tags, shortlist: () => tags },
+					},
+				},
+			});
+
+			expect("tags" in result.value).toBe(false);
+		});
+
+		it("refuses an implied field the card does not declare, or one where several items may not apply", async () => {
+			const refuse = (implies: Record<string, string[]>) => {
+				const declared = card();
+				return ask({
+					...base,
+					request: "Acme, $42",
+					provider: fakeProvider({}),
+					card: {
+						...declared,
+						fields: {
+							...declared.fields,
+							vendor: {
+								...declared.fields.vendor,
+								shortlist: () => [
+									{ ...(catalog[1] as Candidate<Vendor>), implies },
+								],
+							},
+						},
+					},
+				});
+			};
+
+			await expect(refuse({ labels: ["office"] })).rejects.toThrow(
+				/"acme" implies a value for field "labels", which the card does not declare/,
+			);
+			await expect(refuse({ spent_on: ["d0"] })).rejects.toThrow(
+				/field "spent_on", which is not a catalog field where several items may apply/,
+			);
+			await expect(refuse({ vendor: ["northwind"] })).rejects.toThrow(
+				/field "vendor", which is not a catalog field where several items may apply/,
+			);
+		});
+
+		it("refuses an item that implies a value on a field where several items may apply", async () => {
+			const declared = card();
+			await expect(
+				ask({
+					...base,
+					request: "Acme, $42",
+					provider: fakeProvider({}),
+					card: {
+						...declared,
+						fields: {
+							...declared.fields,
+							tags: {
+								...declared.fields.tags,
+								shortlist: () => [
+									{
+										...(officeTags[0] as Candidate<string>),
+										implies: { vendor: ["acme"] },
+									},
+								],
+							},
+						},
+					},
+				}),
+			).rejects.toThrow(/"meals" of field "tags" implies a value/);
+		});
+	});
+
 	describe("dates the request itself leaves open", () => {
 		function billCard() {
 			return {

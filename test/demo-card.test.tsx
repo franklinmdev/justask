@@ -98,6 +98,31 @@ const answers: Record<string, FakeAnswers> = {
 		day: "d0",
 		amount: "a0",
 	}),
+	// A vendor that sells office services alone, and no tag asked for: the
+	// vendor fills office (ADR 0012).
+	"Brightmop carpet shampoo yesterday, $140": answer({
+		vendor: question(vendors, "brightmop"),
+		day: "d0",
+		amount: "a0",
+	}),
+	"champú de alfombras de Brisamar ayer, $140": answer({
+		vendor: question(vendors, "brisamar"),
+		day: "d0",
+		amount: "a0",
+	}),
+	// The same vendor, but the provider tagged it meals: the vendor adds nothing.
+	"lunch with the Brightmop crew yesterday, $60": answer({
+		vendor: question(vendors, "brightmop"),
+		tagged: ["meals"],
+		day: "d0",
+		amount: "a0",
+	}),
+	"almuerzo con el equipo de Brisamar ayer, $60": answer({
+		vendor: question(vendors, "brisamar"),
+		tagged: ["meals"],
+		day: "d0",
+		amount: "a0",
+	}),
 	"almuerzo con Cazuela Azul ayer, $86.40": answer({
 		vendor: question(vendors, "cazuela"),
 		tagged: ["meals"],
@@ -435,6 +460,117 @@ describe("the demo's card page", () => {
 		).toBeDefined();
 		await expectNoAxeViolations(container);
 	});
+
+	it.each([
+		{
+			language: "English",
+			url: "/?case=form",
+			request: "Brightmop carpet shampoo yesterday, $140",
+			office: "Office",
+			hood: "What happened",
+			tags: "Tags",
+			reason:
+				"Filled from the vendor: every sale at Brightmop Cleaning is tagged office, and no tag's answer said otherwise.",
+			source: "from the vendor",
+			fromRequest: "from the request",
+		},
+		{
+			language: "Spanish",
+			url: "/?case=form&lang=es",
+			request: "champú de alfombras de Brisamar ayer, $140",
+			office: "Oficina",
+			hood: "Qué pasó",
+			tags: "Etiquetas",
+			reason:
+				"Completado desde el proveedor: toda venta de Limpiezas Brisamar lleva la etiqueta oficina, y ninguna respuesta de las etiquetas decía otra cosa.",
+			source: "del proveedor",
+			fromRequest: "de la solicitud",
+		},
+	])(
+		"tags office from a vendor that sells office services alone, where no tag's answer said otherwise, and says so, in $language",
+		async ({
+			url,
+			request,
+			office,
+			hood,
+			tags,
+			reason,
+			source,
+			fromRequest,
+		}) => {
+			const { container, user } = renderDemo({ url });
+
+			await user.type(screen.getByRole("searchbox"), `${request}{Enter}`);
+			await screen.findByText(/^(Filled:|Completado:)/);
+
+			expect(checkbox(office).checked).toBe(true);
+			// The field names the vendor as its source, as the panel does.
+			const group = within(screen.getByRole("group", { name: tags }));
+			expect(group.getByText(source)).toBeDefined();
+			expect(group.queryByText(fromRequest)).toBeNull();
+			expect(
+				within(panel(hood).getByRole("region", { name: tags })).getByText(
+					reason,
+				),
+			).toBeDefined();
+			await expectNoAxeViolations(container);
+		},
+	);
+
+	it.each([
+		{
+			language: "English",
+			url: "/?case=form",
+			request: "lunch with the Brightmop crew yesterday, $60",
+			meals: "Meals",
+			office: "Office",
+			hood: "What happened",
+			tags: "Tags",
+			reason: /^Every pick cleared the gate/,
+			fromRequest: "from the request",
+		},
+		{
+			language: "Spanish",
+			url: "/?case=form&lang=es",
+			request: "almuerzo con el equipo de Brisamar ayer, $60",
+			meals: "Comidas",
+			office: "Oficina",
+			hood: "Qué pasó",
+			tags: "Etiquetas",
+			reason: /^Cada elección superó el umbral/,
+			fromRequest: "de la solicitud",
+		},
+	])(
+		"adds nothing from the vendor when the provider tagged the expense, in $language",
+		async ({
+			url,
+			request,
+			meals,
+			office,
+			hood,
+			tags,
+			reason,
+			fromRequest,
+		}) => {
+			const { user } = renderDemo({ url });
+
+			await user.type(screen.getByRole("searchbox"), `${request}{Enter}`);
+			await screen.findByText(/^(Filled:|Completado:)/);
+
+			expect(checkbox(meals).checked).toBe(true);
+			expect(checkbox(office).checked).toBe(false);
+			expect(
+				within(screen.getByRole("group", { name: tags })).getByText(
+					fromRequest,
+				),
+			).toBeDefined();
+			expect(
+				within(panel(hood).getByRole("region", { name: tags })).getByText(
+					reason,
+				),
+			).toBeDefined();
+		},
+	);
 
 	it("keeps only a number's characters in the amount box, and empties it when a new answer holds the amount", async () => {
 		const { user } = renderDemo();

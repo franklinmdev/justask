@@ -42,10 +42,16 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 	const round5Set = parseCardEvalSet(
 		read(`card-${content.language}.round5.jsonl`),
 	);
+	const round6Set = parseCardEvalSet(
+		read(`card-${content.language}.round6.jsonl`),
+	);
 	const diagSet = parseCardEvalSet(read(`card-${content.language}.diag.jsonl`));
 	const pairSet = parseCardEvalSet(read(`card-${content.language}.pair.jsonl`));
 	const officeSet = parseCardEvalSet(
 		read(`card-${content.language}.office.jsonl`),
+	);
+	const notOfficeSet = parseCardEvalSet(
+		read(`card-${content.language}.notoffice.jsonl`),
 	);
 	const allSets = [
 		...devSet,
@@ -54,9 +60,11 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 		...round3Set,
 		...round4Set,
 		...round5Set,
+		...round6Set,
 		...diagSet,
 		...pairSet,
 		...officeSet,
+		...notOfficeSet,
 	];
 	const card = demoCard(content);
 	const rows = (set: CardEvalRow[], kind: CardEvalKind) =>
@@ -87,6 +95,7 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 		["round 3", round3Set],
 		["round 4", round4Set],
 		["round 5", round5Set],
+		["round 6", round6Set],
 	])(
 		"give the %s set 28 records, 2 ambiguous rows per field and 6 with nothing to record",
 		(_, set) => {
@@ -198,7 +207,7 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 });
 
 /**
- * Frozen on the owner's approval, 2026-09-23 (#20, round 2 #44, round 3 #57, round 4 #63, round 5 #73, #77's office probes), before any call. A
+ * Frozen on the owner's approval, 2026-09-23 (#20, round 2 #44, round 3 #57, round 4 #63, round 5 #73, #77's office probes, #79's false-fill probes and round 6), before any call. A
  * failure here means the verdict's inputs changed after the fact: revert the
  * edit, or log the owner's call in docs/card-eval.md with a new checksum or
  * value.
@@ -249,6 +258,15 @@ describe("the frozen card eval", () => {
 			"card-es.round5.jsonl",
 			"66147a3d8de451c56268334ed05bbba6d294fc87882692400d7de6bceca06c6e",
 		],
+		// Round 6, approved in five batches on 2026-09-23 (#79), before any call.
+		[
+			"card-en.round6.jsonl",
+			"d33a3f60caacc318c6564071f1cb031a839360aa4ecf49e252383e775e1a656e",
+		],
+		[
+			"card-es.round6.jsonl",
+			"3b3a92fcbfb0da04e0a238fc29f21dae8a4b8adf3577243b56bb400c999c768f",
+		],
 		// #63's pair probes, approved before any call: the pair rule was chosen from their runs.
 		[
 			"card-en.pair.jsonl",
@@ -266,6 +284,15 @@ describe("the frozen card eval", () => {
 		[
 			"card-es.office.jsonl",
 			"154cbfa826a91d1edd4e44b8567aec0b6ba71386d9a2c8dd678682ed020e3d73",
+		],
+		// #79's false-fill probes, approved in two batches on 2026-09-23, before any call.
+		[
+			"card-en.notoffice.jsonl",
+			"38f2e2fdfd5f6e5d36c8b6c772c46bf7f28fd5ea2fa2a981d591278b38358e0d",
+		],
+		[
+			"card-es.notoffice.jsonl",
+			"20b88aa279721a6829b80fa16ff07a59dfc69eae44dda0833d410ebe738fdfe1",
 		],
 	])("keeps %s as approved", (name, sha256) => {
 		const bytes = readFileSync(evalFile(name));

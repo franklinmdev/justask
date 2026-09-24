@@ -16,15 +16,17 @@ import { readRunLog, writeRunLog } from "./log.ts";
 import { type Probe, type Probes, probeSender } from "./probe.ts";
 
 type Described = { id: string; description: string };
+/** A catalog candidate as logged: what the provider read, and what it implies for another field (ADR 0012). */
+type LoggedItem = Described & { implies?: Record<string, string[]> };
 
 /**
  * A card field's candidates as the provider read them. A date, time or
  * amount candidate keeps its reading, so the field can be rebuilt at any
- * gate; a catalog candidate keeps only its id and description, not the
- * host's row.
+ * gate; a catalog candidate keeps only its id, its description and what it
+ * implies, not the host's row.
  */
 export type LoggedCardField =
-	| { kind: "catalog"; candidates: Described[] }
+	| { kind: "catalog"; candidates: LoggedItem[] }
 	| { kind: "several"; candidates: Described[] }
 	| { kind: "date"; candidates: (Described & { value: DateReading })[] }
 	| { kind: "time"; candidates: (Described & { value: TimeReading })[] }
@@ -180,7 +182,7 @@ async function runRow<F extends CardFields>(
 	const pairs: Record<string, NamedPair> = {};
 	for (const [name, field] of Object.entries(card.fields)) {
 		const { candidates, pair } = result.fields[name] as {
-			candidates: (Described & { value: unknown })[];
+			candidates: (LoggedItem & { value: unknown })[];
 			pair?: NamedPair;
 		};
 		if (pair) pairs[name] = pair;
@@ -189,9 +191,10 @@ async function runRow<F extends CardFields>(
 			kind === "catalog" || kind === "several"
 				? {
 						kind,
-						candidates: candidates.map(({ id, description }) => ({
+						candidates: candidates.map(({ id, description, implies }) => ({
 							id,
 							description,
+							...(implies && { implies }),
 						})),
 					}
 				: ({ kind, candidates } as LoggedCardField);
