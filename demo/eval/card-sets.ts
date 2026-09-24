@@ -40,6 +40,8 @@ export const CARD_SETS = {
 	notoffice: { verdict: false },
 	/** #99's probes: copying someone on a record that exists, and records that name a person with no send. */
 	copy: { verdict: false },
+	/** #99's records with the copy verbs or a charge in them, the Spanish list's false holds. */
+	copyrec: { verdict: false },
 } satisfies Record<string, CardSetInfo>;
 
 export type CardSet = keyof typeof CARD_SETS;
