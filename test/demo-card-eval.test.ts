@@ -14,6 +14,8 @@ import {
 	type CardSet,
 	cardSetFile,
 	givesVerdict,
+	scaleOf,
+	shapesOf,
 } from "../demo/eval/card-sets.ts";
 import { fixGate, poolFields } from "../demo/eval/gates.ts";
 import { CARD_KILL_LINES } from "../demo/eval/kill-lines.ts";
@@ -66,25 +68,55 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 	});
 
 	it.each(
-		CARD_SET_NAMES.filter(givesVerdict).map((set) => [set, sets[set]] as const),
+		CARD_SET_NAMES.filter(givesVerdict).map(
+			(set) => [set, scaleOf(set), sets[set]] as const,
+		),
 	)(
-		"give the %s set 28 records, 2 ambiguous rows per field and 6 with nothing to record",
-		(_, set) => {
+		"give the %s set, %i times rounds 1 to 6's mix: 28 records, 2 ambiguous rows per field and 6 with nothing to record",
+		(_, scale, set) => {
 			const records = rows(set, "record");
 			const ambiguous = rows(set, "ambiguous");
-			expect(records).toHaveLength(28);
-			expect(ambiguous).toHaveLength(8);
-			expect(rows(set, "nothing")).toHaveLength(6);
+			expect(records).toHaveLength(28 * scale);
+			expect(ambiguous).toHaveLength(8 * scale);
+			expect(rows(set, "nothing")).toHaveLength(6 * scale);
 			for (const field of FIELDS)
-				expect(heldOn(ambiguous, field)).toHaveLength(2);
-			// Every vendor at least once, and seven records with no vendor of the catalog.
-			expect(new Set(records.map((row) => row.expected.vendor))).toEqual(
-				new Set([...content.vendors.map(({ id }) => id), undefined]),
+				expect(heldOn(ambiguous, field)).toHaveLength(2 * scale);
+			// Every vendor at least once per scale, and seven records per scale with no vendor of the catalog.
+			const named = records.map((row) => row.expected.vendor);
+			for (const { id } of content.vendors)
+				expect(
+					named.filter((vendor) => vendor === id).length,
+					id,
+				).toBeGreaterThanOrEqual(scale);
+			expect(named.filter((vendor) => vendor === undefined)).toHaveLength(
+				7 * scale,
 			);
-			expect(mentioning(records, "vendor")).toHaveLength(21);
-			expect(mentioning(records, "tags")).toHaveLength(28);
-			expect(mentioning(records, "spent_on")).toHaveLength(24);
-			expect(mentioning(records, "total")).toHaveLength(27);
+			expect(mentioning(records, "vendor")).toHaveLength(21 * scale);
+			expect(mentioning(records, "tags")).toHaveLength(28 * scale);
+			expect(mentioning(records, "spent_on")).toHaveLength(24 * scale);
+			expect(mentioning(records, "total")).toHaveLength(27 * scale);
+		},
+	);
+
+	it.each(
+		CARD_SET_NAMES.flatMap((set) => {
+			const shapes = shapesOf(set);
+			return shapes ? [[set, shapes, sets[set]] as const] : [];
+		}),
+	)(
+		"name one approved shape on every row of the %s set, at most two rows each, as many as approved",
+		(_, shapes, set) => {
+			const counts = new Map<string, number>();
+			for (const row of set) {
+				const shape = row.shape ?? "";
+				expect(shapes, row.id).toHaveProperty([shape]);
+				expect(row.kind, row.id).toBe(shapes[shape]?.kind);
+				counts.set(shape, (counts.get(shape) ?? 0) + 1);
+			}
+			for (const [shape, { rows }] of Object.entries(shapes)) {
+				expect(rows, shape).toBeLessThanOrEqual(2);
+				expect(counts.get(shape) ?? 0, shape).toBe(rows);
+			}
 		},
 	);
 
@@ -177,12 +209,26 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 	});
 });
 
+describe("the shaped card sets", () => {
+	it.each(CARD_SET_NAMES.filter((set) => shapesOf(set)))(
+		"give English row N and Spanish row N of the %s set the same shape and kind",
+		(set) => {
+			const [en, es] = [english, spanish].map((content) =>
+				parseCardEvalSet(read(cardSetFile(content.language, set))).map(
+					({ kind, shape }) => ({ kind, shape }),
+				),
+			);
+			expect(es).toEqual(en);
+		},
+	);
+});
+
 /**
  * Frozen on the owner's approval, 2026-09-23 (#20, round 2 #44, round 3
  * #57, round 4 #63, round 5 #73, #77's office probes, #79's false-fill probes
- * and round 6), before any call. A failure here means the verdict's inputs
- * changed after the fact: revert the edit, or log the owner's call in
- * docs/card-eval.md with a new checksum or value.
+ * and round 6; round 7 #88 on 2026-09-24), before any call. A failure here
+ * means the verdict's inputs changed after the fact: revert the edit, or log
+ * the owner's call in docs/card-eval.md with a new checksum or value.
  */
 describe("the frozen card eval", () => {
 	it.each([
@@ -238,6 +284,15 @@ describe("the frozen card eval", () => {
 		[
 			"card-es.round6.jsonl",
 			"3b3a92fcbfb0da04e0a238fc29f21dae8a4b8adf3577243b56bb400c999c768f",
+		],
+		// Round 7, approved in seven batches on 2026-09-24 (#88), before any call.
+		[
+			"card-en.round7.jsonl",
+			"fdd19619169bf8470bc822c0886cba3d15525908eefe72832cc4bc7d25c6c701",
+		],
+		[
+			"card-es.round7.jsonl",
+			"912933070a5311d57292bee679392abe05ef5885137f2b1ecf2ae2d9eee9abf6",
 		],
 		// #63's pair probes, approved before any call: the pair rule was chosen from their runs.
 		[

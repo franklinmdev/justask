@@ -16,6 +16,8 @@
 
 **Before round 7 (#86): the tag each case gets, the set size and a cap per row shape are written, with no call.** Printing billed to a client is `client` alone, a trip for a client event with no billing is `travel` alone, and a maybe-billable row expects its certain tags; round 7's sets are four times the size (168 rows per language, one card worth 0.008 of exact or less), with at most two rows per shape. No kill line changes and no frozen round is re-scored. See Before round 7 below.
 
+**Round 7 (#88): the same card on 168 rows per language, under #86's tag cover and shape cap, fails on errors alone in both languages, a FAIL the owner ruled stands; the errors line's rule is extended for later rounds only, in [#93](https://github.com/franklinmdev/justask/issues/93).** Every quality line and p95 pass with room (exact 0.949 and 0.963, coverage 0.848 and 0.808, held ambiguous 0.935 and 0.903, nothing invented); the three errors of run 1 are the provider's 529 high-traffic answer and a 2 s timeout, in normal probe windows, and the errors line has no rule that sets them apart. A better result on reworded rows is not evidence that the card improved. See Round 7: result below; rounds 1 to 6 are unchanged.
+
 **Latency (#65): from the next verdict run on, every run sends a fixed provider probe before and after its rows, and a run whose probes are more than twice the baseline leaves a failing latency line pending, to be measured again in a normal window.** See Latency below; round 4 stays a FAIL.
 
 **Hypothesis:** on the demo's fictional vendors, the expense card turns a typed expense into the record a person means (vendor, tags, day, amount), leaves a field empty when it cannot tell, and fills nothing when the request asks for no new expense, in English and in Spanish, on Enter. The lab measured a salon appointment card; this is a new measurement.
@@ -1022,3 +1024,201 @@ Carried by [#88](https://github.com/franklinmdev/justask/issues/88).
 2. Rows are drafted to it, 168 per language in the mix above, their tags by the tag cover, and approved in batches; the shape field and the cap check land, and the sets are frozen by checksum in `test/demo-card-eval.test.ts` in the commit before the first call.
 3. The card, gates, labels, kill lines and `PROBE_BASELINE_MS` are round 6's as `demo/server/handler.ts` and `demo/eval/probe.ts` serve them, and stay so through round 7: #88 changes only the sets.
 4. Run 1 per language gives the verdict, under the latency rule; run 2 reports flips only. Results are recorded here as in rounds 1 to 6.
+
+## Round 7: shapes
+
+Carried by [#88](https://github.com/franklinmdev/justask/issues/88). **Approved by the owner as written on 2026-09-24, before any row was drafted.** Every row of `card-<language>.round7.jsonl` names exactly one shape from it in its `shape` field, by its name in `ROUND7_SHAPES` (`demo/eval/card-shapes.ts`), which the set test holds each row and each count to; English row N and Spanish row N the same one, and no shape has more than two rows per language. The card, gates, labels, kill lines and `PROBE_BASELINE_MS` are round 6's.
+
+- **One shape per row.** A row is built on its shape and is plain everywhere else: a vendor by its name or none, what was bought in words the tag's label lists, a day as `yesterday`, `today`, a bare weekday or a named date, an amount in `$`. So a typo row has no maybe in it, and a billed-through row no typo.
+- **A plain record's shape is the item of the tag cover that decides its tags** (`meals: catering`, `office: couriers`), so each item is capped like any construction, and every tag row names its clause through its shape.
+- **The quotas are counted across rows, not shapes:** of 112 records, tags in all 112, the vendor in 84 (every vendor at least four times, 28 records with no vendor of the catalog), the day in 96, the amount in 108. Ambiguous rows expect every field they do not hold.
+- Every day and amount below was read by the parser on Wednesday 2026-09-23 in both languages before this list was written.
+
+### Records: 112 rows, 73 shapes
+
+**Plain, by the item of the tag cover (39 rows, 28 shapes).**
+
+| Tag | Item: rows |
+|---|---|
+| meals (9) | lunch 1, dinner 1, coffee or tea 1, drinks 1, snacks 1, catering 2, a cake 1, pantry stock (water, beans) 1 |
+| travel (10) | flight 1, hotel 1, taxi 2, rideshare 1, train 1, bus 1, parking 2, tolls 1 |
+| office (20) | supplies 2, equipment 2, software 2, hosting 2, repairs 2, cleaning or window washing 2, printing 2, couriers 2, payroll 1, HR 1, legal work 1, insurance 1 |
+
+**The vendor (23 rows, 13 shapes).** Tags by the plain item bought.
+
+| Shape | Rows | Example | Vendor expected |
+|---|---|---|---|
+| typo, a letter dropped | 2 | `Tallyroo` | the vendor |
+| typo, a letter doubled | 2 | `Lindeero` | the vendor |
+| typo, a sound spelled another way | 2 | `Clausewud` | the vendor |
+| typo, two letters swapped | 2 | `Papregrove` | the vendor |
+| paraphrase by the service | 2 | `the company that insures us` | the vendor |
+| paraphrase by the people | 2 | `the tech support crew` | the vendor |
+| paraphrase as `our <trade>` | 2 | `our law firm` | the vendor |
+| paraphrase as the trade's shop | 2 | `the print shop` | the vendor |
+| a third vendor beside an `or` pair | 2 | `Larkspur lunch for the Fixbright or Swiftlane walkthrough` | the third |
+| a third vendor beside an `and` pair | 1 | `Larkspur lunch for the Brightmop and Glasswell crews` | the third |
+| no catalog vendor: a named business | 1 | `Rosa's Diner` | empty |
+| no catalog vendor: a kind of shop | 1 | `a ramen shop` | empty |
+| no catalog vendor: a store selling what a catalog vendor sells | 2 | `toner from a big-box store` | empty |
+
+**The tags (26 rows, 15 shapes), each with the clause of the tag cover that decides it.**
+
+| Shape | Rows | Clause | Tags expected |
+|---|---|---|---|
+| an office purchase billed to a client | 2 | office, not bought for a client and billed to them; client, billable | `client` |
+| a meal billable to a client | 2 | meals; client, billable | `meals` + `client` |
+| a trip billable to a client | 2 | travel; client, billable | `travel` + `client` |
+| a meal with a client present | 2 | meals; client, a meal with a client | `meals` + `client` |
+| a ride with a client present | 1 | travel; client, a ride with a client | `travel` + `client` |
+| an event with a client present | 1 | no tag for tickets; client, an event with a client | `client` |
+| a trip whose purpose names a client | 2 | client, not a purpose alone | `travel` |
+| another purchase whose purpose names a client, not billed | 1 | client, not a purpose alone | its own tag |
+| a maybe billable | 2 | client, not a maybe | its certain tag |
+| a client named as a place | 1 | client, not a client named as a place | its own tag |
+| two purchases in two tags | 2 | what the money bought decides | both |
+| a meal on a trip | 2 | travel, a meal on a trip is meals alone | `meals` |
+| the coffee machine, rented or serviced | 2 | meals, not the machine that makes it | `office` |
+| a restock at the vendor that sells in two tags | 2 | meals, pantry stock; a restock is of what runs out | `meals` |
+| an office service in words its label does not list | 2 | office, whatever the words for them | `office` |
+
+**The day (9 rows, 7 shapes).** Parser checked: each builds the one expected day.
+
+| Shape | Rows | Example |
+|---|---|---|
+| a day of the month alone | 2 | `on the 5th`, `el 5` |
+| a numeric date | 1 | `9/14`, `el 14/9` |
+| days counted back | 2 | `two days ago`, `the day before yesterday`; `hace dos días`, `anteayer` |
+| a weekday with its date | 1 | `Monday the 14th` |
+| a time of day | 1 | `yesterday morning`, `ayer por la mañana` |
+| `this` and a weekday | 1 | `this Monday`, `este lunes` |
+| a month abbreviated | 1 | `Sept 8`, `8 de sept` |
+
+**The amount (10 rows, 6 shapes).**
+
+| Shape | Rows | Example |
+|---|---|---|
+| a foreign currency | 2 | `€22` |
+| cents | 2 | `$12.50` |
+| a thousands separator | 1 | `$1,250` |
+| the word for dollars | 2 | `52 dollars`, `52 dólares` |
+| a count beside the amount | 2 | `3 boxes of paper, $45` |
+| a currency code | 1 | `USD 40` |
+
+**The intent (5 rows, 4 shapes).** Records a reader could take for something else.
+
+| Shape | Rows | Example |
+|---|---|---|
+| told as a story | 1 | `we paid Brightmop $230 to clean up after the renovation` |
+| asked to be logged | 1 | `log $38 of printer paper from Papergrove` |
+| a command word inside a record | 2 | `Farwander cancellation fee`, `Swiftlane courier to send the contract` |
+| asked as a question | 1 | `can you put down $27 for Beanhaven espressos?` |
+
+### Ambiguous: 32 rows, 16 shapes, two each
+
+Eight rows hold each field, as #86 set.
+
+| Field | Shapes |
+|---|---|
+| vendor | a named pair with `and`; a named pair with `or`; a service both cleaning vendors sell (`office cleaning`); a paraphrase both cleaning vendors fit (`our cleaning company`) |
+| tags | the vendor that sells in two tags, nothing named that was bought; the same, with a place named (`for the break room`); a store outside the catalog that sells across tags, nothing named (`$60 at the warehouse club`); the same, with a place named |
+| day | `last` and a weekday (#39's two readings); a week (`last week`); a named month (`in June`); a month counted from today (`last month`, `earlier this month`) |
+| amount | a currency the local one does not resolve (`1,600 pesos`); two amounts with `or` (`$22 or $25`); a range (`between $30 and $40`); an amount and a tip, no total (`$40 plus a $6 tip`) |
+
+The tags split each of #86's two tags-ambiguous shapes in two, bare and with a place, since #86's table rules both cases held and four rows per shape would break the cap. Every held day has no single-day reading and every held amount has none or two resolved candidates, as the set test checks.
+
+### Nothing: 24 rows, 12 shapes, two each
+
+| Shape | Held by | Example |
+|---|---|---|
+| a question about spending | the intent | `how much have we paid Swiftlane since August?` |
+| a question about tags | the intent | `which tag should a train ticket get?` |
+| a request to show expenses | the intent | `show me last week's Larkspur expenses` |
+| a delete | the code | `void that Inkhollow expense` |
+| a change with a listed verb | the code | `change that expense to $52` |
+| a change that sets a value, no list word | the intent | `Monday's Papergrove receipt was really $44` |
+| a move or an undo | the code | `move this expense to Friday` |
+| a send with a listed verb | the code | `email that invoice to accounting` |
+| a send no list names | the intent | `pass Larkspur's receipt along to the bookkeeper` |
+| a thank-you | the intent | `great, thanks a lot` |
+| a reminder to pay a vendor | the intent | `remind me to pay Brightmop on Friday` |
+| a greeting or a question about the demo | the intent | `hi, what can you do?` |
+
+Examples show the construction only; none is a drafted row, and a drafted row repeats no request of any set, probe, suggestion or recording.
+
+### Round 7 sets
+
+Files in `demo/eval/`, drafted to the shapes above against every set in `demo/eval/` (probes included), the demo's suggestions and recordings, and the provider probe, approved by the owner in seven batches of 24 rows on 2026-09-24, English beside Spanish, and frozen by checksum in `test/demo-card-eval.test.ts` in the commit before the first round 7 call. Run logs `demo/eval/runs/card-<language>-round7-<n>.jsonl`.
+
+| File | Rows | record | ambiguous | nothing |
+|---|---|---|---|---|
+| `card-en.round7.jsonl` | 168 | 112 | 32 | 24 |
+| `card-es.round7.jsonl` | 168 | 112 | 32 | 24 |
+
+- **Quotas:** tags in all 112 records, the day in 96, the amount in 108, the vendor in 84, every vendor in four records or more, 28 records with no vendor of the catalog; eight ambiguous rows hold each field. The test holds every row to its shape's kind and count.
+- **No order carried over:** the rows were drafted by shape and shuffled once, with the same order in both languages; row N shares its shape and kind across languages, which the test checks.
+- **Checked with no call:** the code holds the ten nothing rows with a listed verb and a reference (`undo that expense`, `quite ese gasto de Nubalia`) and the vendor of the four named-pair rows in each language, and no record. One nothing row also has a tags pair in English alone (`does a hotel minibar count as meals or travel?`); it expects nothing either way.
+- The same checks as rounds 1 to 6 hold: no request repeats any other set, probe, suggestion or recording, every expected day and amount is one the parser builds on Wednesday 2026-09-23, and every held one is held by the parser's reading or by two candidates.
+- Kill lines, measures and procedure as round 6, under the latency rule. Run 1 gives the verdict; run 2 reports flips only.
+
+## Round 7: result
+
+**Verdict: FAIL, on errors alone, in both languages; every quality line passes in both, and so does p95.** Runs of 2026-09-24 with `jev-1.13.0`, round 6's card and gates (intent 0.45, vendor 0.7, tags 0.4, spent_on 0.8, total 0.9), the frozen round 7 sets, the same kill lines, and `PROBE_BASELINE_MS` of 235, today fixed at Wednesday 2026-09-23. Every run's probes were normal, so no line is pending. **The errors are the provider's:** of the three in run 1, two are its `529 We are currently experiencing high traffic` answer, returned in under 250 ms, and one a row it did not answer within the 2 s timeout. The errors line has no slow-window rule, so they count as written. The owner ruled on 2026-09-24 that the FAIL stands, as round 4's did; the errors line's rule is extended for later rounds only, in [#93](https://github.com/franklinmdev/justask/issues/93), and round 7 is not rescored under it.
+
+As #86 wrote, the rows changed and the card did not, so a better result on the reworded rows is not evidence that the card improved: rounds 1 to 6 stand as recorded, and round 7 is a new measurement of the same card on a larger set whose tags follow the tag cover.
+
+### Run 1: the verdict
+
+| Measure | Kill line | English | Spanish |
+|---|---|---|---|
+| exact | at least 0.9 | 0.949 (129 of 136 cards) | 0.963 (130 of 135 cards) |
+| coverage | at least 0.7 | 0.848 (413 of 487 fields) | 0.808 (391 of 484 fields) |
+| invented | at most 0 | 0 | 0 |
+| held ambiguous | at least 0.75 | 0.935 (29 of 31) | 0.903 (28 of 31) |
+| p95 | at most 1000 ms | 594 ms | 768 ms |
+| errors | at most 0 | **1** | **2** |
+| cost per call | | $0.0000870 | $0.0000922 |
+| probes, median against 235 ms | | 456 ms, normal | 395 ms, normal |
+
+- **Errors:** `en-r7-153` (`Paydale and Tallyroot, $150 for the payroll export setup on September 9`) and `es-r7-030` (`la imprenta, $58 por los banners del evento el viernes`) got the 529 in 245 and 185 ms; `es-r7-097` (`taxi en Ciudad de México el lunes, 350 pesos`) timed out at 2 s. An errored row is scored as no card, so the cards count 143 and 142 of 144, and the ambiguous rows 31 of 32.
+- **The probes were normal, and high.** Both medians sat under twice the baseline (470 ms), at 1.9 and 1.7 times it in English and Spanish run 1; the warm-up's first call took 1,759 ms in English. The 529s name the provider's high traffic, in windows the probes still read as normal.
+
+Per field, filled of expected: vendor 88 of 102 English, 82 of 101 Spanish; tags 120 of 135 (7 wrong, two of them on ambiguous rows that must hold their tags) and 108 of 134 (5 wrong, three on ambiguous rows); day 79 of 119 and 79 of 118; amount 126 of 131 and 122 of 131. No field but the tags filled wrong. The intent passed 136 English and 135 Spanish cards, and no nothing row in either language; no vendor filled on a named-pair row.
+
+### Filled and wrong
+
+| Row | Request | Shape | Expected | Got | Pick |
+|---|---|---|---|---|---|
+| en-r7-096 | flight to Nashville for the client demo, $264 on September 10 | a trip whose purpose names a client | travel | travel + client | client yes 0.61 |
+| en-r7-094 | rideshare to the client's headquarters, $21 on Friday | a client named as a place | travel | travel + client | client yes 0.58 |
+| en-r7-016 | lunch on the train to the Portland trade fair, $18 on September 16 | a meal on a trip | meals | meals + travel | travel yes 0.52 |
+| en-r7-024 | Farwander hotel in Omaha for the client's project kickoff, $198 on September 13 | a trip whose purpose names a client | travel | travel + client | client yes 0.49 |
+| en-r7-064 | Inkhollow brochures for the client's launch, $96 on Monday | another purchase whose purpose names a client, not billed | office | office + client | client yes 0.68 |
+| en-r7-055 | Beanhaven order for the third-floor lounge, $49 on Monday | tags held: the vendor that sells in two tags, a place named | held | meals | meals yes 0.73 |
+| en-r7-026 | $82 at the supermarket for the break room on Monday | tags held: a store across tags, a place named | held | meals | meals yes 0.65 |
+| es-r7-016 | almuerzo en el tren a la feria de Portland, $18 el 16 de septiembre | a meal on a trip | meals | meals + travel | travel yes 0.74 |
+| es-r7-024 | hotel de Rumbo Claro en Omaha para el arranque del proyecto del cliente, $198 el 13 de septiembre | a trip whose purpose names a client | travel | travel + client | client yes 0.53 |
+| es-r7-055 | pedido del Cafetal para la sala del tercer piso, $49 el lunes | tags held: the vendor that sells in two tags, a place named | held | meals | meals yes 0.86 |
+| es-r7-113 | Cafetal para el vestíbulo, $66 el viernes | tags held: the vendor that sells in two tags, a place named | held | meals | meals yes 0.91 |
+| es-r7-129 | Cafetal, $73 el martes | tags held: the vendor that sells in two tags, nothing named | held | meals | meals yes 0.70 |
+
+Every correction is a tag the provider picked; none came from a vendor's implied office.
+
+### Run 2: flips only
+
+English: 14 flips on 9 rows, one error (`en-r7-167`, the 529 again). Exact 0.964 (132 of 137), coverage 0.86, held ambiguous 0.938, p95 776 ms, probes 435 ms, normal. `en-r7-016` held the tags run 1 filled wrong, `en-r7-024` dropped its client, and two cards the intent held in run 1 filled every field right (`Clausewood legal advice on the vendor contract`, `Sureharbor business insurance premium on September 1`); the other flips are single fields filled in one run and held in the other, none wrong. Spanish: 6 flips, one error (`es-r7-152`, a timeout). Exact 0.97 (131 of 135), coverage 0.811, held ambiguous 0.906, p95 826 ms, probes 317 ms, normal; `es-r7-024` dropped its client, four fields held in run 1 filled right, and one tag filled in run 1 held. Both languages again pass every line but errors.
+
+### What the misses say
+
+- **The card, read by the tag cover, clears every quality line in both languages with room:** exact 0.049 and 0.063 over its line, held ambiguous 0.185 and 0.153, coverage 0.148 and 0.108. The largest single shape in the misses is two rows, 0.015 of exact, which is what the cap was for: no construction decides the verdict.
+- **Where the provider and the cover part:** a client named as a purpose or a place still draws `client` in English (three shapes, four rows), and a meal on a train draws `travel` in both languages. These are the cases #86 decided against the provider's rounds 2 to 6 answers; they now cost exact, where before they cost it the other way.
+- **Beanhaven and Cafetal still draw `meals`** on the tags-held rows, most on the rows with a place named (both languages' `-055`); the stores outside the catalog held in Spanish and leaked once in English.
+- **The owner's printing ruling held:** both rows of an office purchase billed to a client (`-127`, `-141`) filled `client` alone in every run, office `not_mentioned` at 0.58 to 0.88.
+- **Errors, not the card, fail the round.** Nothing in the rules sets the provider's overload apart on the errors line, as #65 did for p95; all five errors in four runs were a 529 or a timeout in a normal window. [#93](https://github.com/franklinmdev/justask/issues/93) carries that rule for later rounds; round 7 is not rescored under it.
+
+### Run logs
+
+- Run 1: `demo/eval/runs/card-en-round7-1.jsonl`, `demo/eval/runs/card-es-round7-1.jsonl`
+- Run 2: `demo/eval/runs/card-en-round7-2.jsonl`, `demo/eval/runs/card-es-round7-2.jsonl`
+
+Each rescores with `scoreCardRun(await readCardRun(path), { gates })` and no call.

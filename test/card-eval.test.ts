@@ -75,6 +75,19 @@ describe("parseCardEvalSet", () => {
 		]);
 	});
 
+	it("reads a row's shape, the construction its expected value turns on", () => {
+		const [row] = set([
+			{
+				request: "Tallyroo software, $44",
+				kind: "record",
+				shape: "typo, a letter dropped",
+				expected: { vendor: "tallyroot" },
+			},
+		]);
+
+		expect(row?.shape).toBe("typo, a letter dropped");
+	});
+
 	it.each([
 		["a line that is not JSON", "{", /line 1: not JSON/],
 		["an empty set", "\n", /no rows/],
@@ -128,6 +141,11 @@ describe("parseCardEvalSet", () => {
 				expected: { total: { currency: "USD" } },
 			}),
 			/field "total" expects/,
+		],
+		[
+			"an empty shape",
+			JSON.stringify({ request: "x", kind: "nothing", shape: " " }),
+			/"shape" must be a non-empty string/,
 		],
 		[
 			"a repeated id",
