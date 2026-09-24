@@ -326,8 +326,8 @@ export type Content = {
 	 */
 	cardCommands: CardCommands;
 	/**
-	 * The words that join two vendors, statuses or tags into a pair the
-	 * search, the filter and the card hold (ADR 0010).
+	 * The words that join two vendors or tags into a pair the search, the
+	 * filter and the card hold (ADR 0010, 0011).
 	 */
 	joiners: Joiners;
 };
@@ -375,6 +375,7 @@ export function tag(id: Tag, description: string): Candidate<Tag> {
 	return { id, description, value: id };
 }
 
+/** A payment status: the provider reads the id and the description. */
 export function status(
 	id: TransactionStatus,
 	description: string,

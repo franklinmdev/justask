@@ -1,9 +1,10 @@
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
-import { ask, builtInParser } from "justask";
+import { ask, builtInParser, type Fields, type Filter } from "justask";
 import {
 	type FilterEvalKind,
 	type FilterEvalRow,
+	type FilterMiss,
 	parseFilterEvalSet,
 	readFilterRun,
 	scoreFilterRun,
@@ -40,6 +41,23 @@ function shape(row: FilterEvalRow, field: FieldName): string | undefined {
 	return min !== undefined ? "min" : "max";
 }
 
+/** The fields a filter holds on a named pair; it finds the pair before any answer, so a failing provider still reports it. */
+async function pairHeldBy(
+	filter: Filter<Fields>,
+	request: string,
+): Promise<string[]> {
+	const { filter: result } = await ask({
+		request,
+		facts: { ...FACTS, today: TODAY },
+		provider: failingProvider(new Error("no call")),
+		timeoutMs: 1_000,
+		filter,
+	});
+	return Object.entries(result.fields)
+		.filter(([, field]) => "pair" in field && field.pair)
+		.map(([name]) => name);
+}
+
 describe.each([english, spanish])("the filter sets in $language", (content) => {
 	const evalSet = parseFilterEvalSet(read(`filter-${content.language}.jsonl`));
 	const devSet = parseFilterEvalSet(
@@ -48,7 +66,23 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 	const round2 = parseFilterEvalSet(
 		read(`filter-${content.language}.round2.jsonl`),
 	);
+	const pairSet = parseFilterEvalSet(
+		read(`filter-${content.language}.pair.jsonl`),
+	);
+	const round3 = parseFilterEvalSet(
+		read(`filter-${content.language}.round3.jsonl`),
+	);
 	const filter = demoFilter(content);
+	const everyRow = [...devSet, ...evalSet, ...round2, ...pairSet, ...round3];
+	const pairHeld = (request: string) => pairHeldBy(filter, request);
+	/** Each row's held fields, as "<row id> <field>". */
+	const pairHeldIn = async (set: FilterEvalRow[]) => {
+		const held: string[] = [];
+		for (const { id, request } of set) {
+			for (const name of await pairHeld(request)) held.push(`${id} ${name}`);
+		}
+		return held;
+	};
 	const rows = (set: FilterEvalRow[], kind: FilterEvalKind) =>
 		set.filter((row) => row.kind === kind);
 	const tally = (set: FilterEvalRow[], field: FieldName) => {
@@ -63,7 +97,7 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 	it("expect only fields of the demo's filter, and values of that language's catalogs", () => {
 		const vendors = new Set(content.vendors.map(({ id }) => id));
 		const statuses = new Set(content.statuses.map(({ id }) => id));
-		for (const row of [...evalSet, ...devSet, ...round2]) {
+		for (const row of everyRow) {
 			for (const [field, value] of Object.entries(row.expected)) {
 				expect(Object.keys(filter.fields)).toContain(field);
 				if (value === "held") continue;
@@ -76,6 +110,7 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 	it.each([
 		["eval", evalSet],
 		["round 2", round2],
+		["round 3", round3],
 	])("split the %s set's rows evenly across fields and values", (_, set) => {
 		const filterable = rows(set, "filterable");
 		const ambiguous = rows(set, "ambiguous");
@@ -152,7 +187,7 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 			].map(normalized),
 		);
 		const repeated: string[] = [];
-		for (const { id, request } of [...devSet, ...evalSet, ...round2]) {
+		for (const { id, request } of everyRow) {
 			if (seen.has(normalized(request))) repeated.push(id);
 			seen.add(normalized(request));
 		}
@@ -163,28 +198,63 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 	});
 
 	it("hold a named pair in round 2 only on the vendor of its two pair rows (ADR 0011)", async () => {
-		// The code finds the pair before any answer, so a failing provider still reports it.
-		const held: string[] = [];
-		for (const { id, request } of round2) {
-			const { filter: result } = await ask({
-				request,
-				facts: { ...FACTS, today: TODAY },
-				provider: failingProvider(new Error("no call")),
-				timeoutMs: 1_000,
-				filter,
-			});
-			for (const [name, field] of Object.entries(result.fields)) {
-				if ("pair" in field && field.pair) held.push(`${id} ${name}`);
-			}
-		}
+		const held = await pairHeldIn(round2);
 		expect(held).toEqual([
 			`${content.language}-r2-a29 vendor`,
 			`${content.language}-r2-a30 vendor`,
 		]);
 	});
 
+	it("hold a named pair in round 3 only on its vendor pair: the status opts out (#80)", async () => {
+		const held = await pairHeldIn(round3);
+		expect(held).toEqual([`${content.language}-r3-a29 vendor`]);
+	});
+
+	it("hold a named pair on the probes' vendor pairs alone: the status opts out (#80)", async () => {
+		const held = await pairHeldIn(pairSet);
+		const probe = `${content.language}-p`;
+		expect(held).toEqual([`${probe}-05 vendor`, `${probe}-06 vendor`]);
+	});
+
+	// In Spanish the statuses declare no names, so no request names a pair of
+	// them: the declaration is what keeps the status out if names return.
+	it("declare the status out of the pair hold, and the vendor in it (#80)", () => {
+		expect(filter.fields.status.holdsPair).toBe(false);
+		expect(filter.fields.vendor).not.toHaveProperty("holdsPair");
+	});
+
+	it.each([
+		{
+			en: "paid or overdue invoices",
+			es: "facturas pagadas o vencidas",
+			held: [],
+		},
+		{
+			en: "the open and the overdue invoice",
+			es: "la factura pendiente y la vencida",
+			held: [],
+		},
+		// A negated status beside another: the hold misread it, the provider does not (#80).
+		{
+			en: "invoices not paid and overdue",
+			es: "facturas pendientes y no vencidas",
+			held: [],
+		},
+		{
+			en: "paid Cloudberth or Tallyroot invoices",
+			es: "facturas pagadas de Nubalia o de Cuentia",
+			held: ["vendor"],
+		},
+	])(
+		"hold the vendor on a named pair and never the status, as $en is written in each language (#80)",
+		async (row) => {
+			const request = content.language === "es" ? row.es : row.en;
+			expect(await pairHeld(request)).toEqual(row.held);
+		},
+	);
+
 	it("expect only dates and amounts the parser can build, on the day the runs are fixed at", () => {
-		for (const row of [...devSet, ...evalSet, ...round2]) {
+		for (const row of everyRow) {
 			const { dates: read = [], amounts = [] } = builtInParser(row.request, {
 				today: TODAY,
 				facts: FACTS,
@@ -239,6 +309,15 @@ describe("the frozen filter eval", () => {
 			"filter-es.jsonl",
 			"f108351bbbcf5a28d4ef6d8a8aa72d28c65c76a3be6067017b60e073d414479f",
 		],
+		// #75's status-pair probes, approved on 2026-09-23, before any call.
+		[
+			"filter-en.pair.jsonl",
+			"6d0b70ceb0948f8ecac290c135536fc272dfbc65a529cc5a4def868bab87703f",
+		],
+		[
+			"filter-es.pair.jsonl",
+			"78cc6a60702dbfef57cd8833ae3d6d755f9d9126631fe092829a35e1a9c9d51b",
+		],
 		// Round 2 (#68), approved in five batches on 2026-09-23, before any call.
 		[
 			"filter-en.round2.jsonl",
@@ -247,6 +326,15 @@ describe("the frozen filter eval", () => {
 		[
 			"filter-es.round2.jsonl",
 			"37de9852985225b7af0bba01f82721de1f31055c10b4720481092fb27f016063",
+		],
+		// Round 3 (#75), approved in five batches on 2026-09-23, before any call.
+		[
+			"filter-en.round3.jsonl",
+			"a65ac690d145393b8e49b8a64fd3dae9ef964087bbda42f7bb8b9a5613b69a77",
+		],
+		[
+			"filter-es.round3.jsonl",
+			"0ee264e375906f33411c4f89391853a0795e7ea263226e0e306ed99ef55b6fd5",
 		],
 	])("keeps %s as approved", (name, sha256) => {
 		const bytes = readFileSync(evalFile(name));
@@ -289,5 +377,83 @@ describe("the filter's gates", () => {
 		);
 
 		expect(fixed).toEqual(FILTER_GATES);
+	});
+});
+
+/**
+ * Every saved filter run log rescored with no call as the demo's filter holds
+ * pairs now: a field keeps the pair its log saved only while the filter still
+ * holds it, so the status's pairs drop and nothing else moves (#80).
+ */
+describe("the saved filter runs, rescored with the status out of the pair hold", () => {
+	const logs = readdirSync(evalFile("runs/"))
+		.filter((file) => file.startsWith("filter-"))
+		.sort();
+	const filters = {
+		en: demoFilter(english),
+		es: demoFilter(spanish),
+	};
+	const rescore = async (file: string) => {
+		const language = /^filter-(en|es)-/.exec(file)?.[1] as "en" | "es";
+		const run = await readFilterRun(evalFile(`runs/${file}`).pathname);
+		const rows = await Promise.all(
+			run.rows.map(async ({ pairs, ...row }) => {
+				if (!pairs) return row;
+				const held = await pairHeldBy(filters[language], row.request);
+				const kept = Object.fromEntries(
+					Object.entries(pairs).filter(([name]) => held.includes(name)),
+				);
+				return Object.keys(kept).length > 0 ? { ...row, pairs: kept } : row;
+			}),
+		);
+		return {
+			before: scoreFilterRun(run),
+			after: scoreFilterRun({ ...run, rows }),
+		};
+	};
+	const missKey = ({ id, field, got }: FilterMiss) =>
+		`${id} ${field} ${JSON.stringify(got)}`;
+
+	it("fill the status of the probes' negated rows, and gain no miss anywhere", async () => {
+		const gone: string[] = [];
+		for (const file of logs) {
+			const { before, after } = await rescore(file);
+			const now = new Set(after.misses.map(missKey));
+			const was = new Set(before.misses.map(missKey));
+			expect(
+				[...now].filter((miss) => !was.has(miss)),
+				file,
+			).toEqual([]);
+			for (const miss of before.misses) {
+				if (!now.has(missKey(miss)))
+					gone.push(`${file} ${miss.id} ${miss.field}`);
+			}
+		}
+		expect(gone).toEqual([
+			"filter-en-pair-1.jsonl en-p-07 status",
+			"filter-en-pair-1.jsonl en-p-08 status",
+			"filter-en-pair-2.jsonl en-p-07 status",
+			"filter-en-pair-2.jsonl en-p-08 status",
+			"filter-es-pair-1.jsonl es-p-07 status",
+			"filter-es-pair-1.jsonl es-p-08 status",
+			"filter-es-pair-2.jsonl es-p-07 status",
+			"filter-es-pair-2.jsonl es-p-08 status",
+		]);
+	});
+
+	it("change no verdict, and no measure outside the probes' coverage", async () => {
+		for (const file of logs) {
+			const { before, after } = await rescore(file);
+			if (file.includes("-pair-")) {
+				expect(after.measures, file).toEqual({
+					...before.measures,
+					coverage: 1,
+				});
+				expect(before.measures.coverage, file).toBe(0.5);
+				continue;
+			}
+			expect(after.measures, file).toEqual(before.measures);
+			expect(after.verdict, file).toEqual(before.verdict);
+		}
 	});
 });

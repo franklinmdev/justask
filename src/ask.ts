@@ -231,7 +231,11 @@ async function askFilter<F extends Fields>({
 					filter,
 					declared,
 					candidates,
-					findPair(request, candidates, filter.joiners, { several: false }),
+					declared.holdsPair === false
+						? undefined
+						: findPair(request, candidates, filter.joiners, {
+								several: false,
+							}),
 				);
 			}
 		}),

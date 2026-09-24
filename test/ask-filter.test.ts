@@ -437,6 +437,26 @@ describe("ask: filter with catalog fields", () => {
 			expect(filter.value).toEqual({ account: "rent" });
 		});
 
+		it("never holds a field that opts out of the hold, which fills on its pick (#80)", async () => {
+			const filter = ledgerFilter();
+			const { filter: result } = await ask({
+				...base,
+				request: "entries not draft and posted",
+				provider: fakeProvider(answers({ account: "rent", status: "posted" })),
+				filter: {
+					...filter,
+					joiners,
+					fields: {
+						...filter.fields,
+						status: { ...filter.fields.status, holdsPair: false },
+					},
+				},
+			});
+
+			expect(result.fields.status).not.toHaveProperty("pair");
+			expect(result.value).toEqual({ account: "rent", status: "posted" });
+		});
+
 		it("fills as before when the filter declares no joiners", async () => {
 			const { filter } = await find("posted rent or bank entries", null);
 

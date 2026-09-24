@@ -1,6 +1,6 @@
 # Filter eval: sets, kill lines and verdict
 
-**Status: round 2 run, verdict PASS in both languages (run 1) with no miss, with the named-pair hold of ADR 0011, which held the two Spanish pairs the provider alone would have filled. Round 1: verdict PASS in both languages (run 1), with no wrong value shown and nothing invented. Sets, kill lines and gate rule approved and frozen by the owner on 2026-09-22 (#17), before any provider call; the gates were fixed from the dev runs by that rule and written into the demo before run 1.**
+**Status: the status field out of the named-pair hold (#80), every saved run rescored with no call: the probes' negated statuses fill, no verdict changes. Round 3 (#75): verdict PASS in both languages (run 1), the first round with status pairs and the Spanish status names; its one leak, a vendor paraphrase two cleaners fit, is no pair. Round 2: verdict PASS in both languages (run 1) with no miss, with the named-pair hold of ADR 0011, which held the two Spanish pairs the provider alone would have filled. Round 1: verdict PASS in both languages (run 1), with no wrong value shown and nothing invented. Sets, kill lines and gate rule approved and frozen by the owner on 2026-09-22 (#17), before any provider call; the gates were fixed from the dev runs by that rule and written into the demo before run 1.**
 
 **Hypothesis:** on the demo's fictional transactions, the filter turns a request into the exact filter object a person means (vendor, status, date, amount), or leaves a field empty when it cannot tell, in English and in Spanish, as the person types.
 
@@ -201,3 +201,108 @@ No flip in either language; p95 297 and 354 ms, probes normal (206 and 214 ms).
 
 - Run 1: `demo/eval/runs/filter-en-round2-1.jsonl`, `demo/eval/runs/filter-es-round2-1.jsonl`
 - Run 2: `demo/eval/runs/filter-en-round2-2.jsonl`, `demo/eval/runs/filter-es-round2-2.jsonl`
+
+## Status-pair probes: the Spanish names, and the hold's cost
+
+Carried by [#75](https://github.com/franklinmdev/justask/issues/75). Rounds 1 and 2 stand as recorded. ADR 0011 left the status hold in English only, since the Spanish statuses declared no names, and unmeasured, since no round names two statuses.
+
+- **The Spanish statuses now declare names** the pair hold reads (`status()` in `demo/src/content/types.ts`): `pagadas`, `pendientes`, `vencidas`. The typo rule reads each singular too (`pagada`, one letter off). They are plural because `pagada` would also read `pasada`, one letter off, so "la semana pasada" would name the paid status. The provider reads a status's id and description, never its names, so what the status field fills is unchanged.
+- **Checked with no call** over every set in `demo/eval/` and the demo's suggestions (594 English and 614 Spanish requests): the rule holds the status of none. No false hold, and no evidence either, so the owner approved ten probe rows per language on 2026-09-23, before any call.
+
+### Probe rows
+
+`demo/eval/filter-en.pair.jsonl` and `filter-es.pair.jsonl`, frozen by checksum in `test/demo-filter-eval.test.ts`, run with `filter.ts run <en|es> pair <n>` and no verdict, at round 1's gates. Rows 1 to 4 name two statuses with "or" or "and" (ambiguous, the status held; row 4 in the singular: `la pagada o la vencida de Cafetal`); rows 5 and 6 one status beside a vendor pair (the vendor held, the status filled); rows 7 and 8 two statuses with one negated, where the person means one (`invoices not paid and overdue`, `facturas pendientes y no vencidas de Serena`), which the rule holds anyway; rows 9 and 10 one status and no pair.
+
+### Pair runs 1 and 2
+
+Runs of 2026-09-23 with `jev-1.13.0`, gates vendor 0.6, status 0.95, date 0.85, amount 0.9, today fixed at Tuesday 2026-09-22, probes normal in all four (medians 252 to 332 ms against 235). One flip between the runs, on no pair: `en-p-06`'s status, paid, held at 0.93 in run 1 and filled at 0.95 in run 2.
+
+| Probe rows | The provider alone | With the hold |
+|---|---|---|
+| 1 to 4, two statuses | no status above 0.74 (`open and overdue invoices over $500`, overdue 0.74 and 0.71); `not_available` on top in the other 14 of 16, at 0.41 to 0.69: the status gate held all 16 | held, as meant |
+| 5 and 6, a status beside a vendor pair | vendor 0.54 to 0.72: row 6 fills a vendor at the gate of 0.6 in both languages and both runs (Inkhollow 0.68, Tintaverde 0.72) | vendor held; status right, 0.93 to 1.00, filled but for `en-p-06` run 1 (paid 0.93, under the gate) |
+| 7 and 8, one status negated | right, 0.98 to 1.00, all 8 | **held, 2 false holds per language per run** |
+| 9 and 10, one status | right, 0.97 to 1.00 | nothing held |
+
+### What the probes say
+
+- **The vendor hold is needed; the status hold, at this gate, is not.** A pair of statuses reads as `not_available` to the provider, and no status pick came within 0.2 of the status gate. The hold would matter only if that gate dropped below about 0.75.
+- **The status hold's cost is a negated status.** "not paid and overdue", "pendientes y no vencidas": two statuses joined by "and", one of them the one the person rules out. The provider read all 8 right at 0.98 or more; the rule held them. It never shows a wrong filter, so the cost is coverage: every such request leaves its status empty.
+- Run logs: `demo/eval/runs/filter-<en|es>-pair-<1|2>.jsonl`.
+
+## Round 3: status pairs
+
+Carried by [#75](https://github.com/franklinmdev/justask/issues/75). Rounds 1 and 2 stand as recorded. The first round with the Spanish status names and with status pairs, in both languages. The owner kept ADR 0011's rule as it is after the probes above (the status field opting out of the hold is tracked in [#80](https://github.com/franklinmdev/justask/issues/80)), and fixed the frame on 2026-09-23, before any row existed:
+
+- **Round 1's gates (vendor 0.6, status 0.95, date 0.85, amount 0.9), the same six kill lines, and no dev run**, as round 2: the hold asks the provider nothing new, and the probes measured it.
+- **The same grid as rounds 1 and 2**, row for row. The two status-ambiguous rows are status pairs, one with "or" (row 31) and one with "and" (row 32). Of the two vendor-ambiguous rows, one is a vendor pair (row 29, "and") and one is no pair (row 30, `the cleaning company`), so the round does not reward the hold alone. No row negates a status beside another, since the probes measured that.
+
+### Round 3 sets
+
+Files in `demo/eval/`, drafted against every set in `demo/eval/` and all the demo's suggestions, approved by the owner in five batches on 2026-09-23 (rows 1 to 10, 11 to 20, 21 to 30, 31 to 40, 41 and 42, English beside Spanish), copied in unchanged (sha256 checked against the approved drafts) and frozen by checksum in `test/demo-filter-eval.test.ts` in the commit before the first round 3 call. Run logs `demo/eval/runs/filter-<language>-round3-<n>.jsonl`.
+
+| File | Rows | filterable | ambiguous | nothing |
+|---|---|---|---|---|
+| `filter-en.round3.jsonl` | 42 | 28 | 8 | 6 |
+| `filter-es.round3.jsonl` | 42 | 28 | 8 | 6 |
+
+- **filterable:** vendors by name, typo (`clausewod`, `lindeero`) or a paraphrase only one vendor fits (`the stationery supplier`, `our coffee supplier`, `the window washers`). Row 19 names a third vendor beside an "or" pair (`overdue Fixbright invoices for setting up Tallyroot or Cloudberth`), as round 2's row 19 did. Row 16 joins two status phrases with "and" but names no status by a word the rule reads (`facturas que aún no vencen y que todavía no se han pagado`), and row 25 says `del mes pasado`, which the plural name `pagadas` does not read.
+- **ambiguous, two per field:** vendor `Clausewood and Paydale invoices from June` (a pair) and `the cleaning company's invoices over $500` (two cleaners, no pair); status `Cloudberth invoices that are open or overdue` and `paid and overdue invoices from July`; date `the end of June`, `June or July`; amount `about $1,000`, `under $100 or over $1,000`.
+- **nothing:** a vendor the catalog lacks (the electric company), sending an invoice, who approved a payment, hiding a column, grouping by vendor, a sign-off.
+- Checked with no call, and pinned in `test/demo-filter-eval.test.ts`: the code holds the vendor of row 29 and the status of rows 31 and 32 in both languages, and no other field of any row.
+
+## Round 3: result
+
+**Verdict: PASS.** Both languages clear every kill line in run 1. Runs of 2026-09-23 with `jev-1.13.0`, gates vendor 0.6, status 0.95, date 0.85, amount 0.9, the named-pair hold with the Spanish status names, the same six kill lines and today fixed at Tuesday 2026-09-22.
+
+### Run 1: the verdict
+
+| Measure | Kill line | English | Spanish |
+|---|---|---|---|
+| exact | at least 0.9 | 1 (28 of 28) | 1 (27 of 27) |
+| coverage | at least 0.7 | 1 (28 of 28) | 0.964 (27 of 28) |
+| invented | at most 0 | 0 | 0 |
+| held ambiguous | at least 0.75 | 1 (8 of 8) | 0.875 (7 of 8) |
+| p95 | at most 800 ms | 396 ms | 539 ms |
+| errors | at most 0 | 0 | 0 |
+| cost per call | | $0.0000571 | $0.0000595 |
+| probes' median (baseline 235 ms) | | 363 ms, normal | 340 ms, normal |
+
+Misses:
+
+| Row | Request | Field | Expected | Got | Pick |
+|---|---|---|---|---|---|
+| es-r3-a30 | las facturas de la compañía de limpieza de más de $500 | vendor | held | Relucir | relucir 0.65 (next not_mentioned 0.19) |
+| es-r3-f05 | facturas de Brisamar que ya pasaron su fecha límite | status | overdue | held | overdue 0.87 |
+
+### Run 2: flips only
+
+No flip in either language; `es-r3-a30` filled Relucir again at 0.62. p95 386 and 310 ms, probes normal (312 and 249 ms).
+
+### What #75 set out to measure
+
+- **The status hold works in both languages, and this round did not need it.** Read with no hold, the status pairs never picked a status above 0.70 (`facturas pagadas y vencidas de julio`, paid 0.70 and 0.60; `Cloudberth invoices that are open or overdue`, open 0.51 in both runs), and `not_available` took the top of the other four: the status gate of 0.95 would have held all 8. As in the probes, the hold matters only if that gate drops below about 0.75.
+- **The vendor pair needed the hold again.** Read with no hold, `Clausewood and Paydale invoices from June` filled Clausewood at 0.67 and 0.68, and its Spanish twin Lindero at 0.72 and 0.75, all over the vendor gate of 0.6.
+- **No false hold.** Row 19, the third vendor beside an "or" pair, filled Fixbright and Tecnoria at 0.95 to 0.98 in both runs, and rows 16 and 25 held nothing.
+- **The one leak is no pair.** `la compañía de limpieza` names neither cleaner, so no rule in code reaches it: the provider leaned to Relucir (`Relucir Servicios de Limpieza`) at 0.65 and 0.62, where the English twin held at `not_mentioned` 0.44 and 0.46. It is round 1's leak in another form, a vendor pick a few hundredths over a gate of 0.6, and it moves no gate, since rescoring on the rows that judge it would tune the gate to them.
+- **`ya pasaron su fecha límite` read as overdue at 0.87 and 0.85**, under the status gate, as round 1's `ya se vencieron` did at 0.89: a Spanish overdue phrasing without the word `vencidas` sits just under the gate.
+
+### Run logs
+
+- Run 1: `demo/eval/runs/filter-en-round3-1.jsonl`, `demo/eval/runs/filter-es-round3-1.jsonl`
+- Run 2: `demo/eval/runs/filter-en-round3-2.jsonl`, `demo/eval/runs/filter-es-round3-2.jsonl`
+
+## The status field out of the pair hold: every saved run rescored
+
+Carried by [#80](https://github.com/franklinmdev/justask/issues/80). The owner took the demo's status field out of the named-pair hold on 2026-09-23, after the probes and round 3 above showed the gate held every status pair and the hold's only cost was a negated status (ADR 0011, Amendment). The vendor keeps the hold. The Spanish status names went with it, since only the hold read them.
+
+Every saved filter run log was rescored with no call: a field keeps the pair its log saved only while the demo's filter still holds it, so the status pairs drop and the vendor pairs stay. Pinned in `test/demo-filter-eval.test.ts`.
+
+| Logs | Status pairs saved | What changes |
+|---|---|---|
+| Round 1 (`filter-<en\|es>-<1\|2>`), round 2 (`-round2-<1\|2>`), dev run 1 (`-dev-1`) | none | nothing |
+| Round 3 (`-round3-<1\|2>`) | rows 31 and 32, both languages | nothing the report judges: the status gate holds all 8 (open 0.51 on row 31 in English, paid 0.70 and 0.60 on row 32 in Spanish, `not_available` on top of the rest). Verdict PASS in both languages, the six kill-line measures unchanged. Only the status field's gate statistics move, which judge no kill line: its highest wrong pick, none before, is now those picks: 0.51 in English, 0.70 and 0.60 in Spanish |
+| Probes (`-pair-<1\|2>`) | rows 1 to 4 and 7 and 8, both languages | rows 7 and 8 fill right, all 8 (overdue 0.98 to 1, open 0.99 to 1): coverage 0.5 to 1 (4 of 4 filterable rows). Rows 1 to 4 stay held by the gate (no pick above 0.74). No verdict, as before |
+
+- **No row gains a miss, and no verdict changes.** The only misses that go are the probes' rows 7 and 8, in both languages and both runs.
+- **No gate moves.** The gates come from dev run 1, which names no pair; the rescored status picks in round 3 and the probes all sit under 0.95.

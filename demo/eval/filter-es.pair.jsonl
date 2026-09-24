@@ -1,0 +1,10 @@
+{"id": "es-p-01", "request": "facturas pagadas o vencidas de Pieveloz", "kind": "ambiguous", "expected": {"vendor": "pieveloz", "status": "held"}}
+{"id": "es-p-02", "request": "facturas pendientes y vencidas de más de $500", "kind": "ambiguous", "expected": {"status": "held", "amount": {"min": 500, "currency": "USD"}}}
+{"id": "es-p-03", "request": "facturas de Relucir que están pagadas o pendientes", "kind": "ambiguous", "expected": {"vendor": "relucir", "status": "held"}}
+{"id": "es-p-04", "request": "la pagada o la vencida de Cafetal", "kind": "ambiguous", "expected": {"vendor": "cafetal", "status": "held"}}
+{"id": "es-p-05", "request": "facturas vencidas de Rumbo Claro o de Lindero", "kind": "ambiguous", "expected": {"vendor": "held", "status": "overdue"}}
+{"id": "es-p-06", "request": "facturas pagadas de Tintaverde y de Letranueva de agosto", "kind": "ambiguous", "expected": {"vendor": "held", "status": "paid", "date": {"from": "2026-08-01", "to": "2026-08-31"}}}
+{"id": "es-p-07", "request": "facturas no pagadas y vencidas", "kind": "filterable", "expected": {"status": "overdue"}}
+{"id": "es-p-08", "request": "facturas pendientes y no vencidas de Serena", "kind": "filterable", "expected": {"vendor": "serena", "status": "open"}}
+{"id": "es-p-09", "request": "las facturas de Cobertura Plena ya pagadas", "kind": "filterable", "expected": {"vendor": "coberplena", "status": "paid"}}
+{"id": "es-p-10", "request": "facturas vencidas de la semana pasada", "kind": "filterable", "expected": {"status": "overdue", "date": {"from": "2026-09-14", "to": "2026-09-20"}}}

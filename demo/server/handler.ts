@@ -75,8 +75,10 @@ export const FILTER_GATES = {
 
 /**
  * The transactions table's filter in one language. The vendor field reads the
- * whole catalog, and the status field its three statuses; a request that
- * names two of either holds that field in code (ADR 0011).
+ * whole catalog, and the status field its three statuses. A request that
+ * names two vendors holds the vendor in code; the status opts out of that
+ * hold, since its gate holds every pair and the hold only misread a negated
+ * status (ADR 0011, #80).
  */
 export function demoFilter(content: Content): Filter<TransactionFields> {
 	return {
@@ -95,6 +97,7 @@ export function demoFilter(content: Content): Filter<TransactionFields> {
 				description: "the payment status of the invoices",
 				gate: FILTER_GATES.status,
 				shortlist: () => content.statuses,
+				holdsPair: false,
 			},
 			date: {
 				kind: "date",
