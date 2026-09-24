@@ -64,7 +64,7 @@ if (command === "run") {
 	const content = contents[language as Language];
 	if (!content || !isSet(set) || !n) usage();
 	if (!NO_VERDICT.has(set)) needBaseline();
-	loadKeyEnv(process.cwd());
+	loadKeyEnv();
 	const run = await runFilterEval({
 		set: parseFilterEvalSet(
 			await readFile(setPath(content.language, set), "utf8"),

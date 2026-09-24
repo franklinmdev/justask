@@ -527,6 +527,21 @@ function savedRun(p: number): FilterRun {
 	};
 }
 
+describe("gate overrides", () => {
+	it("throws on a gate for a field the run does not have, naming the fields it has", () => {
+		const run = savedRun(0.85);
+		const message =
+			'justask: the run has no field "vendr" to set a gate for; its gates are vendor';
+
+		expect(() => scoreFilterRun(run, { gates: { vendr: 0.9 } })).toThrow(
+			message,
+		);
+		expect(() =>
+			compareFilterRuns(run, run, { gates: { vendr: 0.9 } }),
+		).toThrow(message);
+	});
+});
+
 describe("compareFilterRuns", () => {
 	it("lists the fields whose value changed across the gate between two runs", () => {
 		const flips = compareFilterRuns(savedRun(0.85), savedRun(0.75));

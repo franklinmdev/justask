@@ -8,7 +8,7 @@ import { ask, type Candidate, type Provider } from "justask";
 import { JEV_MODEL, jevProvider } from "justask/jev";
 import { loadKeyEnv } from "./load-env.ts";
 
-loadKeyEnv(process.cwd());
+loadKeyEnv();
 
 const vendors: Candidate<string>[] = [
 	{
