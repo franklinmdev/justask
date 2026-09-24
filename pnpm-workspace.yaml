@@ -1,0 +1,4 @@
+# Wrangler runs without these install scripts (#107); pnpm asks for a choice.
+allowBuilds:
+  esbuild: false
+  workerd: false

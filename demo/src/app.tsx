@@ -2,6 +2,7 @@ import {
 	type KeyboardEvent,
 	type MouseEvent,
 	useEffect,
+	useMemo,
 	useState,
 } from "react";
 import { CalculatorInputsContext } from "./calculator.tsx";
@@ -9,6 +10,7 @@ import { CardPage } from "./card-page.tsx";
 import { english } from "./content/en.ts";
 import { spanish } from "./content/es.ts";
 import type { Case, Language } from "./content/types.ts";
+import { retryOnCpuLimit } from "./cpu-limit.ts";
 import { FilterPage } from "./filter-page.tsx";
 import { type Recordings, recordings as recordingFiles } from "./recording.ts";
 import { SearchPage } from "./search-page.tsx";
@@ -114,7 +116,12 @@ export function App({
 		document.getElementById(`case-tab-${next}`)?.focus();
 	}
 
-	const shared = { content, ...(fetch && { fetch }) };
+	// One function for the page's life, so no hook sees a new fetch on a render.
+	const sent = useMemo(
+		() => retryOnCpuLimit(fetch ?? globalThis.fetch),
+		[fetch],
+	);
+	const shared = { content, fetch: sent };
 	return (
 		<HoodPlaceContext
 			value={{
