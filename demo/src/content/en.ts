@@ -464,7 +464,7 @@ export const english: Content = {
 		fills: [
 			"Larkspur invoices over $1,000",
 			"overdue invoices",
-			"what we paid in August",
+			"what we paid last month",
 			"invoices between $200 and $1,000 from last week",
 		],
 		holds: [

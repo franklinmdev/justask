@@ -3,12 +3,13 @@ import { REQUEST_LIMIT, searchEndpoint } from "./api.ts";
 import type { Content, Vendor } from "./content/types.ts";
 import { formats } from "./format.ts";
 import { CaseHead, DEBOUNCE_MS, Saved, Suggestions } from "./parts.tsx";
-import type { SearchRecording } from "./recording.ts";
+import { dayShown, type SearchRecording } from "./recording.ts";
 import { useReplay } from "./replay.ts";
 import { costOf, searchControls } from "./saved.ts";
 import { CaseLayout } from "./showcase.tsx";
 import { StatePanel } from "./state-panel.tsx";
 import { useSuggest } from "./trace.ts";
+import { transactionsOn } from "./transactions.ts";
 
 /**
  * The fictional invoicing app's vendor search, with the state panel under
@@ -84,7 +85,13 @@ export function SearchPage({
 			<SearchEmpty search={search} className="result">
 				<p className="empty">{copy.empty}</p>
 			</SearchEmpty>
-			{search.item && <Transactions content={content} vendor={search.item} />}
+			{search.item && (
+				<Transactions
+					content={content}
+					vendor={search.item}
+					day={dayShown(recording, replay.recorded)}
+				/>
+			)}
 
 			<section className="suggestions" aria-labelledby="suggestions-title">
 				<h3 id="suggestions-title">{copy.suggestions}</h3>
@@ -114,13 +121,16 @@ export function SearchPage({
 function Transactions({
 	content,
 	vendor,
+	day,
 }: {
 	content: Content;
 	vendor: Vendor;
+	/** The day the app is on, which dates its transactions. */
+	day: string;
 }) {
 	const { copy } = content;
 	const format = formats(content.locale);
-	const rows = content.transactions.filter(
+	const rows = transactionsOn(content.transactions, day).filter(
 		({ vendorId }) => vendorId === vendor.id,
 	);
 	return (

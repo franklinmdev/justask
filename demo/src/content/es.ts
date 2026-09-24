@@ -467,7 +467,7 @@ export const spanish: Content = {
 		fills: [
 			"facturas de Cazuela Azul de más de $1,000",
 			"facturas vencidas",
-			"lo que pagamos en agosto",
+			"lo que pagamos el mes pasado",
 			"facturas entre 200 y 1,000 dólares de la semana pasada",
 		],
 		holds: [
