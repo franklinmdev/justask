@@ -946,7 +946,7 @@ Rounds 2 to 6 each failed by one or two items, each on a different line, and rou
 
 ### Tag cover
 
-The rule a round 7 row's expected tags follow. A tag covers what it lists and nothing it does not; a record expects every tag whose cover it meets, and no other. The four covers agree with the labels the demo serves since round 2 (Round 2: Tag descriptions, above), so round 7 needs no label change: the sets were what drifted from them.
+The rule a round 7 row's expected tags follow. A tag covers what it lists and nothing it does not; a record expects every tag whose cover it meets, and no other. No cover contradicts the labels the demo serves since round 2 (Round 2: Tag descriptions, above): each names more cases than its label lists (travel's label has no rideshares, buses or tolls), and the disputed cases below turn on the office and client labels' own words, what keeps the business running and "for certain, not when it says maybe". Where the sets drifted, it was from those words. Whether a label should list more is the card's question, not this one: no label changes here.
 
 - **meals: anything eaten or drunk**, by staff or with a client: lunch, dinner, coffee, drinks, snacks, catering, a cake, and pantry stock (coffee beans, snacks, bottled water). Not the machine that makes it: a coffee machine, its rental and its servicing are `office`.
 - **travel: getting somewhere and staying there**: flights, hotels, taxis and rideshares, trains, buses, and parking or tolls on the way. A meal on a trip is `meals` alone: what the money bought decides, not where.
@@ -962,12 +962,14 @@ The rule a round 7 row's expected tags follow. A tag covers what it lists and no
 |---|---|---|---|---|
 | Printing or a courier for a client, billable to the client | row 24 in rounds 2 to 6; round 1's `en-r-27` | `office` + `client` | `client` | Billed through, not used by the business to run itself. |
 | Travel for a client event, nothing said about billing | row 6 in rounds 3, 4 and 6 (`for the client kickoff`, `for the client workshop`) | `travel` + `client` | `travel` | A purpose alone. Round 1's own rule already read "billable to or spent with a client". |
-| A trip or a service that may be billable | row 32 in rounds 1 to 6 | tags held | the certain tags alone (`travel`, `office`); not an ambiguous row | The client label says "not when it says maybe" since round 2, so the certain tag is what the words say and the row holds nothing. |
+| A trip or a service that may be billable | row 32 in rounds 1 to 6 | tags held | the certain tags alone (`meals`, `travel` or `office`, whichever was bought); not an ambiguous row | The client label says "not when it says maybe" since round 2, so the certain tag is what the words say and the row holds nothing. |
 | Beanhaven or Cafetal, nothing named that was bought | row 31 (`Beanhaven, $45`, `Beanhaven order`, `Beanhaven delivery`) | tags held | tags held | The vendor sells beans (`meals`) and machine rental (`office`); nothing in the words chooses. |
 | Beanhaven or Cafetal, a place named | row 31 in rounds 4 and 5 (`for the break room`, `para la recepción`) | tags held | tags held | A place is not what was bought: beans and a machine both sit in a break room. |
 | Beanhaven or Cafetal, a restock | row 31 in round 6 (`restock for the kitchenette`) | tags held | `meals` | A restock is of what runs out, the beans; a rental is not restocked. |
 
 **What this does not show.** On the first three cases the cover now agrees with what the provider answered in those rounds, and on the restock with its Spanish answer (English filled `meals` + `office`). The cover was chosen for what a person writes, and each reason above stands without the provider; but round 7 cannot read those shapes as the card improving, since the rows changed and the card did not. Frozen rounds keep their expectations and their verdicts.
+
+**The two tags-ambiguous shapes for round 7.** With the maybe row a record, the tags field keeps its share of ambiguous rows through two shapes where no tag is certain: a vendor that sells in two tags with nothing named that was bought (Beanhaven or Cafetal, a place at most), and a purchase at a store outside the catalog that sells across tags, with nothing named that was bought (`$60 at the warehouse club`, snacks or supplies). Both expect the tags held; the Row shapes cap below applies to each.
 
 **One interaction with ADR 0012.** A billed-through row at an office-only vendor whose tags all answer `not_mentioned` (the `client` pick missed) gets `office` from the vendor, which the cover calls a correction. Without the rule it would be an empty tags field, also a miss; the rule changes which, not whether.
 
@@ -985,7 +987,7 @@ The same mix as rounds 1 to 6 (28 records, 8 ambiguous rows, 6 nothing rows in 4
 - **Ambiguous rows, eight per field**, as two per field now. Held ambiguous moves by 0.031 per row against round 6 English's slack of 0 (0.75, on its line).
 - **Calls per run:** 168 rows, 3 discarded warm-up calls and 6 measured probes (Latency, above). Two runs per language, as every round: 708 calls.
 - **Cost:** at the card's measured cost per call, the figure #51's calculator scales (round 6: $0.0000870 English, $0.0000922 Spanish), 177 calls cost at most $0.0163 a run, and the whole round at most $0.065. The probes ask one question, so this is an upper bound.
-- **Run time:** the runner sends one request at a time (`runCardEval`), so a run takes at most its calls times their latency: 177 calls at round 6's highest p95 (424 ms, Spanish run 2) is about 75 s. At round 6's row medians, near 250 ms, it is about 45 s.
+- **Run time:** the runner sends one request at a time (`runCardEval`), so a run takes at most its calls times their latency: 177 calls at round 6's highest p95 (424 ms, Spanish run 2) is about 75 s. At round 6's rows' medians, 231 to 263 ms in its four logs, it is about 41 to 47 s.
 - **The real cost is drafting and approval.** 336 rows across two languages, every one checked against every set and probe in `demo/eval/`, approved in batches of ten as before: about 17 batches per language pair, where rounds 3 to 6 took five.
 
 **What the size does not buy.** Resolution is how far one card moves exact; it is not how sure the verdict is. A card whose true exact is 0.9 still fails about half its verdict runs at any size, since the line sits on it; the band a run lands in narrows from about ±0.05 at 33 cards (one standard error) to about ±0.026 at 132. At four times, a card near its line is decided by many rows rather than one, which is what #86 asks, and a verdict near the line remains close. The kill lines are not up for change here.
