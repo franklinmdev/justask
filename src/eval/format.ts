@@ -55,6 +55,20 @@ function verdictLines(verdict: Verdict): string[] {
 	];
 }
 
+/** The measures' first line: the rows, their errors and retries, latency and cost. */
+function callsLine({
+	rows,
+	measures,
+	transport,
+	retried,
+	costPerCallUsd: cost,
+}: Pick<
+	Report,
+	"rows" | "measures" | "transport" | "retried" | "costPerCallUsd"
+>): string {
+	return `- Rows: ${rows} · errors: ${errorCount(measures.errors, transport)}${retried ? ` · retried ${retried}` : ""} · p95 ${number(measures.p95Ms)} ms · cost per call ${cost === null ? "unknown" : `$${cost.toFixed(7)}`}`;
+}
+
 /** The probes' line of the measures; none for a run saved before probes. */
 function windowLines(window: ProbeWindow | null): string[] {
 	if (!window) return [];
@@ -86,11 +100,10 @@ export function formatReport(report: Report, flips?: Flip[]): string {
 			: "";
 	const lines = [`# Eval report at gate ${report.gate}${note}`, ""];
 	if (report.verdict && !flips) lines.push(...verdictLines(report.verdict));
-	const cost = report.costPerCallUsd;
 	lines.push(
 		"## Measures",
 		"",
-		`- Rows: ${report.rows} · errors: ${errorCount(measures.errors, report.transport)}${report.retried ? ` · retried ${report.retried}` : ""} · p95 ${number(measures.p95Ms)} ms · cost per call ${cost === null ? "unknown" : `$${cost.toFixed(7)}`}`,
+		callsLine(report),
 		...windowLines(report.window),
 		`- Item rows: ${counts.items} · filled: ${counts.covered} · coverage ${number(measures.coverage)}`,
 		`- Filled with the expected item: ${counts.right} of ${counts.covered} · exact ${number(measures.exact)}`,
@@ -159,11 +172,10 @@ export function formatFilterReport(
 			: "";
 	const lines = [`# Filter eval report${note}`, ""];
 	if (report.verdict && !flips) lines.push(...verdictLines(report.verdict));
-	const cost = report.costPerCallUsd;
 	lines.push(
 		"## Measures",
 		"",
-		`- Rows: ${report.rows} · errors: ${errorCount(measures.errors, report.transport)}${report.retried ? ` · retried ${report.retried}` : ""} · p95 ${number(measures.p95Ms)} ms · cost per call ${cost === null ? "unknown" : `$${cost.toFixed(7)}`}`,
+		callsLine(report),
 		...windowLines(report.window),
 		`- Filterable rows: ${counts.filterable} · every expected field filled: ${counts.covered} · coverage ${number(measures.coverage)}`,
 		`- Filled with the exact filter object: ${counts.exact} of ${counts.covered} · exact ${number(measures.exact)}`,
@@ -243,12 +255,11 @@ export function formatCardReport(
 			: "";
 	const lines = [`# Card eval report${note}`, ""];
 	if (report.verdict && !flips) lines.push(...verdictLines(report.verdict));
-	const cost = report.costPerCallUsd;
 	const stats = { intent: report.intent, ...report.fields };
 	lines.push(
 		"## Measures",
 		"",
-		`- Rows: ${report.rows} · errors: ${errorCount(measures.errors, report.transport)}${report.retried ? ` · retried ${report.retried}` : ""} · p95 ${number(measures.p95Ms)} ms · cost per call ${cost === null ? "unknown" : `$${cost.toFixed(7)}`}`,
+		callsLine(report),
 		...windowLines(report.window),
 		`- Cards (record and ambiguous rows): ${counts.cards} · fields expected: ${counts.fieldsExpected} · filled: ${counts.fieldsFilled} · coverage ${number(measures.coverage)}`,
 		`- Cards that filled a field: ${counts.filled} · nothing to correct: ${counts.exact} · exact ${number(measures.exact)}`,

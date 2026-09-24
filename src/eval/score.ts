@@ -4,7 +4,7 @@ import { type KillLines, MEASURES, type Measure } from "./kill-lines.ts";
 import { type ProbeWindow, probeWindow } from "./probe.ts";
 import type { Run, RunRow } from "./run.ts";
 import type { EvalKind } from "./set.ts";
-import { transportFailures } from "./transport.ts";
+import { transportCounts } from "./transport.ts";
 
 /** Every measure a kill line can hold; null when the set has no row to measure it on. */
 export type Measures = Record<Measure, number | null>;
@@ -146,7 +146,7 @@ export function scoreRun(run: Run, { gate = run.gate } = {}): Report {
 
 	const retuned = gate !== run.gate;
 	const window = probeWindow(run.probes);
-	const transport = transportFailures(run.rows).length;
+	const calls = transportCounts(run.rows);
 	return {
 		gate,
 		retuned,
@@ -163,11 +163,12 @@ export function scoreRun(run: Run, { gate = run.gate } = {}): Report {
 		invented: invented.map(({ row }) => row.id),
 		leaked: leaked.map(({ row }) => row.id),
 		costPerCallUsd: costPerCall(run.rows),
-		transport,
-		retried: run.rows.filter(({ retried }) => retried).length,
+		...calls,
 		window,
 		misses,
-		verdict: retuned ? null : judge(run.killLines, measures, window, transport),
+		verdict: retuned
+			? null
+			: judge(run.killLines, measures, window, calls.transport),
 	};
 }
 

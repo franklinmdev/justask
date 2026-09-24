@@ -30,7 +30,7 @@ import {
 	measuresOf,
 	type Verdict,
 } from "./score.ts";
-import { transportFailures } from "./transport.ts";
+import { transportCounts } from "./transport.ts";
 
 /** A field the filter got wrong: a wrong or held value, or a value where none belongs. */
 export type FilterMiss = {
@@ -258,7 +258,7 @@ export function scoreFilterRun(
 
 	const retuned = names.some((name) => gates[name] !== run.gates[name]);
 	const window = probeWindow(run.probes);
-	const transport = transportFailures(run.rows).length;
+	const calls = transportCounts(run.rows);
 	return {
 		gates,
 		retuned,
@@ -276,11 +276,12 @@ export function scoreFilterRun(
 		leaked: leaked.map(({ row }) => row.id),
 		fields,
 		costPerCallUsd: costPerCall(run.rows),
-		transport,
-		retried: run.rows.filter(({ retried }) => retried).length,
+		...calls,
 		misses,
 		window,
-		verdict: retuned ? null : judge(run.killLines, measures, window, transport),
+		verdict: retuned
+			? null
+			: judge(run.killLines, measures, window, calls.transport),
 	};
 }
 

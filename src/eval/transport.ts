@@ -65,6 +65,12 @@ export function transportFailures<R extends Row>(rows: R[]): R[] {
 	return rows.filter(({ error }) => error?.transport === true);
 }
 
+/** A report's count of the rows transport failures left unanswered, and of those `ask` called twice (ADR 0013). */
+export const transportCounts = (rows: (Row & { retried?: true })[]) => ({
+	transport: transportFailures(rows).length,
+	retried: rows.filter(({ retried }) => retried).length,
+});
+
 /**
  * The eval rows a remeasure sends again: those of the first run's rows that
  * failed on transport, in the set's order. Throws before any call when none
