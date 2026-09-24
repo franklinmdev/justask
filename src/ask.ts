@@ -494,13 +494,7 @@ export async function answer(
 	input: { request: string; facts: Facts; questions: Question[] },
 	timeoutMs: number,
 	{ retry = true }: { retry?: boolean } = {},
-): Promise<
-	(
-		| { answer: ProviderAnswer; usage: Usage }
-		| { error: AskError; usage?: Usage }
-	) &
-		Retried
-> {
+): Promise<({ answer: ProviderAnswer } | { error: AskError }) & Spent> {
 	const controller = new AbortController();
 	let calls = 0;
 	let timer: ReturnType<typeof setTimeout> | undefined;
@@ -530,8 +524,8 @@ export async function answer(
 					const usage = usageOf(result);
 					const breach = contractBreach(input.questions, answers);
 					return breach
-						? { error: providerError(new Error(breach)), usage }
-						: { answer: answers, usage };
+						? { error: providerError(new Error(breach)), ...usage }
+						: { answer: answers, ...usage };
 				},
 				(cause: unknown) => ({ error: providerError(cause) }),
 			);
@@ -552,9 +546,9 @@ export async function answer(
 	}
 }
 
-/** What a flow's result carries of its call: the figures it reported, and the retry mark. */
-function spent({ usage, retried }: { usage?: Usage } & Retried): Spent {
-	return { ...usage, ...(retried && { retried }) };
+/** Of an outcome or a result, only what it spent: the figures reported, and the retry mark. */
+export function spent(from: Spent): Spent {
+	return { ...usageOf(from), ...(from.retried && { retried: true }) };
 }
 
 function providerError(cause: unknown): AskError {

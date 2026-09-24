@@ -4,10 +4,11 @@ import {
 	ask,
 	type SearchResult,
 	type Spent,
+	spent,
 } from "./ask.ts";
 import type { Card, CardFields, CardResult } from "./card.ts";
 import type { Fields, Filter, FilterResult } from "./filter.ts";
-import { type Facts, type Provider, usageOf } from "./provider.ts";
+import type { Facts, Provider } from "./provider.ts";
 import type { Search } from "./search.ts";
 
 /**
@@ -91,8 +92,7 @@ export function createSearchHandler<T>(
 		const result = await ask({ ...input, search });
 		const response: SearchHandlerResponse<T> = {
 			search: result.search,
-			...usageOf(result),
-			...(result.retried && { retried: true }),
+			...spent(result),
 		};
 		return { response, error: result.error };
 	});
@@ -111,8 +111,7 @@ export function createFilterHandler<F extends Fields>(
 		const result = await ask({ ...input, filter });
 		const response: FilterHandlerResponse<F> = {
 			filter: result.filter,
-			...usageOf(result),
-			...(result.retried && { retried: true }),
+			...spent(result),
 		};
 		return { response, error: result.error };
 	});
@@ -131,8 +130,7 @@ export function createCardHandler<F extends CardFields>(
 		const result = await ask({ ...input, card });
 		const response: CardHandlerResponse<F> = {
 			card: result.card,
-			...usageOf(result),
-			...(result.retried && { retried: true }),
+			...spent(result),
 		};
 		return { response, error: result.error };
 	});
