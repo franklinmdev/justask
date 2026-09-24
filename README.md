@@ -53,7 +53,7 @@ await fetch("/api/justask", {
 
 It answers:
 
-- `200` with `{ search, error? }`. A provider failure or timeout still answers `200`, with the item held and a typed `error` of kind `provider` or `timeout`. The provider's own message and cause never leave the server; pass `onError` to log them.
+- `200` with `{ search, error? }`. A provider failure or timeout still answers `200`, with the item held and a typed `error` of kind `provider` or `timeout`. The provider's own message and cause never leave the server; pass `onError` to log them. A provider that was unavailable (the Jev adapter's 5xx, 529 included, or a lost connection; a custom adapter throws `ProviderUnavailableError`) is called once more within the same `timeoutMs`, and never a third time (ADR 0013).
 - `400` with `{ error: { kind: "request", message } }` when the body is not JSON, has no `request` string or no valid `timeZone`.
 - `405` for anything but `POST`.
 

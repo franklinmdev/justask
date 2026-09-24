@@ -101,7 +101,7 @@ async function sendProbes(
 	const results: ProbeResult[] = [];
 	for (let i = 0; i < times; i++) {
 		const started = performance.now();
-		const outcome = await answer(provider, input, timeoutMs);
+		const outcome = await answer(provider, input, timeoutMs, { retry: false });
 		const latencyMs = performance.now() - started;
 		results.push(
 			"error" in outcome

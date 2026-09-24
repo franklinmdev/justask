@@ -3,6 +3,8 @@
 //
 //   node --conditions=source demo/eval/filter.ts run <en|es> <eval|round2|round3|dev|pair> <n>
 //   node --conditions=source demo/eval/filter.ts compare <en|es> <eval|round2|round3> <first n> <second n>
+//   node --conditions=source demo/eval/filter.ts remeasure <en|es> <eval|round2|round3> <first n> <n>...
+//   node --conditions=source demo/eval/filter.ts merge <en|es> <eval|round2|round3> <first n> <n>...
 //   node --conditions=source demo/eval/filter.ts gates <dev n>
 //
 // `run` writes demo/eval/runs/filter-<language>[-round2|-round3|-dev|-pair]-<n>.jsonl,
@@ -13,7 +15,11 @@
 // "or", as a pair, beside a vendor pair, or with one of them negated. A dev
 // or pair run gets no verdict: it tunes, it never decides. `compare`
 // reads two saved runs of one set and prints the second one's measures and
-// flips, with no call. `gates` reads dev run <n> of
+// flips, with no call. `remeasure` sends again only the rows run <first n>
+// left pending on transport failures (#93), into the last run named, after
+// merging the remeasures named before it, which leaves only the rows still
+// failing, and prints run <first n>'s report with every answer in place;
+// `merge` prints that report again, with no call. `gates` reads dev run <n> of
 // both languages and prints each field's gate by the rule in gates.ts,
 // with no call.
 
@@ -21,10 +27,13 @@ import { readFile } from "node:fs/promises";
 import {
 	compareFilterRuns,
 	formatFilterReport,
+	mergeRemeasure,
 	parseFilterEvalSet,
 	readFilterRun,
+	remeasureSet,
 	runFilterEval,
 	scoreFilterRun,
+	transportFailures,
 } from "justask/eval";
 import { jevProvider } from "justask/jev";
 import { loadKeyEnv } from "../../scripts/load-env.ts";
@@ -93,6 +102,53 @@ if (command === "run") {
 	console.log(
 		formatFilterReport(scoreFilterRun(after), compareFilterRuns(before, after)),
 	);
+} else if (command === "remeasure" || command === "merge") {
+	const [language, set, first, ...later] = rest;
+	const n = later.at(-1);
+	const content = contents[language as Language];
+	if (!content || !isSet(set) || NO_VERDICT.has(set) || !first || !n) usage();
+	const firstRun = await readFilterRun(
+		runLogPath(content.language, set, first),
+	);
+	// The remeasures run before the last one, merged in order.
+	const merged = mergeRemeasure(
+		firstRun,
+		...(await Promise.all(
+			later
+				.slice(0, -1)
+				.map((m) => readFilterRun(runLogPath(content.language, set, m))),
+		)),
+	);
+	if (command === "remeasure") {
+		needBaseline();
+		loadKeyEnv();
+	}
+	const again =
+		command === "remeasure"
+			? await runFilterEval({
+					set: remeasureSet(
+						merged,
+						parseFilterEvalSet(
+							await readFile(setPath(content.language, set), "utf8"),
+						),
+					),
+					filter: demoFilter(content),
+					provider: jevProvider(),
+					facts: { today: TODAY, ...FACTS },
+					timeoutMs: TIMEOUT_MS,
+					killLines: FILTER_KILL_LINES,
+					log: runLogPath(content.language, set, n),
+					probe: probe(),
+				})
+			: await readFilterRun(runLogPath(content.language, set, n));
+	console.log(
+		`Run ${first}, its transport failures (${transportFailures(firstRun.rows)
+			.map(({ id }) => id)
+			.join(", ")}) answered by run ${later.join(", then ")}\n`,
+	);
+	console.log(
+		formatFilterReport(scoreFilterRun(mergeRemeasure(merged, again))),
+	);
 } else if (command === "gates") {
 	const [n] = rest;
 	if (!n) usage();
@@ -112,7 +168,7 @@ if (command === "run") {
 
 function usage(): never {
 	console.error(
-		"usage: filter.ts run <en|es> <eval|round2|round3|dev|pair> <n> | compare <en|es> <eval|round2|round3> <first n> <second n> | gates <dev n>",
+		"usage: filter.ts run <en|es> <eval|round2|round3|dev|pair> <n> | compare <en|es> <eval|round2|round3> <first n> <second n> | remeasure|merge <en|es> <eval|round2|round3> <first n> <n>... | gates <dev n>",
 	);
 	process.exit(1);
 }

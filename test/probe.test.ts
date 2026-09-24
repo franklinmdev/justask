@@ -1,6 +1,7 @@
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { ProviderUnavailableError } from "justask";
 import {
 	formatCardReport,
 	formatFilterReport,
@@ -163,6 +164,25 @@ describe("a run's probes", () => {
 		expect(late.probes?.after?.[0]?.error).toBe("timeout");
 		expect(late.probes?.after?.[0]?.latencyMs).toBeGreaterThanOrEqual(19);
 		expect(failed.rows).toHaveLength(1);
+	});
+
+	it("sends each probe once, with no second call when the provider is unavailable (ADR 0013)", async () => {
+		const unavailable = failingProvider(new ProviderUnavailableError("529"));
+		const run = await runEval({
+			set: parseEvalSet(nothing),
+			search: { description: "the vendor", gate: 0.5, shortlist: () => [] },
+			provider: unavailable,
+			facts,
+			timeoutMs: 1_000,
+			killLines,
+			log: join(dir, "unavailable.jsonl"),
+			probe: { ...probe, warmUp: 0, times: 1 },
+		});
+
+		expect(unavailable.calls).toHaveLength(2);
+		expect(run.probes?.before).toEqual([
+			{ latencyMs: expect.any(Number), error: "provider" },
+		]);
 	});
 
 	it("reads no probes from a run saved before them", async () => {

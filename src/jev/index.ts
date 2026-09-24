@@ -1,4 +1,6 @@
 import {
+	APIConnectionError,
+	APIError,
 	type ChoiceQuestion,
 	type Questions,
 	type RequestOptions,
@@ -6,7 +8,12 @@ import {
 	type SystemOneResult,
 	TypeSafeClient,
 } from "@typesafe-ai/sdk";
-import type { Provider, ProviderAnswer, ProviderInput } from "../provider.ts";
+import {
+	type Provider,
+	type ProviderAnswer,
+	type ProviderInput,
+	ProviderUnavailableError,
+} from "../provider.ts";
 
 /** The Jev model every call names, so a gate measured on it stays measured. */
 export const JEV_MODEL = "jev-1.13.0";
@@ -47,7 +54,8 @@ export type JevProviderOptions = {
  * Jev as a provider (ADR 0001): all of a request's questions in one
  * `systemOne` call, each a `choice` question with every label, and a
  * probability back for every label, with the call's input tokens and cost.
- * No retries, as the core asks.
+ * No retries of the SDK's own: a 5xx, 529 included, or a lost connection is
+ * thrown as ProviderUnavailableError, and the core calls once more (ADR 0013).
  */
 export function jevProvider({ client }: JevProviderOptions = {}): Provider {
 	let jev = client;
@@ -55,25 +63,34 @@ export function jevProvider({ client }: JevProviderOptions = {}): Provider {
 		async answer({ request, facts, questions, signal }: ProviderInput) {
 			// The SDK refuses to run in a browser, so the key stays on the server.
 			jev ??= new TypeSafeClient();
-			const { answers, usage } = await jev.systemOne(
-				{
-					model: JEV_MODEL,
-					state: { request, facts },
-					questions: Object.fromEntries(
-						questions.map(({ id, instruction, labels }) => [
-							id,
-							{
-								type: "choice",
-								instructions: instruction,
-								criteria: Object.fromEntries(
-									labels.map(({ label, description }) => [label, description]),
-								),
-							} satisfies ChoiceQuestion,
-						]),
-					),
-				},
-				{ signal, timeout: NO_SDK_TIMEOUT_MS, retry: { maxRetries: 0 } },
-			);
+			const { answers, usage } = await Promise.resolve(
+				jev.systemOne(
+					{
+						model: JEV_MODEL,
+						state: { request, facts },
+						questions: Object.fromEntries(
+							questions.map(({ id, instruction, labels }) => [
+								id,
+								{
+									type: "choice",
+									instructions: instruction,
+									criteria: Object.fromEntries(
+										labels.map(({ label, description }) => [
+											label,
+											description,
+										]),
+									),
+								} satisfies ChoiceQuestion,
+							]),
+						),
+					},
+					{ signal, timeout: NO_SDK_TIMEOUT_MS, retry: { maxRetries: 0 } },
+				),
+			).catch((error: unknown) => {
+				throw unavailable(error)
+					? new ProviderUnavailableError(error.message, { cause: error })
+					: error;
+			});
 			// Copied as Jev gave them; the core rejects an answer that misses a label.
 			const answer: ProviderAnswer = {};
 			for (const { id } of questions) {
@@ -89,4 +106,12 @@ export function jevProvider({ client }: JevProviderOptions = {}): Provider {
 			};
 		},
 	};
+}
+
+/** The service failed to answer, not the answer: a 5xx or no connection. */
+function unavailable(error: unknown): error is APIError | APIConnectionError {
+	return (
+		(error instanceof APIError && error.status >= 500) ||
+		error instanceof APIConnectionError
+	);
 }

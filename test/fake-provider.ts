@@ -183,3 +183,25 @@ export function slowFirstProvider(
 		return answer;
 	});
 }
+
+/**
+ * Rejects each of its first calls with the next of `causes`, after `delayMs`,
+ * then answers every later call from `answers`, or never when it is
+ * `"hang"`.
+ */
+export function unavailableFirstProvider(
+	causes: unknown[],
+	answers: FakeAnswers | "hang",
+	{ delayMs = 0 } = {},
+): RecordingProvider {
+	const provider = recording(async (input) => {
+		const cause = causes[provider.calls.length - 1];
+		if (provider.calls.length > causes.length) {
+			if (answers === "hang") return new Promise(() => {});
+			return fakeProvider(answers).answer(input);
+		}
+		await new Promise((resolve) => setTimeout(resolve, delayMs));
+		throw cause;
+	});
+	return provider;
+}

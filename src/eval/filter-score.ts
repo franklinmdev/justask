@@ -30,6 +30,7 @@ import {
 	measuresOf,
 	type Verdict,
 } from "./score.ts";
+import { transportFailures } from "./transport.ts";
 
 /** A field the filter got wrong: a wrong or held value, or a value where none belongs. */
 export type FilterMiss = {
@@ -78,6 +79,10 @@ export type FilterReport = {
 	fields: Record<string, FieldStats>;
 	/** Null when the provider did not report every call's cost. */
 	costPerCallUsd: number | null;
+	/** Error rows a provider transport failure left unanswered (#93); none in a log saved before the rule. */
+	transport: number;
+	/** Rows where ask called the provider once more (ADR 0013); none in a log saved before it. */
+	retried: number;
 	/** The provider's latency around the run; null for a run saved before probes. */
 	window: ProbeWindow | null;
 	/** Filled and wrong first, surest first; then held and wrong, in set order. */
@@ -253,6 +258,7 @@ export function scoreFilterRun(
 
 	const retuned = names.some((name) => gates[name] !== run.gates[name]);
 	const window = probeWindow(run.probes);
+	const transport = transportFailures(run.rows).length;
 	return {
 		gates,
 		retuned,
@@ -270,9 +276,11 @@ export function scoreFilterRun(
 		leaked: leaked.map(({ row }) => row.id),
 		fields,
 		costPerCallUsd: costPerCall(run.rows),
+		transport,
+		retried: run.rows.filter(({ retried }) => retried).length,
 		misses,
 		window,
-		verdict: retuned ? null : judge(run.killLines, measures, window),
+		verdict: retuned ? null : judge(run.killLines, measures, window, transport),
 	};
 }
 

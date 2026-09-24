@@ -50,6 +50,15 @@ export type ProviderResult = Usage & {
 	answers: ProviderAnswer;
 };
 
+/**
+ * Thrown by an adapter when the service failed to answer at all, not the
+ * answer: an overload status such as 529, another 5xx, or no connection.
+ * `ask` calls once more within the same timeout (ADR 0013).
+ */
+export class ProviderUnavailableError extends Error {
+	override name = "ProviderUnavailableError";
+}
+
 /** The model service that answers questions. It picks; it never writes a value (ADR 0002). */
 export type Provider = {
 	answer(input: ProviderInput): Promise<ProviderResult>;

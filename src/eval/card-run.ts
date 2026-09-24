@@ -15,6 +15,7 @@ import { HELD } from "./held.ts";
 import { checkKillLines, type KillLines } from "./kill-lines.ts";
 import { readRunLog, writeRunLog } from "./log.ts";
 import { type Probe, type Probes, probeSender } from "./probe.ts";
+import { type LoggedError, loggedError } from "./transport.ts";
 
 type Described = { id: string; description: string };
 /** A catalog candidate as logged: what the provider read, and what it implies for another field (ADR 0012). */
@@ -46,9 +47,11 @@ export type CardRunRow = CardEvalRow & {
 	latencyMs: number;
 	/** False when the provider was never asked. A card asks its intent on every request, so only a failure before the call leaves it false. */
 	called: boolean;
+	/** The provider was unavailable on the first call and called once more (ADR 0013); absent otherwise, and from logs written before it. */
+	retried?: true;
 	/** What the call cost, when the provider reports it (ADR 0006). */
 	costUsd?: number;
-	error?: { kind: "provider" | "timeout"; message: string };
+	error?: LoggedError;
 };
 
 /**
@@ -157,12 +160,12 @@ async function runRow<F extends CardFields>(
 		timeoutMs,
 	}: Pick<RunCardEvalInput<F>, "card" | "provider" | "facts" | "timeoutMs">,
 ): Promise<CardRunRow> {
-	let called = false;
+	let calls = 0;
 	let answers: ProviderAnswer = {};
-	// The provider as the flow calls it, noting that it was called and what it answered.
+	// The provider as the flow calls it, noting each call and what it answered.
 	const watched: Provider = {
 		async answer(input) {
-			called = true;
+			calls++;
 			const result = await provider.answer(input);
 			answers = result.answers;
 			return result;
@@ -210,9 +213,10 @@ async function runRow<F extends CardFields>(
 		...(command && { command }),
 		...(Object.keys(pairs).length > 0 && { pairs }),
 		latencyMs,
-		called,
+		called: calls > 0,
+		...(calls > 1 && { retried: true }),
 		...(costUsd !== undefined && { costUsd }),
-		...(error && { error: { kind: error.kind, message: error.message } }),
+		...(error && { error: loggedError(error) }),
 	};
 }
 

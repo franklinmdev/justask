@@ -15,24 +15,41 @@ const probability = (none: number | null, several: number | null) =>
 		? "no answer"
 		: `none ${none.toFixed(2)}${several === null ? "" : `, several ${several.toFixed(2)}`}`;
 
+/** A count of error rows, and how many of them were transport failures (#93). */
+const errorCount = (errors: number | null, transport = 0) =>
+	`${number(errors)}${transport ? ` (${transport} transport)` : ""}`;
+
 /**
  * The verdict and its lines. A run in a slow window whose quality lines
- * pass waits on its latency line, measured again in a normal window.
+ * pass waits on its latency line, measured again in a normal window, and
+ * one over its errors line only by transport failures waits on those rows,
+ * sent again (#93).
  */
 function verdictLines(verdict: Verdict): string[] {
+	const waiting = [
+		verdict.latencyPending && "LATENCY",
+		verdict.errorsPending && "ERRORS",
+	].filter(Boolean);
 	const outcome = verdict.pass
 		? "PASS"
-		: !verdict.latencyPending
+		: waiting.length === 0
 			? "FAIL"
-			: "LATENCY PENDING (slow window: the latency line is measured again in a normal one)";
+			: `${waiting.join(" AND ")} PENDING (${[
+					verdict.latencyPending &&
+						"slow window: the latency line is measured again in a normal one",
+					verdict.errorsPending &&
+						"transport failures: those rows are sent again in a normal window",
+				]
+					.filter(Boolean)
+					.join("; ")})`;
 	return [
 		`## Verdict: ${outcome}`,
 		"",
 		"| Measure | Kill line | Actual | |",
 		"|---|---|---|---|",
 		...verdict.lines.map(
-			({ measure, line, atLeast, actual, pass, pending }) =>
-				`| ${measure} | ${atLeast ? "at least" : "at most"} ${line} | ${number(actual)} | ${pending ? "pending" : pass ? "pass" : "FAIL"} |`,
+			({ measure, line, atLeast, actual, transport, pass, pending }) =>
+				`| ${measure} | ${atLeast ? "at least" : "at most"} ${line} | ${measure === "errors" ? errorCount(actual, transport) : number(actual)} | ${pending ? "pending" : pass ? "pass" : "FAIL"} |`,
 		),
 		"",
 	];
@@ -73,7 +90,7 @@ export function formatReport(report: Report, flips?: Flip[]): string {
 	lines.push(
 		"## Measures",
 		"",
-		`- Rows: ${report.rows} · errors: ${measures.errors} · p95 ${number(measures.p95Ms)} ms · cost per call ${cost === null ? "unknown" : `$${cost.toFixed(7)}`}`,
+		`- Rows: ${report.rows} · errors: ${errorCount(measures.errors, report.transport)}${report.retried ? ` · retried ${report.retried}` : ""} · p95 ${number(measures.p95Ms)} ms · cost per call ${cost === null ? "unknown" : `$${cost.toFixed(7)}`}`,
 		...windowLines(report.window),
 		`- Item rows: ${counts.items} · filled: ${counts.covered} · coverage ${number(measures.coverage)}`,
 		`- Filled with the expected item: ${counts.right} of ${counts.covered} · exact ${number(measures.exact)}`,
@@ -146,7 +163,7 @@ export function formatFilterReport(
 	lines.push(
 		"## Measures",
 		"",
-		`- Rows: ${report.rows} · errors: ${measures.errors} · p95 ${number(measures.p95Ms)} ms · cost per call ${cost === null ? "unknown" : `$${cost.toFixed(7)}`}`,
+		`- Rows: ${report.rows} · errors: ${errorCount(measures.errors, report.transport)}${report.retried ? ` · retried ${report.retried}` : ""} · p95 ${number(measures.p95Ms)} ms · cost per call ${cost === null ? "unknown" : `$${cost.toFixed(7)}`}`,
 		...windowLines(report.window),
 		`- Filterable rows: ${counts.filterable} · every expected field filled: ${counts.covered} · coverage ${number(measures.coverage)}`,
 		`- Filled with the exact filter object: ${counts.exact} of ${counts.covered} · exact ${number(measures.exact)}`,
@@ -231,7 +248,7 @@ export function formatCardReport(
 	lines.push(
 		"## Measures",
 		"",
-		`- Rows: ${report.rows} · errors: ${measures.errors} · p95 ${number(measures.p95Ms)} ms · cost per call ${cost === null ? "unknown" : `$${cost.toFixed(7)}`}`,
+		`- Rows: ${report.rows} · errors: ${errorCount(measures.errors, report.transport)}${report.retried ? ` · retried ${report.retried}` : ""} · p95 ${number(measures.p95Ms)} ms · cost per call ${cost === null ? "unknown" : `$${cost.toFixed(7)}`}`,
 		...windowLines(report.window),
 		`- Cards (record and ambiguous rows): ${counts.cards} · fields expected: ${counts.fieldsExpected} · filled: ${counts.fieldsFilled} · coverage ${number(measures.coverage)}`,
 		`- Cards that filled a field: ${counts.filled} · nothing to correct: ${counts.exact} · exact ${number(measures.exact)}`,
