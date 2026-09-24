@@ -1,5 +1,6 @@
 import type { CardEvalKind } from "justask/eval";
 import type { Language } from "../src/content/types.ts";
+import { ROUND7_SHAPES } from "./card-shapes.ts";
 
 type SetInfo = {
 	verdict: boolean;
@@ -29,6 +30,8 @@ export const CARD_SETS = {
 	round4: { verdict: true },
 	round5: { verdict: true },
 	round6: { verdict: true },
+	/** Round 7's, four times the size, every row named by one approved shape (#86, #88). */
+	round7: { verdict: true, scale: 4, shapes: ROUND7_SHAPES },
 	/** The gates are fixed from its runs. */
 	dev: { verdict: false },
 	/** #57's probes: commands on a recorded expense, and records with the command words in them. */

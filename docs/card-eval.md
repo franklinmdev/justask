@@ -1143,3 +1143,18 @@ The tags split each of #86's two tags-ambiguous shapes in two, bare and with a p
 | a greeting or a question about the demo | the intent | `hi, what can you do?` |
 
 Examples show the construction only; none is a drafted row, and a drafted row repeats no request of any set, probe, suggestion or recording.
+
+### Round 7 sets
+
+Files in `demo/eval/`, drafted to the shapes above against every set in `demo/eval/` (probes included), the demo's suggestions and recordings, and the provider probe, approved by the owner in seven batches of 24 rows on 2026-09-24, English beside Spanish, and frozen by checksum in `test/demo-card-eval.test.ts` in the commit before the first round 7 call. Run logs `demo/eval/runs/card-<language>-round7-<n>.jsonl`.
+
+| File | Rows | record | ambiguous | nothing |
+|---|---|---|---|---|
+| `card-en.round7.jsonl` | 168 | 112 | 32 | 24 |
+| `card-es.round7.jsonl` | 168 | 112 | 32 | 24 |
+
+- **Quotas:** tags in all 112 records, the day in 96, the amount in 108, the vendor in 84, every vendor in four records or more, 28 records with no vendor of the catalog; eight ambiguous rows hold each field. The test holds every row to its shape's kind and count.
+- **No order carried over:** the rows were drafted by shape and shuffled once, with the same order in both languages; row N shares its shape and kind across languages, which the test checks.
+- **Checked with no call:** the code holds the ten nothing rows with a listed verb and a reference (`undo that expense`, `quite ese gasto de Nubalia`) and the vendor of the four named-pair rows in each language, and no record. One nothing row also has a tags pair in English alone (`does a hotel minibar count as meals or travel?`); it expects nothing either way.
+- The same checks as rounds 1 to 6 hold: no request repeats any other set, probe, suggestion or recording, every expected day and amount is one the parser builds on Wednesday 2026-09-23, and every held one is held by the parser's reading or by two candidates.
+- Kill lines, measures and procedure as round 6, under the latency rule. Run 1 gives the verdict; run 2 reports flips only.
