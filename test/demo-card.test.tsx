@@ -92,6 +92,12 @@ const answers: Record<string, FakeAnswers> = {
 		tagged: ["meals"],
 		amount: "a0",
 	}),
+	// Copying someone on a recorded expense, read as a new one: the code holds it (#99).
+	"cópiale a contabilidad la factura de $210 de Lindero": answer({
+		vendor: question(vendors, "lindero"),
+		tagged: ["office"],
+		amount: "a0",
+	}),
 	// A named pair, its vendor picked above the gate: the code holds it.
 	"Tallyroot or Cloudberth, $75 yesterday": answer({
 		vendor: question(vendors, "tallyroot"),
@@ -418,6 +424,23 @@ describe("the demo's card page", () => {
 		).toBeDefined();
 		expect(save("Guardar gasto").getAttribute("aria-disabled")).toBe("true");
 		await expectNoAxeViolations(container);
+	});
+
+	it("holds the card on copying someone on an expense already recorded, a send the label alone left open (#99)", async () => {
+		const { user } = renderDemo({ url: "/?case=form&lang=es" });
+
+		await user.type(
+			screen.getByRole("searchbox", { name: "Describa el gasto" }),
+			"cópiale a contabilidad la factura de $210 de Lindero{Enter}",
+		);
+		await screen.findByText(/^Nada completado\./);
+
+		expect(vendor("Proveedor").value).toBe("");
+		expect(
+			within(
+				panel("Qué pasó").getByRole("region", { name: "¿Gasto nuevo?" }),
+			).getByText(/\(“cópiale”, “la factura”\)/),
+		).toBeDefined();
 	});
 
 	it("holds the vendor on a named pair, whatever its pick, says which words, and fills the rest", async () => {
