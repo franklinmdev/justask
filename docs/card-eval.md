@@ -14,6 +14,8 @@
 
 **Round 6 (#79): the card with the vendor's office fill fails on English exact alone; Spanish passes every line.** Office is filled from an office-only vendor where the tags left a gap ([ADR 0012](adr/0012-card-fills-an-implied-value-in-a-gap.md)), its false-fill cost measured first on probes. English covers 0.79 but fixes 29 of 33 cards (0.879 against 0.9), every correction a tag the provider picked; Spanish covers 0.766, against round 5's 0.694. The rule filled no field wrong in any run. The owner ruled on 2026-09-23 that card measurement moves next to [#86](https://github.com/franklinmdev/justask/issues/86), with no round 7 before it. See Round 6: result below; rounds 1 to 5 are unchanged.
 
+**Before round 7 (#86): the tag each case gets, the set size and a cap per row shape are written, with no call.** Printing billed to a client is `client` alone, a trip for a client event with no billing is `travel` alone, and a maybe-billable row expects its certain tags; round 7's sets are four times the size (168 rows per language, one card worth 0.008 of exact or less), with at most two rows per shape. No kill line changes and no frozen round is re-scored. See Before round 7 below.
+
 **Latency (#65): from the next verdict run on, every run sends a fixed provider probe before and after its rows, and a run whose probes are more than twice the baseline leaves a failing latency line pending, to be measured again in a normal window.** See Latency below; round 4 stays a FAIL.
 
 **Hypothesis:** on the demo's fictional vendors, the expense card turns a typed expense into the record a person means (vendor, tags, day, amount), leaves a field empty when it cannot tell, and fills nothing when the request asks for no new expense, in English and in Spanish, on Enter. The lab measured a salon appointment card; this is a new measurement.
@@ -926,7 +928,7 @@ English: 1 flip, `Tallyroo bank reconciliation add-on` filled its day. Coverage 
 
 ### Next
 
-The owner ruled on 2026-09-23, after this result, that card measurement moves next to [#86](https://github.com/franklinmdev/justask/issues/86), with no round 7 before it. Round 6's FAIL stands as recorded.
+The owner ruled on 2026-09-23, after this result, that card measurement moves next to [#86](https://github.com/franklinmdev/justask/issues/86), with no round 7 before it. Round 6's FAIL stands as recorded. The decisions are in Before round 7, below.
 
 ### Run logs
 
@@ -935,3 +937,80 @@ The owner ruled on 2026-09-23, after this result, that card measurement moves ne
 - Run 2: `demo/eval/runs/card-en-round6-2.jsonl`, `demo/eval/runs/card-es-round6-2.jsonl`
 
 Each rescores with `scoreCardRun(await readCardRun(path), { gates })` and no call; the scorer fills the vendor's office from the logged implications at any gate.
+
+## Before round 7: tags, set size and shapes (#86)
+
+Carried by [#86](https://github.com/franklinmdev/justask/issues/86), decided with no provider call. Rounds 1 to 6 above stand as recorded, and none is re-scored against what follows: this section decides the expected values of rows not yet written, and nothing else. No kill line, measure, gate, label or code the demo serves changes. Round 7 is carried by [#88](https://github.com/franklinmdev/justask/issues/88) and follows this procedure. The owner approved the four disputed tag rulings and the set size of 168 rows per language on 2026-09-23, as written below; #88 builds round 7 to the shape cap as well.
+
+Rounds 2 to 6 all failed, on different lines, and round 6 failed on one line by one card: English exact at 0.879 (29 of 33 cards), where 30 of 33 would have passed. Three things made one row decide a verdict: rows whose expected tags the written rule did not settle, 33 cards per language where one card moves exact by 0.03, and the same row shapes carried at the same positions from round to round.
+
+### Tag cover
+
+The rule a round 7 row's expected tags follow. A tag covers what it lists and nothing it does not; a record expects every tag whose cover it meets, and no other. No cover contradicts the labels the demo serves since round 2 (Round 2: Tag descriptions, above): each names more cases than its label lists (travel's label has no rideshares, buses or tolls), and the disputed cases below turn on the office and client labels' own words, what keeps the business running and "for certain, not when it says maybe". Where the sets drifted, it was from those words. Whether a label should list more is the card's question, not this one: no label changes here.
+
+- **meals: anything eaten or drunk**, by staff or with a client: lunch, dinner, coffee, drinks, snacks, catering, a cake, and pantry stock (coffee beans, snacks, bottled water). Not the machine that makes it: a coffee machine, its rental and its servicing are `office`.
+- **travel: getting somewhere and staying there**: flights, hotels, taxis and rideshares, trains, buses, and parking or tolls on the way. A meal on a trip is `meals` alone: what the money bought decides, not where.
+- **office: what the business buys to run itself**: supplies, equipment, software, hosting, repairs, cleaning, printing, couriers, payroll and HR, legal work and insurance, whatever the words for them. Not food and drink, not trips, and **not goods or services bought for a client and billed to them**, which are `client` alone (below).
+- **client: a client pays or a client shares it, said for certain.** Billable to a client, billed back, charged to the client's account; or a meal, a ride or an event with a client present. Not a purpose alone (`for the client workshop`, `for the client's launch`), not a maybe (`might be`, `possibly`, `may end up billable`), and not a client named as a place.
+- **No tag** where no cover is met: a staff gift, a donation, event tickets, apparel, as the false-fill probes already expect.
+
+`meals` and `travel` say what was bought, so a billable client dinner is `meals` + `client` and a billable flight `travel` + `client`. `office` says the business used it itself, so printing billed through to a client is `client` alone. The asymmetry is deliberate: it is how a person tags a cost they pass on.
+
+**Rounds 2 to 6's disputed cases, decided:**
+
+| Case | Rows | Frozen expectation | Under the cover | Why |
+|---|---|---|---|---|
+| Printing, a courier or a server upgrade for a client, billable to the client | row 24 in rounds 2 to 6; round 1's `en-r-24` and `en-r-27` | `office` + `client` | `client` | Billed through, not used by the business to run itself. |
+| Travel for a client event, nothing said about billing | row 6 in rounds 1 to 6 (`for the client visit`, `workshop`, `kickoff`, `pitch`); English dropped `client` in rounds 3, 4 and 6 | `travel` + `client` | `travel` | A purpose alone. Round 1's own rule already read "billable to or spent with a client". |
+| A trip or a service that may be billable | row 32 in rounds 1 to 6 | tags held | the certain tags alone (`meals`, `travel` or `office`, whichever was bought); not an ambiguous row | The client label says "not when it says maybe" since round 2, so the certain tag is what the words say and the row holds nothing. |
+| Beanhaven or Cafetal, nothing named that was bought | row 31 (`Beanhaven, $45`, `Beanhaven order`, `Beanhaven delivery`) | tags held | tags held | The vendor sells beans (`meals`) and machine rental (`office`); nothing in the words chooses. |
+| Beanhaven or Cafetal, a place named | row 31 in rounds 4 and 5 (`for the break room`, `para la recepción`) | tags held | tags held | A place is not what was bought: beans and a machine both sit in a break room. |
+| Beanhaven or Cafetal, a restock | row 31 in round 6 (`restock for the kitchenette`) | tags held | `meals` | A restock is of what runs out, the beans; a rental is not restocked. |
+
+**What this does not show.** On the first three cases the cover now agrees with most of what the provider answered in rounds 2 to 6, and on the restock with its Spanish answer (English filled `meals` + `office`). Not with all of it: Spanish filled `client` on row 6 in rounds 3, 4 and 6 (0.60, 0.50, 0.65), and round 1's maybe row filled `client` in both languages (0.74, 0.63). The cover was chosen for what a person writes, and each reason above stands without the provider; but round 7 cannot read those shapes as the card improving, since the rows changed and the card did not. Frozen rounds keep their expectations and their verdicts.
+
+**The two tags-ambiguous shapes for round 7.** With the maybe row a record, the tags field keeps its share of ambiguous rows through two shapes where no tag is certain: a vendor that sells in two tags with nothing named that was bought (Beanhaven or Cafetal, a place at most), and a purchase at a store outside the catalog that sells across tags, with nothing named that was bought (`$60 at the warehouse club`, snacks or supplies). Both expect the tags held; the Row shapes cap below applies to each.
+
+**One interaction with ADR 0012.** A billed-through row at an office-only vendor whose tags all answer `not_mentioned` (the `client` pick missed) gets `office` from the vendor, which the cover calls a correction. Without the rule it would be an empty tags field, also a miss; the rule changes which, not whether.
+
+### Set size
+
+The same mix as rounds 1 to 6 (28 records, 8 ambiguous rows, 6 nothing rows in 42), four times over, per language. Past rounds' cards filled 32 to 36 of the 36 card rows, and the cards expect 124 fields in 42 rows.
+
+| Rows per language | record | ambiguous | nothing | Cards that fill | One card, exact | One field, coverage | One row, held ambiguous | Calls per run |
+|---|---|---|---|---|---|---|---|---|
+| 42 (rounds 1 to 6) | 28 | 8 | 6 | 32 to 36 | 0.028 to 0.031 | 0.008 | 0.125 | 51 |
+| 126 (three times) | 84 | 24 | 18 | 96 to 108 | 0.009 to 0.010 | 0.003 | 0.042 | 135 |
+| **168 (four times, proposed)** | **112** | **32** | **24** | **128 to 144** | **0.007 to 0.008** | **0.002** | **0.031** | **177** |
+
+- **Four times, not three.** Three times reaches 0.01 per card only when at least 100 cards fill, and past rounds say a card row fills 89 to 100% of the time: 96 cards would give 0.0104. Four times stays under 0.008 at the lowest fill seen.
+- **Ambiguous rows, eight per field**, as two per field now. Held ambiguous moves by 0.031 per row against round 6 English's slack of 0 (0.75, on its line).
+- **Calls per run:** 168 rows, 3 discarded warm-up calls and 6 measured probes (Latency, above). Two runs per language, as every round: 708 calls.
+- **Cost:** at the card's measured cost per call, the figure #51's calculator scales (round 6: $0.0000870 English, $0.0000922 Spanish), 177 calls cost at most $0.0163 a run, and the whole round at most $0.065. The probes ask one question, so this is an upper bound.
+- **Run time:** the runner sends one request at a time (`runCardEval`), so a run takes about its calls times their latency: 177 calls at round 6's highest p95 (424 ms, Spanish run 2) is about 75 s, and at its rows' medians, 231 to 260 ms in its four logs, about 41 to 46 s. A p95 is not a ceiling: round 6 had a 1,496 ms row and a probe timed out at 2 s, so a slow window runs longer.
+- **The real cost is drafting and approval.** 336 rows across two languages, every one checked against every set and probe in `demo/eval/`, approved in batches of ten as before: about 17 batches per language pair, where rounds 3 to 6 took five.
+
+**What the size does not buy.** Resolution is how far one card moves exact; it is not how sure the verdict is. A card whose true exact is 0.9 still fails about half its verdict runs at any size, since the line sits on it; the band a run lands in narrows from about ±0.05 at 33 cards (one standard error) to about ±0.026 at 132. At four times, a card near its line is decided by many rows rather than one, which is what #86 asks, and a verdict near the line remains close. The kill lines are not up for change here.
+
+**Nothing rows, 6 to 24.** `invented <= 0` reads a count, so four times the nothing rows is four times the chances to invent one: the line is stricter at this size, not looser. Rounds 4 to 6 invented nothing on any of their 72 nothing row runs.
+
+### Row shapes
+
+Rounds 2 to 6 were drafted on round 1's positions (round 6: "the same shape as rounds 4 and 5, row for row"), so the same construction sat at row 24 in five rounds, and one systematic reading of it moved exact by 0.03 in each. For round 7 and after:
+
+- **A shape** is the construction a row's expected value turns on, beyond naming a vendor, what was bought, a day and an amount plainly: `billable to the client` on a purchase that is not meals or travel, a purpose that names a client, a maybe, a vendor that sells in two tags, a named pair with `and` or `or`, a third vendor beside a pair, a vendor paraphrase, a typo, a vendor not in the catalog, a foreign currency, two amounts, a period for a day, a delete, a change that sets a value, a send, and so on.
+- **At most two rows per shape per language.** Two rows of 128 or more cards are at most 0.016 of exact even if both miss, under round 6's gap of 0.021 and well under one card's 0.03 at 42 rows. A weakness that recurs across many shapes still shows; one construction no longer carries a verdict alone.
+- **The shape list comes first.** Before drafting, the round 7 ticket lists every shape and its rows per kind (record, ambiguous per field, nothing), and the owner approves it before any row is drafted. Each row names its shape, and each row with a tag shape names the clause of the tag cover that decides its tags. A row whose expected tags the cover does not settle is not written.
+- **No positions carried over.** Round 7 is not drafted on an earlier round's row order. English row N and Spanish row N still share a shape, so the languages read side by side.
+- **The standing fixtures stay, under the cap.** The pair hold, the third vendor beside a pair, the delete the code holds, and the change and send the label alone holds are measured on purpose every round; each counts as a shape and gets its two rows like any other.
+- **Coverage of the catalog scales with the set:** every vendor at least four times, a quarter of records with no vendor, a seventh of records with no day, and the other shares as rounds 1 to 6 wrote them, each within the per-shape cap (so two foreign-currency rows, not four).
+- **Enforced in the test.** The round 7 ticket adds the shape to each row of the set (a field `parseCardEvalSet` reads) and a check to `test/demo-card-eval.test.ts` that no shape exceeds two rows per language, beside the checks that already hold: no repeat of any set, probe, suggestion or recording, every expected day and amount built by the parser on Wednesday 2026-09-23, and every held one held by the parser's reading or by two candidates.
+
+### Procedure for round 7
+
+Carried by [#88](https://github.com/franklinmdev/justask/issues/88).
+
+1. #88 drafts the shape list (Row shapes, above) and the owner approves it.
+2. Rows are drafted to it, 168 per language in the mix above, their tags by the tag cover, and approved in batches; the shape field and the cap check land, and the sets are frozen by checksum in `test/demo-card-eval.test.ts` in the commit before the first call.
+3. The card, gates, labels, kill lines and `PROBE_BASELINE_MS` are round 6's as `demo/server/handler.ts` and `demo/eval/probe.ts` serve them, and stay so through round 7: #88 changes only the sets.
+4. Run 1 per language gives the verdict, under the latency rule; run 2 reports flips only. Results are recorded here as in rounds 1 to 6.
