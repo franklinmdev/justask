@@ -10,9 +10,10 @@ import type {
 	Joiners,
 	SeveralCatalogField,
 } from "justask";
-import type { Cost } from "../saved.ts";
-
 export type Language = "en" | "es";
+
+/** The clicks and menus the person works through to set controls by hand. */
+export type Cost = { clicks: number; menus: number };
 
 /** The showcase's cases, in the order the tabs show them. */
 export type Case = "table" | "form" | "search";
@@ -277,7 +278,7 @@ export type Copy = {
 	recorded: (date: string) => string;
 	/** What a screen reader hears as the recorded run starts. */
 	replaying: (date: string, request: string) => string;
-	/** Beside the box: one sentence against the clicks and menus that the controls the answer set take by hand. */
+	/** Beside the box: one sentence against the clicks and menus it takes to fill by hand the controls the answer filled. */
 	saved: (cost: Cost) => string;
 	filter: FilterCopy;
 	card: CardCopy;

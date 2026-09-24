@@ -1,11 +1,10 @@
 import type { Usage } from "justask";
 import type { SearchError } from "justask/react";
 import type { CSSProperties } from "react";
-import type { Content, HeldReason } from "./content/types.ts";
+import type { Content, Cost, HeldReason } from "./content/types.ts";
 import { formats } from "./format.ts";
 import { dayOf, type Recording } from "./recording.ts";
 import type { Replay } from "./replay.ts";
-import type { Cost } from "./saved.ts";
 
 /**
  * Not measured yet: the demo is where the pause gets measured, so the round
@@ -123,8 +122,8 @@ export function CaseHead({
 }
 
 /**
- * Beside the box: the one sentence against the clicks and menus the controls
- * the answer set take by hand. Nothing while the answer set none; dimmed
+ * Beside the box: the one sentence against the clicks and menus it takes to
+ * fill by hand the controls the answer filled. Nothing while it filled none; dimmed
  * while the next answer is on its way.
  */
 export function Saved({
