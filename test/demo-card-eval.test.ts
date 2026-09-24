@@ -9,6 +9,12 @@ import {
 	scoreCardRun,
 } from "justask/eval";
 import { describe, expect, it } from "vitest";
+import {
+	CARD_SET_NAMES,
+	type CardSet,
+	cardSetFile,
+	givesVerdict,
+} from "../demo/eval/card-sets.ts";
 import { fixGate, poolFields } from "../demo/eval/gates.ts";
 import { CARD_KILL_LINES } from "../demo/eval/kill-lines.ts";
 import { CARD_GATES, demoCard, FACTS } from "../demo/server/handler.ts";
@@ -28,44 +34,14 @@ const TODAY = "2026-09-23";
 const FIELDS: ExpenseName[] = ["vendor", "tags", "spent_on", "total"];
 
 describe.each([english, spanish])("the card sets in $language", (content) => {
-	const evalSet = parseCardEvalSet(read(`card-${content.language}.jsonl`));
-	const devSet = parseCardEvalSet(read(`card-${content.language}.dev.jsonl`));
-	const round2Set = parseCardEvalSet(
-		read(`card-${content.language}.round2.jsonl`),
-	);
-	const round3Set = parseCardEvalSet(
-		read(`card-${content.language}.round3.jsonl`),
-	);
-	const round4Set = parseCardEvalSet(
-		read(`card-${content.language}.round4.jsonl`),
-	);
-	const round5Set = parseCardEvalSet(
-		read(`card-${content.language}.round5.jsonl`),
-	);
-	const round6Set = parseCardEvalSet(
-		read(`card-${content.language}.round6.jsonl`),
-	);
-	const diagSet = parseCardEvalSet(read(`card-${content.language}.diag.jsonl`));
-	const pairSet = parseCardEvalSet(read(`card-${content.language}.pair.jsonl`));
-	const officeSet = parseCardEvalSet(
-		read(`card-${content.language}.office.jsonl`),
-	);
-	const notOfficeSet = parseCardEvalSet(
-		read(`card-${content.language}.notoffice.jsonl`),
-	);
-	const allSets = [
-		...devSet,
-		...evalSet,
-		...round2Set,
-		...round3Set,
-		...round4Set,
-		...round5Set,
-		...round6Set,
-		...diagSet,
-		...pairSet,
-		...officeSet,
-		...notOfficeSet,
-	];
+	const sets = Object.fromEntries(
+		CARD_SET_NAMES.map((set) => [
+			set,
+			parseCardEvalSet(read(cardSetFile(content.language, set))),
+		]),
+	) as Record<CardSet, CardEvalRow[]>;
+	const devSet = sets.dev;
+	const allSets = Object.values(sets).flat();
 	const card = demoCard(content);
 	const rows = (set: CardEvalRow[], kind: CardEvalKind) =>
 		set.filter((row) => row.kind === kind);
@@ -89,14 +65,9 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 		}
 	});
 
-	it.each([
-		["round 1", evalSet],
-		["round 2", round2Set],
-		["round 3", round3Set],
-		["round 4", round4Set],
-		["round 5", round5Set],
-		["round 6", round6Set],
-	])(
+	it.each(
+		CARD_SET_NAMES.filter(givesVerdict).map((set) => [set, sets[set]] as const),
+	)(
 		"give the %s set 28 records, 2 ambiguous rows per field and 6 with nothing to record",
 		(_, set) => {
 			const records = rows(set, "record");
