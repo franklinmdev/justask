@@ -3,7 +3,8 @@
 // languages, to the deployed demo through Cloudflare Access, one at a time,
 // `rounds` times over; real Jev calls on the owner's key, on the Worker.
 // Reads the Access service token from the environment or from .env, and
-// prints the run's window, to read the CPU time from Workers Logs
+// prints each request's status and wall time and the run's window; the CPU
+// time is read from `wrangler tail --format json`, started first
 // (docs/workers.md, Measuring CPU).
 //
 //   node --conditions=source demo/worker/measure.ts <deployed url> [rounds]

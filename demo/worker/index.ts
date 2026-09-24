@@ -12,6 +12,7 @@ export function createWorker(provider: Provider): {
 	fetch(request: Request): Promise<Response>;
 } {
 	const handle = createDemoHandler(provider, { onError: logError });
+	// The runtime also passes env and ctx, which the handler has no use for.
 	return { fetch: (request) => handle(request) };
 }
 
