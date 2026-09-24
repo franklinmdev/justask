@@ -55,8 +55,10 @@ const ASSIGNMENT = /^\s*(?:export\s+)?[A-Za-z_][\w.-]*\s*=\s*(.*)$/;
 
 /**
  * The number of the first line Node's parser would skip or misread: not a
- * comment, not blank and not NAME=value, or a quote that never closes. Node
- * ignores such a line without a word, so a broken key would load as nothing.
+ * comment, not blank and not NAME=value, or a quote that never closes, or
+ * whose value runs into a line that reads as NAME=value. Node takes such
+ * lines without a word, so a broken key would load as nothing, or as part of
+ * the line above it.
  */
 function malformedLine(text: string): number | undefined {
 	const lines = text.split(/\r?\n/);
@@ -71,6 +73,9 @@ function malformedLine(text: string): number | undefined {
 		// A quoted value may run over lines, up to its closing quote.
 		const close = lines.findIndex((next, j) => j > i && next.includes(quote));
 		if (close === -1) return i + 1;
+		if (lines.slice(i + 1, close + 1).some((next) => ASSIGNMENT.test(next))) {
+			return i + 1;
+		}
 		i = close;
 	}
 	return undefined;
