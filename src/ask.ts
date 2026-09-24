@@ -101,28 +101,31 @@ export type AskError =
 export type Retried = { retried?: true };
 
 /**
+ * What a result carries of its provider call: the figures the provider
+ * reported (ADR 0006) and the retry mark (ADR 0013), each left out when unset.
+ */
+export type Spent = Usage & Retried;
+
+/**
  * Each result carries what the provider call used, when the provider reports
  * it: left out when there was no call, when the call failed or timed out, or
  * when the adapter cannot know (ADR 0006). A retried call's figures are the
  * second call's, since the first threw and reported none.
  */
-export type AskResult<T> = Usage &
-	Retried & {
-		search: SearchResult<T>;
-		error?: AskError;
-	};
+export type AskResult<T> = Spent & {
+	search: SearchResult<T>;
+	error?: AskError;
+};
 
-export type AskFilterResult<F extends Fields> = Usage &
-	Retried & {
-		filter: FilterResult<F>;
-		error?: AskError;
-	};
+export type AskFilterResult<F extends Fields> = Spent & {
+	filter: FilterResult<F>;
+	error?: AskError;
+};
 
-export type AskCardResult<F extends CardFields> = Usage &
-	Retried & {
-		card: CardResult<F>;
-		error?: AskError;
-	};
+export type AskCardResult<F extends CardFields> = Spent & {
+	card: CardResult<F>;
+	error?: AskError;
+};
 
 const SEARCH = "search";
 
@@ -550,10 +553,7 @@ export async function answer(
 }
 
 /** What a flow's result carries of its call: the figures it reported, and the retry mark. */
-function spent({
-	usage,
-	retried,
-}: { usage?: Usage } & Retried): Usage & Retried {
+function spent({ usage, retried }: { usage?: Usage } & Retried): Spent {
 	return { ...usage, ...(retried && { retried }) };
 }
 

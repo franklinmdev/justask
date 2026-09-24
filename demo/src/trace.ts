@@ -1,4 +1,4 @@
-import type { Usage } from "justask";
+import type { Spent } from "justask";
 import { useEffect, useState } from "react";
 
 /**
@@ -6,10 +6,7 @@ import { useEffect, useState } from "react";
  * it used when the provider reported it, and whether `ask` called the
  * provider twice (ADR 0013).
  */
-export type Trace = Usage & { request: string; ms: number; retried?: true };
-
-/** What the handler's body says of its call: the figures it sent and the retry mark. */
-type Spent = Omit<Trace, "request" | "ms">;
+export type Trace = Spent & { request: string; ms: number };
 
 /**
  * A `fetch` that times each call for the hood, reads what the call used from
