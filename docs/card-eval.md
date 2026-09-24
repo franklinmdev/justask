@@ -20,6 +20,8 @@
 
 **Round 8 (#97): the same card on fresh rows, under #93's retry and errors rule, fails on English invented alone; Spanish passes every line.** One English nothing row, a send no list names (`copy accounting on the Cloudberth bill`), filled a card in both runs (`new_record` 0.70 and 0.64); every other line passes in both languages with room (exact 0.957 and 0.95, coverage 0.869 and 0.841, held ambiguous 1 and 0.938). No row errored and no row retried in any of the four runs, so the round measured nothing of the retry. The owner ruled on 2026-09-24 that the FAIL stands: invented is a quality line, and row 60 is a card miss, not the provider's. The label fix and round 9 are carried by [#99](https://github.com/franklinmdev/justask/issues/99), and the retry is now counted in every run and measured whenever a transport failure occurs, not in a round of its own ([ADR 0013](adr/0013-ask-calls-an-unavailable-provider-once-more.md), amended). See Round 8: result below; rounds 1 to 7 are unchanged.
 
+**Copy probes and round 9 (#99): copying someone is a send, the label now says so, and round 9 passes in both languages and both runs.** The new label held every English copy probe; Spanish `cópiale` read as a new record with it too, so the owner added the Spanish copy verbs to the command list and no reference, and the label's measured cost is two of ten records that copy a document. On fresh rows of round 7's shapes, English run 1 clears every line (exact 0.956, coverage 0.843, invented 0, held ambiguous 0.969) and so does Spanish (0.941, 0.8, 0, 0.875); every nothing row held in all four runs, and no row errored or retried. See Copy probes and Round 9: result below; rounds 1 to 8 are unchanged.
+
 **Latency (#65): from the next verdict run on, every run sends a fixed provider probe before and after its rows, and a run whose probes are more than twice the baseline leaves a failing latency line pending, to be measured again in a normal window.** See Latency below; round 4 stays a FAIL.
 
 **Hypothesis:** on the demo's fictional vendors, the expense card turns a typed expense into the record a person means (vendor, tags, day, amount), leaves a field empty when it cannot tell, and fills nothing when the request asks for no new expense, in English and in Spanish, on Enter. The lab measured a salon appointment card; this is a new measurement.
@@ -1350,3 +1352,85 @@ Runs of 2026-09-24 with `jev-1.13.0`, the card at round 8's gates (intent 0.45),
 
 - copy: `demo/eval/runs/card-<en|es>-copy-<1|2>.jsonl` at the old label, `<3|4>` at the new, `card-es-copy-5.jsonl` with the Spanish copy verbs
 - copyrec: `demo/eval/runs/card-<en|es>-copyrec-<1|2>.jsonl` at the new label, `<3|4>` at the old, `card-es-copyrec-5.jsonl` with the Spanish copy verbs
+
+## Round 9: the copy label
+
+Carried by [#99](https://github.com/franklinmdev/justask/issues/99). The card's first verdict with the intent's `not_available` label naming copying someone on a record, and the Spanish copy verbs on the command list, both from the copy probes above ([ADR 0009](adr/0009-card-holds-commands-on-existing-records.md), amended). Nothing else changes: gates, kill lines, the other labels and `PROBE_BASELINE_MS` are round 8's, and the retry is counted in every run as #102 left it.
+
+**Code freeze:** the sets were frozen at `c408d89`. Main then moved to `ffcdb6f` (#102's retry count), merged into the branch before any round 9 call, so the round runs on branch `eval/99-card-round9` at `23c9ca5`, main `ffcdb6f` with the label, the verbs and the frozen sets, as the owner chose on 2026-09-24. The full suite, which rescores every saved card log it pins, passed on that commit before run 1.
+
+### Round 9 sets
+
+Round 7's shapes, reused as the owner chose on 2026-09-24, so rounds 7, 8 and 9 read side by side shape by shape. The rows are new, drafted against every set in `demo/eval/` (the copy probes included), the demo's suggestions and the provider probe, with about 30 drafts rewritten before approval where they read as an earlier row with a number changed. Approved by the owner in seven batches of 24 rows on 2026-09-24, English beside Spanish, and frozen by checksum in `test/demo-card-eval.test.ts` in the commit before the first round 9 call. Run logs `demo/eval/runs/card-<language>-round9-<n>.jsonl`.
+
+| File | Rows | record | ambiguous | nothing |
+|---|---|---|---|---|
+| `card-en.round9.jsonl` | 168 | 112 | 32 | 24 |
+| `card-es.round9.jsonl` | 168 | 112 | 32 | 24 |
+
+- **Quotas as rounds 7 and 8:** tags in all 112 records, the day in 96, the amount in 108, the vendor in 84, every vendor in four records or more, 28 records with no vendor of the catalog; eight ambiguous rows hold each field.
+- **No order carried over:** drafted by shape and shuffled once, with the same order in both languages; no row shares its shape with round 7's or round 8's row at the same position, checked with no call.
+- **Checked with no call:** the code holds the eight nothing rows with a listed verb and a reference and the vendor of the four named-pair rows in each language, and no record. One of the two `a send no list names` rows is a copy (`cc the office manager on the Brightmop invoice`, `ponga en copia a la gerente de oficina en la factura de Brisamar`), which no list names in either language, so the label alone holds it. One nothing row names two tags with `or` in English (`is a client dinner meals or client?`); it expects nothing either way.
+- The same checks as rounds 1 to 8 hold: no request repeats any other set, probe, suggestion or recording, every expected day and amount is one the parser builds on Wednesday 2026-09-23, and every held one is held by the parser's reading or by two candidates.
+
+## Round 9: result
+
+**Verdict: PASS in both languages, in both runs.** Runs of 2026-09-24 with `jev-1.13.0` on `23c9ca5`, round 8's gates (intent 0.45, vendor 0.7, tags 0.4, spent_on 0.8, total 0.9), the copy label and the Spanish copy verbs, the frozen round 9 sets, the same kill lines, and `PROBE_BASELINE_MS` of 235, today fixed at Wednesday 2026-09-23. Every run's probes were normal and no row errored, so no line is pending and nothing was remeasured.
+
+As #86 wrote for round 7, the rows changed: a pass on new rows says the card held on these, not that round 8's row would now hold. The copy probes are the evidence for that row's category.
+
+### Run 1: the verdict
+
+| Measure | Kill line | English | Spanish |
+|---|---|---|---|
+| exact | at least 0.9 | 0.956 (131 of 137 cards) | 0.941 (128 of 136 cards) |
+| coverage | at least 0.7 | 0.843 (413 of 490 fields) | 0.8 (392 of 490 fields) |
+| invented | at most 0 | 0 | 0 |
+| held ambiguous | at least 0.75 | 0.969 (31 of 32) | 0.875 (28 of 32) |
+| p95 | at most 1000 ms | 360 ms | 241 ms |
+| errors | at most 0 | 0 | 0 |
+| cost per call | | $0.0000874 | $0.0000925 |
+| probes, median against 235 ms | | 211 ms, normal | 194 ms, normal |
+| retried, recovered | | 0, 0 | 0, 0 |
+
+- **Every nothing row held, in both languages and both runs.** The two sends no list names read `new_record` 0.00 in all four runs, the copy row included; the highest `new_record` on any nothing row was 0.23 in English (`Friday's Swiftlane delivery should read $26`) and 0.33 in Spanish (`quite esa factura de Cazuela Azul`, which the code holds too).
+- **The retry was not exercised again:** no row of the four runs retried or errored, so the round cannot say whether it helps a visitor, and there is no retried row's cost to compare against the TypeSafe dashboard.
+
+### Filled and wrong
+
+| Row | Request | Shape | Expected | Got | Pick |
+|---|---|---|---|---|---|
+| en-r9-111 | Farwander flight to Reno for the client's site visit, $224 on Thursday | a trip whose purpose names a client | travel | travel + client | client yes 0.73 |
+| en-r9-154 | Beanhaven delivery to the boardroom, $49 on September 3 | tags held: the vendor that sells in two tags, a place named | held | meals | meals yes 0.63 |
+| en-r9-008 | Beanhaven restock of coffee and creamer, $52 on Monday | a restock at the vendor that sells in two tags | meals | meals + office | office yes 0.52 |
+| en-r9-062 | Papergrove poster board for the client presentation, $28 on Thursday | another purchase whose purpose names a client, not billed | office | office + client | client yes 0.51 |
+| en-r9-099 | taxi to the client's headquarters for the demo, $23 on Friday | a client named as a place | travel | travel + client | client yes 0.50 |
+| en-r9-068 | subway fare and a bagel on the way to the Albany office, $14 on Tuesday | two purchases in two tags | meals + travel | meals | travel not_mentioned 0.43 |
+| es-r9-158 | Cafetal para la sala de visitas, $36 el jueves | tags held: the vendor that sells in two tags, a place named | held | meals | meals yes 0.91 |
+| es-r9-068 | pasaje de metro y un bagel camino a la oficina de Albany, $14 el martes | two purchases in two tags | meals + travel | meals | travel not_mentioned 0.75 |
+| es-r9-154 | entrega del Cafetal a la sala de juntas, $49 el 3 de septiembre | tags held: the vendor that sells in two tags, a place named | held | meals | meals yes 0.67 |
+| es-r9-071 | pedido del Cafetal, $73 el 9 de septiembre | tags held: the vendor that sells in two tags, nothing named | held | meals | meals yes 0.57 |
+| es-r9-035 | hotel en Spokane para el arranque con el cliente, $149 el 13 de septiembre | a trip whose purpose names a client | travel | travel + client | client yes 0.52 |
+| es-r9-111 | vuelo de Rumbo Claro a Reno para la visita a la obra del cliente, $224 el jueves | a trip whose purpose names a client | travel | travel + client | client yes 0.51 |
+| es-r9-100 | cuenta del Cafetal, $58 el lunes | tags held: the vendor that sells in two tags, nothing named | held | meals | meals yes 0.41 |
+| es-r9-086 | arrendamiento de la máquina de café automática del Cafetal para el cuarto piso, $85 el 1 de septiembre | the coffee machine, rented or serviced | office | meals + office | meals yes 0.41 |
+
+Every correction on a card is a tag the provider picked; none came from a vendor's implied office, and no vendor, day or amount filled wrong.
+
+### Run 2: flips only
+
+English: 9 flips on 8 rows, no error, no retry. Exact 0.956 (130 of 136), coverage 0.829, held ambiguous 0.969, p95 279 ms, probes 243 ms, normal; every flip is a single field filled in one run and held in the other, none wrong. Spanish: 7 flips on 7 rows, no error, no retry. Exact 0.956 (130 of 136), coverage 0.796, held ambiguous 0.875, p95 395 ms, probes 194 ms, normal; `es-r9-086` dropped its wrong `meals` and `es-r9-111` held its tags, and the other flips are single fields filled in one run and held in the other. Both languages pass every line again.
+
+### What the misses say
+
+- **The line round 8 failed on holds:** invented is 0 in all four runs, and no nothing row came near the intent's gate.
+- **Beanhaven and Cafetal still draw `meals`** where the tags should hold, as in rounds 7 and 8: one English row in both runs and all four Spanish tags-held rows at this vendor, which is all of Spanish held ambiguous's misses (0.875 against 0.75).
+- **The same partings as rounds 7 and 8, on new rows:** a client named as a purpose or a place draws `client` (three English rows, two Spanish), and a fare with a snack drops `travel` in both languages.
+- **Spanish coverage is the lowest line for room,** 0.8 and 0.796 against 0.7, as in round 8 (0.841); English 0.843 and 0.829.
+
+### Run logs
+
+- Run 1: `demo/eval/runs/card-en-round9-1.jsonl`, `demo/eval/runs/card-es-round9-1.jsonl`
+- Run 2: `demo/eval/runs/card-en-round9-2.jsonl`, `demo/eval/runs/card-es-round9-2.jsonl`
+
+Each rescores with `scoreCardRun(await readCardRun(path), { gates })` and no call.
