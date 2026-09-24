@@ -226,9 +226,9 @@ describe("the shaped card sets", () => {
  * Frozen on the owner's approval, 2026-09-23 (#20, round 2 #44, round 3
  * #57, round 4 #63, round 5 #73, #77's office probes, #79's false-fill probes
  * and round 6; round 7 #88, round 8 #97, and #99's probes and round 9 on
- * 2026-09-24), before any call. A failure here
- * means the verdict's inputs changed after the fact: revert the edit, or log
- * the owner's call in docs/card-eval.md with a new checksum or value.
+ * 2026-09-24), before any call. A failure here means the verdict's inputs
+ * changed after the fact: revert the edit, or log the owner's call in
+ * docs/card-eval.md with a new checksum or value.
  */
 describe("the frozen card eval", () => {
 	it.each([
