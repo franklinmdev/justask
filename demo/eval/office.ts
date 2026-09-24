@@ -148,10 +148,13 @@ export function tagGaps(run: CardRun): TagGaps {
 			picks: picks
 				.map(({ id, label, p }) => `${id} ${label} ${p.toFixed(2)}`)
 				.join(", "),
-			gap: picks.every(
-				({ id, label }) =>
-					label === "not_mentioned" || (id === OFFICE && label === "yes"),
-			),
+			// A named pair holds the tags whatever their picks, as fillGap reads it.
+			gap:
+				!row.pairs?.tags &&
+				picks.every(
+					({ id, label }) =>
+						label === "not_mentioned" || (id === OFFICE && label === "yes"),
+				),
 			filled: falseFills.has(row.id),
 		});
 	}

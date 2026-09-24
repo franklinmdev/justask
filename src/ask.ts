@@ -402,8 +402,9 @@ function fillImplied(
 		// items imply nothing (checkImplies).
 		const { candidates, pick } = fields[name] as CatalogFieldResult<unknown>;
 		const winner = candidates.find(({ id }) => id === pick?.label);
-		for (const [target, ids] of Object.entries(winner?.implies ?? {})) {
-			if (!winner || target in value) continue;
+		if (!winner?.implies) continue;
+		for (const [target, ids] of Object.entries(winner.implies)) {
+			if (target in value) continue;
 			const held = fields[target] as ParsedFieldResult<unknown> & Paired;
 			const filled = fillGap(held.candidates, held.answers, ids, held.pair);
 			if (!filled) continue;

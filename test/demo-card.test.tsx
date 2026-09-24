@@ -117,6 +117,12 @@ const answers: Record<string, FakeAnswers> = {
 		day: "d0",
 		amount: "a0",
 	}),
+	"almuerzo con el equipo de Brisamar ayer, $60": answer({
+		vendor: question(vendors, "brisamar"),
+		tagged: ["meals"],
+		day: "d0",
+		amount: "a0",
+	}),
 	"almuerzo con Cazuela Azul ayer, $86.40": answer({
 		vendor: question(vendors, "cazuela"),
 		tagged: ["meals"],
@@ -494,23 +500,44 @@ describe("the demo's card page", () => {
 		},
 	);
 
-	it("adds nothing from the vendor when the provider tagged the expense", async () => {
-		const { user } = renderDemo();
+	it.each([
+		{
+			language: "English",
+			url: "/?case=form",
+			request: "lunch with the Brightmop crew yesterday, $60",
+			meals: "Meals",
+			office: "Office",
+			hood: "What happened",
+			tags: "Tags",
+			reason: /^Every pick cleared the gate/,
+		},
+		{
+			language: "Spanish",
+			url: "/?case=form&lang=es",
+			request: "almuerzo con el equipo de Brisamar ayer, $60",
+			meals: "Comidas",
+			office: "Oficina",
+			hood: "Qué pasó",
+			tags: "Etiquetas",
+			reason: /^Cada elección superó el umbral/,
+		},
+	])(
+		"adds nothing from the vendor when the provider tagged the expense, in $language",
+		async ({ url, request, meals, office, hood, tags, reason }) => {
+			const { user } = renderDemo({ url });
 
-		await user.type(
-			screen.getByRole("searchbox", { name: "Describe the expense" }),
-			"lunch with the Brightmop crew yesterday, $60{Enter}",
-		);
-		await screen.findByText(/^Filled:/);
+			await user.type(screen.getByRole("searchbox"), `${request}{Enter}`);
+			await screen.findByText(/^(Filled:|Completado:)/);
 
-		expect(checkbox("Meals").checked).toBe(true);
-		expect(checkbox("Office").checked).toBe(false);
-		expect(
-			within(panel().getByRole("region", { name: "Tags" })).getByText(
-				/^Every pick cleared the gate/,
-			),
-		).toBeDefined();
-	});
+			expect(checkbox(meals).checked).toBe(true);
+			expect(checkbox(office).checked).toBe(false);
+			expect(
+				within(panel(hood).getByRole("region", { name: tags })).getByText(
+					reason,
+				),
+			).toBeDefined();
+		},
+	);
 
 	it("keeps only a number's characters in the amount box, and empties it when a new answer holds the amount", async () => {
 		const { user } = renderDemo();
