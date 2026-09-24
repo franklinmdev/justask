@@ -226,7 +226,7 @@ describe("the shaped card sets", () => {
 /**
  * Frozen on the owner's approval, 2026-09-23 (#20, round 2 #44, round 3
  * #57, round 4 #63, round 5 #73, #77's office probes, #79's false-fill probes
- * and round 6; round 7 #88 on 2026-09-24), before any call. A failure here
+ * and round 6; round 7 #88 and round 8 #97 on 2026-09-24), before any call. A failure here
  * means the verdict's inputs changed after the fact: revert the edit, or log
  * the owner's call in docs/card-eval.md with a new checksum or value.
  */
@@ -293,6 +293,15 @@ describe("the frozen card eval", () => {
 		[
 			"card-es.round7.jsonl",
 			"912933070a5311d57292bee679392abe05ef5885137f2b1ecf2ae2d9eee9abf6",
+		],
+		// Round 8, approved in seven batches on 2026-09-24 (#97), before any call.
+		[
+			"card-en.round8.jsonl",
+			"72b1014d4ffd9908a3fd70f630afebdf3627a0228ee7876c66baf5e5beab1f94",
+		],
+		[
+			"card-es.round8.jsonl",
+			"2654433d9a98d9ada94dc673d0397da636b8115936ec31b49b5d692f688b4e58",
 		],
 		// #63's pair probes, approved before any call: the pair rule was chosen from their runs.
 		[
