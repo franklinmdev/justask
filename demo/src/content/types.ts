@@ -165,15 +165,21 @@ export type FilterCopy = {
 	controls: {
 		allVendors: string;
 		allStatuses: string;
-		/** The date range's two days: each one's name, and what its button shows while empty. */
+		/** The date range's first day, by name. */
 		from: string;
+		/** Its last day, by name. */
 		to: string;
+		/** What the first day's button shows while empty. */
 		fromEmpty: string;
+		/** What the last day's button shows while empty. */
 		toEmpty: string;
-		/** The amount range's two bounds: each one's name, and its placeholder. */
+		/** The amount range's lower bound, by name. */
 		min: string;
+		/** Its upper bound, by name. */
 		max: string;
+		/** The lower bound's placeholder. */
 		minEmpty: string;
+		/** The upper bound's placeholder. */
 		maxEmpty: string;
 		calendar: CalendarCopy;
 	};

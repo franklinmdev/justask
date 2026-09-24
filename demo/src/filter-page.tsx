@@ -6,7 +6,7 @@ import {
 	FilterFields,
 	useFilter,
 } from "justask/react";
-import { type CSSProperties, useState } from "react";
+import { type CSSProperties, type HTMLAttributes, useState } from "react";
 import { filterEndpoint } from "./api.ts";
 import type {
 	Content,
@@ -76,17 +76,31 @@ function applyTo(table: Applied, value: Applied): Applied {
 	return next;
 }
 
-/** The range with one end changed, or no filter once neither end is left. */
+/** A copy with `key` set to `value`, or left out when `value` is undefined. */
+function withKey<R extends object, K extends keyof R>(
+	record: R,
+	key: K,
+	value: R[K] | undefined,
+): R {
+	const next = { ...record };
+	delete next[key];
+	if (value !== undefined) next[key] = value;
+	return next;
+}
+
+/**
+ * The range with one end changed, or no filter once neither end is left. A
+ * range here holds its ends alone: the amount's currency is taken off first.
+ */
 function withEnd<R extends DateRange | AmountRange>(
 	range: R | undefined,
 	end: keyof R,
 	value: R[keyof R] | undefined,
-	ends: (keyof R)[],
 ): R | undefined {
-	const next = { ...range } as R;
-	delete next[end];
-	if (value !== undefined) next[end] = value;
-	return ends.some((name) => next[name] !== undefined) ? next : undefined;
+	const next = withKey({ ...range } as R, end, value);
+	return Object.values(next).some((bound) => bound !== undefined)
+		? next
+		: undefined;
 }
 
 /** A set field's value in the page's own words. */
@@ -320,17 +334,14 @@ function TableFilters({
 	const format = formats(content.locale);
 
 	function set<K extends FieldName>(name: K, field: Applied[K] | undefined) {
-		const next = { ...value };
-		delete next[name];
-		if (field !== undefined) next[name] = field;
-		onChange(next);
+		onChange(withKey(value, name, field));
 	}
 	const day = (end: "from" | "to") => (iso: string | undefined) =>
-		set("date", withEnd(value.date, end, iso, ["from", "to"]));
+		set("date", withEnd(value.date, end, iso));
 	// A bound typed here is in the table's own currency, so one the request named goes.
 	const bound = (end: "min" | "max") => (amount: number | undefined) => {
 		const { currency: _, ...range } = value.amount ?? {};
-		set("amount", withEnd(range, end, amount, ["min", "max"]));
+		set("amount", withEnd(range, end, amount));
 	};
 	const currency = value.amount?.currency;
 	// A control Apply just set remounts, so it settles in again, after the ones before it.
@@ -347,54 +358,34 @@ function TableFilters({
 
 	return (
 		<div className="table-filters">
-			<div key={keyOf("vendor")} className="table-filter" {...settle("vendor")}>
-				<label htmlFor="table-vendor" className="entry-label">
-					{fields.vendor}
-				</label>
-				<select
-					id="table-vendor"
-					className="control"
-					value={value.vendor?.id ?? ""}
-					onChange={(event) =>
-						set(
-							"vendor",
-							content.vendors.find(({ id }) => id === event.target.value)
-								?.value,
-						)
-					}
-				>
-					<option value="">{controls.allVendors}</option>
-					{content.vendors.map(({ id, value: vendor }) => (
-						<option key={id} value={id}>
-							{vendor.name}
-						</option>
-					))}
-				</select>
-			</div>
-			<div key={keyOf("status")} className="table-filter" {...settle("status")}>
-				<label htmlFor="table-status" className="entry-label">
-					{fields.status}
-				</label>
-				<select
-					id="table-status"
-					className="control"
-					value={value.status ?? ""}
-					onChange={(event) =>
-						set(
-							"status",
-							content.statuses.find(({ id }) => id === event.target.value)
-								?.value,
-						)
-					}
-				>
-					<option value="">{controls.allStatuses}</option>
-					{content.statuses.map(({ id, value: status }) => (
-						<option key={id} value={id}>
-							{copy.statuses[status]}
-						</option>
-					))}
-				</select>
-			</div>
+			<CatalogSelect
+				key={keyOf("vendor")}
+				id="table-vendor"
+				label={fields.vendor}
+				all={controls.allVendors}
+				options={content.vendors.map(({ id, value: vendor }) => ({
+					id,
+					value: vendor,
+					name: vendor.name,
+				}))}
+				chosen={value.vendor?.id}
+				onChange={(vendor) => set("vendor", vendor)}
+				settle={settle("vendor")}
+			/>
+			<CatalogSelect
+				key={keyOf("status")}
+				id="table-status"
+				label={fields.status}
+				all={controls.allStatuses}
+				options={content.statuses.map(({ id, value: status }) => ({
+					id,
+					value: status,
+					name: copy.statuses[status],
+				}))}
+				chosen={value.status}
+				onChange={(status) => set("status", status)}
+				settle={settle("status")}
+			/>
 			<fieldset
 				key={keyOf("date")}
 				className="table-filter"
@@ -459,6 +450,50 @@ function TableFilters({
 					/>
 				</div>
 			</fieldset>
+		</div>
+	);
+}
+
+/** A catalog field's control: one of its items, or all of them while none is chosen. */
+function CatalogSelect<T>({
+	id,
+	label,
+	all,
+	options,
+	chosen,
+	onChange,
+	settle,
+}: {
+	id: string;
+	label: string;
+	all: string;
+	options: { id: string; value: T; name: string }[];
+	chosen: string | undefined;
+	onChange: (value: T | undefined) => void;
+	settle: HTMLAttributes<HTMLDivElement>;
+}) {
+	return (
+		<div className="table-filter" {...settle}>
+			<label htmlFor={id} className="entry-label">
+				{label}
+			</label>
+			<select
+				id={id}
+				className="control"
+				value={chosen ?? ""}
+				onChange={(event) =>
+					onChange(
+						options.find((option) => option.id === event.target.value)?.value,
+					)
+				}
+			>
+				<option value="">{all}</option>
+				{options.map((option) => (
+					<option key={option.id} value={option.id}>
+						{option.name}
+					</option>
+				))}
+			</select>
 		</div>
 	);
 }
