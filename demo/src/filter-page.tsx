@@ -145,7 +145,9 @@ export function FilterPage({
 		},
 		fetch: replay.fetch,
 	});
-	// An answer that fills a field applies at once, typed or suggested.
+	// An answer that fills a field applies at once, typed or suggested. No
+	// dependencies: confirm spends the answer, so `ready` stays false until the
+	// next one, and a render for anything else confirms nothing.
 	useEffect(() => {
 		if (filter.ready) filter.confirm();
 	});
@@ -474,7 +476,7 @@ function BoundInput({
 	);
 }
 
-/** How long a row that left stays on screen for its exit, the longest of the two motions. */
+/** How long a row that left stays on screen: its exit, 25 percent faster than an entrance. */
 const LEAVE_MS = 150;
 
 /** The row numbers the table holds, and the ones the last change brought in and took out. */
