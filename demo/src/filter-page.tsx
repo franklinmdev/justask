@@ -96,17 +96,22 @@ function withKey<R extends object, K extends keyof R>(
 	return next;
 }
 
-/**
- * The range with one end changed, or no filter once neither end is left. A
- * range here holds its ends alone: the amount's currency is taken off first.
- */
+/** A range's two ends: a date range's days, an amount range's bounds. */
+const ends = {
+	from: ["from", "to"],
+	to: ["from", "to"],
+	min: ["min", "max"],
+	max: ["min", "max"],
+} as const;
+
+/** The range with one end changed, or no filter once neither end is left. */
 function withEnd<R extends DateRange | AmountRange>(
 	range: R | undefined,
-	end: keyof R,
+	end: keyof typeof ends & keyof R,
 	value: R[keyof R] | undefined,
 ): R | undefined {
 	const next = withKey({ ...range } as R, end, value);
-	return Object.values(next).some((bound) => bound !== undefined)
+	return ends[end].some((name) => next[name as keyof R] !== undefined)
 		? next
 		: undefined;
 }
