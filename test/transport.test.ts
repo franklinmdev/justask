@@ -408,6 +408,43 @@ describe("a remeasure (#93)", () => {
 		);
 	});
 
+	it("sends again, the next time, only the rows still failing on transport, and merges every remeasure in order", () => {
+		const first = runWith([{ transport: true }, { transport: true }]);
+		const [, , , row0, row1] = first.rows as RunRow[];
+		const answeredRow = ({ error: _, ...row }: RunRow): RunRow => row;
+		const a = { ...first, rows: [answeredRow(row0 as RunRow), row1 as RunRow] };
+		const b = { ...first, rows: [answeredRow(row1 as RunRow)] };
+		const set = parseEvalSet(rows("acme", "two", "hello", "error0", "error1"));
+
+		expect(
+			remeasureSet(mergeRemeasure(first, a), set).map(({ id }) => id),
+		).toEqual(["error1"]);
+		expect(scoreRun(mergeRemeasure(first, a, b)).verdict).toMatchObject({
+			pass: true,
+			errorsPending: false,
+		});
+		expect(() => mergeRemeasure(first, b)).toThrow(
+			/the rows that failed on transport/,
+		);
+	});
+
+	it("decides nothing when run under other kill lines or another gate than the first run's", () => {
+		const first = runWith([{ transport: true }]);
+		const { error: _, ...answeredRow } = first.rows[3] as RunRow;
+		const again = { ...first, rows: [answeredRow] };
+
+		expect(() =>
+			mergeRemeasure(first, {
+				...again,
+				killLines: { ...killLines, errors: 1 },
+			}),
+		).toThrow(/kill lines or gates/);
+		expect(() => mergeRemeasure(first, { ...again, gate: 0.6 })).toThrow(
+			/kill lines or gates/,
+		);
+		expect(() => mergeRemeasure(first, again)).not.toThrow();
+	});
+
 	it("has nothing to send when no row failed on transport", () => {
 		expect(() =>
 			remeasureSet(runWith([{}]), parseEvalSet(rows("error0"))),

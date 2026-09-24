@@ -6,8 +6,8 @@
 //   node --conditions=source demo/eval/card.ts office <en|es> <n> <label>
 //   node --conditions=source demo/eval/card.ts gaps <en|es> <n>
 //   node --conditions=source demo/eval/card.ts compare <en|es> <set> <first n> <second n>
-//   node --conditions=source demo/eval/card.ts remeasure <en|es> <set> <first n> <n>
-//   node --conditions=source demo/eval/card.ts merge <en|es> <set> <first n> <n>
+//   node --conditions=source demo/eval/card.ts remeasure <en|es> <set> <first n> <n>...
+//   node --conditions=source demo/eval/card.ts merge <en|es> <set> <first n> <n>...
 //   node --conditions=source demo/eval/card.ts gates <dev n>
 //
 // The sets, where each one's file and logs live, and which give a verdict
@@ -20,8 +20,10 @@
 // reads two saved runs of a set with a verdict and prints the second one's
 // measures and flips, with no call. `remeasure` sends again only the rows
 // run <first n> of a set with a verdict left pending on transport failures
-// (#93), into run <n>, and prints run <first n>'s report with their answers
-// in place; `merge` prints that report again, with no call. `gates` reads
+// (#93), into the last run named, after merging the remeasures named before
+// it, which leaves only the rows still failing, and prints run <first n>'s
+// report with every answer in place; `merge` prints that report again, with
+// no call. `gates` reads
 // dev run <n> of both
 // languages and prints the intent's and each field's gate by the rule in
 // gates.ts, with no call.
@@ -134,11 +136,21 @@ if (command === "run") {
 		formatCardReport(scoreCardRun(after), compareCardRuns(before, after)),
 	);
 } else if (command === "remeasure" || command === "merge") {
-	const [language, set, first, n] = rest;
+	const [language, set, first, ...later] = rest;
+	const n = later.at(-1);
 	const content = contents[language as Language];
 	if (!content || !isCardSet(set) || !givesVerdict(set) || !first || !n)
 		usage();
 	const firstRun = await readCardRun(runLogPath(content.language, set, first));
+	// The remeasures run before the last one, merged in order.
+	const merged = mergeRemeasure(
+		firstRun,
+		...(await Promise.all(
+			later
+				.slice(0, -1)
+				.map((m) => readCardRun(runLogPath(content.language, set, m))),
+		)),
+	);
 	if (command === "remeasure") {
 		needBaseline();
 		loadKeyEnv();
@@ -147,7 +159,7 @@ if (command === "run") {
 		command === "remeasure"
 			? await runCardEval({
 					set: remeasureSet(
-						firstRun,
+						merged,
 						parseCardEvalSet(
 							await readFile(here(cardSetFile(content.language, set)), "utf8"),
 						),
@@ -164,9 +176,9 @@ if (command === "run") {
 	console.log(
 		`Run ${first}, its transport failures (${transportFailures(firstRun.rows)
 			.map(({ id }) => id)
-			.join(", ")}) answered by run ${n}\n`,
+			.join(", ")}) answered by run ${later.join(", then ")}\n`,
 	);
-	console.log(formatCardReport(scoreCardRun(mergeRemeasure(firstRun, again))));
+	console.log(formatCardReport(scoreCardRun(mergeRemeasure(merged, again))));
 } else if (command === "gates") {
 	const [n] = rest;
 	if (!n) usage();
@@ -219,7 +231,7 @@ function usage(): never {
 	const sets = (keep: (set: CardSet) => boolean) =>
 		CARD_SET_NAMES.filter(keep).join("|");
 	console.error(
-		`usage: card.ts run <en|es> <${sets((set) => !isLabelled(set))}> <n> | run <en|es> <${sets(isLabelled)}> <n> <${OFFICE_LABEL_NAMES.join("|")}> | office <en|es> <n> <${OFFICE_LABEL_NAMES.join("|")}> | gaps <en|es> <n> | compare <en|es> <${sets(givesVerdict)}> <first n> <second n> | remeasure|merge <en|es> <${sets(givesVerdict)}> <first n> <n> | gates <dev n>`,
+		`usage: card.ts run <en|es> <${sets((set) => !isLabelled(set))}> <n> | run <en|es> <${sets(isLabelled)}> <n> <${OFFICE_LABEL_NAMES.join("|")}> | office <en|es> <n> <${OFFICE_LABEL_NAMES.join("|")}> | gaps <en|es> <n> | compare <en|es> <${sets(givesVerdict)}> <first n> <second n> | remeasure|merge <en|es> <${sets(givesVerdict)}> <first n> <n>... | gates <dev n>`,
 	);
 	process.exit(1);
 }

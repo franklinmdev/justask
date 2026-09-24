@@ -3,8 +3,8 @@
 //
 //   node --conditions=source demo/eval/search.ts run <en|es> <eval|round2|round3|round4|dev> <n>
 //   node --conditions=source demo/eval/search.ts compare <en|es> <eval|round2|round3|round4> <first n> <second n>
-//   node --conditions=source demo/eval/search.ts remeasure <en|es> <eval|round2|round3|round4> <first n> <n>
-//   node --conditions=source demo/eval/search.ts merge <en|es> <eval|round2|round3|round4> <first n> <n>
+//   node --conditions=source demo/eval/search.ts remeasure <en|es> <eval|round2|round3|round4> <first n> <n>...
+//   node --conditions=source demo/eval/search.ts merge <en|es> <eval|round2|round3|round4> <first n> <n>...
 //
 // `run` writes demo/eval/runs/search-<language>[-round2|-round3|-round4|-dev]-<n>.jsonl,
 // which it never overwrites, and prints its report. `eval` is round 1's set,
@@ -13,9 +13,10 @@
 // verdict: it tunes, it never decides. `compare` reads two saved runs of one set
 // and prints the second one's measures and flips, with no call.
 // `remeasure` sends again only the rows run <first n> left pending on
-// transport failures (#93), into run <n>, and prints run <first n>'s report
-// with their answers in place; `merge` prints that report again, with no
-// call.
+// transport failures (#93), into the last run named, after merging the
+// remeasures named before it, which leaves only the rows still failing, and
+// prints run <first n>'s report with every answer in place; `merge` prints
+// that report again, with no call.
 
 import { readFile } from "node:fs/promises";
 import {
@@ -90,9 +91,19 @@ if (command === "run") {
 	const after = await readRun(runLogPath(content.language, set, second));
 	console.log(formatReport(scoreRun(after), compareRuns(before, after)));
 } else if (command === "remeasure" || command === "merge") {
-	const [set, first, n] = rest;
+	const [set, first, ...later] = rest;
+	const n = later.at(-1);
 	if (!isSet(set) || NO_VERDICT.has(set) || !first || !n) usage();
 	const firstRun = await readRun(runLogPath(content.language, set, first));
+	// The remeasures run before the last one, merged in order.
+	const merged = mergeRemeasure(
+		firstRun,
+		...(await Promise.all(
+			later
+				.slice(0, -1)
+				.map((m) => readRun(runLogPath(content.language, set, m))),
+		)),
+	);
 	if (command === "remeasure") {
 		needBaseline();
 		loadKeyEnv();
@@ -101,7 +112,7 @@ if (command === "run") {
 		command === "remeasure"
 			? await runEval({
 					set: remeasureSet(
-						firstRun,
+						merged,
 						parseEvalSet(
 							await readFile(setPath(content.language, set), "utf8"),
 						),
@@ -118,16 +129,16 @@ if (command === "run") {
 	console.log(
 		`Run ${first}, its transport failures (${transportFailures(firstRun.rows)
 			.map(({ id }) => id)
-			.join(", ")}) answered by run ${n}\n`,
+			.join(", ")}) answered by run ${later.join(", then ")}\n`,
 	);
-	console.log(formatReport(scoreRun(mergeRemeasure(firstRun, again))));
+	console.log(formatReport(scoreRun(mergeRemeasure(merged, again))));
 } else {
 	usage();
 }
 
 function usage(): never {
 	console.error(
-		"usage: search.ts run <en|es> <eval|round2|round3|round4|dev> <n> | compare <en|es> <eval|round2|round3|round4> <first n> <second n> | remeasure|merge <en|es> <eval|round2|round3|round4> <first n> <n>",
+		"usage: search.ts run <en|es> <eval|round2|round3|round4|dev> <n> | compare <en|es> <eval|round2|round3|round4> <first n> <second n> | remeasure|merge <en|es> <eval|round2|round3|round4> <first n> <n>...",
 	);
 	process.exit(1);
 }

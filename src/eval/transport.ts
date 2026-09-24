@@ -56,14 +56,24 @@ export function remeasureSet<S extends { id: string }>(
 
 /**
  * The first run with each row that failed on transport replaced by its
- * remeasure's, so the first run's report decides every line (#93). The
- * first run keeps its header, probes included, so a latency line pending in
- * its slow window stays pending. A remeasure decides nothing without
- * probes, with no baseline, in a slow window, or on any rows but those.
+ * remeasure's, so the first run's report decides every line (#93). Each
+ * remeasure is merged in order and sends exactly the rows still failing on
+ * transport after the ones before it, so a row that fails again waits for
+ * the next. The first run keeps its header, probes included, so a latency
+ * line pending in its slow window stays pending. A remeasure decides
+ * nothing without probes, with no baseline, in a slow window, under other
+ * kill lines or gates, or on any other rows.
  */
-export function mergeRemeasure<R extends Row, T extends { rows: R[] }>(
+export function mergeRemeasure<
+	R extends Row,
+	T extends { rows: R[]; probes?: Probes },
+>(first: T, ...remeasures: T[]): T {
+	return remeasures.reduce((merged, again) => mergeOne(merged, again), first);
+}
+
+function mergeOne<R extends Row, T extends { rows: R[]; probes?: Probes }>(
 	first: T,
-	again: { rows: R[]; probes?: Probes },
+	again: T,
 ): T {
 	const window = probeWindow(again.probes);
 	if (!window) {
@@ -74,6 +84,11 @@ export function mergeRemeasure<R extends Row, T extends { rows: R[] }>(
 	if (window.baselineMs === null || window.slow) {
 		throw new Error(
 			`justask: the remeasure ran ${window.slow ? "in a slow window" : "with no baseline"}, so it decides nothing; wait and run again`,
+		);
+	}
+	if (settings(again) !== settings(first)) {
+		throw new Error(
+			"justask: the remeasure ran under other kill lines or gates than the first run, so it decides nothing",
 		);
 	}
 	const expected = transportFailures(first.rows)
@@ -95,4 +110,13 @@ export function mergeRemeasure<R extends Row, T extends { rows: R[] }>(
 		...first,
 		rows: first.rows.map((row) => answered.get(row.id) ?? row),
 	};
+}
+
+/** What a run was run under: its header, the kill lines and gates, without its time, probes or rows. */
+function settings(run: object): string {
+	return JSON.stringify(
+		Object.entries(run)
+			.filter(([key]) => !["startedAt", "probes", "rows"].includes(key))
+			.sort(([a], [b]) => a.localeCompare(b)),
+	);
 }
