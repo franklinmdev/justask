@@ -1,5 +1,5 @@
 import { SearchBox, SearchEmpty, SearchItem, useSearch } from "justask/react";
-import { searchEndpoint } from "./api.ts";
+import { REQUEST_LIMIT, searchEndpoint } from "./api.ts";
 import type { Content, Vendor } from "./content/types.ts";
 import { formats } from "./format.ts";
 import { CaseHead, DEBOUNCE_MS, Saved, Suggestions } from "./parts.tsx";
@@ -62,6 +62,7 @@ export function SearchPage({
 				className="box"
 				autoComplete="off"
 				spellCheck={false}
+				maxLength={REQUEST_LIMIT}
 			/>
 			<Saved
 				content={content}

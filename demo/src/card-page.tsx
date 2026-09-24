@@ -9,7 +9,7 @@ import {
 	useCard,
 } from "justask/react";
 import { type ReactNode, useRef, useState } from "react";
-import { cardEndpoint } from "./api.ts";
+import { cardEndpoint, REQUEST_LIMIT } from "./api.ts";
 import { CardPanel, impliedByOf } from "./card-panel.tsx";
 import type { Content, ExpenseFields, ExpenseName } from "./content/types.ts";
 import { DayPicker } from "./day-picker.tsx";
@@ -135,6 +135,7 @@ export function CardPage({
 				className="box"
 				autoComplete="off"
 				spellCheck={false}
+				maxLength={REQUEST_LIMIT}
 			/>
 			<Saved
 				content={content}

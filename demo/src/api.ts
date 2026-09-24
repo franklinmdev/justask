@@ -12,3 +12,10 @@ export function filterEndpoint(language: Language): string {
 export function cardEndpoint(language: Language): string {
 	return `/api/card/${language}`;
 }
+
+/**
+ * The longest request the demo takes: the box stops at it, and the server
+ * refuses a longer one with no provider call (#108). Counted as the box counts,
+ * in UTF-16 code units.
+ */
+export const REQUEST_LIMIT = 200;

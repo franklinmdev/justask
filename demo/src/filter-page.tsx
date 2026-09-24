@@ -7,7 +7,7 @@ import {
 	useFilter,
 } from "justask/react";
 import { useState } from "react";
-import { filterEndpoint } from "./api.ts";
+import { filterEndpoint, REQUEST_LIMIT } from "./api.ts";
 import type {
 	Content,
 	FieldName,
@@ -218,6 +218,7 @@ export function FilterPage({
 				className="box"
 				autoComplete="off"
 				spellCheck={false}
+				maxLength={REQUEST_LIMIT}
 			/>
 			<Saved
 				content={content}
