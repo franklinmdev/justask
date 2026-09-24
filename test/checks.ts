@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, type within } from "@testing-library/react";
 import axe from "axe-core";
 import { expect } from "vitest";
 
@@ -15,4 +15,10 @@ export async function expectNoAxeViolations(container: Element) {
 /** The demo's saved counter beside the box, in either language; null while it shows none. */
 export function counter() {
 	return screen.queryByText(/^1 (sentence|frase) /)?.textContent ?? null;
+}
+
+/** The figure a panel shows under a term, once the call has returned. */
+export async function figure(panel: ReturnType<typeof within>, term: string) {
+	const dt = await panel.findByText(term, { selector: "dt" });
+	return dt.nextElementSibling?.textContent;
 }

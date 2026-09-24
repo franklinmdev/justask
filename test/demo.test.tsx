@@ -13,7 +13,7 @@ import { createDemoHandler } from "../demo/server/handler.ts";
 import { App } from "../demo/src/app.tsx";
 import { english } from "../demo/src/content/en.ts";
 import { spanish } from "../demo/src/content/es.ts";
-import { counter, expectNoAxeViolations } from "./checks.ts";
+import { counter, expectNoAxeViolations, figure } from "./checks.ts";
 import {
 	type FakeAnswers,
 	failingProvider,
@@ -125,12 +125,6 @@ async function hoodView(
 ) {
 	await user.click(screen.getByRole("tab", { name }));
 	return within(screen.getByRole("tabpanel", { name }));
-}
-
-/** The figure the state panel shows under a term, once the call has returned. */
-async function figure(state: ReturnType<typeof panel>, term: string) {
-	const dt = await state.findByText(term, { selector: "dt" });
-	return dt.nextElementSibling?.textContent;
 }
 
 afterEach(() => {
