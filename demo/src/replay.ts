@@ -23,6 +23,12 @@ function later(timers: Timers, ms: number, step: () => void) {
 	timers.current.push(setTimeout(step, ms));
 }
 
+/** Drops every step still due. */
+function drop(timers: Timers) {
+	for (const timer of timers.current) clearTimeout(timer);
+	timers.current = [];
+}
+
 /** Under reduced motion the sentence appears whole instead of typing in. */
 function reducedMotion(): boolean {
 	return (
@@ -38,16 +44,19 @@ type Flow = {
 	submit: () => void;
 };
 
+/** A flow's Confirm: whether it can be pressed, and pressing it. */
+type Confirm = { ready: boolean; press: () => void };
+
 export type Replay = {
 	/**
 	 * Hands the replay the flow's hook on every render, with Confirm for a
 	 * flow that has it, pressed once the recorded proposal is ready.
 	 */
-	follow: (flow: Flow, confirm?: { ready: boolean; press: () => void }) => void;
-	/** The hook's `fetch`: the recorded answer for the replayed sentence, a timed live call for anything else. */
+	follow: (flow: Flow, confirm?: Confirm) => void;
+	/** The hook's `fetch`: the recorded response for the replayed sentence, a timed live call for anything else. */
 	fetch: typeof fetch;
 	/** The flow for the box and the suggestions: anything the person types or picks ends the replay. */
-	take: <F extends Flow>(flow: F) => F;
+	stoppedBy: <F extends Flow>(flow: F) => F;
 	/** Ends the replay, for anything else the person does, such as setting a control. */
 	stop: () => void;
 	/** The trace of the call on display, recorded or live. */
@@ -66,7 +75,7 @@ export type Replay = {
  * shows the recorded latency and use, then, where the flow has one, Confirm
  * is pressed on screen. A box that calls only on Enter, `enter`, has Enter
  * pressed once the sentence is in. Typing or picking a suggestion ends it,
- * and the next answer is a live call that replaces the recording's display.
+ * and the next call is a live one that replaces the recording's display.
  * With no recording the case opens idle.
  */
 export function useReplay({
@@ -82,7 +91,7 @@ export function useReplay({
 	const [recorded, setRecorded] = useState(recording !== null);
 	const [pressing, setPressing] = useState(false);
 	const [started, setStarted] = useState(false);
-	// Set once the person takes over, once the recorded answer is served, and once Confirm is due.
+	// Set once the person takes over, once the recorded response is served, and once Confirm is due.
 	const stopped = useRef(recording === null);
 	const served = useRef(false);
 	const pressed = useRef(false);
@@ -90,15 +99,15 @@ export function useReplay({
 	// The latest render's flow and Confirm, for the steps that run later.
 	const latest = useRef<{
 		flow: Flow | null;
-		confirm: { ready: boolean; press: () => void } | undefined;
+		confirm: Confirm | undefined;
 	}>({ flow: null, confirm: undefined });
 
 	useEffect(() => {
 		if (recording === null) return;
 		const { request } = recording;
 		later(timers, START_MS, () => setStarted(true));
-		const typing = reducedMotion() ? 0 : request.length * TYPE_MS;
-		if (typing === 0) {
+		const typingMs = reducedMotion() ? 0 : request.length * TYPE_MS;
+		if (typingMs === 0) {
 			later(timers, START_MS, () => latest.current.flow?.setRequest(request));
 		} else {
 			for (let typed = 1; typed <= request.length; typed++) {
@@ -109,14 +118,11 @@ export function useReplay({
 		}
 		// The box's own pause then calls, or Enter does, and `fetch` answers from the recording.
 		if (enter) {
-			later(timers, START_MS + typing + ENTER_MS, () =>
+			later(timers, START_MS + typingMs + ENTER_MS, () =>
 				latest.current.flow?.submit(),
 			);
 		}
-		return () => {
-			for (const timer of timers.current) clearTimeout(timer);
-			timers.current = [];
-		};
+		return () => drop(timers);
 	}, [recording, enter]);
 
 	// Once the recorded proposal is ready, Confirm is pressed on screen.
@@ -147,8 +153,7 @@ export function useReplay({
 		setStarted(false);
 		if (stopped.current) return;
 		stopped.current = true;
-		for (const timer of timers.current) clearTimeout(timer);
-		timers.current = [];
+		drop(timers);
 		setPressing(false);
 	}
 
@@ -177,11 +182,11 @@ export function useReplay({
 			}
 			return live(input, init);
 		},
-		take: (taken) => ({
-			...taken,
+		stoppedBy: (flow) => ({
+			...flow,
 			setRequest: (request: string) => {
 				stop();
-				taken.setRequest(request);
+				flow.setRequest(request);
 			},
 		}),
 		stop,

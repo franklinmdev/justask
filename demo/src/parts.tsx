@@ -1,8 +1,10 @@
 import type { Usage } from "justask";
 import type { SearchError } from "justask/react";
+import type { CSSProperties } from "react";
 import type { Content, HeldReason } from "./content/types.ts";
 import { formats } from "./format.ts";
 import { dayOf, type Recording } from "./recording.ts";
+import type { Replay } from "./replay.ts";
 import type { Cost } from "./saved.ts";
 
 /**
@@ -68,16 +70,56 @@ export function Bar({ value, gate }: { value: number; gate?: number }) {
 	);
 }
 
-/** The label on a case while its display is the recorded run's, with the day it ran. */
-export function RecordedLabel({
+/**
+ * What makes a control settle in `at` places after the first one an answer
+ * set; nothing for -1, a control it did not set.
+ */
+export function settleAt(at: number): Settle {
+	if (at === -1) return {};
+	return { "data-settle": "", style: { "--settle-at": at } as CSSProperties };
+}
+
+/** A settling control's props, spread on its outermost element. */
+export type Settle = { "data-settle"?: ""; style?: CSSProperties };
+
+/**
+ * A case's heading, labelled with the day its recorded run ran while the
+ * display is the recording's, then the live region that says the replay
+ * started. `said` goes first when the page has something newer to say.
+ */
+export function CaseHead({
 	content,
+	id,
+	title,
 	recording,
+	replay,
+	said = "",
 }: {
 	content: Content;
-	recording: Recording<Usage>;
+	id: string;
+	title: string;
+	recording: Recording<Usage> | null;
+	replay: Pick<Replay, "recorded" | "started">;
+	said?: string;
 }) {
-	const day = formats(content.locale).date(dayOf(recording));
-	return <p className="recorded">{content.copy.recorded(day)}</p>;
+	const { copy } = content;
+	const day = recording ? formats(content.locale).date(dayOf(recording)) : "";
+	return (
+		<>
+			<div className="case-head">
+				<h2 id={id}>{title}</h2>
+				{recording && replay.recorded && (
+					<p className="recorded">{copy.recorded(day)}</p>
+				)}
+			</div>
+			<p className="visually-hidden" role="status">
+				{said ||
+					(recording && replay.started
+						? copy.replaying(day, recording.request)
+						: "")}
+			</p>
+		</>
+	);
 }
 
 /**

@@ -2,8 +2,8 @@ import { SearchBox, SearchEmpty, SearchItem, useSearch } from "justask/react";
 import { searchEndpoint } from "./api.ts";
 import type { Content, Vendor } from "./content/types.ts";
 import { formats } from "./format.ts";
-import { DEBOUNCE_MS, RecordedLabel, Saved, Suggestions } from "./parts.tsx";
-import { dayOf, type SearchRecording } from "./recording.ts";
+import { CaseHead, DEBOUNCE_MS, Saved, Suggestions } from "./parts.tsx";
+import type { SearchRecording } from "./recording.ts";
 import { useReplay } from "./replay.ts";
 import { costOf, searchControls } from "./saved.ts";
 import { CaseLayout } from "./showcase.tsx";
@@ -37,7 +37,7 @@ export function SearchPage({
 		fetch: replay.fetch,
 	});
 	replay.follow(search);
-	const box = replay.take(search);
+	const box = replay.stoppedBy(search);
 	const suggest = useSuggest(box);
 
 	return (
@@ -48,20 +48,13 @@ export function SearchPage({
 			labelledBy="vendors-title"
 			hood={<StatePanel content={content} search={search} trace={trace} />}
 		>
-			<div className="case-head">
-				<h2 id="vendors-title">{copy.vendors}</h2>
-				{recording && replay.recorded && (
-					<RecordedLabel content={content} recording={recording} />
-				)}
-			</div>
-			<p className="visually-hidden" role="status">
-				{recording && replay.started
-					? copy.replaying(
-							formats(content.locale).date(dayOf(recording)),
-							recording.request,
-						)
-					: ""}
-			</p>
+			<CaseHead
+				content={content}
+				id="vendors-title"
+				title={copy.vendors}
+				recording={recording}
+				replay={replay}
+			/>
 			<SearchBox
 				search={box}
 				label={copy.boxLabel}

@@ -6,7 +6,7 @@ import {
 	FilterFields,
 	useFilter,
 } from "justask/react";
-import { type CSSProperties, type HTMLAttributes, useState } from "react";
+import { useState } from "react";
 import { filterEndpoint } from "./api.ts";
 import type {
 	Content,
@@ -17,8 +17,15 @@ import type {
 import { DayPicker } from "./day-picker.tsx";
 import { FilterPanel } from "./filter-panel.tsx";
 import { formats, LOCAL_CURRENCY, parseAmount } from "./format.ts";
-import { DEBOUNCE_MS, RecordedLabel, Saved, Suggestions } from "./parts.tsx";
-import { dayOf, type TableRecording } from "./recording.ts";
+import {
+	CaseHead,
+	DEBOUNCE_MS,
+	Saved,
+	type Settle,
+	Suggestions,
+	settleAt,
+} from "./parts.tsx";
+import type { TableRecording } from "./recording.ts";
 import { useReplay } from "./replay.ts";
 import { costOf, tableControls } from "./saved.ts";
 import { CaseLayout } from "./showcase.tsx";
@@ -172,16 +179,8 @@ export function FilterPage({
 		fetch: replay.fetch,
 	});
 	replay.follow(filter, { ready: filter.ready, press: filter.confirm });
-	const box = replay.take(filter);
+	const box = replay.stoppedBy(filter);
 	const suggest = useSuggest(box);
-	const announcement =
-		appliedWords ||
-		(recording && replay.started
-			? copy.replaying(
-					formats(content.locale).date(dayOf(recording)),
-					recording.request,
-				)
-			: "");
 
 	const chip =
 		<K extends FieldName>(name: K) =>
@@ -198,15 +197,14 @@ export function FilterPage({
 			labelledBy="transactions-title"
 			hood={<FilterPanel content={content} filter={filter} trace={trace} />}
 		>
-			<div className="case-head">
-				<h2 id="transactions-title">{copy.filter.transactions}</h2>
-				{recording && replay.recorded && (
-					<RecordedLabel content={content} recording={recording} />
-				)}
-			</div>
-			<p className="visually-hidden" role="status">
-				{announcement}
-			</p>
+			<CaseHead
+				content={content}
+				id="transactions-title"
+				title={copy.filter.transactions}
+				recording={recording}
+				replay={replay}
+				said={appliedWords}
+			/>
 			<FilterBox
 				filter={box}
 				label={copy.filter.boxLabel}
@@ -348,13 +346,7 @@ function TableFilters({
 	const at = (name: FieldName) => settling.names.indexOf(name);
 	const keyOf = (name: FieldName) =>
 		at(name) === -1 ? name : `${name}-${settling.round}`;
-	const settle = (name: FieldName) =>
-		at(name) === -1
-			? {}
-			: {
-					"data-settle": "",
-					style: { "--settle-at": at(name) } as CSSProperties,
-				};
+	const settle = (name: FieldName) => settleAt(at(name));
 
 	return (
 		<div className="table-filters">
@@ -470,7 +462,7 @@ function CatalogSelect<T>({
 	options: { id: string; value: T; name: string }[];
 	chosen: string | undefined;
 	onChange: (value: T | undefined) => void;
-	settle: HTMLAttributes<HTMLDivElement>;
+	settle: Settle;
 }) {
 	return (
 		<div className="table-filter" {...settle}>
