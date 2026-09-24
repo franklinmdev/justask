@@ -1,0 +1,42 @@
+{"id": "en-r3-f01", "request": "every Tallyroot invoice", "kind": "filterable", "expected": {"vendor": "tallyroot"}}
+{"id": "en-r3-f02", "request": "invoices we have paid in full", "kind": "filterable", "expected": {"status": "paid"}}
+{"id": "en-r3-f03", "request": "invoices dated in February", "kind": "filterable", "expected": {"date": {"from": "2026-02-01", "to": "2026-02-28"}}}
+{"id": "en-r3-f04", "request": "invoices above $1,500", "kind": "filterable", "expected": {"amount": {"min": 1500, "currency": "USD"}}}
+{"id": "en-r3-f05", "request": "Brightmop invoices past their due date", "kind": "filterable", "expected": {"vendor": "brightmop", "status": "overdue"}}
+{"id": "en-r3-f06", "request": "Larkspur invoices since July 15", "kind": "filterable", "expected": {"vendor": "larkspur", "date": {"from": "2026-07-15"}}}
+{"id": "en-r3-f07", "request": "Paydale invoices below $3,000", "kind": "filterable", "expected": {"vendor": "paydale", "amount": {"max": 3000, "currency": "USD"}}}
+{"id": "en-r3-f08", "request": "invoices from the second quarter that are unpaid but not yet due", "kind": "filterable", "expected": {"status": "open", "date": {"from": "2026-04-01", "to": "2026-06-30"}}}
+{"id": "en-r3-f09", "request": "paid invoices for exactly $615", "kind": "filterable", "expected": {"status": "paid", "amount": {"exact": 615, "currency": "USD"}}}
+{"id": "en-r3-f10", "request": "invoices between $100 and $500 in July", "kind": "filterable", "expected": {"date": {"from": "2026-07-01", "to": "2026-07-31"}, "amount": {"min": 100, "max": 500, "currency": "USD"}}}
+{"id": "en-r3-f11", "request": "Farwander invoices from August that are unpaid but not yet due", "kind": "filterable", "expected": {"vendor": "farwander", "status": "open", "date": {"from": "2026-08-01", "to": "2026-08-31"}}}
+{"id": "en-r3-f12", "request": "Cloudberth invoices over 250 in the last 90 days", "kind": "filterable", "expected": {"vendor": "cloudberth", "date": {"from": "2026-06-25", "to": "2026-09-22"}, "amount": {"min": 250}}}
+{"id": "en-r3-f13", "request": "overdue invoices under $1,000 until July 31", "kind": "filterable", "expected": {"status": "overdue", "date": {"to": "2026-07-31"}, "amount": {"max": 1000, "currency": "USD"}}}
+{"id": "en-r3-f14", "request": "Swiftlane invoices over $30 that are already paid", "kind": "filterable", "expected": {"vendor": "swiftlane", "status": "paid", "amount": {"min": 30, "currency": "USD"}}}
+{"id": "en-r3-f15", "request": "clausewod invoices", "kind": "filterable", "expected": {"vendor": "clausewood"}}
+{"id": "en-r3-f16", "request": "invoices that are not due yet and still unpaid", "kind": "filterable", "expected": {"status": "open"}}
+{"id": "en-r3-f17", "request": "invoices dated July 3", "kind": "filterable", "expected": {"date": {"from": "2026-07-03", "to": "2026-07-03"}}}
+{"id": "en-r3-f18", "request": "invoices of exactly $455", "kind": "filterable", "expected": {"amount": {"exact": 455, "currency": "USD"}}}
+{"id": "en-r3-f19", "request": "overdue Fixbright invoices for setting up Tallyroot or Cloudberth", "kind": "filterable", "expected": {"vendor": "fixbright", "status": "overdue"}}
+{"id": "en-r3-f20", "request": "the stationery supplier's invoices from April", "kind": "filterable", "expected": {"vendor": "papergrove", "date": {"from": "2026-04-01", "to": "2026-04-30"}}}
+{"id": "en-r3-f21", "request": "our coffee supplier's invoice for exactly $96", "kind": "filterable", "expected": {"vendor": "beanhaven", "amount": {"exact": 96, "currency": "USD"}}}
+{"id": "en-r3-f22", "request": "paid invoices from the first quarter", "kind": "filterable", "expected": {"status": "paid", "date": {"from": "2026-01-01", "to": "2026-03-31"}}}
+{"id": "en-r3-f23", "request": "overdue invoices of $1,000 or more", "kind": "filterable", "expected": {"status": "overdue", "amount": {"min": 1000, "currency": "USD"}}}
+{"id": "en-r3-f24", "request": "invoices under $100 dated September 10", "kind": "filterable", "expected": {"date": {"from": "2026-09-10", "to": "2026-09-10"}, "amount": {"max": 100, "currency": "USD"}}}
+{"id": "en-r3-f25", "request": "the window washers' invoices from last month, unpaid but not yet due", "kind": "filterable", "expected": {"vendor": "glasswell", "status": "open", "date": {"from": "2026-08-01", "to": "2026-08-31"}}}
+{"id": "en-r3-f26", "request": "Inkhollow invoices between $100 and $400 since March 1", "kind": "filterable", "expected": {"vendor": "inkhollow", "date": {"from": "2026-03-01"}, "amount": {"min": 100, "max": 400, "currency": "USD"}}}
+{"id": "en-r3-f27", "request": "unpaid invoices not yet due between $500 and $2,000 from the last 45 days", "kind": "filterable", "expected": {"status": "open", "date": {"from": "2026-08-09", "to": "2026-09-22"}, "amount": {"min": 500, "max": 2000, "currency": "USD"}}}
+{"id": "en-r3-f28", "request": "paid Sureharbor invoices under $4,000", "kind": "filterable", "expected": {"vendor": "sureharbor", "status": "paid", "amount": {"max": 4000, "currency": "USD"}}}
+{"id": "en-r3-a29", "request": "Clausewood and Paydale invoices from June", "kind": "ambiguous", "expected": {"vendor": "held", "date": {"from": "2026-06-01", "to": "2026-06-30"}}}
+{"id": "en-r3-a30", "request": "the cleaning company's invoices over $500", "kind": "ambiguous", "expected": {"vendor": "held", "amount": {"min": 500, "currency": "USD"}}}
+{"id": "en-r3-a31", "request": "Cloudberth invoices that are open or overdue", "kind": "ambiguous", "expected": {"vendor": "cloudberth", "status": "held"}}
+{"id": "en-r3-a32", "request": "paid and overdue invoices from July", "kind": "ambiguous", "expected": {"status": "held", "date": {"from": "2026-07-01", "to": "2026-07-31"}}}
+{"id": "en-r3-a33", "request": "Inkhollow invoices from the end of June", "kind": "ambiguous", "expected": {"vendor": "inkhollow", "date": "held"}}
+{"id": "en-r3-a34", "request": "unpaid, not yet due invoices from June or July", "kind": "ambiguous", "expected": {"status": "open", "date": "held"}}
+{"id": "en-r3-a35", "request": "Tallyroot invoices of about $1,000", "kind": "ambiguous", "expected": {"vendor": "tallyroot", "amount": "held"}}
+{"id": "en-r3-a36", "request": "paid invoices under $100 or over $1,000", "kind": "ambiguous", "expected": {"status": "paid", "amount": "held"}}
+{"id": "en-r3-n37", "request": "invoices from the electric company", "kind": "nothing"}
+{"id": "en-r3-n38", "request": "how do I send an invoice to a client?", "kind": "nothing"}
+{"id": "en-r3-n39", "request": "who approved the last payment?", "kind": "nothing"}
+{"id": "en-r3-n40", "request": "hide the amount column", "kind": "nothing"}
+{"id": "en-r3-n41", "request": "group the invoices by vendor", "kind": "nothing"}
+{"id": "en-r3-n42", "request": "ok, that's all", "kind": "nothing"}

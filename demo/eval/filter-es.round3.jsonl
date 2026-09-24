@@ -1,0 +1,42 @@
+{"id": "es-r3-f01", "request": "todas las facturas de Cuentia", "kind": "filterable", "expected": {"vendor": "cuentia"}}
+{"id": "es-r3-f02", "request": "facturas que ya pagamos por completo", "kind": "filterable", "expected": {"status": "paid"}}
+{"id": "es-r3-f03", "request": "facturas con fecha de febrero", "kind": "filterable", "expected": {"date": {"from": "2026-02-01", "to": "2026-02-28"}}}
+{"id": "es-r3-f04", "request": "facturas de más de $1,500", "kind": "filterable", "expected": {"amount": {"min": 1500, "currency": "USD"}}}
+{"id": "es-r3-f05", "request": "facturas de Brisamar que ya pasaron su fecha límite", "kind": "filterable", "expected": {"vendor": "brisamar", "status": "overdue"}}
+{"id": "es-r3-f06", "request": "facturas de Cazuela Azul desde el 15 de julio", "kind": "filterable", "expected": {"vendor": "cazuela", "date": {"from": "2026-07-15"}}}
+{"id": "es-r3-f07", "request": "facturas de Serena de menos de $3,000", "kind": "filterable", "expected": {"vendor": "serena", "amount": {"max": 3000, "currency": "USD"}}}
+{"id": "es-r3-f08", "request": "facturas del segundo trimestre sin pagar y aún sin vencer", "kind": "filterable", "expected": {"status": "open", "date": {"from": "2026-04-01", "to": "2026-06-30"}}}
+{"id": "es-r3-f09", "request": "facturas pagadas de exactamente $615", "kind": "filterable", "expected": {"status": "paid", "amount": {"exact": 615, "currency": "USD"}}}
+{"id": "es-r3-f10", "request": "facturas entre $100 y $500 de julio", "kind": "filterable", "expected": {"date": {"from": "2026-07-01", "to": "2026-07-31"}, "amount": {"min": 100, "max": 500, "currency": "USD"}}}
+{"id": "es-r3-f11", "request": "facturas de Rumbo Claro de agosto sin pagar y aún sin vencer", "kind": "filterable", "expected": {"vendor": "rumboclaro", "status": "open", "date": {"from": "2026-08-01", "to": "2026-08-31"}}}
+{"id": "es-r3-f12", "request": "facturas de Nubalia de más de 250 en los últimos 90 días", "kind": "filterable", "expected": {"vendor": "nubalia", "date": {"from": "2026-06-25", "to": "2026-09-22"}, "amount": {"min": 250}}}
+{"id": "es-r3-f13", "request": "facturas vencidas de menos de $1,000 hasta el 31 de julio", "kind": "filterable", "expected": {"status": "overdue", "date": {"to": "2026-07-31"}, "amount": {"max": 1000, "currency": "USD"}}}
+{"id": "es-r3-f14", "request": "facturas de Pieveloz de más de $30 que ya están pagadas", "kind": "filterable", "expected": {"vendor": "pieveloz", "status": "paid", "amount": {"min": 30, "currency": "USD"}}}
+{"id": "es-r3-f15", "request": "facturas de lindeero", "kind": "filterable", "expected": {"vendor": "lindero"}}
+{"id": "es-r3-f16", "request": "facturas que aún no vencen y que todavía no se han pagado", "kind": "filterable", "expected": {"status": "open"}}
+{"id": "es-r3-f17", "request": "facturas con fecha del 3 de julio", "kind": "filterable", "expected": {"date": {"from": "2026-07-03", "to": "2026-07-03"}}}
+{"id": "es-r3-f18", "request": "facturas de exactamente $455", "kind": "filterable", "expected": {"amount": {"exact": 455, "currency": "USD"}}}
+{"id": "es-r3-f19", "request": "facturas vencidas de Tecnoria por instalar Cuentia o Nubalia", "kind": "filterable", "expected": {"vendor": "tecnoria", "status": "overdue"}}
+{"id": "es-r3-f20", "request": "las facturas de la papelería de abril", "kind": "filterable", "expected": {"vendor": "tintaverde", "date": {"from": "2026-04-01", "to": "2026-04-30"}}}
+{"id": "es-r3-f21", "request": "la factura de nuestro proveedor de café de exactamente $96", "kind": "filterable", "expected": {"vendor": "cafetal", "amount": {"exact": 96, "currency": "USD"}}}
+{"id": "es-r3-f22", "request": "facturas pagadas del primer trimestre", "kind": "filterable", "expected": {"status": "paid", "date": {"from": "2026-01-01", "to": "2026-03-31"}}}
+{"id": "es-r3-f23", "request": "facturas vencidas de $1,000 o más", "kind": "filterable", "expected": {"status": "overdue", "amount": {"min": 1000, "currency": "USD"}}}
+{"id": "es-r3-f24", "request": "facturas de menos de $100 con fecha del 10 de septiembre", "kind": "filterable", "expected": {"date": {"from": "2026-09-10", "to": "2026-09-10"}, "amount": {"max": 100, "currency": "USD"}}}
+{"id": "es-r3-f25", "request": "las facturas del mes pasado de los que limpian las ventanas, sin pagar y aún sin vencer", "kind": "filterable", "expected": {"vendor": "relucir", "status": "open", "date": {"from": "2026-08-01", "to": "2026-08-31"}}}
+{"id": "es-r3-f26", "request": "facturas de Letranueva entre $100 y $400 desde el 1 de marzo", "kind": "filterable", "expected": {"vendor": "letranueva", "date": {"from": "2026-03-01"}, "amount": {"min": 100, "max": 400, "currency": "USD"}}}
+{"id": "es-r3-f27", "request": "facturas sin pagar y aún sin vencer entre $500 y $2,000 de los últimos 45 días", "kind": "filterable", "expected": {"status": "open", "date": {"from": "2026-08-09", "to": "2026-09-22"}, "amount": {"min": 500, "max": 2000, "currency": "USD"}}}
+{"id": "es-r3-f28", "request": "facturas pagadas de Cobertura Plena de menos de $4,000", "kind": "filterable", "expected": {"vendor": "coberplena", "status": "paid", "amount": {"max": 4000, "currency": "USD"}}}
+{"id": "es-r3-a29", "request": "facturas de Lindero y de Serena de junio", "kind": "ambiguous", "expected": {"vendor": "held", "date": {"from": "2026-06-01", "to": "2026-06-30"}}}
+{"id": "es-r3-a30", "request": "las facturas de la compañía de limpieza de más de $500", "kind": "ambiguous", "expected": {"vendor": "held", "amount": {"min": 500, "currency": "USD"}}}
+{"id": "es-r3-a31", "request": "facturas de Nubalia pendientes o vencidas", "kind": "ambiguous", "expected": {"vendor": "nubalia", "status": "held"}}
+{"id": "es-r3-a32", "request": "facturas pagadas y vencidas de julio", "kind": "ambiguous", "expected": {"status": "held", "date": {"from": "2026-07-01", "to": "2026-07-31"}}}
+{"id": "es-r3-a33", "request": "facturas de Letranueva de finales de junio", "kind": "ambiguous", "expected": {"vendor": "letranueva", "date": "held"}}
+{"id": "es-r3-a34", "request": "facturas sin pagar y aún sin vencer de junio o julio", "kind": "ambiguous", "expected": {"status": "open", "date": "held"}}
+{"id": "es-r3-a35", "request": "facturas de Cuentia de aproximadamente $1,000", "kind": "ambiguous", "expected": {"vendor": "cuentia", "amount": "held"}}
+{"id": "es-r3-a36", "request": "facturas pagadas de menos de $100 o de más de $1,000", "kind": "ambiguous", "expected": {"status": "paid", "amount": "held"}}
+{"id": "es-r3-n37", "request": "facturas de la compañía de luz", "kind": "nothing"}
+{"id": "es-r3-n38", "request": "¿cómo le envío una factura a un cliente?", "kind": "nothing"}
+{"id": "es-r3-n39", "request": "¿quién aprobó el último pago?", "kind": "nothing"}
+{"id": "es-r3-n40", "request": "oculte la columna del monto", "kind": "nothing"}
+{"id": "es-r3-n41", "request": "agrupe las facturas por proveedor", "kind": "nothing"}
+{"id": "es-r3-n42", "request": "listo, eso es todo", "kind": "nothing"}

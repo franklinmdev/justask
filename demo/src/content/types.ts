@@ -362,9 +362,16 @@ export function tag(id: Tag, description: string): Candidate<Tag> {
 	return { id, description, value: id };
 }
 
+/**
+ * A payment status. Its names are the words a request names it by when the
+ * language is not the ids' English, which the pair hold reads beside the id,
+ * a clear typo too (ADR 0011). The provider reads the id and the
+ * description, never the names.
+ */
 export function status(
 	id: TransactionStatus,
 	description: string,
+	names?: string[],
 ): Candidate<TransactionStatus> {
-	return { id, description, value: id };
+	return { id, description, value: id, ...(names && { names }) };
 }
