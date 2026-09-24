@@ -252,7 +252,7 @@ export function measuresOf(
 export function judge(
 	killLines: KillLines,
 	measures: Measures,
-	window: ProbeWindow | null = null,
+	window: ProbeWindow | null,
 ): Verdict {
 	const slowWindow = window?.slow ?? false;
 	const lines = MEASURES.map(({ measure, atLeast }): VerdictLine => {

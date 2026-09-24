@@ -2,9 +2,9 @@ import type { Probe } from "justask/eval";
 
 /**
  * The fixed request every eval run sends straight to the provider: three
- * warm-up calls it discards, then three measured probes before its rows
- * and three after, so the run log holds the
- * provider's latency apart from the flow's (#65). The same for search,
+ * warm-up calls it discards, then three measured probes before its rows and
+ * three after, so the run log holds the provider's latency apart from the
+ * flow's (#65). The same for search,
  * filter and card, in both languages, so one baseline reads them all. Frozen
  * by value in test/demo-probe.test.ts.
  */
