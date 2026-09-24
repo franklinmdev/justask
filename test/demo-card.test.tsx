@@ -237,6 +237,17 @@ describe("the demo's card page", () => {
 		expect(screen.getByText("Expense saved.")).toBeDefined();
 		expect(vendor().value).toBe("");
 		expect(save().getAttribute("aria-disabled")).toBe("true");
+	});
+
+	// One axe run per test: two in one test ran past its 5 s under load (#116).
+	it("passes axe once the expense is saved, its list and Undo on the page", async () => {
+		const { container, user } = renderDemo();
+
+		await suggest(user, "lunch with Larkspur yesterday, $86.40");
+		await user.click(save());
+
+		expect(saved()).toEqual(["Larkspur CateringSep 21, 2026 · Meals$86.40"]);
+		expect(screen.getByRole("button", { name: "Undo" })).toBeDefined();
 		await expectNoAxeViolations(container);
 	});
 
