@@ -4,7 +4,7 @@ import { REQUEST_LIMIT } from "../src/api.ts";
 /**
  * The demo's own checks on a handler route, before the core handler runs.
  * Every limit of the public demo lives here, so the core stays free of policy
- * (ADR 0006, #29). Answers the refusal, or undefined when the request may go on.
+ * (#29). Answers the refusal, or undefined when the request may go on.
  *
  * A request from another origin is refused. One that names no origin passes:
  * every browser names it on a POST, and a script can name any origin it likes,
