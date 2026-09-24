@@ -813,3 +813,34 @@ The owner chose fix 1 on 2026-09-23, with one change: **the card adds `office` f
 ### Run logs
 
 `demo/eval/runs/card-<en|es>-office-<current|backups|short|rest>-<1|2>.jsonl`. `node --conditions=source demo/eval/card.ts office <en|es> <label> <n>` prints a run's office picks with no call.
+
+## False-fill probes (#79)
+
+Carried by [#79](https://github.com/franklinmdev/justask/issues/79), before round 6. The card fills `office` from a vendor that sells office services alone, where the tags left a gap ([ADR 0012](adr/0012-card-fills-an-implied-value-in-a-gap.md)). Its cost is a record at such a vendor that bought something else, which no frozen set has, so it was measured first.
+
+### Probe sets
+
+`demo/eval/card-en.notoffice.jsonl` and `card-es.notoffice.jsonl`, 20 records per language, run with `card.ts run <en|es> notoffice <n>` and no verdict. Approved by the owner in two batches on 2026-09-23 (rows 1 to 10, 11 to 20, English beside Spanish) and frozen by checksum in `test/demo-card-eval.test.ts` in the commit before the first call; no later round may repeat them.
+
+- **Each names one of the eleven office-only vendors, paid for something that is not office**, and expects that vendor, the day and the amount. Every vendor at least once, Glasswell (Relucir) twice.
+- **7 meals** (`Brightmop crew lunch after the deep clean`, `pizza para el equipo de Serena durante la auditoría de nómina`), 2 of them with a client (`Clausewood's catered lunch at the client signing`); **5 travel** (`Swiftlane driver's hotel on the overnight run to Albany`); **8 where no tag fits**, which expect no tags: a staff gift (`birthday gift for our receptionist from Inkhollow`), a donation, raffle and gala tickets, team hoodies, charity race fees, a farewell gift card.
+- Checked with no call: the parser builds every day and amount, no row repeats any set, suggestion or recording, and the code's command and pair holds hold none of them.
+
+### Result
+
+Runs of 2026-09-23 with `jev-1.13.0`, the card as the demo serves it with the rule (gates intent 0.45, vendor 0.7, tags 0.4, spent_on 0.8, total 0.9), today fixed at Wednesday 2026-09-23. Every probe window was normal (medians 216 to 257 ms against 235), and no row errored. `node --conditions=source demo/eval/card.ts gaps <en|es> <n>` prints each row's tags and gap with no call.
+
+| Of 20 rows, runs 1 and 2 | English | Spanish |
+|---|---|---|
+| The tags left a gap | 8, 8 | 8, 8 |
+| Of those, rows no tag fits | 8, 8 | 8, 8 |
+| The vendor filled, so the rule added office: a false fill | 6, 6 | 4, 4 |
+| A tag filled on the 12 rows where one fits | 12, 12 | 12, 12 |
+
+- **The provider leaves the gap exactly on the 8 rows no tag fits**, in both languages and both runs: `not_mentioned` on every tag, office at 0.81 to 1.00. On the 12 rows that name a meal, a trip or a client it filled that tag (`yes` at 0.53 to 0.98), and the rule stayed out.
+- **The false fills are those rows where the vendor filled**: English `en-v-02`, `04`, `09`, `15`, `17`, `19`; Spanish `es-v-04`, `15`, `17`, `19`, the same rows in both runs.
+- **The vendor's gate is the rule's guard here.** The vendor filled on 6 English and 5 Spanish rows of 20; the provider rarely read the office vendor as the one paid for a lunch or a trip, and held it (`not_mentioned` up to 0.95 on `coffee and donuts for the Fixbright technicians`).
+
+### Run logs
+
+`demo/eval/runs/card-<en|es>-notoffice-<1|2>.jsonl`.
