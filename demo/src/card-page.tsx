@@ -10,7 +10,7 @@ import {
 } from "justask/react";
 import { type ReactNode, useRef, useState } from "react";
 import { cardEndpoint } from "./api.ts";
-import { CardPanel } from "./card-panel.tsx";
+import { CardPanel, impliedByOf } from "./card-panel.tsx";
 import type { Content, ExpenseFields, ExpenseName } from "./content/types.ts";
 import { DayPicker } from "./day-picker.tsx";
 import { formats, LOCAL_CURRENCY, parseAmount } from "./format.ts";
@@ -104,7 +104,7 @@ export function CardPage({
 			)}
 			{filledBy === "answer" && (
 				<span className="entry-source">
-					{name === "tags" && card.result?.fields.tags.implied
+					{card.result && impliedByOf(name, card.result)
 						? copy.card.fromVendor
 						: copy.card.fromRequest}
 				</span>

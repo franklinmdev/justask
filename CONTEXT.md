@@ -111,3 +111,11 @@ _Avoid_: Edit request, action
 **Named pair**:
 Two items of one catalog field that a request names with a joiner between them, and no third item of that field: "Tallyroot or Cloudberth", "Lindero y Serena". An "or" word holds any catalog field, an "and" word only a field that takes one item. The search holds its item, and the filter and the card that field, before the gate, whatever the pick (ADR 0010, 0011). A filter's catalog field may opt out with `heldByPair: false` (ADR 0011).
 _Avoid_: Choice, either-or
+
+**Implied value**:
+The items a catalog item declares for another field of a card (`implies`): the demo's office-only vendors imply the `office` tag. The card fills them only in a gap, and says the value came from the other field (ADR 0012).
+_Avoid_: Default, inferred value
+
+**Gap**:
+What a card field where several items may apply is left with when its own questions settle nothing: no named pair holds it, every implied item answered `not_mentioned` or `yes`, and every other item `not_mentioned`, each at any probability, and the field did not fill. A `not_available`, a tie or another item filled is no gap (ADR 0012).
+_Avoid_: Empty field, blank
