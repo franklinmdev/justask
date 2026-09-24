@@ -18,7 +18,7 @@ Single-context: `CONTEXT.md` at the root plus `docs/adr/`. See `docs/agents/doma
 
 - `pnpm lint`: Biome lint and format check (`pnpm format` applies fixes)
 - `pnpm typecheck`: strict `tsc`
-- `pnpm test`: Vitest, once, on four workers (`vitest.config.ts` says why); `pnpm test test/ask.test.ts` for one file
+- `pnpm test`: Vitest, once, on half the cores (`vitest.config.ts` says why); `pnpm test test/ask.test.ts` for one file
 - `pnpm build`: emit `dist/`
 - `pnpm demo`: the local demo in `demo/` (Vite, handler as dev middleware), real Jev calls with the key in `.env`; one discarded warm-up call on start (`demo/server/warm-up.ts`)
 - `node --conditions=source scripts/jev-call.ts ["a request"]`: one real Jev call through `ask`, by hand with the key in `.env`, never in CI; prints latency and cost
