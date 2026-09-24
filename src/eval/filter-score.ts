@@ -48,7 +48,7 @@ export type FilterMiss = {
 	/**
 	 * `shortlist` or `parser` when no candidate could build the expected value,
 	 * so no pick could have been right; `pair` when a named pair held the
-	 * field (ADR 0010); `provider` otherwise.
+	 * field (ADR 0011); `provider` otherwise.
 	 */
 	blame: "shortlist" | "parser" | "pair" | "provider";
 };
@@ -104,7 +104,7 @@ const UNASKED: FieldReading = { value: null, probability: null, label: null };
 /**
  * A field's value at a gate, as `ask` builds it: a catalog field's candidate
  * id, a date range or an amount. Null when the field is held, as it is at
- * every gate when a named pair held it (ADR 0010).
+ * every gate when a named pair held it (ADR 0011).
  */
 export function readField(
 	row: FilterRunRow,

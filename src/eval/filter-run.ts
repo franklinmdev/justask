@@ -41,7 +41,7 @@ export type FilterRunRow = FilterEvalRow & {
 	fields: Record<string, LoggedField>;
 	/** The provider's raw answer, per question id; empty when there was none. */
 	answers: ProviderAnswer;
-	/** Per field, the named pair that held it whatever its pick (ADR 0010); absent when none did, and from logs written before it. */
+	/** Per field, the named pair that held it whatever its pick (ADR 0011); absent when none did, and from logs written before it. */
 	pairs?: Record<string, NamedPair>;
 	/** The whole pipeline, parsing and shortlists included. */
 	latencyMs: number;

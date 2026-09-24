@@ -17,7 +17,7 @@ export type RunRow = EvalRow & {
 	latencyMs: number;
 	/** False when the shortlist was empty, so the provider was never asked. */
 	called: boolean;
-	/** The named pair that held the item whatever its pick (ADR 0010); absent when none did, and from logs written before it. */
+	/** The named pair that held the item whatever its pick (ADR 0011); absent when none did, and from logs written before it. */
 	pair?: NamedPair;
 	/** What the call cost, when the provider reports it (ADR 0006). */
 	costUsd?: number;

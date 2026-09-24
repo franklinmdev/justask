@@ -23,7 +23,7 @@ export type Miss = {
 	/**
 	 * `shortlist` when the expected candidate never reached the provider, so
 	 * no pick could have been right; `pair` when a named pair held the item
-	 * (ADR 0010); `provider` otherwise.
+	 * (ADR 0011); `provider` otherwise.
 	 */
 	blame: "shortlist" | "pair" | "provider";
 };
