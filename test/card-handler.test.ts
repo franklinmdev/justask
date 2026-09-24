@@ -2,9 +2,15 @@ import {
 	type Candidate,
 	type CardHandlerConfig,
 	createCardHandler,
+	ProviderUnavailableError,
 } from "justask";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { failingProvider, fakeProvider, rawProvider } from "./fake-provider.ts";
+import {
+	failingProvider,
+	fakeProvider,
+	rawProvider,
+	unavailableFirstProvider,
+} from "./fake-provider.ts";
 
 type Vendor = { name: string };
 
@@ -116,6 +122,24 @@ describe("createCardHandler", () => {
 		expect(body.card).toBeDefined();
 		expect(body).not.toHaveProperty("costUsd");
 		expect(body).not.toHaveProperty("inputTokens");
+		expect(body).not.toHaveProperty("retried");
+	});
+
+	it("says when ask called the provider twice, with the cost of the call that answered (ADR 0013)", async () => {
+		const response = await handler({
+			provider: unavailableFirstProvider(
+				[new ProviderUnavailableError("529 high traffic")],
+				picks,
+				{ costUsd: 0.000005, inputTokens: 120 },
+			),
+		})(post(asked));
+
+		const body = await response.json();
+		expect(body.error).toBeUndefined();
+		expect(body.retried).toBe(true);
+		// The first call threw, so it reported nothing to add.
+		expect(body.costUsd).toBe(0.000005);
+		expect(body.inputTokens).toBe(120);
 	});
 
 	it("reads yesterday from today in the browser's time zone", async () => {

@@ -111,6 +111,8 @@ export const english: Content = {
 		shortlistLabel: "Shortlist",
 		shortlist: (count, catalog) => `${count} of ${catalog} vendors`,
 		latency: "Latency",
+		calls: "Calls",
+		retried: "(retried)",
 		inputTokens: "Input tokens",
 		cost: "Cost",
 		recorded: (date) => `Recorded run · ${date}`,

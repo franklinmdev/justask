@@ -273,6 +273,9 @@ export type Copy = {
 	shortlistLabel: string;
 	shortlist: (count: number, catalog: number) => string;
 	latency: string;
+	/** Shown only when `ask` called the provider twice (ADR 0013): the term, and the words beside the 2. */
+	calls: string;
+	retried: string;
 	inputTokens: string;
 	cost: string;
 	/** The label on a case's recorded run, with the day it ran. */

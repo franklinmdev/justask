@@ -83,6 +83,8 @@ export type FilterReport = {
 	transport: number;
 	/** Rows where ask called the provider once more (ADR 0013); none in a log saved before it. */
 	retried: number;
+	/** Of the retried rows, those with no error: the second call answered them. */
+	recovered: number;
 	/** The provider's latency around the run; null for a run saved before probes. */
 	window: ProbeWindow | null;
 	/** Filled and wrong first, surest first; then held and wrong, in set order. */

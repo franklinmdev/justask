@@ -410,13 +410,25 @@ dd {
 	gap: 12px;
 }
 
+/* Four figures when ask called twice: two rows of two on a phone, one row from 720px. */
+.strip-figures:has(> :nth-child(4)) {
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 720px) {
+	.strip-figures:has(> :nth-child(4)) {
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+	}
+}
+
 .strip dt {
 	margin-bottom: 2px;
 	line-height: 1.2;
 }
 
-/* A figure the provider left out reads as words, never as a zero. */
-.unreported {
+/* A figure the provider left out reads as words, never as a zero; so does what a figure means. */
+.unreported,
+.strip-note {
 	color: var(--muted);
 	font-size: 0.8125rem;
 }

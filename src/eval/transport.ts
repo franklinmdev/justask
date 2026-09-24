@@ -65,11 +65,19 @@ export function transportFailures<R extends Row>(rows: R[]): R[] {
 	return rows.filter(({ error }) => error?.transport === true);
 }
 
-/** A report's count of the rows transport failures left unanswered, and of those `ask` called twice (ADR 0013). */
-export const transportCounts = (rows: (Row & { retried?: true })[]) => ({
-	transport: transportFailures(rows).length,
-	retried: rows.filter(({ retried }) => retried).length,
-});
+/**
+ * A report's count of the rows transport failures left unanswered, of those
+ * `ask` called twice (ADR 0013), and of those the second call recovered: a
+ * retried row with no error.
+ */
+export const transportCounts = (rows: (Row & { retried?: true })[]) => {
+	const retried = rows.filter(({ retried }) => retried);
+	return {
+		transport: transportFailures(rows).length,
+		retried: retried.length,
+		recovered: retried.filter(({ error }) => !error).length,
+	};
+};
 
 /**
  * The eval rows a remeasure sends again: those of the first run's rows that

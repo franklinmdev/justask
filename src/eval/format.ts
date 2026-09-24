@@ -59,18 +59,19 @@ function verdictLines(verdict: Verdict): string[] {
 	];
 }
 
-/** The measures' first line: the rows, their errors and retries, latency and cost. */
+/** The measures' first line: the rows, their errors, retries and the rows those recovered, latency and cost. */
 function callsLine({
 	rows,
 	measures,
 	transport,
 	retried,
+	recovered,
 	costPerCallUsd: cost,
 }: Pick<
 	Report,
-	"rows" | "measures" | "transport" | "retried" | "costPerCallUsd"
+	"rows" | "measures" | "transport" | "retried" | "recovered" | "costPerCallUsd"
 >): string {
-	return `- Rows: ${rows} · errors: ${errorCount(measures.errors, transport)}${retried ? ` · retried ${retried}` : ""} · p95 ${number(measures.p95Ms)} ms · cost per call ${cost === null ? "unknown" : `$${cost.toFixed(7)}`}`;
+	return `- Rows: ${rows} · errors: ${errorCount(measures.errors, transport)}${retried ? ` · retried ${retried} (recovered ${recovered})` : ""} · p95 ${number(measures.p95Ms)} ms · cost per call ${cost === null ? "unknown" : `$${cost.toFixed(7)}`}`;
 }
 
 /** The probes' line of the measures; none for a run saved before probes. */

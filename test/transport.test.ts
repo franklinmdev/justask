@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { type Provider, ProviderUnavailableError } from "justask";
 import {
 	formatCardReport,
+	formatFilterReport,
 	formatReport,
 	type KillLines,
 	mergeRemeasure,
@@ -19,6 +20,7 @@ import {
 	runEval,
 	runFilterEval,
 	scoreCardRun,
+	scoreFilterRun,
 	scoreRun,
 } from "justask/eval";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -147,9 +149,22 @@ describe("a run's errors", () => {
 				undefined,
 			]);
 		}
-		expect(scoreRun(search).retried).toBe(2);
+		// Of the two rows that retried, `busy once` answered on its second call.
+		for (const report of [
+			scoreRun(search),
+			scoreFilterRun(filter),
+			scoreCardRun(card),
+		]) {
+			expect(report).toMatchObject({ retried: 2, recovered: 1 });
+		}
 		expect(formatReport(scoreRun(search))).toContain(
-			"errors: 4 (2 transport) · retried 2 ·",
+			"errors: 4 (2 transport) · retried 2 (recovered 1) ·",
+		);
+		expect(formatFilterReport(scoreFilterRun(filter))).toContain(
+			"errors: 4 (2 transport) · retried 2 (recovered 1) ·",
+		);
+		expect(formatCardReport(scoreCardRun(card))).toContain(
+			"errors: 4 (2 transport) · retried 2 (recovered 1) ·",
 		);
 		expect(await readRun(join(dir, "search.jsonl"))).toEqual(search);
 	});
