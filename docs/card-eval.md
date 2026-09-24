@@ -12,7 +12,7 @@
 
 **Office tag diagnosis (#77): the office tag fills when a request names a service its label lists, and almost never from the service alone, in both languages.** Without its list the label fills no row, whether shortened or naming what office is not, and adding backups fills the backups row alone. The owner chose the vendor fix, filling a gap only, carried with round 6 by [#79](https://github.com/franklinmdev/justask/issues/79); nothing has landed. See Office tag diagnosis below; rounds 1 to 5 are unchanged.
 
-**Round 6 (#79): the card with the vendor's office fill fails on English exact alone; Spanish passes every line.** Office is filled from an office-only vendor where the tags left a gap ([ADR 0012](adr/0012-card-fills-an-implied-value-in-a-gap.md)), its false-fill cost measured first on probes. English covers 0.79 but fixes 29 of 33 cards (0.879 against 0.9), every correction a tag the provider picked; Spanish covers 0.766, against round 5's 0.694. The rule filled no field wrong in any run. See Round 6: result below; rounds 1 to 5 are unchanged.
+**Round 6 (#79): the card with the vendor's office fill fails on English exact alone; Spanish passes every line.** Office is filled from an office-only vendor where the tags left a gap ([ADR 0012](adr/0012-card-fills-an-implied-value-in-a-gap.md)), its false-fill cost measured first on probes. English covers 0.79 but fixes 29 of 33 cards (0.879 against 0.9), every correction a tag the provider picked; Spanish covers 0.766, against round 5's 0.694. The rule filled no field wrong in any run. The owner ruled on 2026-09-23 that card measurement moves next to [#86](https://github.com/franklinmdev/justask/issues/86), with no round 7 before it. See Round 6: result below; rounds 1 to 5 are unchanged.
 
 **Latency (#65): from the next verdict run on, every run sends a fixed provider probe before and after its rows, and a run whose probes are more than twice the baseline leaves a failing latency line pending, to be measured again in a normal window.** See Latency below; round 4 stays a FAIL.
 
@@ -923,6 +923,10 @@ English: 1 flip, `Tallyroo bank reconciliation add-on` filled its day. Coverage 
 - **English fails on the provider's tags, not the rule.** Four corrections of 33 cards: `billable to the client` dropped `office` for the fifth round running, `for the client workshop` dropped `client`, and both tag rows that must hold leaked: coffee or beans filled `meals` and `office`, and `may end up billable` filled `travel` exactly at the gate of 0.4. Round 5's English had one correction; these rows are fresh, and the shapes are rounds 2 to 5's.
 - **English held ambiguous sits on its line,** 0.75 in both runs, the two leaks both tags.
 - **The Spanish intent held four cards** (a non-compete drafting at `not_mentioned` 0.65, fire coverage with no amount at 0.62, and two picks just under the gate, 0.40 and 0.39), none a nothing row read wrong.
+
+### Next
+
+The owner ruled on 2026-09-23, after this result, that card measurement moves next to [#86](https://github.com/franklinmdev/justask/issues/86), with no round 7 before it. Round 6's FAIL stands as recorded.
 
 ### Run logs
 
