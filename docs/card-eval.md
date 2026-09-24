@@ -1314,3 +1314,39 @@ English: 2 flips, no error, no retry. Exact 0.95 (133 of 140), coverage 0.871, h
 - Run 2: `demo/eval/runs/card-en-round8-2.jsonl`, `demo/eval/runs/card-es-round8-2.jsonl`
 
 Each rescores with `scoreCardRun(await readCardRun(path), { gates })` and no call.
+
+## Copy probes (#99)
+
+Carried by [#99](https://github.com/franklinmdev/justask/issues/99), before round 9. Round 8's `en-r8-060`, `copy accounting on the Cloudberth bill`, read as a new record in both runs: copying someone on a record is a send, and the intent's `not_available` label named sending but the provider did not read "copy X on" as one. As #57 did, probes came first, at the current label and then at the new one.
+
+### Probe sets
+
+Both run with `card.ts run <en|es> <copy|copyrec> <n>` and no verdict, approved by the owner on 2026-09-24 in batches of 10, English beside Spanish, and frozen by checksum in `test/demo-card-eval.test.ts` in the commit before their first call; no later round may repeat them.
+
+- **`card-<en|es>.copy.jsonl`, 20 rows per language.** Rows 1 to 12 are nothing rows, someone copied or cc'd on a record that exists, on a vendor, an amount, a day or neither: `cc Dana on the Sureharbor invoice`, `cópiale a nuestro contador la factura de $210 de Lindero`, `add accounting to the cc on the Swiftlane receipt`, `cc: contabilidad, factura de Relucir`. Rows 13 to 20 are records that name a person with no send (`lunch with accounting at Larkspur`, `taxi para la contadora al aeropuerto`), one with `copy` as a noun (`copy paper for accounting`) and one a paid delivery to a person (`Swiftlane courier to take the contract to Dana`).
+- **`card-<en|es>.copyrec.jsonl`, 10 records per language,** approved after the first runs to measure the cost of listing the copy verbs: each holds `copy`/`copiar`, a copy noun or a charge (`the charge`, `el cargo`), four of them in the purpose clause the code check cannot tell from a command (`Tallyroot add-on to copy the invoices to the cloud`, `Serena: el cargo por mover la nómina al viernes`).
+- Checked with no call: the parser builds every day and amount, and no row repeats any set, suggestion or recording.
+
+### Result
+
+Runs of 2026-09-24 with `jev-1.13.0`, the card at round 8's gates (intent 0.45), today fixed at Wednesday 2026-09-23. Every probe window was normal (medians 185 to 228 ms against 235), and no row errored. The old label is "it changes, cancels, deletes, sends or forwards one, sets one to a new value, or asks a question"; the new one adds "copies someone on it" after "sends or forwards one". Copyrec's old-label runs (3, 4) were sent from a working tree with the label reverted, after its new-label runs.
+
+| Runs | English | Spanish |
+|---|---|---|
+| copy nothing rows that filled, old label (copy 1, 2) | 2, 2 of 12 (`03`, `12`) | 2, 2 (`06`, `12`) |
+| the same, new label (copy 3, 4) | 0, 0 | 2, 2 (`06`, `12`) |
+| the same, new label and the Spanish copy verbs (copy 5) | | 1 (`12`) |
+| copy records held, of 8, old label and new | 0, 0 and 0, 0 | 1, 1 and 1, 1 (`20`) |
+| copyrec records held, of 10, old label (copyrec 3, 4) | 1, 1 (`04`) | 1, 1 (`04`) |
+| the same, new label (copyrec 1, 2) | 3, 3 (`01`, `04`, `05`) | 3, 3 (`01`, `04`, `05`) |
+| the same, new label and the Spanish copy verbs (copyrec 5) | | 4 (`01`, `02`, `04`, `05`) |
+
+- **The label carries the English send.** Every English copy row fell to 0.29 or less at the new label, from up to 0.86 (`copy accounting on today's $38 Tallyroot charge`); ten of twelve Spanish ones fell to 0.06 or less. The leaks at the old label all named an amount, as #57's did.
+- **Spanish `cópiale` is `quite` again: the label does not reach it.** `cópiale a nuestro contador la factura de $210 de Lindero` read 0.94 and 0.90 at the old label and 0.70 and 0.64 at the new one; `cópiale a contabilidad el cargo de $38 de hoy de Cuentia` 0.98, 0.99, then 0.85, 0.90.
+- **The label costs records that copy a document.** `copy the old invoice into the new system` fell from 0.59 to 0.11 in English and from 0.74 to 0.20 in Spanish, and `copies of the invoice for the audit` from about 0.52 to 0.34 in both: two of ten records per language held that the old label filled. Every other record, in both sets, moved by 0.14 or less. `the charge for changing the ticket` is held at either label (0.28 to 0.36).
+- **The owner chose the Spanish copy verbs, and no new reference,** on 2026-09-24 from these runs: `copie`, `copiar`, `cópiale`, `cópiele`, `cópiame`, `cópieme` join the Spanish list (ADR 0009, amended). The code now holds `es-c-06` and, of the records, `es-k-01` (which the provider held too) and `es-k-02` alone (`complemento para copiar las facturas`, 0.74 to 0.79), #57's purpose-clause cost. `el cargo` was left off: Spanish writes a fee as `el cargo por <verb>`, and with it the code would also hold `es-k-08` (`el cargo por mover la nómina`, 0.81 to 0.85). So `es-c-12`, a copy on `el cargo`, stays open, and round 9 may meet it. Checked with no call over every frozen Spanish set: the new verbs hold no other row.
+
+### Run logs
+
+- copy: `demo/eval/runs/card-<en|es>-copy-<1|2>.jsonl` at the old label, `<3|4>` at the new, `card-es-copy-5.jsonl` with the Spanish copy verbs
+- copyrec: `demo/eval/runs/card-<en|es>-copyrec-<1|2>.jsonl` at the new label, `<3|4>` at the old, `card-es-copyrec-5.jsonl` with the Spanish copy verbs
