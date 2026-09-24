@@ -4,7 +4,7 @@ import {
 	createCardHandler,
 } from "justask";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { failingProvider, fakeProvider } from "./fake-provider.ts";
+import { failingProvider, fakeProvider, rawProvider } from "./fake-provider.ts";
 
 type Vendor = { name: string };
 
@@ -94,6 +94,18 @@ describe("createCardHandler", () => {
 		})(post(asked));
 
 		const body = await response.json();
+		expect(body.costUsd).toBe(0.000005);
+		expect(body.inputTokens).toBe(120);
+	});
+
+	it("keeps the cost of a call whose answer broke the contract, since it was still made", async () => {
+		const response = await handler({
+			provider: rawProvider({}, { costUsd: 0.000005, inputTokens: 120 }),
+		})(post(asked));
+
+		const body = await response.json();
+		expect(body.card.value).toEqual({});
+		expect(body.error.kind).toBe("provider");
 		expect(body.costUsd).toBe(0.000005);
 		expect(body.inputTokens).toBe(120);
 	});

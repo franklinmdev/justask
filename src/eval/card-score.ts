@@ -276,17 +276,17 @@ function readImplied(
 				answers[id] = { pick: readPick(probabilities), probabilities };
 			}
 			const filled = fillGap(
-				several.candidates.map(({ id }) => ({
-					id,
-					description: "",
-					value: id,
-				})),
+				several.candidates,
 				answers,
 				ids,
 				row.pairs?.[target],
 			);
 			if (filled) {
-				readings[target] = { ...own, value: filled, implied: item.id };
+				readings[target] = {
+					...own,
+					value: filled.map(({ id }) => id),
+					implied: item.id,
+				};
 			}
 		}
 	}

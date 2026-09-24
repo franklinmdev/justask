@@ -6,11 +6,25 @@ import type { Content, Language } from "../src/content/types.ts";
 const OFFICE = "office";
 const QUESTION = `tags_${OFFICE}`;
 
-const servedLabel = (content: Content) => {
+/** The office tag's label, as this content serves it. */
+export const servedLabel = (content: Content) => {
 	const label = content.tags.find(({ id }) => id === OFFICE)?.description;
 	if (label === undefined) throw new Error("the demo serves no office tag");
 	return label;
 };
+
+/** The names of #77's office labels, the only ones a run takes. */
+export const OFFICE_LABEL_NAMES = [
+	"current",
+	"backups",
+	"short",
+	"rest",
+] as const;
+export type OfficeLabel = (typeof OFFICE_LABEL_NAMES)[number];
+
+export const isOfficeLabel = (
+	label: string | undefined,
+): label is OfficeLabel => OFFICE_LABEL_NAMES.some((name) => name === label);
 
 /**
  * #77's office labels, each changing one thing from the one the demo serves
@@ -19,7 +33,7 @@ const servedLabel = (content: Content) => {
  * instead of what it is, after `short` showed the list is what fills it. The
  * probe runs measure them; the demo serves `current` alone.
  */
-export const OFFICE_LABELS: Record<Language, Record<string, string>> = {
+export const OFFICE_LABELS: Record<Language, Record<OfficeLabel, string>> = {
 	en: {
 		current: servedLabel(english),
 		backups:
@@ -37,11 +51,8 @@ export const OFFICE_LABELS: Record<Language, Record<string, string>> = {
 };
 
 /** The demo's content with the office tag read by one of #77's labels, and nothing else changed. */
-export function withOfficeLabel(content: Content, label: string): Content {
+export function withOfficeLabel(content: Content, label: OfficeLabel): Content {
 	const description = OFFICE_LABELS[content.language][label];
-	if (description === undefined) {
-		throw new Error(`no office label named ${label}`);
-	}
 	return {
 		...content,
 		tags: content.tags.map((tag) =>
@@ -55,7 +66,7 @@ export type OfficePick = {
 	request: string;
 	/** The label that won the office tag's question, and its probability. */
 	pick: string;
-	p: number;
+	probability: number;
 	/** The intent's `new_record`, which gates the card but not the tag's question. */
 	newRecord: number | undefined;
 };
@@ -76,19 +87,20 @@ export type OfficePicks = {
  * its tag's pick, since #77 asks why the tag says "not mentioned".
  */
 export function officePicks(run: CardRun): OfficePicks {
-	const gate = run.gates.tags ?? 0;
+	const gate = run.gates.tags;
+	if (gate === undefined) throw new Error("the run has no tags gate");
 	const rows: OfficePick[] = [];
 	for (const row of run.rows) {
 		const answer = row.answers[QUESTION];
 		if (!answer) continue;
-		const [pick, p] = Object.entries(answer).reduce((best, next) =>
+		const [pick, probability] = Object.entries(answer).reduce((best, next) =>
 			next[1] > best[1] ? next : best,
 		);
 		rows.push({
 			id: row.id,
 			request: row.request,
 			pick,
-			p,
+			probability,
 			newRecord: row.answers.intent?.new_record,
 		});
 	}
@@ -96,7 +108,9 @@ export function officePicks(run: CardRun): OfficePicks {
 	for (const { pick } of rows) won[pick] = (won[pick] ?? 0) + 1;
 	return {
 		asked: rows.length,
-		yes: rows.filter(({ pick, p }) => pick === "yes" && p >= gate).length,
+		yes: rows.filter(
+			({ pick, probability }) => pick === "yes" && probability >= gate,
+		).length,
 		won,
 		rows,
 	};
@@ -139,14 +153,17 @@ export function tagGaps(run: CardRun): TagGaps {
 			const [first, second] = sorted;
 			// A tie picks nothing, as the card reads it.
 			const label = first && first[1] !== second?.[1] ? first[0] : "tie";
-			return { id, label, p: first?.[1] ?? 0 };
+			return { id, label, probability: first?.[1] ?? 0 };
 		});
 		if (picks.length === 0) continue;
 		rows.push({
 			id: row.id,
 			request: row.request,
 			picks: picks
-				.map(({ id, label, p }) => `${id} ${label} ${p.toFixed(2)}`)
+				.map(
+					({ id, label, probability }) =>
+						`${id} ${label} ${probability.toFixed(2)}`,
+				)
 				.join(", "),
 			// A named pair holds the tags whatever their picks, as fillGap reads it.
 			gap:

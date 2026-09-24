@@ -347,7 +347,7 @@ export type Content = {
  * expense card, filled only where the tags' own questions left a gap (ADR
  * 0012).
  */
-export const OFFICE_ONLY: { tags: Tag[] } = { tags: ["office"] };
+export const IMPLIES_OFFICE: { tags: Tag[] } = { tags: ["office"] };
 
 /**
  * A catalog row: the provider reads the description, never the value. Its

@@ -419,7 +419,7 @@ function fillImplied(
 			const held = fields[target] as ParsedFieldResult<unknown> & Paired;
 			const filled = fillGap(held.candidates, held.answers, ids, held.pair);
 			if (!filled) continue;
-			value[target] = filled;
+			value[target] = filled.map(({ value }) => value);
 			fields[target] = { ...held, implied: { field: name, id: winner.id } };
 		}
 	}

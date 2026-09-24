@@ -99,8 +99,15 @@ function heldReasonOf(
 		: { kind: "conflict" };
 }
 
-/** The vendor whose every sale takes the tags the card filled, in a gap their answers left (ADR 0012). */
-function impliedByOf(name: ExpenseName, result: Result): string | undefined {
+/**
+ * The vendor whose every sale takes the tags the card filled, in a gap their
+ * answers left (ADR 0012); undefined for any other field, or tags the request
+ * filled.
+ */
+export function impliedByOf(
+	name: ExpenseName,
+	result: Result,
+): string | undefined {
 	const implied = name === "tags" ? result.fields.tags.implied : undefined;
 	if (!implied) return undefined;
 	return result.fields.vendor.candidates.find(({ id }) => id === implied.id)

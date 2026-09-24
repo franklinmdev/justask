@@ -326,8 +326,10 @@ function choicePlan<T>(
 	candidates: Candidate<T>[],
 	gate: number,
 	fill: (value: T) => unknown,
-	ambiguous: (value: T) => boolean = () => false,
-	pair?: NamedPair,
+	{
+		ambiguous = () => false,
+		pair,
+	}: { ambiguous?: (value: T) => boolean; pair?: NamedPair | undefined } = {},
 ): FieldPlan {
 	const held = {
 		candidates,
@@ -376,15 +378,9 @@ export function cardPlan(
 			: null;
 	switch (field.kind) {
 		case "catalog":
-			return choicePlan(
-				name,
-				ask(catalog, ""),
-				catalog,
-				field.gate,
-				(v) => v,
-				undefined,
+			return choicePlan(name, ask(catalog, ""), catalog, field.gate, (v) => v, {
 				pair,
-			);
+			});
 		case "date":
 			return choicePlan(
 				name,
@@ -395,7 +391,7 @@ export function cardPlan(
 				readings.dates,
 				field.gate,
 				({ from, to }) => (from === to ? from : undefined),
-				({ ambiguous }) => ambiguous === true,
+				{ ambiguous: ({ ambiguous }) => ambiguous === true },
 			);
 		case "time":
 			return choicePlan(
@@ -407,7 +403,7 @@ export function cardPlan(
 				readings.times,
 				field.gate,
 				({ time }) => time,
-				({ ambiguous }) => ambiguous === true,
+				{ ambiguous: ({ ambiguous }) => ambiguous === true },
 			);
 		case "amount":
 			return choicePlan(
@@ -555,28 +551,27 @@ export function checkImplies(
 }
 
 /**
- * The implied items' values for a field where several items may apply, only
- * where its own questions left a gap (ADR 0012): no named pair held it, every
+ * The implied items of a field where several items may apply, only where
+ * its own questions left a gap (ADR 0012): no named pair held it, every
  * implied item answered `not_mentioned` or `yes` at any probability, and
  * every other item `not_mentioned`. Callers ask it only of a field that did
- * not fill, so a `yes` here sits below the gate. It never fills over a `not_available`, a
- * tie, or another item the provider filled or held. Undefined when there is
- * no gap, or the field's shortlist holds none of the implied items.
+ * not fill, so a `yes` here sits below the gate. It never fills over a
+ * `not_available`, a tie, or another item the provider filled or held.
+ * Undefined when there is no gap, or the field's items hold none of the
+ * implied ones.
  */
-export function fillGap<T>(
-	candidates: Candidate<T>[],
+export function fillGap<C extends { id: string }>(
+	items: C[],
 	answers: Record<string, FieldAnswer>,
 	implied: readonly string[],
 	pair?: NamedPair,
-): T[] | undefined {
+): C[] | undefined {
 	if (pair) return undefined;
-	const gap = candidates.every(({ id }) => {
+	const gap = items.every(({ id }) => {
 		const label = answers[id]?.pick?.label;
 		return label === NOT_MENTIONED || (implied.includes(id) && label === YES);
 	});
 	if (!gap) return undefined;
-	const values = candidates
-		.filter(({ id }) => implied.includes(id))
-		.map(({ value }) => value);
-	return values.length > 0 ? values : undefined;
+	const filled = items.filter(({ id }) => implied.includes(id));
+	return filled.length > 0 ? filled : undefined;
 }
