@@ -940,7 +940,7 @@ Each rescores with `scoreCardRun(await readCardRun(path), { gates })` and no cal
 
 ## Before round 7: tags, set size and shapes (#86)
 
-Carried by [#86](https://github.com/franklinmdev/justask/issues/86), decided with no provider call. Rounds 1 to 6 above stand as recorded, and none is re-scored against what follows: this section decides the expected values of rows not yet written, and nothing else. No kill line, measure, gate, label or code the demo serves changes. Round 7 is its own ticket and follows this procedure.
+Carried by [#86](https://github.com/franklinmdev/justask/issues/86), decided with no provider call. Rounds 1 to 6 above stand as recorded, and none is re-scored against what follows: this section decides the expected values of rows not yet written, and nothing else. No kill line, measure, gate, label or code the demo serves changes. Round 7 is carried by [#88](https://github.com/franklinmdev/justask/issues/88) and follows this procedure. The owner approved the tag cover, its four disputed rulings and the set size of 168 rows per language on 2026-09-23, as written below.
 
 Rounds 2 to 6 each failed by one or two items, each on a different line, and round 6 failed English exact at 0.879 (29 of 33 cards) where 30 of 33 would have passed. Three things made one row decide a verdict: rows whose expected tags the written rule did not settle, 33 cards per language where one card moves exact by 0.03, and the same row shapes carried at the same positions from round to round.
 
@@ -1008,7 +1008,9 @@ Rounds 2 to 6 were drafted on round 1's positions (round 6: "the same shape as r
 
 ### Procedure for round 7
 
-1. The round 7 ticket drafts the shape list (Row shapes, above) and the owner approves it.
+Carried by [#88](https://github.com/franklinmdev/justask/issues/88).
+
+1. #88 drafts the shape list (Row shapes, above) and the owner approves it.
 2. Rows are drafted to it, 168 per language in the mix above, their tags by the tag cover, and approved in batches; the shape field and the cap check land, and the sets are frozen by checksum in `test/demo-card-eval.test.ts` in the commit before the first call.
-3. The card, gates, labels, kill lines and `PROBE_BASELINE_MS` are round 6's as `demo/server/handler.ts` and `demo/eval/probe.ts` serve them, unless the round 7 ticket changes one, from dev runs, before any round 7 call.
+3. The card, gates, labels, kill lines and `PROBE_BASELINE_MS` are round 6's as `demo/server/handler.ts` and `demo/eval/probe.ts` serve them, unless #88 changes one, from dev runs, before any round 7 call.
 4. Run 1 per language gives the verdict, under the latency rule; run 2 reports flips only. Results are recorded here as in rounds 1 to 6.
