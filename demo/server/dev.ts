@@ -1,5 +1,5 @@
 import { jevProvider } from "justask/jev";
-import { createDemoHandler } from "./handler.ts";
+import { createDemoHandler, logError } from "./handler.ts";
 import { warmUp } from "./warm-up.ts";
 
 const provider = jevProvider();
@@ -9,14 +9,7 @@ const provider = jevProvider();
  * TYPESAFE_API_KEY from the server's environment, which the Vite config loads
  * from .env; nothing here reaches the browser bundle.
  */
-export const handle = createDemoHandler(provider, {
-	onError(error) {
-		console.error(
-			`justask: ${error.message}`,
-			error.kind === "provider" ? error.cause : "",
-		);
-	},
-});
+export const handle = createDemoHandler(provider, { onError: logError });
 
 /**
  * One discarded call on the dev server's start, so the provider's cold start

@@ -674,3 +674,67 @@ describe("the demo's card page", () => {
 		expect(saved()).toEqual(["Larkspur Catering$86.40"]);
 	});
 });
+
+describe("the demo's card page on Cloudflare's CPU limit", () => {
+	/**
+	 * The demo as the browser runs it, where Cloudflare answers the first
+	 * `pages` requests itself with `status` and `body`, as it does when the
+	 * Worker runs out of CPU (error 1102), and the handler after that.
+	 */
+	function renderLimited(pages: number, status: number, body: string) {
+		history.replaceState(null, "", "/?case=form");
+		const handler = createDemoHandler(byRequest);
+		const sent: string[] = [];
+		render(
+			<App
+				fetch={async (input, init) => {
+					sent.push(String(input));
+					if (sent.length <= pages) {
+						return new Response(body, {
+							status,
+							headers: { "content-type": "text/plain; charset=UTF-8" },
+						});
+					}
+					return handler(
+						new Request(new URL(String(input), location.href), init),
+					);
+				}}
+				recordings={null}
+			/>,
+		);
+		return { sent, user: userEvent.setup() };
+	}
+
+	it("sends a request Cloudflare stopped on the CPU limit once more, and fills the card", async () => {
+		const { sent, user } = renderLimited(1, 503, "error code: 1102");
+
+		await suggest(user, "lunch with Larkspur yesterday, $86.40");
+
+		expect(vendor().value).toBe("larkspur");
+		expect(sent).toEqual(["/api/card/en", "/api/card/en"]);
+		expect(byRequest.calls).toHaveLength(1);
+	});
+
+	it("shows the usual error when the second try is stopped too, with no third", async () => {
+		const { sent, user } = renderLimited(2, 503, "error code: 1102");
+
+		await suggest(user, "lunch with Larkspur yesterday, $86.40");
+
+		expect(
+			screen.getByText(
+				"The request could not be read, so the card stays as it was. Fill it in by hand.",
+			),
+		).toBeDefined();
+		expect(sent).toHaveLength(2);
+		expect(byRequest.calls).toHaveLength(0);
+	});
+
+	it("sends any other failure of Cloudflare's once, as before", async () => {
+		const { sent, user } = renderLimited(1, 503, "error code: 1027");
+
+		await suggest(user, "lunch with Larkspur yesterday, $86.40");
+
+		expect(sent).toHaveLength(1);
+		expect(vendor().value).toBe("");
+	});
+});
