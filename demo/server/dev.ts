@@ -23,4 +23,4 @@ export const handle = createDemoHandler(provider, {
  * falls on it and not on a visitor's first request, which would time out
  * (#65).
  */
-export const warm = () => warmUp(provider, { times: 1 });
+export const warmOnStart = () => warmUp(provider, { times: 1 });
