@@ -1,6 +1,6 @@
 # Filter eval: sets, kill lines and verdict
 
-**Status: round 3 run (#75), verdict PASS in both languages (run 1), the first round with status pairs and the Spanish status names; its one leak, a vendor paraphrase two cleaners fit, is no pair. Round 2: verdict PASS in both languages (run 1) with no miss, with the named-pair hold of ADR 0011, which held the two Spanish pairs the provider alone would have filled. Round 1: verdict PASS in both languages (run 1), with no wrong value shown and nothing invented. Sets, kill lines and gate rule approved and frozen by the owner on 2026-09-22 (#17), before any provider call; the gates were fixed from the dev runs by that rule and written into the demo before run 1.**
+**Status: the status field out of the named-pair hold (#80), every saved run rescored with no call: the probes' negated statuses fill, no verdict changes. Round 3 (#75): verdict PASS in both languages (run 1), the first round with status pairs and the Spanish status names; its one leak, a vendor paraphrase two cleaners fit, is no pair. Round 2: verdict PASS in both languages (run 1) with no miss, with the named-pair hold of ADR 0011, which held the two Spanish pairs the provider alone would have filled. Round 1: verdict PASS in both languages (run 1), with no wrong value shown and nothing invented. Sets, kill lines and gate rule approved and frozen by the owner on 2026-09-22 (#17), before any provider call; the gates were fixed from the dev runs by that rule and written into the demo before run 1.**
 
 **Hypothesis:** on the demo's fictional transactions, the filter turns a request into the exact filter object a person means (vendor, status, date, amount), or leaves a field empty when it cannot tell, in English and in Spanish, as the person types.
 
@@ -291,3 +291,18 @@ No flip in either language; `es-r3-a30` filled Relucir again at 0.62. p95 386 an
 
 - Run 1: `demo/eval/runs/filter-en-round3-1.jsonl`, `demo/eval/runs/filter-es-round3-1.jsonl`
 - Run 2: `demo/eval/runs/filter-en-round3-2.jsonl`, `demo/eval/runs/filter-es-round3-2.jsonl`
+
+## The status field out of the pair hold: every saved run rescored
+
+Carried by [#80](https://github.com/franklinmdev/justask/issues/80). The owner took the demo's status field out of the named-pair hold on 2026-09-23, after the probes and round 3 above showed the gate held every status pair and the hold's only cost was a negated status (ADR 0011, Amendment). The vendor keeps the hold. The Spanish status names went with it, since only the hold read them.
+
+Every saved filter run log was rescored with no call: a field keeps the pair its log saved only while the demo's filter still holds it, so the status pairs drop and the vendor pairs stay. Pinned in `test/demo-filter-eval.test.ts`.
+
+| Logs | Status pairs saved | What changes |
+|---|---|---|
+| Round 1 (`filter-<en\|es>-<1\|2>`), round 2 (`-round2-<1\|2>`), dev run 1 (`-dev-1`) | none | nothing |
+| Round 3 (`-round3-<1\|2>`) | rows 31 and 32, both languages | nothing the report judges: the status gate holds all 8 (open 0.51 on row 31 in English, paid 0.70 and 0.60 on row 32 in Spanish, `not_available` on top of the rest). Verdict PASS in both languages, measures unchanged. The status field's highest wrong pick, none before, is now those picks: 0.51 in English, 0.70 and 0.60 in Spanish |
+| Probes (`-pair-<1\|2>`) | rows 1 to 4 and 7 and 8, both languages | rows 7 and 8 fill right, all 8 (overdue 0.98 to 1, open 0.99 to 1): coverage 0.5 to 1 (4 of 4 filterable rows). Rows 1 to 4 stay held by the gate (no pick above 0.74). No verdict, as before |
+
+- **No row gains a miss, and no verdict changes.** The only misses that go are the probes' rows 7 and 8, in both languages and both runs.
+- **No gate moves.** The gates come from dev run 1, which names no pair; the rescored status picks in round 3 and the probes all sit under 0.95.
