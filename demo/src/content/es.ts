@@ -1,6 +1,7 @@
 import {
 	type Content,
 	type FieldHeldReason,
+	OFFICE_ONLY,
 	status,
 	transaction as t,
 	tag,
@@ -298,6 +299,8 @@ export const spanish: Content = {
 						return fieldHeldBecause(reason);
 				}
 			},
+			impliedBecause: (vendor, tags) =>
+				`Completado desde el proveedor: toda venta de ${vendor} lleva la etiqueta ${tags.toLowerCase()}, y ninguna respuesta de las etiquetas decía otra cosa.`,
 			tagQuestion: (name) => `¿Etiqueta ${name.toLowerCase()}?`,
 			yes: "la solicitud lo pide",
 			unresolved: (mark) => `“${mark}” no es la moneda local`,
@@ -331,6 +334,7 @@ export const spanish: Content = {
 			"Papelería Tintaverde",
 			"papel, tóner y artículos de oficina",
 			"Tintaverde",
+			OFFICE_ONLY,
 		),
 		vendor(
 			"cazuela",
@@ -343,24 +347,28 @@ export const spanish: Content = {
 			"Nubalia Hosting",
 			"alojamiento de páginas web y servidores en la nube",
 			"Nubalia",
+			OFFICE_ONLY,
 		),
 		vendor(
 			"brisamar",
 			"Limpiezas Brisamar",
 			"limpieza nocturna de oficinas",
 			"Brisamar",
+			OFFICE_ONLY,
 		),
 		vendor(
 			"relucir",
 			"Relucir Servicios de Limpieza",
 			"limpieza de oficinas y de ventanas",
 			"Relucir",
+			OFFICE_ONLY,
 		),
 		vendor(
 			"letranueva",
 			"Imprenta Letranueva",
 			"tarjetas de presentación, volantes y letreros",
 			"Letranueva",
+			OFFICE_ONLY,
 		),
 		vendor(
 			"rumboclaro",
@@ -373,6 +381,7 @@ export const spanish: Content = {
 			"Cuentia Software",
 			"licencias de software contable",
 			"Cuentia",
+			OFFICE_ONLY,
 		),
 		vendor(
 			"cafetal",
@@ -385,25 +394,35 @@ export const spanish: Content = {
 			"Mensajería Pieveloz",
 			"mensajería el mismo día",
 			"Pieveloz",
+			OFFICE_ONLY,
 		),
 		vendor(
 			"lindero",
 			"Bufete Lindero",
 			"revisión de contratos y asesoría legal",
 			"Lindero",
+			OFFICE_ONLY,
 		),
 		vendor(
 			"tecnoria",
 			"Tecnoria Soporte",
 			"reparación de computadoras y soporte técnico",
 			"Tecnoria",
+			OFFICE_ONLY,
 		),
-		vendor("serena", "Nómina Serena", "nómina y recursos humanos", "Serena"),
+		vendor(
+			"serena",
+			"Nómina Serena",
+			"nómina y recursos humanos",
+			"Serena",
+			OFFICE_ONLY,
+		),
 		vendor(
 			"coberplena",
 			"Seguros Cobertura Plena",
 			"seguros para empresas",
 			"Cobertura Plena",
+			OFFICE_ONLY,
 		),
 	],
 	transactions: [

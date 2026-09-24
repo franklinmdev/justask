@@ -129,6 +129,8 @@ export type CardCopy = {
 	>;
 	intentBecause: (reason: IntentReason) => string;
 	heldBecause: (reason: CardHeldReason) => string;
+	/** Why the tags filled from the vendor, in a gap its answers left (ADR 0012). */
+	impliedBecause: (vendor: string, tags: string) => string;
 	tagQuestion: (tag: string) => string;
 	yes: string;
 	unresolved: (mark: string) => string;
@@ -331,20 +333,31 @@ export type Content = {
 };
 
 /**
+ * The tags a vendor that sells office services alone implies for the
+ * expense card, filled only where the tags' own questions left a gap (ADR
+ * 0012).
+ */
+export const OFFICE_ONLY: { tags: Tag[] } = { tags: ["office"] };
+
+/**
  * A catalog row: the provider reads the description, never the value. Its
- * brand is the word or two a request names it by (ADR 0010).
+ * brand is the word or two a request names it by (ADR 0010); what it
+ * implies, the card's tags for a vendor whose every sale takes them (ADR
+ * 0012).
  */
 export function vendor(
 	id: string,
 	name: string,
 	supplies: string,
 	brand: string,
+	implies?: { tags: Tag[] },
 ): Candidate<Vendor> {
 	return {
 		id,
 		description: `${name}, ${supplies}`,
 		value: { id, name, supplies },
 		names: [brand],
+		...(implies && { implies }),
 	};
 }
 

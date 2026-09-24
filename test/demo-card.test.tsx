@@ -98,6 +98,25 @@ const answers: Record<string, FakeAnswers> = {
 		day: "d0",
 		amount: "a0",
 	}),
+	// A vendor that sells office services alone, and no tag asked for: the
+	// vendor fills office (ADR 0012).
+	"Brightmop carpet shampoo yesterday, $140": answer({
+		vendor: question(vendors, "brightmop"),
+		day: "d0",
+		amount: "a0",
+	}),
+	"champú de alfombras de Brisamar ayer, $140": answer({
+		vendor: question(vendors, "brisamar"),
+		day: "d0",
+		amount: "a0",
+	}),
+	// The same vendor, but the provider tagged it meals: the vendor adds nothing.
+	"lunch with the Brightmop crew yesterday, $60": answer({
+		vendor: question(vendors, "brightmop"),
+		tagged: ["meals"],
+		day: "d0",
+		amount: "a0",
+	}),
 	"almuerzo con Cazuela Azul ayer, $86.40": answer({
 		vendor: question(vendors, "cazuela"),
 		tagged: ["meals"],
@@ -434,6 +453,63 @@ describe("the demo's card page", () => {
 			),
 		).toBeDefined();
 		await expectNoAxeViolations(container);
+	});
+
+	it.each([
+		{
+			language: "English",
+			url: "/?case=form",
+			request: "Brightmop carpet shampoo yesterday, $140",
+			office: "Office",
+			hood: "What happened",
+			tags: "Tags",
+			reason:
+				"Filled from the vendor: every sale at Brightmop Cleaning is tagged office, and no tag's answer said otherwise.",
+		},
+		{
+			language: "Spanish",
+			url: "/?case=form&lang=es",
+			request: "champú de alfombras de Brisamar ayer, $140",
+			office: "Oficina",
+			hood: "Qué pasó",
+			tags: "Etiquetas",
+			reason:
+				"Completado desde el proveedor: toda venta de Limpiezas Brisamar lleva la etiqueta oficina, y ninguna respuesta de las etiquetas decía otra cosa.",
+		},
+	])(
+		"tags office from a vendor that sells office services alone, where no tag's answer said otherwise, and says so, in $language",
+		async ({ url, request, office, hood, tags, reason }) => {
+			const { container, user } = renderDemo({ url });
+
+			await user.type(screen.getByRole("searchbox"), `${request}{Enter}`);
+			await screen.findByText(/^(Filled:|Completado:)/);
+
+			expect(checkbox(office).checked).toBe(true);
+			expect(
+				within(panel(hood).getByRole("region", { name: tags })).getByText(
+					reason,
+				),
+			).toBeDefined();
+			await expectNoAxeViolations(container);
+		},
+	);
+
+	it("adds nothing from the vendor when the provider tagged the expense", async () => {
+		const { user } = renderDemo();
+
+		await user.type(
+			screen.getByRole("searchbox", { name: "Describe the expense" }),
+			"lunch with the Brightmop crew yesterday, $60{Enter}",
+		);
+		await screen.findByText(/^Filled:/);
+
+		expect(checkbox("Meals").checked).toBe(true);
+		expect(checkbox("Office").checked).toBe(false);
+		expect(
+			within(panel().getByRole("region", { name: "Tags" })).getByText(
+				/^Every pick cleared the gate/,
+			),
+		).toBeDefined();
 	});
 
 	it("keeps only a number's characters in the amount box, and empties it when a new answer holds the amount", async () => {
