@@ -199,46 +199,32 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 		]);
 	});
 
-	it("hold a named pair in round 3 only on its vendor pair and its two status pairs (#75)", async () => {
+	it("hold a named pair in round 3 only on its vendor pair: the status opts out (#80)", async () => {
 		const held = await pairHeldIn(round3);
-		expect(held).toEqual([
-			`${content.language}-r3-a29 vendor`,
-			`${content.language}-r3-a31 status`,
-			`${content.language}-r3-a32 status`,
-		]);
+		expect(held).toEqual([`${content.language}-r3-a29 vendor`]);
 	});
 
-	it("hold a named pair on the probes' status pairs, vendor pairs and negated statuses alone (#75)", async () => {
+	it("hold a named pair on the probes' vendor pairs alone: the status opts out (#80)", async () => {
 		const held = await pairHeldIn(pairSet);
 		const probe = `${content.language}-p`;
-		expect(held).toEqual([
-			`${probe}-01 status`,
-			`${probe}-02 status`,
-			`${probe}-03 status`,
-			`${probe}-04 status`,
-			`${probe}-05 vendor`,
-			`${probe}-06 vendor`,
-			// A negated status beside another: a false hold the probes measure.
-			`${probe}-07 status`,
-			`${probe}-08 status`,
-		]);
+		expect(held).toEqual([`${probe}-05 vendor`, `${probe}-06 vendor`]);
 	});
 
 	it.each([
 		{
 			en: "paid or overdue invoices",
 			es: "facturas pagadas o vencidas",
-			held: ["status"],
+			held: [],
 		},
 		{
 			en: "the open and the overdue invoice",
 			es: "la factura pendiente y la vencida",
-			held: ["status"],
+			held: [],
 		},
-		// "pasada" is one letter from "pagada": the Spanish name is plural, so a date never reads as paid.
+		// A negated status beside another: the hold misread it, the provider does not (#80).
 		{
-			en: "overdue invoices or the ones from last week",
-			es: "facturas vencidas o la semana pasada",
+			en: "invoices not paid and overdue",
+			es: "facturas pendientes y no vencidas",
 			held: [],
 		},
 		{
@@ -247,7 +233,7 @@ describe.each([english, spanish])("the filter sets in $language", (content) => {
 			held: ["vendor"],
 		},
 	])(
-		"hold only the field a named pair names, as $en is written in each language (#75)",
+		"hold the vendor on a named pair and never the status, as $en is written in each language (#80)",
 		async (row) => {
 			const request = content.language === "es" ? row.es : row.en;
 			expect(await pairHeld(request)).toEqual(row.held);
@@ -378,5 +364,105 @@ describe("the filter's gates", () => {
 		);
 
 		expect(fixed).toEqual(FILTER_GATES);
+	});
+});
+
+/**
+ * Every saved filter run log rescored with no call as the demo's filter holds
+ * pairs now: a field keeps the pair its log saved only while the filter still
+ * holds it, so the status's pairs drop and nothing else moves (#80).
+ */
+describe("the saved filter runs, rescored with the status out of the pair hold", () => {
+	const logs = readdirSync(evalFile("runs/"))
+		.filter((file) => file.startsWith("filter-"))
+		.sort();
+	const filters = {
+		en: demoFilter(english),
+		es: demoFilter(spanish),
+	};
+	const heldNow = async (language: "en" | "es", request: string) => {
+		const { filter: result } = await ask({
+			request,
+			facts: { ...FACTS, today: TODAY },
+			provider: failingProvider(new Error("no call")),
+			timeoutMs: 1_000,
+			filter: filters[language],
+		});
+		return new Set(
+			Object.entries(result.fields)
+				.filter(([, field]) => "pair" in field && field.pair)
+				.map(([name]) => name),
+		);
+	};
+	const rescore = async (file: string) => {
+		const language = file.slice("filter-".length, "filter-xx".length) as
+			| "en"
+			| "es";
+		const run = await readFilterRun(evalFile(`runs/${file}`).pathname);
+		const rows = await Promise.all(
+			run.rows.map(async ({ pairs, ...row }) => {
+				if (!pairs) return row;
+				const held = await heldNow(language, row.request);
+				const kept = Object.fromEntries(
+					Object.entries(pairs).filter(([name]) => held.has(name)),
+				);
+				return Object.keys(kept).length > 0 ? { ...row, pairs: kept } : row;
+			}),
+		);
+		return {
+			before: scoreFilterRun(run),
+			after: scoreFilterRun({ ...run, rows }),
+		};
+	};
+	const missKey = ({
+		id,
+		field,
+		got,
+	}: {
+		id: string;
+		field: string;
+		got: unknown;
+	}) => `${id} ${field} ${JSON.stringify(got)}`;
+
+	it("fill the status of the probes' negated rows, and gain no miss anywhere", async () => {
+		const gone: string[] = [];
+		for (const file of logs) {
+			const { before, after } = await rescore(file);
+			const now = new Set(after.misses.map(missKey));
+			const was = new Set(before.misses.map(missKey));
+			expect(
+				[...now].filter((miss) => !was.has(miss)),
+				file,
+			).toEqual([]);
+			for (const miss of before.misses) {
+				if (!now.has(missKey(miss)))
+					gone.push(`${file} ${miss.id} ${miss.field}`);
+			}
+		}
+		expect(gone).toEqual(
+			["en-pair-1", "en-pair-2", "es-pair-1", "es-pair-2"].flatMap((log) => {
+				const language = log.slice(0, 2);
+				return [
+					`filter-${log}.jsonl ${language}-p-07 status`,
+					`filter-${log}.jsonl ${language}-p-08 status`,
+				];
+			}),
+		);
+	});
+
+	it("change no verdict, and no measure outside the probes' coverage", async () => {
+		for (const file of logs) {
+			const { before, after } = await rescore(file);
+			if (file.includes("-pair-")) {
+				expect(after.measures, file).toEqual({
+					...before.measures,
+					coverage: 1,
+				});
+				expect(before.measures.coverage, file).toBe(0.5);
+				continue;
+			}
+			expect(after.measures, file).toEqual(before.measures);
+			expect(after.verdict, file).toEqual(before.verdict);
+		}
 	});
 });
