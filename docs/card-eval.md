@@ -816,7 +816,7 @@ The owner chose fix 1 on 2026-09-23, with one change: **the card adds `office` f
 
 ### Run logs
 
-`demo/eval/runs/card-<en|es>-office-<current|backups|short|rest>-<1|2>.jsonl`. `node --conditions=source demo/eval/card.ts office <en|es> <label> <n>` prints a run's office picks with no call.
+`demo/eval/runs/card-<en|es>-office-<current|backups|short|rest>-<1|2>.jsonl`. `node --conditions=source demo/eval/card.ts office <en|es> <n> <label>` prints a run's office picks with no call.
 
 ## False-fill probes (#79)
 

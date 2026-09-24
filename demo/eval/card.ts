@@ -3,7 +3,7 @@
 //
 //   node --conditions=source demo/eval/card.ts run <en|es> <set> <n>
 //   node --conditions=source demo/eval/card.ts run <en|es> office <n> <label>
-//   node --conditions=source demo/eval/card.ts office <en|es> <label> <n>
+//   node --conditions=source demo/eval/card.ts office <en|es> <n> <label>
 //   node --conditions=source demo/eval/card.ts gaps <en|es> <n>
 //   node --conditions=source demo/eval/card.ts compare <en|es> <set> <first n> <second n>
 //   node --conditions=source demo/eval/card.ts gates <dev n>
@@ -95,9 +95,9 @@ if (command === "run") {
 	if (!content || !n) usage();
 	printTagGaps(await readCardRun(runLogPath(content.language, "notoffice", n)));
 } else if (command === "office") {
-	const [language, label, n] = rest;
+	const [language, n, label] = rest;
 	const content = contents[language as Language];
-	if (!content || !label || !n) usage();
+	if (!content || !n || !label) usage();
 	printOfficePicks(
 		await readCardRun(runLogPath(content.language, "office", n, label)),
 	);
@@ -163,7 +163,7 @@ function usage(): never {
 	const sets = (keep: (set: CardSet) => boolean) =>
 		CARD_SET_NAMES.filter(keep).join("|");
 	console.error(
-		`usage: card.ts run <en|es> <${sets((set) => !isLabelled(set))}> <n> | run <en|es> <${sets(isLabelled)}> <n> <label> | office <en|es> <label> <n> | gaps <en|es> <n> | compare <en|es> <${sets(givesVerdict)}> <first n> <second n> | gates <dev n>`,
+		`usage: card.ts run <en|es> <${sets((set) => !isLabelled(set))}> <n> | run <en|es> <${sets(isLabelled)}> <n> <label> | office <en|es> <n> <label> | gaps <en|es> <n> | compare <en|es> <${sets(givesVerdict)}> <first n> <second n> | gates <dev n>`,
 	);
 	process.exit(1);
 }
