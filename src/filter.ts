@@ -23,6 +23,12 @@ export type CatalogField<T> = {
 	/** The probability the pick needs before the field fills. No default (ADR 0003). */
 	gate: number;
 	shortlist: Shortlist<T>;
+	/**
+	 * False when a named pair never holds the field, which then fills on its
+	 * pick alone: for a field whose gate already holds every pair, where the
+	 * hold only costs the requests it misreads (ADR 0011). Default true.
+	 */
+	holdsPair?: boolean;
 };
 
 /** A field whose candidates are the dates and periods the parsers read, filled as a range of days. */
@@ -59,7 +65,8 @@ export type Filter<F extends Fields> = {
 	 * `or` words ("or"; "o", "u") and `and` words ("and"; "y", "e"). A
 	 * request that names two items of one catalog field, and no third, with
 	 * one of these between them holds that field before its gate, whatever
-	 * its pick, since a catalog field takes one item (ADR 0010, 0011).
+	 * its pick, since a catalog field takes one item, unless the field opts
+	 * out (ADR 0010, 0011).
 	 */
 	joiners?: Joiners;
 };
