@@ -32,6 +32,8 @@ export const CARD_SETS = {
 	round6: { verdict: true },
 	/** Round 7's, four times the size, every row named by one approved shape (#86, #88). */
 	round7: { verdict: true, scale: 4, shapes: ROUND7_SHAPES },
+	/** Round 8's, fresh rows on round 7's shapes, the first under #93's retry and errors rule (#97). */
+	round8: { verdict: true, scale: 4, shapes: ROUND7_SHAPES },
 	/** The gates are fixed from its runs. */
 	dev: { verdict: false },
 	/** #57's probes: commands on a recorded expense, and records with the command words in them. */

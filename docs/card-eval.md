@@ -1229,3 +1229,23 @@ English: 14 flips on 9 rows, one error (`en-r7-167`, the 529 again). Exact 0.964
 - Run 2: `demo/eval/runs/card-en-round7-2.jsonl`, `demo/eval/runs/card-es-round7-2.jsonl`
 
 Each rescores with `scoreCardRun(await readCardRun(path), { gates })` and no call.
+
+## Round 8: the retry, under the errors rule
+
+Carried by [#97](https://github.com/franklinmdev/justask/issues/97). The card's first verdict under #93's errors rule and `ask`'s one retry on a provider-unavailable error ([ADR 0013](adr/0013-ask-calls-an-unavailable-provider-once-more.md)). Nothing else changes: the card, gates, labels, kill lines and `PROBE_BASELINE_MS` are round 7's. The retry changes what a visitor sees, so the round measures it: each report gives the rows that retried and how many of those the retry recovered.
+
+**Code freeze:** the round runs on main `ff6eb4a` (the merge of #96). If a commit lands on main between this freeze and run 1, every saved card log is rescored first and must score as before.
+
+### Round 8 sets
+
+Round 7's shapes, reused as the owner approved on 2026-09-24: every row names one shape of `ROUND7_SHAPES` with round 7's counts, so the two rounds read side by side shape by shape. The rows are new, drafted against every set in `demo/eval/` (probes included), the demo's suggestions and recordings, and the provider probe, approved by the owner in seven batches of 24 rows on 2026-09-24, English beside Spanish (one Spanish word changed at approval: row 131's deli is `charcutería`, not `cafetería`, which sits close to Café del Cafetal), and frozen by checksum in `test/demo-card-eval.test.ts` in the commit before the first round 8 call. Run logs `demo/eval/runs/card-<language>-round8-<n>.jsonl`.
+
+| File | Rows | record | ambiguous | nothing |
+|---|---|---|---|---|
+| `card-en.round8.jsonl` | 168 | 112 | 32 | 24 |
+| `card-es.round8.jsonl` | 168 | 112 | 32 | 24 |
+
+- **Quotas as round 7:** tags in all 112 records, the day in 96, the amount in 108, the vendor in 84, every vendor in four records or more, 28 records with no vendor of the catalog; eight ambiguous rows hold each field.
+- **No order carried over:** drafted by shape and shuffled once, with the same order in both languages; no row shares its shape with round 7's row at the same position.
+- **Checked with no call:** the code holds the eight nothing rows with a listed verb and a reference and the vendor of the four named-pair rows in each language, and no record. One nothing row names two tags with `or` in both languages (`is a parking fee travel or office?`); it expects nothing either way.
+- The same checks as rounds 1 to 7 hold: no request repeats any other set, probe, suggestion or recording, every expected day and amount is one the parser builds on Wednesday 2026-09-23, and every held one is held by the parser's reading or by two candidates.
