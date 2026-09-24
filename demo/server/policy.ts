@@ -4,11 +4,13 @@ import { REQUEST_LIMIT } from "../src/api.ts";
 /**
  * The demo's own checks on a handler route, before the core handler runs.
  * Every limit of the public demo lives here, so the core stays free of policy
- * (#29). Answers the refusal, or undefined when the request may go on.
+ * (ADR 0014, #29). Answers the refusal, or undefined when the request may go on.
  *
  * A request from another origin is refused. One that names no origin passes:
  * every browser names it on a POST, and a script can name any origin it likes,
- * so refusing it would stop only the demo's own recording script.
+ * so refusing it would stop only the demo's own recording script. The owner
+ * kept it so on 2026-09-24: the check is friction, and the real limits are
+ * the budget's and the per-visitor limits' (#109, #110).
  */
 export async function refusal(request: Request): Promise<Response | undefined> {
 	const origin = request.headers.get("origin");
