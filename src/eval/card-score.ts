@@ -201,12 +201,12 @@ function checkGates(gates: Record<string, number>): void {
 /** The intent's pick, and whether it lets the card fill at this gate. */
 function readRowIntent(row: CardRunRow, gate: number) {
 	if (row.error) return { passes: false, pick: null };
-	const { result, passes } = readIntent(
+	const { passes, pick } = readIntent(
 		row.answers[INTENT] ?? {},
 		gate,
 		row.command,
 	);
-	return { passes, pick: result.pick };
+	return { passes, pick };
 }
 
 /** Whether a filled value is the expected one: same id, same ids in any order, same day, time or amount. */

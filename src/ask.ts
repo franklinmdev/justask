@@ -10,6 +10,7 @@ import {
 	fillGap,
 	findCommand,
 	INTENT,
+	type IntentResult,
 	intentQuestion,
 	NO_READINGS,
 	readIntent,
@@ -344,7 +345,12 @@ async function askCard<F extends CardFields>({
 		}),
 	);
 	const planOf = (name: string) => plans[name] as FieldPlan;
-	const intentHeld = { pick: null, probabilities: {}, gate: card.gate };
+	const intentHeld: IntentResult = {
+		pick: null,
+		probabilities: {},
+		gate: card.gate,
+		passes: false,
+	};
 	const held = () =>
 		({
 			intent: intentHeld,
@@ -386,7 +392,7 @@ async function askCard<F extends CardFields>({
 	}
 	if (intent.passes) fillImplied(names, fields, value);
 	return {
-		card: { intent: intent.result, value, fields } as CardResult<F>,
+		card: { intent, value, fields } as CardResult<F>,
 		...outcome.usage,
 	};
 }

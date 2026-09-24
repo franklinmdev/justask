@@ -174,6 +174,11 @@ export type IntentResult = {
 	/** Every label's probability; empty when there was no answer. */
 	probabilities: Probabilities;
 	gate: number;
+	/**
+	 * True when the intent lets the card fill: new_record picked at or above
+	 * the gate, and no command held it.
+	 */
+	passes: boolean;
 	/** The command that held the card before its gate, whatever the pick. */
 	command?: CardCommand;
 };
@@ -197,11 +202,14 @@ export function readIntent(
 	probabilities: Probabilities,
 	gate: number,
 	command?: CardCommand,
-): { result: IntentResult; passes: boolean } {
+): IntentResult {
 	const pick = readPick(probabilities);
 	return {
-		result: { pick, probabilities, gate, ...(command && { command }) },
+		pick,
+		probabilities,
+		gate,
 		passes: !command && pick?.label === NEW_RECORD && pick.probability >= gate,
+		...(command && { command }),
 	};
 }
 
