@@ -364,6 +364,31 @@ describe("the Search case's recorded run", () => {
 		expect(provider.calls).toHaveLength(0);
 		await expectNoAxeViolations(container);
 	});
+
+	it("shows the vendor's rows of the day it ran on a year later (#122)", async () => {
+		vi.setSystemTime(new Date("2027-09-24T15:00:00Z"));
+		renderDemo({ url: "/?case=search&lang=es" });
+		const vendor = search.response.search.item;
+		if (!vendor) throw new Error("The recording found no vendor");
+
+		const table = await screen.findByRole(
+			"table",
+			{ name: `Transacciones con ${vendor.name}` },
+			REPLAY,
+		);
+
+		const date = formats(spanish.locale).date;
+		const ranOn = transactionsOn(spanish.transactions, dayOf(search)).filter(
+			(row) => row.vendorId === vendor.id,
+		);
+		expect(ranOn.length).toBeGreaterThan(0);
+		expect(
+			within(table)
+				.getAllByRole("row")
+				.slice(1)
+				.map((row) => within(row).getAllByRole("cell")[1]?.textContent),
+		).toEqual(ranOn.map((row) => date(row.date)));
+	});
 });
 
 describe("the Form case's recorded run", () => {
