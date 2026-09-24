@@ -1,5 +1,11 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from "@testing-library/react";
+import {
+	cleanup,
+	render,
+	screen,
+	waitFor,
+	within,
+} from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import type { Probabilities, Provider } from "justask";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -237,6 +243,42 @@ describe("the demo's card page", () => {
 		expect(screen.getByText("Expense saved.")).toBeDefined();
 		expect(vendor().value).toBe("");
 		expect(save().getAttribute("aria-disabled")).toBe("true");
+	});
+
+	it("settles the fields an answer filled in field order, again with the next answer (#123)", async () => {
+		const { user } = renderDemo();
+		/** Each settling field's label and its place in the order. */
+		const settling = () =>
+			[...document.querySelectorAll<HTMLElement>(".entry[data-settle]")].map(
+				(entry) => [
+					entry.querySelector(".entry-label")?.textContent,
+					entry.style.getPropertyValue("--settle-at"),
+				],
+			);
+
+		await suggest(user, "lunch with Larkspur yesterday, $86.40");
+		expect(settling()).toEqual([
+			["Vendor", "0"],
+			["Tags", "1"],
+			["Day", "2"],
+			["Amount", "3"],
+		]);
+		const first = vendor().closest(".entry");
+
+		await user.click(
+			screen.getByRole("button", {
+				name: "Papergrove toner last Friday, $120",
+			}),
+		);
+		await waitFor(() => expect(vendor().value).toBe("papergrove"));
+
+		// A new field, so its motion runs again; the held day stays still.
+		expect(vendor().closest(".entry")).not.toBe(first);
+		expect(settling()).toEqual([
+			["Vendor", "0"],
+			["Tags", "1"],
+			["Amount", "2"],
+		]);
 	});
 
 	// One axe run per test: two in one test ran past its 5 s under load (#116).

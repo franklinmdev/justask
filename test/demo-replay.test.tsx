@@ -101,7 +101,7 @@ function picking(candidates: { id: string }[], pick: string): Probabilities {
 
 /**
  * Past the whole replay, on the faked clock: a start pause, the sentence,
- * the box's pause or Enter, the proposal and the press.
+ * then the box's pause or Enter.
  */
 const REPLAY = { timeout: 4_000 };
 
@@ -164,7 +164,7 @@ afterEach(() => {
 });
 
 describe("the Table case's recorded run", () => {
-	it("replays with no call and no click: the sentence, then Apply sets each control in field order", async () => {
+	it("replays with no call and no click: the sentence, then the answer sets each control in field order", async () => {
 		const { container, provider } = renderDemo();
 
 		expect(screen.getByText(label("en", table))).toBeDefined();
@@ -188,7 +188,7 @@ describe("the Table case's recorded run", () => {
 		expect(screen.getByText(/^1 sentence /).textContent).toBe(
 			"1 sentence vs 6 clicks in 2 menus",
 		);
-		// Each control Apply set settles in after the one before; the held one stays still.
+		// Each control the answer set settles in after the one before; the held one stays still.
 		expect(
 			[...container.querySelectorAll<HTMLElement>("[data-settle]")].map(
 				(filter) => [
@@ -259,10 +259,8 @@ describe("the Table case's recorded run", () => {
 		await waitFor(() => expect(figure("Input tokens")).toBe("120"), REPLAY);
 		expect(screen.queryByText(label("en", table))).toBeNull();
 		expect(provider.calls).toHaveLength(1);
-		expect(
-			await screen.findByRole("list", { name: "Filters to apply" }),
-		).toBeDefined();
-		// The table keeps what the replay applied until the person applies more.
+		// The live answer applies itself; the vendor it held keeps the replay's.
+		await waitFor(() => expect(control("Status").value).toBe("overdue"));
 		expect(control("Vendor").value).toBe("fixbright");
 	});
 
@@ -276,10 +274,11 @@ describe("the Table case's recorded run", () => {
 		expect(provider.calls).toHaveLength(0);
 	});
 
-	it("stops when the person sets a table control before the press, and keeps their choice", async () => {
+	it("stops when the person sets a table control before the answer, and keeps their choice", async () => {
 		const { user } = renderDemo();
-		// The proposal is up; Apply is pressed the better part of a second later.
-		await screen.findByRole("list", { name: "Filters to apply" }, REPLAY);
+		const box = searchbox("Filter the transactions");
+		// The sentence is in; the box's pause has not run out.
+		await waitFor(() => expect(box.value).toBe(table.request), REPLAY);
 
 		await user.selectOptions(control("Status"), "paid");
 		await act(() => vi.advanceTimersByTimeAsync(1_500));

@@ -126,15 +126,6 @@ function panel(name = "What happened") {
 	return within(screen.getByRole("region", { name }));
 }
 
-function proposed(name = "Filters to apply") {
-	const list = screen.queryByRole("list", { name });
-	return list
-		? within(list)
-				.getAllByRole("listitem")
-				.map((item) => item.textContent)
-		: [];
-}
-
 /** The transactions the table shows. */
 function rows(name = "Transactions") {
 	const table = screen.queryByRole("table", { name });
@@ -152,8 +143,12 @@ function amountBox(name: string) {
 	return screen.getByRole("textbox", { name }) as HTMLInputElement;
 }
 
-function waitForProposal() {
-	return screen.findByRole("list", { name: "Filters to apply" });
+/** Everything the page's live regions say, together. */
+function announced() {
+	return screen
+		.getAllByRole("status")
+		.map((region) => region.textContent)
+		.join(" | ");
 }
 
 // The data's months are relative to today, fixed here; Date alone is faked.
@@ -168,7 +163,7 @@ afterEach(() => {
 });
 
 describe("the demo's Table case", () => {
-	it("proposes the filters a suggested request names, and filters the table only on Apply", async () => {
+	it("filters the table from a suggested request with no further click, and says what it set (#123)", async () => {
 		const { container, user } = renderDemo();
 		const total = english.transactions.length;
 		expect(rows()).toBe(total);
@@ -177,27 +172,59 @@ describe("the demo's Table case", () => {
 			screen.getByRole("button", { name: "Larkspur invoices over $1,000" }),
 		);
 
-		await waitForProposal();
-		expect(proposed()).toEqual([
-			"VendorLarkspur CateringRemove",
-			"Amount$1,000.00 or moreRemove",
-		]);
-		expect(screen.getByText(`All ${total} transactions`)).toBeDefined();
-		expect(rows()).toBe(total);
-		expect(
-			panel().getByText("2 of 4 fields filled, the rest held."),
-		).toBeDefined();
-		await expectNoAxeViolations(container);
-
-		await user.click(screen.getByRole("button", { name: "Apply filters" }));
-
-		expect(screen.getByText(`2 of ${total} transactions`)).toBeDefined();
+		await waitFor(() =>
+			expect(screen.getByText(`2 of ${total} transactions`)).toBeDefined(),
+		);
 		expect(rows()).toBe(2);
 		const table = within(screen.getByRole("table", { name: "Transactions" }));
 		expect(
 			table.getAllByRole("cell", { name: "Larkspur Catering" }),
 		).toHaveLength(2);
-		expect(proposed()).toEqual([]);
+		expect(select("Vendor").value).toBe("larkspur");
+		expect(amountBox("Minimum amount").value).toBe("1000");
+		expect(announced()).toContain(
+			"Set: Vendor, Larkspur Catering; Amount, $1,000.00 or more. Held: Status, Date.",
+		);
+		expect(
+			panel().getByText("2 of 4 fields filled, the rest held."),
+		).toBeDefined();
+		// Nothing is left to press: filtering is reversible, and Clear filters undoes it.
+		expect(screen.queryByRole("button", { name: /apply/i })).toBeNull();
+		await expectNoAxeViolations(container);
+
+		await user.click(screen.getByRole("button", { name: "Clear filters" }));
+		expect(rows()).toBe(total);
+	});
+
+	it("moves the rows a change brings in or takes out, and only those", async () => {
+		const { container, user } = renderDemo();
+		const motion = (kind: string) =>
+			container.querySelectorAll(`.transactions tr[data-motion="${kind}"]`)
+				.length;
+		// The table's first rows show still.
+		expect(container.querySelectorAll("tr[data-motion]")).toHaveLength(0);
+
+		await user.click(
+			screen.getByRole("button", { name: "Larkspur invoices over $1,000" }),
+		);
+		await waitFor(() => expect(rows()).toBe(2));
+
+		// The rows that left stay for their exit, hidden from a screen reader, then go.
+		const left = english.transactions.length - 2;
+		expect(motion("leave")).toBe(left);
+		expect(
+			container.querySelectorAll('tr[data-motion="leave"][aria-hidden="true"]'),
+		).toHaveLength(left);
+		expect(motion("enter")).toBe(0);
+		await waitFor(() => expect(motion("leave")).toBe(0));
+		expect(container.querySelectorAll(".transactions tbody tr")).toHaveLength(
+			2,
+		);
+
+		// Clearing brings the others back in; the two kept rows stay still.
+		await user.click(screen.getByRole("button", { name: "Clear filters" }));
+		expect(motion("enter")).toBe(left);
+		expect(rows()).toBe(english.transactions.length);
 	});
 
 	it("shows the call's latency, input tokens and cost in the hood's strip, when the provider reports them", async () => {
@@ -247,8 +274,10 @@ describe("the demo's Table case", () => {
 			}),
 		);
 
-		await waitForProposal();
-		expect(proposed()).toEqual(["DateAug 1, 2026 to Aug 31, 2026Remove"]);
+		const august = english.transactions.filter(({ date }) =>
+			date.startsWith("2026-08"),
+		);
+		await waitFor(() => expect(rows()).toBe(august.length));
 		const vendor = within(panel().getByRole("region", { name: "Vendor" }));
 		expect(vendor.getByText("Held")).toBeDefined();
 		expect(
@@ -270,15 +299,9 @@ describe("the demo's Table case", () => {
 			),
 		).toBeDefined();
 		await expectNoAxeViolations(container);
-
-		await user.click(screen.getByRole("button", { name: "Apply filters" }));
-		const august = english.transactions.filter(({ date }) =>
-			date.startsWith("2026-08"),
-		);
-		expect(rows()).toBe(august.length);
 	});
 
-	it("sets the table's controls from Apply, leaves a held field's control as it was, and lets the person fill it", async () => {
+	it("sets the table's controls from the answer, leaves a held field's control as it was, and lets the person fill it", async () => {
 		const { container, user } = renderDemo();
 		const august = english.transactions.filter(({ date }) =>
 			date.startsWith("2026-08"),
@@ -289,12 +312,9 @@ describe("the demo's Table case", () => {
 				name: "the cleaners' invoices from last month",
 			}),
 		);
-		await waitForProposal();
-		await user.click(screen.getByRole("button", { name: "Apply filters" }));
-
 		// The date filled; the vendor was held, so its control still shows every vendor.
 		expect(
-			screen.getByRole("button", { name: "Start date Aug 1" }),
+			await screen.findByRole("button", { name: "Start date Aug 1" }),
 		).toBeDefined();
 		expect(
 			screen.getByRole("button", { name: "End date Aug 31" }),
@@ -309,10 +329,8 @@ describe("the demo's Table case", () => {
 
 		// A second request fills only the status: the vendor and the date stay.
 		await user.click(screen.getByRole("button", { name: "overdue invoices" }));
-		await waitForProposal();
-		await user.click(screen.getByRole("button", { name: "Apply filters" }));
 
-		expect(select("Status").value).toBe("overdue");
+		await waitFor(() => expect(select("Status").value).toBe("overdue"));
 		expect(select("Vendor").value).toBe("brightmop");
 		expect(
 			screen.getByRole("button", { name: "Start date Aug 1" }),
@@ -332,10 +350,7 @@ describe("the demo's Table case", () => {
 		await user.click(
 			screen.getByRole("button", { name: "Larkspur invoices over $1,000" }),
 		);
-		await waitForProposal();
-		await user.click(screen.getByRole("button", { name: "Apply filters" }));
-
-		expect(select("Vendor").value).toBe("larkspur");
+		await waitFor(() => expect(select("Vendor").value).toBe("larkspur"));
 		const min = screen.getByRole("textbox", { name: "Minimum amount" });
 		const max = screen.getByRole("textbox", { name: "Maximum amount" });
 		expect((min as HTMLInputElement).value).toBe("1000");
@@ -380,10 +395,8 @@ describe("the demo's Table case", () => {
 			screen.getByRole("searchbox", { name: "Filter the transactions" }),
 			"invoices over 500 euros",
 		);
-		await waitForProposal();
-		await user.click(screen.getByRole("button", { name: "Apply filters" }));
 
-		expect(screen.getByText("EUR")).toBeDefined();
+		expect(await screen.findByText("EUR")).toBeDefined();
 		expect(rows()).toBe(0);
 
 		// The person keeps the minimum and types a maximum: both read in the table's own currency.
@@ -417,7 +430,7 @@ describe("the demo's Table case", () => {
 		expect(amountBox("Maximum amount").value).toBe("");
 	});
 
-	it("fills nothing from a request with nothing to filter, and offers nothing to apply", async () => {
+	it("fills nothing from a request with nothing to filter, and leaves the table as it was", async () => {
 		const { user } = renderDemo();
 
 		await user.click(
@@ -430,32 +443,8 @@ describe("the demo's Table case", () => {
 			),
 		).toBeDefined();
 		expect(panel().getByText("No field filled, all 4 held.")).toBeDefined();
-		const apply = screen.getByRole("button", { name: "Apply filters" });
-		expect(apply.getAttribute("aria-disabled")).toBe("true");
-		await user.click(apply);
 		expect(rows()).toBe(english.transactions.length);
-	});
-
-	it("lets the person remove a proposed filter before applying", async () => {
-		const { user } = renderDemo();
-
-		await user.click(
-			screen.getByRole("button", { name: "Larkspur invoices over $1,000" }),
-		);
-		await user.click(
-			await screen.findByRole("button", { name: "Remove the amount filter" }),
-		);
-		expect(
-			screen.getAllByRole("status").map(({ textContent }) => textContent),
-		).toContain("Removed: amount");
-		await user.click(screen.getByRole("button", { name: "Apply filters" }));
-
-		expect(rows()).toBe(
-			english.transactions.filter(({ vendorId }) => vendorId === "larkspur")
-				.length,
-		);
-		await user.click(screen.getByRole("button", { name: "Clear filters" }));
-		expect(rows()).toBe(english.transactions.length);
+		expect(screen.queryByRole("button", { name: "Clear filters" })).toBeNull();
 	});
 
 	it("filters the Spanish data from a Spanish request, with USD as the local currency", async () => {
@@ -466,19 +455,16 @@ describe("the demo's Table case", () => {
 		).toBeDefined();
 		await user.click(screen.getByRole("button", { name: "facturas vencidas" }));
 
-		await screen.findByRole("list", { name: "Filtros por aplicar" });
-		expect(proposed("Filtros por aplicar")).toEqual(["EstadoVencidaQuitar"]);
+		await waitFor(() => expect(select("Estado").value).toBe("overdue"));
 		expect(byRequest.calls[0]?.facts.local_currency).toBe("USD");
 		const labels = byRequest.calls[0]?.questions
 			.find(({ id }) => id === "vendor")
 			?.labels.map(({ label }) => label);
 		expect(labels).toContain("cazuela");
 		expect(labels).not.toContain("larkspur");
-		await user.click(screen.getByRole("button", { name: "Aplicar filtros" }));
 		expect(rows("Transacciones")).toBe(
 			spanish.transactions.filter(({ status }) => status === "overdue").length,
 		);
-		expect(select("Estado").value).toBe("overdue");
 		// The panel still reads the answer that was applied.
 		expect(
 			panel("Qué pasó").getByText(
@@ -496,8 +482,8 @@ describe("the demo's Table case", () => {
 			"facturas vencidas de Nubalia o de Cuentia",
 		);
 
-		await screen.findByRole("list", { name: "Filtros por aplicar" });
-		expect(proposed("Filtros por aplicar")).toEqual(["EstadoVencidaQuitar"]);
+		await waitFor(() => expect(select("Estado").value).toBe("overdue"));
+		expect(select("Proveedor").value).toBe("");
 		const vendor = within(
 			panel("Qué pasó").getByRole("region", { name: "Proveedor" }),
 		);
@@ -536,25 +522,8 @@ describe("the demo's Table case", () => {
 				"La solicitud nombra “pesos”, que no es la moneda local, así que el código retuvo el campo sin consultar al modelo.",
 			),
 		).toBeDefined();
-		expect(
-			screen
-				.getByRole("button", { name: "Aplicar filtros" })
-				.getAttribute("aria-disabled"),
-		).toBe("true");
+		expect(rows("Transacciones")).toBe(spanish.transactions.length);
 		await expectNoAxeViolations(container);
-	});
-
-	it("announces a removed filter in Spanish", async () => {
-		const { user } = renderDemo({ url: "/?case=table&lang=es" });
-
-		await user.click(screen.getByRole("button", { name: "facturas vencidas" }));
-		await user.click(
-			await screen.findByRole("button", { name: "Quitar el filtro de estado" }),
-		);
-
-		expect(
-			screen.getAllByRole("status").map(({ textContent }) => textContent),
-		).toContain("Se quitó: estado");
 	});
 
 	it("counts the clicks and menus the answer's controls take, and shows no comparison for an answer that sets nothing", async () => {
@@ -565,8 +534,9 @@ describe("the demo's Table case", () => {
 		await user.click(
 			screen.getByRole("button", { name: "Larkspur invoices over $1,000" }),
 		);
-		await waitForProposal();
-		expect(counter()).toBe("1 sentence vs 3 clicks in 1 menu");
+		await waitFor(() =>
+			expect(counter()).toBe("1 sentence vs 3 clicks in 1 menu"),
+		);
 
 		// The vendor is held, so only the two days' calendars count.
 		await user.click(
@@ -577,10 +547,6 @@ describe("the demo's Table case", () => {
 		await waitFor(() =>
 			expect(counter()).toBe("1 sentence vs 4 clicks in 2 menus"),
 		);
-
-		// The applied controls keep the count until the next answer.
-		await user.click(screen.getByRole("button", { name: "Apply filters" }));
-		expect(counter()).toBe("1 sentence vs 4 clicks in 2 menus");
 
 		await user.click(
 			screen.getByRole("button", { name: "how much do we owe in total?" }),
@@ -598,19 +564,19 @@ describe("the demo's Table case", () => {
 			screen.getByRole("searchbox", { name: "Filter the transactions" }),
 			"invoices over 500 euros",
 		);
-		await waitForProposal();
-		expect(counter()).toBe("1 sentence vs 1 click");
+		await waitFor(() => expect(counter()).toBe("1 sentence vs 1 click"));
 	});
 
 	it("says the count in Spanish", async () => {
 		const { user } = renderDemo({ url: "/?case=table&lang=es" });
 
 		await user.click(screen.getByRole("button", { name: "facturas vencidas" }));
-		await screen.findByRole("list", { name: "Filtros por aplicar" });
-		expect(counter()).toBe("1 frase frente a 2 clics en 1 menú");
+		await waitFor(() =>
+			expect(counter()).toBe("1 frase frente a 2 clics en 1 menú"),
+		);
 	});
 
-	it("says the provider failed, holds every field and offers nothing to apply", async () => {
+	it("says the provider failed, holds every field and leaves the table as it was", async () => {
 		const { container, user } = renderDemo({
 			provider: failingProvider(new Error("no key")),
 		});
@@ -630,11 +596,7 @@ describe("the demo's Table case", () => {
 			screen.getByText("Nothing in that request filters the transactions."),
 		).toBeDefined();
 		expect(counter()).toBeNull();
-		expect(
-			screen
-				.getByRole("button", { name: "Apply filters" })
-				.getAttribute("aria-disabled"),
-		).toBe("true");
+		expect(rows()).toBe(english.transactions.length);
 		await expectNoAxeViolations(container);
 	});
 });
