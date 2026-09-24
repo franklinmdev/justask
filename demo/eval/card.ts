@@ -45,7 +45,13 @@ import {
 } from "./card-sets.ts";
 import { fixGate, poolFields } from "./gates.ts";
 import { CARD_KILL_LINES } from "./kill-lines.ts";
-import { officePicks, tagGaps, withOfficeLabel } from "./office.ts";
+import {
+	isOfficeLabel,
+	OFFICE_LABEL_NAMES,
+	officePicks,
+	tagGaps,
+	withOfficeLabel,
+} from "./office.ts";
 import { needBaseline, probe } from "./probe.ts";
 
 /** Fixed, so every run reads the same day. */
@@ -67,10 +73,17 @@ const [command, ...rest] = process.argv.slice(2);
 if (command === "run") {
 	const [language, set, n, label] = rest;
 	const served = contents[language as Language];
-	if (!served || !isCardSet(set) || !n || isLabelled(set) !== Boolean(label))
+	if (
+		!served ||
+		!isCardSet(set) ||
+		!n ||
+		(isLabelled(set) ? !isOfficeLabel(label) : label !== undefined)
+	)
 		usage();
 	if (givesVerdict(set)) needBaseline();
-	const content = label ? withOfficeLabel(served, label) : served;
+	const content = isOfficeLabel(label)
+		? withOfficeLabel(served, label)
+		: served;
 	loadKeyEnv(process.cwd());
 	const run = await runCardEval({
 		set: parseCardEvalSet(
@@ -97,7 +110,7 @@ if (command === "run") {
 } else if (command === "office") {
 	const [language, n, label] = rest;
 	const content = contents[language as Language];
-	if (!content || !n || !label) usage();
+	if (!content || !n || !isOfficeLabel(label)) usage();
 	printOfficePicks(
 		await readCardRun(runLogPath(content.language, "office", n, label)),
 	);
@@ -163,7 +176,7 @@ function usage(): never {
 	const sets = (keep: (set: CardSet) => boolean) =>
 		CARD_SET_NAMES.filter(keep).join("|");
 	console.error(
-		`usage: card.ts run <en|es> <${sets((set) => !isLabelled(set))}> <n> | run <en|es> <${sets(isLabelled)}> <n> <label> | office <en|es> <n> <label> | gaps <en|es> <n> | compare <en|es> <${sets(givesVerdict)}> <first n> <second n> | gates <dev n>`,
+		`usage: card.ts run <en|es> <${sets((set) => !isLabelled(set))}> <n> | run <en|es> <${sets(isLabelled)}> <n> <${OFFICE_LABEL_NAMES.join("|")}> | office <en|es> <n> <${OFFICE_LABEL_NAMES.join("|")}> | gaps <en|es> <n> | compare <en|es> <${sets(givesVerdict)}> <first n> <second n> | gates <dev n>`,
 	);
 	process.exit(1);
 }

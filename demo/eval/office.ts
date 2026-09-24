@@ -13,6 +13,19 @@ export const servedLabel = (content: Content) => {
 	return label;
 };
 
+/** The names of #77's office labels, the only ones a run takes. */
+export const OFFICE_LABEL_NAMES = [
+	"current",
+	"backups",
+	"short",
+	"rest",
+] as const;
+export type OfficeLabel = (typeof OFFICE_LABEL_NAMES)[number];
+
+export const isOfficeLabel = (
+	label: string | undefined,
+): label is OfficeLabel => OFFICE_LABEL_NAMES.some((name) => name === label);
+
 /**
  * #77's office labels, each changing one thing from the one the demo serves
  * (`current`): `backups` names backups among the services, `short` keeps the
@@ -20,7 +33,7 @@ export const servedLabel = (content: Content) => {
  * instead of what it is, after `short` showed the list is what fills it. The
  * probe runs measure them; the demo serves `current` alone.
  */
-export const OFFICE_LABELS: Record<Language, Record<string, string>> = {
+export const OFFICE_LABELS: Record<Language, Record<OfficeLabel, string>> = {
 	en: {
 		current: servedLabel(english),
 		backups:
@@ -38,11 +51,8 @@ export const OFFICE_LABELS: Record<Language, Record<string, string>> = {
 };
 
 /** The demo's content with the office tag read by one of #77's labels, and nothing else changed. */
-export function withOfficeLabel(content: Content, label: string): Content {
+export function withOfficeLabel(content: Content, label: OfficeLabel): Content {
 	const description = OFFICE_LABELS[content.language][label];
-	if (description === undefined) {
-		throw new Error(`no office label named ${label}`);
-	}
 	return {
 		...content,
 		tags: content.tags.map((tag) =>
@@ -77,7 +87,8 @@ export type OfficePicks = {
  * its tag's pick, since #77 asks why the tag says "not mentioned".
  */
 export function officePicks(run: CardRun): OfficePicks {
-	const gate = run.gates.tags ?? 0;
+	const gate = run.gates.tags;
+	if (gate === undefined) throw new Error("the run has no tags gate");
 	const rows: OfficePick[] = [];
 	for (const row of run.rows) {
 		const answer = row.answers[QUESTION];
