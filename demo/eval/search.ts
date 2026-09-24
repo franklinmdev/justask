@@ -59,7 +59,7 @@ if (command === "run") {
 	const [set, n] = rest;
 	if (!isSet(set) || !n) usage();
 	if (!NO_VERDICT.has(set)) needBaseline();
-	loadKeyEnv(process.cwd());
+	loadKeyEnv();
 	const run = await runEval({
 		set: parseEvalSet(await readFile(setPath(content.language, set), "utf8")),
 		search: demoSearch(content),

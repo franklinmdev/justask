@@ -98,7 +98,7 @@ if (command === "run") {
 		usage();
 	if (!NO_VERDICT.has(set)) needBaseline();
 	const content = label ? withOfficeLabel(served, label) : served;
-	loadKeyEnv(process.cwd());
+	loadKeyEnv();
 	const run = await runCardEval({
 		set: parseCardEvalSet(
 			await readFile(setPath(content.language, set), "utf8"),
