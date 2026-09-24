@@ -1022,3 +1022,124 @@ Carried by [#88](https://github.com/franklinmdev/justask/issues/88).
 2. Rows are drafted to it, 168 per language in the mix above, their tags by the tag cover, and approved in batches; the shape field and the cap check land, and the sets are frozen by checksum in `test/demo-card-eval.test.ts` in the commit before the first call.
 3. The card, gates, labels, kill lines and `PROBE_BASELINE_MS` are round 6's as `demo/server/handler.ts` and `demo/eval/probe.ts` serve them, and stay so through round 7: #88 changes only the sets.
 4. Run 1 per language gives the verdict, under the latency rule; run 2 reports flips only. Results are recorded here as in rounds 1 to 6.
+
+## Round 7: shapes
+
+Carried by [#88](https://github.com/franklinmdev/justask/issues/88). **Approved by the owner as written on 2026-09-24, before any row was drafted.** Every row of `card-<language>.round7.jsonl` names exactly one shape from it in its `shape` field, by its name in `ROUND7_SHAPES` (`demo/eval/card-shapes.ts`), which the set test holds each row and each count to; English row N and Spanish row N the same one, and no shape has more than two rows per language. The card, gates, labels, kill lines and `PROBE_BASELINE_MS` are round 6's.
+
+- **One shape per row.** A row is built on its shape and is plain everywhere else: a vendor by its name or none, what was bought in words the tag's label lists, a day as `yesterday`, `today`, a bare weekday or a named date, an amount in `$`. So a typo row has no maybe in it, and a billed-through row no typo.
+- **A plain record's shape is the item of the tag cover that decides its tags** (`meals: catering`, `office: couriers`), so each item is capped like any construction, and every tag row names its clause through its shape.
+- **The quotas are counted across rows, not shapes:** of 112 records, tags in all 112, the vendor in 84 (every vendor at least four times, 28 records with no vendor of the catalog), the day in 96, the amount in 108. Ambiguous rows expect every field they do not hold.
+- Every day and amount below was read by the parser on Wednesday 2026-09-23 in both languages before this list was written.
+
+### Records: 112 rows, 73 shapes
+
+**Plain, by the item of the tag cover (39 rows, 28 shapes).**
+
+| Tag | Item: rows |
+|---|---|
+| meals (9) | lunch 1, dinner 1, coffee or tea 1, drinks 1, snacks 1, catering 2, a cake 1, pantry stock (water, beans) 1 |
+| travel (10) | flight 1, hotel 1, taxi 2, rideshare 1, train 1, bus 1, parking 2, tolls 1 |
+| office (20) | supplies 2, equipment 2, software 2, hosting 2, repairs 2, cleaning or window washing 2, printing 2, couriers 2, payroll 1, HR 1, legal work 1, insurance 1 |
+
+**The vendor (23 rows, 13 shapes).** Tags by the plain item bought.
+
+| Shape | Rows | Example | Vendor expected |
+|---|---|---|---|
+| typo, a letter dropped | 2 | `Tallyroo` | the vendor |
+| typo, a letter doubled | 2 | `Lindeero` | the vendor |
+| typo, a sound spelled another way | 2 | `Clausewud` | the vendor |
+| typo, two letters swapped | 2 | `Papregrove` | the vendor |
+| paraphrase by the service | 2 | `the company that insures us` | the vendor |
+| paraphrase by the people | 2 | `the tech support crew` | the vendor |
+| paraphrase as `our <trade>` | 2 | `our law firm` | the vendor |
+| paraphrase as the trade's shop | 2 | `the print shop` | the vendor |
+| a third vendor beside an `or` pair | 2 | `Larkspur lunch for the Fixbright or Swiftlane walkthrough` | the third |
+| a third vendor beside an `and` pair | 1 | `Larkspur lunch for the Brightmop and Glasswell crews` | the third |
+| no catalog vendor: a named business | 1 | `Rosa's Diner` | empty |
+| no catalog vendor: a kind of shop | 1 | `a ramen shop` | empty |
+| no catalog vendor: a store selling what a catalog vendor sells | 2 | `toner from a big-box store` | empty |
+
+**The tags (26 rows, 15 shapes), each with the clause of the tag cover that decides it.**
+
+| Shape | Rows | Clause | Tags expected |
+|---|---|---|---|
+| an office purchase billed to a client | 2 | office, not bought for a client and billed to them; client, billable | `client` |
+| a meal billable to a client | 2 | meals; client, billable | `meals` + `client` |
+| a trip billable to a client | 2 | travel; client, billable | `travel` + `client` |
+| a meal with a client present | 2 | meals; client, a meal with a client | `meals` + `client` |
+| a ride with a client present | 1 | travel; client, a ride with a client | `travel` + `client` |
+| an event with a client present | 1 | no tag for tickets; client, an event with a client | `client` |
+| a trip whose purpose names a client | 2 | client, not a purpose alone | `travel` |
+| another purchase whose purpose names a client, not billed | 1 | client, not a purpose alone | its own tag |
+| a maybe billable | 2 | client, not a maybe | its certain tag |
+| a client named as a place | 1 | client, not a client named as a place | its own tag |
+| two purchases in two tags | 2 | what the money bought decides | both |
+| a meal on a trip | 2 | travel, a meal on a trip is meals alone | `meals` |
+| the coffee machine, rented or serviced | 2 | meals, not the machine that makes it | `office` |
+| a restock at the vendor that sells in two tags | 2 | meals, pantry stock; a restock is of what runs out | `meals` |
+| an office service in words its label does not list | 2 | office, whatever the words for them | `office` |
+
+**The day (9 rows, 7 shapes).** Parser checked: each builds the one expected day.
+
+| Shape | Rows | Example |
+|---|---|---|
+| a day of the month alone | 2 | `on the 5th`, `el 5` |
+| a numeric date | 1 | `9/14`, `el 14/9` |
+| days counted back | 2 | `two days ago`, `the day before yesterday`; `hace dos días`, `anteayer` |
+| a weekday with its date | 1 | `Monday the 14th` |
+| a time of day | 1 | `yesterday morning`, `ayer por la mañana` |
+| `this` and a weekday | 1 | `this Monday`, `este lunes` |
+| a month abbreviated | 1 | `Sept 8`, `8 de sept` |
+
+**The amount (10 rows, 6 shapes).**
+
+| Shape | Rows | Example |
+|---|---|---|
+| a foreign currency | 2 | `€22` |
+| cents | 2 | `$12.50` |
+| a thousands separator | 1 | `$1,250` |
+| the word for dollars | 2 | `52 dollars`, `52 dólares` |
+| a count beside the amount | 2 | `3 boxes of paper, $45` |
+| a currency code | 1 | `USD 40` |
+
+**The intent (5 rows, 4 shapes).** Records a reader could take for something else.
+
+| Shape | Rows | Example |
+|---|---|---|
+| told as a story | 1 | `we paid Brightmop $230 to clean up after the renovation` |
+| asked to be logged | 1 | `log $38 of printer paper from Papergrove` |
+| a command word inside a record | 2 | `Farwander cancellation fee`, `Swiftlane courier to send the contract` |
+| asked as a question | 1 | `can you put down $27 for Beanhaven espressos?` |
+
+### Ambiguous: 32 rows, 16 shapes, two each
+
+Eight rows hold each field, as #86 set.
+
+| Field | Shapes |
+|---|---|
+| vendor | a named pair with `and`; a named pair with `or`; a service both cleaning vendors sell (`office cleaning`); a paraphrase both cleaning vendors fit (`our cleaning company`) |
+| tags | the vendor that sells in two tags, nothing named that was bought; the same, with a place named (`for the break room`); a store outside the catalog that sells across tags, nothing named (`$60 at the warehouse club`); the same, with a place named |
+| day | `last` and a weekday (#39's two readings); a week (`last week`); a named month (`in June`); a month counted from today (`last month`, `earlier this month`) |
+| amount | a currency the local one does not resolve (`1,600 pesos`); two amounts with `or` (`$22 or $25`); a range (`between $30 and $40`); an amount and a tip, no total (`$40 plus a $6 tip`) |
+
+The tags split each of #86's two tags-ambiguous shapes in two, bare and with a place, since #86's table rules both cases held and four rows per shape would break the cap. Every held day has no single-day reading and every held amount has none or two resolved candidates, as the set test checks.
+
+### Nothing: 24 rows, 12 shapes, two each
+
+| Shape | Held by | Example |
+|---|---|---|
+| a question about spending | the intent | `how much have we paid Swiftlane since August?` |
+| a question about tags | the intent | `which tag should a train ticket get?` |
+| a request to show expenses | the intent | `show me last week's Larkspur expenses` |
+| a delete | the code | `void that Inkhollow expense` |
+| a change with a listed verb | the code | `change that expense to $52` |
+| a change that sets a value, no list word | the intent | `Monday's Papergrove receipt was really $44` |
+| a move or an undo | the code | `move this expense to Friday` |
+| a send with a listed verb | the code | `email that invoice to accounting` |
+| a send no list names | the intent | `pass Larkspur's receipt along to the bookkeeper` |
+| a thank-you | the intent | `great, thanks a lot` |
+| a reminder to pay a vendor | the intent | `remind me to pay Brightmop on Friday` |
+| a greeting or a question about the demo | the intent | `hi, what can you do?` |
+
+Examples show the construction only; none is a drafted row, and a drafted row repeats no request of any set, probe, suggestion or recording.

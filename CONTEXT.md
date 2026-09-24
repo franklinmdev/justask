@@ -56,6 +56,10 @@ _Avoid_: Threshold, confidence cutoff (in English)
 Real requests, each with the result a person expects, used to measure a gate before it is fixed.
 _Avoid_: Test set, benchmark, gold
 
+**Shape**:
+The construction an eval row's expected value turns on, beyond naming a vendor, what was bought, a day and an amount plainly: a typo, a named pair, a maybe, a period for a day, a delete. A plain card record's shape is the item of the tag cover that decides its tags. From card round 7 on, each row names its shape and no shape has more than two rows per language, so one construction never carries a verdict alone (docs/card-eval.md).
+_Avoid_: Pattern, template, category
+
 **Dev set**:
 Requests used to tune questions and parsers. It never decides a verdict.
 _Avoid_: Training set, validation set
@@ -115,6 +119,10 @@ _Avoid_: Choice, either-or
 **Implied value**:
 The items a catalog item declares for another field of a card (`implies`): the demo's office-only vendors imply the `office` tag. The card fills them only in a gap, and says the value came from the other field (ADR 0012).
 _Avoid_: Default, inferred value
+
+**Tag cover**:
+What each tag of the demo's expense card covers, the rule an eval row's expected tags follow: a record expects every tag whose cover it meets and no other. `meals` is anything eaten or drunk, `travel` getting somewhere and staying there, `office` what the business buys to run itself, not what it bills through to a client, and `client` a client paying or present, said for certain. Written for the eval's rows (docs/card-eval.md, Tag cover); the tags' labels are the card's and did not change with it.
+_Avoid_: Tag rule, tag definition
 
 **Gap**:
 What a card field where several items may apply is left with when its own questions settle nothing: no named pair holds it, every implied item answered `not_mentioned` or `yes`, and every other item `not_mentioned`, each at any probability, and the field did not fill. A `not_available`, a tie or another item filled is no gap (ADR 0012).

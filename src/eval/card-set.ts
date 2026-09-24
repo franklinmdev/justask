@@ -25,9 +25,14 @@ export type CardEvalRow = {
 	 * is not mentioned, so it must stay empty too.
 	 */
 	expected: Record<string, CardExpectedValue | typeof HELD>;
+	/**
+	 * The construction the row's expected value turns on, such as a typo or a
+	 * named pair, so a set can cap how many rows share one.
+	 */
+	shape?: string;
 };
 
-const KEYS = new Set(["id", "request", "kind", "expected"]);
+const KEYS = new Set(["id", "request", "kind", "expected", "shape"]);
 
 function isKind(kind: unknown): kind is CardEvalKind {
 	return kind === "record" || kind === "ambiguous" || kind === "nothing";
@@ -66,8 +71,9 @@ function isExpectedValue(value: unknown): value is CardExpectedValue {
 
 /**
  * Reads a card eval set, one JSON object per line: `{ "id", "request",
- * "kind", "expected" }`, where `expected` maps each mentioned field to its
- * value or `"held"`. A row without an id is named by its line. Throws on the
+ * "kind", "expected", "shape" }`, where `expected` maps each mentioned field
+ * to its value or `"held"`, and the optional `shape` names the row's
+ * construction. A row without an id is named by its line. Throws on the
  * first row that is not one, naming its line. Whether each field exists and
  * takes that kind of value is checked against the card, before a run.
  */
@@ -99,12 +105,16 @@ export function parseCardEvalSet(jsonl: string): CardEvalRow[] {
 			request,
 			kind,
 			expected = {},
+			shape,
 		} = parsed as Record<string, unknown>;
 		if (typeof id !== "string" || !id) {
 			throw invalid('"id" must be a non-empty string');
 		}
 		if (typeof request !== "string" || !request.trim()) {
 			throw invalid('"request" must be a non-empty string');
+		}
+		if (shape !== undefined && (typeof shape !== "string" || !shape.trim())) {
+			throw invalid('"shape" must be a non-empty string');
 		}
 		if (!isKind(kind)) {
 			throw invalid('"kind" must be record, ambiguous or nothing');
@@ -145,6 +155,7 @@ export function parseCardEvalSet(jsonl: string): CardEvalRow[] {
 			request,
 			kind,
 			expected: expected as CardEvalRow["expected"],
+			...(shape === undefined ? {} : { shape }),
 		});
 	});
 	if (rows.length === 0) {

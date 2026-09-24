@@ -1,6 +1,14 @@
+import type { CardEvalKind } from "justask/eval";
 import type { Language } from "../src/content/types.ts";
 
-type SetInfo = { verdict: boolean; labelled?: true };
+type SetInfo = {
+	verdict: boolean;
+	labelled?: true;
+	/** A verdict set's size in rounds 1 to 6's mix of 42 rows: round 7's is 4. */
+	scale?: number;
+	/** Every row names one of the listed shapes, as many rows as it lists (#86). */
+	shapes?: Record<string, { kind: CardEvalKind; rows: number }>;
+};
 
 /**
  * The card eval's sets, listed once: the runner, its usage line and the set
@@ -45,6 +53,18 @@ export const givesVerdict = (set: CardSet): boolean => CARD_SETS[set].verdict;
 export function isLabelled(set: CardSet): boolean {
 	const info: SetInfo = CARD_SETS[set];
 	return info.labelled === true;
+}
+
+/** How many times rounds 1 to 6's mix of 42 rows the verdict set holds. */
+export function scaleOf(set: CardSet): number {
+	const info: SetInfo = CARD_SETS[set];
+	return info.scale ?? 1;
+}
+
+/** The shapes every row of the set names, when it names them. */
+export function shapesOf(set: CardSet): SetInfo["shapes"] {
+	const info: SetInfo = CARD_SETS[set];
+	return info.shapes;
 }
 
 /** The set's file, relative to demo/eval. */
