@@ -6,7 +6,7 @@ import { checkKillLines, type KillLines } from "./kill-lines.ts";
 import { readRunLog, writeRunLog } from "./log.ts";
 import { type Probe, type Probes, probeSender } from "./probe.ts";
 import type { EvalRow } from "./set.ts";
-import { type LoggedError, loggedError } from "./transport.ts";
+import { type LoggedError, watchCalls } from "./transport.ts";
 
 /** One row of a run: the eval row and everything needed to rescore it without a call. */
 export type RunRow = EvalRow & {
@@ -87,15 +87,7 @@ async function runRow<T>(
 		timeoutMs,
 	}: Pick<RunEvalInput<T>, "search" | "provider" | "facts" | "timeoutMs">,
 ): Promise<RunRow> {
-	let calls = 0;
-	// The provider as the flow calls it, noting each call.
-	const watched: Provider = {
-		async answer(input) {
-			calls++;
-			const result = await provider.answer(input);
-			return result;
-		},
-	};
+	const calls = watchCalls(provider);
 	const started = performance.now();
 	const {
 		search: result,
@@ -104,7 +96,7 @@ async function runRow<T>(
 	} = await ask({
 		request: row.request,
 		facts,
-		provider: watched,
+		provider: calls.provider,
 		timeoutMs,
 		search,
 	});
@@ -118,10 +110,7 @@ async function runRow<T>(
 		probabilities: result.probabilities,
 		...(result.pair && { pair: result.pair }),
 		latencyMs,
-		called: calls > 0,
-		...(calls > 1 && { retried: true }),
-		...(costUsd !== undefined && { costUsd }),
-		...(error && { error: loggedError(error) }),
+		...calls.logged({ costUsd, error }),
 	};
 }
 

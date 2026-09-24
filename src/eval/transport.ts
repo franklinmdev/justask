@@ -1,4 +1,5 @@
 import type { AskError } from "../ask.ts";
+import type { Provider, ProviderAnswer } from "../provider.ts";
 import { type Probes, probeWindow } from "./probe.ts";
 
 /**
@@ -14,12 +15,46 @@ export type LoggedError = {
 	transport?: true;
 };
 
-export function loggedError(error: AskError): LoggedError {
+function loggedError(error: AskError): LoggedError {
 	const transport = error.kind === "timeout" || error.transport === true;
 	return {
 		kind: error.kind,
 		message: error.message,
 		...(transport && { transport }),
+	};
+}
+
+/**
+ * The provider as a runner hands it to `ask`, counting its calls and keeping
+ * the last answer. `logged` gives the end of the row a runner logs: whether
+ * the provider was called, the retry mark (ADR 0013), the cost and the error.
+ */
+export function watchCalls(provider: Provider) {
+	let calls = 0;
+	let answers: ProviderAnswer = {};
+	const watched: Provider = {
+		async answer(input) {
+			calls++;
+			const result = await provider.answer(input);
+			answers = result.answers;
+			return result;
+		},
+	};
+	return {
+		provider: watched,
+		answers: () => answers,
+		logged: ({
+			costUsd,
+			error,
+		}: {
+			costUsd?: number | undefined;
+			error?: AskError | undefined;
+		}) => ({
+			called: calls > 0,
+			...(calls > 1 && { retried: true as const }),
+			...(costUsd !== undefined && { costUsd }),
+			...(error && { error: loggedError(error) }),
+		}),
 	};
 }
 

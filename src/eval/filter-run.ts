@@ -12,7 +12,7 @@ import { HELD } from "./held.ts";
 import { checkKillLines, type KillLines } from "./kill-lines.ts";
 import { readRunLog, writeRunLog } from "./log.ts";
 import { type Probe, type Probes, probeSender } from "./probe.ts";
-import { type LoggedError, loggedError } from "./transport.ts";
+import { type LoggedError, watchCalls } from "./transport.ts";
 
 /**
  * A field's candidates as the provider read them. A date or amount
@@ -145,17 +145,7 @@ async function runRow<F extends Fields>(
 		timeoutMs,
 	}: Pick<RunFilterEvalInput<F>, "filter" | "provider" | "facts" | "timeoutMs">,
 ): Promise<FilterRunRow> {
-	let calls = 0;
-	let answers: ProviderAnswer = {};
-	// The provider as the flow calls it, noting each call and what it answered.
-	const watched: Provider = {
-		async answer(input) {
-			calls++;
-			const result = await provider.answer(input);
-			answers = result.answers;
-			return result;
-		},
-	};
+	const calls = watchCalls(provider);
 	const started = performance.now();
 	const {
 		filter: result,
@@ -164,7 +154,7 @@ async function runRow<F extends Fields>(
 	} = await ask({
 		request: row.request,
 		facts,
-		provider: watched,
+		provider: calls.provider,
 		timeoutMs,
 		filter,
 	});
@@ -191,13 +181,10 @@ async function runRow<F extends Fields>(
 	return {
 		...row,
 		fields,
-		answers: error ? {} : answers,
+		answers: error ? {} : calls.answers(),
 		...(Object.keys(pairs).length > 0 && { pairs }),
 		latencyMs,
-		called: calls > 0,
-		...(calls > 1 && { retried: true }),
-		...(costUsd !== undefined && { costUsd }),
-		...(error && { error: loggedError(error) }),
+		...calls.logged({ costUsd, error }),
 	};
 }
 
