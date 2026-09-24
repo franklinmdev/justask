@@ -154,7 +154,7 @@ afterEach(() => {
 	byRequest.calls.length = 0;
 });
 
-describe("the demo's search page", () => {
+describe("the demo's Search case", () => {
 	it("finds the vendor a suggested request names, and shows why in the state panel", async () => {
 		const { container, user } = renderDemo();
 

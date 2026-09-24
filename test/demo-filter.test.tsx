@@ -189,7 +189,7 @@ afterEach(() => {
 	byRequest.calls.length = 0;
 });
 
-describe("the demo's filter page", () => {
+describe("the demo's Table case", () => {
 	it("proposes the filters a suggested request names, and filters the table only on Apply", async () => {
 		const { container, user } = renderDemo();
 		const total = english.transactions.length;
