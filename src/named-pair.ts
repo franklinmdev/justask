@@ -1,3 +1,4 @@
+import { fold } from "./fold.ts";
 import type { Candidate } from "./search.ts";
 
 /** Two items of one catalog field named with a joiner between them, as the request writes them, in NFC. */
@@ -27,18 +28,14 @@ const WORD = /[\p{L}\p{M}\p{N}]+(?:[-'’][\p{L}\p{M}\p{N}]+)*/gu;
 
 type Word = { folded: string; start: number; end: number };
 
-/** Lowercase, accents and a possessive dropped: "Tallyroot's" reads "tallyroot". */
-function fold(word: string): string {
-	return word
-		.normalize("NFD")
-		.replace(/\p{M}/gu, "")
-		.toLowerCase()
-		.replace(/['’]s$/, "");
+/** Folded, and a possessive dropped: "Tallyroot's" reads "tallyroot". */
+function foldWord(word: string): string {
+	return fold(word).replace(/['’]s$/, "");
 }
 
 function words(text: string): Word[] {
 	return [...text.matchAll(WORD)].map((found) => ({
-		folded: fold(found[0]),
+		folded: foldWord(found[0]),
 		start: found.index,
 		end: found.index + found[0].length,
 	}));
@@ -145,7 +142,7 @@ export function findPair(
 	const said = words(text);
 	const joining = new Set(
 		[...joiners.or, ...(several ? [] : joiners.and)].map((joiner) =>
-			fold(joiner.trim()),
+			foldWord(joiner.trim()),
 		),
 	);
 	const named = mentions(said, candidates);
