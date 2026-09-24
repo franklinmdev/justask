@@ -71,25 +71,36 @@ function typeOf(rows: Candidate<unknown>[]): string {
 	return `{\n${keys.join("\n")}\n}`;
 }
 
+/** The catalog a field reads, which every catalog field names. */
+function catalogOf(catalogs: Record<string, Catalog>, name: string): Catalog {
+	const catalog = catalogs[name];
+	if (catalog === undefined) {
+		throw new TypeError(`No catalog is named for the ${name} field`);
+	}
+	return catalog;
+}
+
+/**
+ * The type justask names a date field by: a date on a card declares its
+ * direction, so it is the card's date field.
+ */
+type DateType = "DateField" | "CardDateField";
+
 /**
  * Each declared field's type as justask names it, a catalog's with the type
- * of the catalog it reads. A date on a card declares its direction, so it is
- * the card's date field.
+ * of the catalog it reads.
  */
 function fieldTypes(
 	fields: Record<string, object>,
 	catalogs: Record<string, Catalog>,
-	card: boolean,
+	dateType: DateType,
 ): Record<string, string> {
 	return Object.fromEntries(
 		Object.entries(fields).map(([name, field]) => {
 			const kind = "kind" in field ? field.kind : undefined;
 			switch (kind) {
 				case "catalog": {
-					const catalog = catalogs[name];
-					if (catalog === undefined) {
-						throw new TypeError(`No catalog is named for the ${name} field`);
-					}
+					const catalog = catalogOf(catalogs, name);
 					const several = "several" in field && field.several === true;
 					return [
 						name,
@@ -97,7 +108,7 @@ function fieldTypes(
 					];
 				}
 				case "date":
-					return [name, card ? "CardDateField" : "DateField"];
+					return [name, dateType];
 				case "amount":
 					return [name, "AmountField"];
 				default:
@@ -118,11 +129,8 @@ function withCatalogs(
 	return Object.fromEntries(
 		Object.entries(fields).map(([name, field]) => {
 			if (!("shortlist" in field)) return [name, field];
-			const catalog = catalogs[name];
-			if (catalog === undefined) {
-				throw new TypeError(`No catalog is named for the ${name} field`);
-			}
-			return [name, { ...field, shortlist: source(`() => ${catalog.name}`) }];
+			const { name: catalog } = catalogOf(catalogs, name);
+			return [name, { ...field, shortlist: source(`() => ${catalog}`) }];
 		}),
 	);
 }
@@ -159,20 +167,20 @@ function server({
 		facts: FACTS,
 		[flow]: declared,
 	});
-	const named = [
+	const hostTypes = [
 		...new Map(catalogs.map(({ type, rows }) => [type, typeOf(rows)] as const)),
 		...Object.entries(types),
 	];
-	const justask = [handler, ...imports, "Candidate"]
+	const fromJustask = [handler, ...imports, "Candidate"]
 		.sort((a, b) => a.localeCompare(b, "en", { sensitivity: "base" }))
 		.map((name) => (/^[A-Z]/.test(name) ? `type ${name}` : name));
 	return {
 		name: "handler.ts",
 		code: [
-			`import {\n${justask.map((name) => `  ${name},`).join("\n")}\n} from "justask";`,
+			`import {\n${fromJustask.map((name) => `  ${name},`).join("\n")}\n} from "justask";`,
 			'import { jevProvider } from "justask/jev";',
 			"",
-			...named.map(([name, type]) => `export type ${name} = ${type};\n`),
+			...hostTypes.map(([name, type]) => `export type ${name} = ${type};\n`),
 			...catalogs.map(
 				({ name, type, rows }) =>
 					`const ${name}: Candidate<${type}>[] = ${literal(rows)};\n`,
@@ -187,9 +195,9 @@ function server({
 function fieldsOf(
 	fields: Record<string, object>,
 	catalogs: Record<string, Catalog>,
-	card: boolean,
+	dateType: DateType,
 ) {
-	const types = fieldTypes(fields, catalogs, card);
+	const types = fieldTypes(fields, catalogs, dateType);
 	const record = Object.entries(types)
 		.map(([name, type]) => `  ${name}: ${type};`)
 		.join("\n");
@@ -220,7 +228,7 @@ function tableSnippet(content: Content): Snippet {
 				rows: content.statuses,
 			},
 		},
-		false,
+		"DateField",
 	);
 	return {
 		server: server({
@@ -269,7 +277,7 @@ function formSnippet(content: Content): Snippet {
 			vendor: vendorsOf(content),
 			tags: { name: "tags", type: "Tag", rows: content.tags },
 		},
-		true,
+		"CardDateField",
 	);
 	return {
 		server: server({
@@ -376,12 +384,11 @@ export function VendorSearch({
  * case it shows, and runs as copied.
  */
 export function snippetOf(shown: Case, content: Content): Snippet {
-	switch (shown) {
-		case "table":
-			return tableSnippet(content);
-		case "form":
-			return formSnippet(content);
-		case "search":
-			return searchSnippet(content);
-	}
+	return snippets[shown](content);
 }
+
+const snippets: Record<Case, (content: Content) => Snippet> = {
+	table: tableSnippet,
+	form: formSnippet,
+	search: searchSnippet,
+};
