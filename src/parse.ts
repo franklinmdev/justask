@@ -11,9 +11,10 @@ export type DateReading = {
 	/** How the text was read, for the provider: "reading the numbers as day/month". */
 	note?: string;
 	/**
-	 * The request itself does not say which day: "next Friday" reads two ways
-	 * and nothing in the words decides. A field whose pick lands on such a
-	 * reading is held, whatever its probability.
+	 * The request itself does not say which day: said on a Monday, "next
+	 * Friday" reads two ways (this week's or next week's) and nothing in the
+	 * words decides. A field whose pick lands on such a reading is held,
+	 * whatever its probability.
 	 */
 	ambiguous?: boolean;
 };

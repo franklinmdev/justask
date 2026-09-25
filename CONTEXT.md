@@ -109,7 +109,7 @@ What one visitor may call on the public demo's owner's key: 20 calls a UTC minut
 _Avoid_: Rate limit, quota, throttle
 
 **Held field**:
-A field left empty because its pick did not clear the gate, because the provider picked `not_mentioned` or `not_available`, because a parser marked its candidates ambiguous (such as "next Friday"), because the request names a pair of the field's items, or, on a card, because the request is a command on an existing record. Empty looks the same whatever the reason.
+A field left empty because its pick did not clear the gate, because the provider picked `not_mentioned` or `not_available`, because a parser marked its candidates ambiguous (such as "next Friday" said on a Monday, this week's or next week's), because the request names a pair of the field's items, or, on a card, because the request is a command on an existing record. Empty looks the same whatever the reason.
 _Avoid_: Abstained field, unknown, null field
 
 **Confirm**:
