@@ -3,6 +3,7 @@ import { type Ledger, utcDay } from "../server/budget.ts";
 import {
 	countCall,
 	newSalt,
+	nextUtcMidnight,
 	utcMinute,
 	type VisitorLimit,
 	visitorKey,
@@ -63,6 +64,8 @@ export class DemoLedger extends DurableObject {
 			sql.exec("DELETE FROM visitors");
 			sql.exec("DELETE FROM visitor_salt");
 			sql.exec("INSERT INTO visitor_salt (day, salt) VALUES (?, ?)", day, salt);
+			// Dropped at midnight even when no call comes after it.
+			this.ctx.storage.setAlarm(nextUtcMidnight(now));
 		}
 		const visitor = await visitorKey(salt, address);
 		const [row] = sql
@@ -89,6 +92,16 @@ export class DemoLedger extends DurableObject {
 			dayCalls,
 		);
 		return null;
+	}
+
+	/** At UTC midnight: the earlier days' visitor counts and salt go, by the object's own clock. */
+	alarm(): void {
+		const { sql } = this.ctx.storage;
+		const [latest] = sql.exec("SELECT day FROM visitor_salt").toArray();
+		if (latest && String(latest.day) < utcDay(new Date())) {
+			sql.exec("DELETE FROM visitors");
+			sql.exec("DELETE FROM visitor_salt");
+		}
 	}
 }
 

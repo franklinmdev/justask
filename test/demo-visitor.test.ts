@@ -6,7 +6,7 @@ import {
 	utcDay,
 } from "../demo/server/budget.ts";
 import { createDemoHandler } from "../demo/server/handler.ts";
-import { visitorAddress } from "../demo/server/visitors.ts";
+import { nextUtcMidnight, visitorAddress } from "../demo/server/visitors.ts";
 import {
 	BUDGET_EXCEEDED,
 	searchEndpoint,
@@ -89,6 +89,17 @@ describe("a visitor's address", () => {
 	it("is none when the request names none", () => {
 		expect(visitorAddress(null)).toBeNull();
 		expect(visitorAddress("")).toBeNull();
+	});
+});
+
+describe("when a day's visitor counts go", () => {
+	it("is the next UTC midnight", () => {
+		expect(nextUtcMidnight(new Date("2026-09-25T23:59:59.999Z"))).toBe(
+			Date.parse("2026-09-26T00:00:00Z"),
+		);
+		expect(nextUtcMidnight(new Date("2026-09-30T00:00:00Z"))).toBe(
+			Date.parse("2026-10-01T00:00:00Z"),
+		);
 	});
 });
 

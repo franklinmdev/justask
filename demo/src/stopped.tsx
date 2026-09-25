@@ -15,8 +15,8 @@ export const REPO_URL = "https://github.com/franklinmdev/justask";
 /**
  * The demo's `fetch`, watching for the server's answers that stop live calls
  * on the owner's key (#109): the day's budget, the kill switch or this
- * visitor's limit (#110), 402, and a key TypeSafe refused, 503. It hands the answer on untouched, so the hook
- * still ends its call, and tells the page why.
+ * visitor's limit (#110), 402, and a key TypeSafe refused, 503. It hands the
+ * answer on untouched, so the hook still ends its call, and tells the page why.
  */
 export function watchStops(
 	fetchImpl: typeof fetch,

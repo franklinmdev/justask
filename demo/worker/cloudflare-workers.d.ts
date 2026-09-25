@@ -15,6 +15,8 @@ declare module "cloudflare:workers" {
 
 	export type DurableObjectState = {
 		storage: {
+			/** One alarm per object; a new one replaces it, and `alarm()` runs at its time. */
+			setAlarm(scheduledTimeMs: number): void;
 			sql: {
 				/** Each call runs in its own transaction. */
 				exec(

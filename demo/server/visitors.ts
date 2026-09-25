@@ -53,6 +53,15 @@ export function newSalt(): string {
 	return crypto.randomUUID();
 }
 
+/** The next UTC midnight after `now`, in ms: when the day's counts and salt go. */
+export function nextUtcMidnight(now: Date): number {
+	return Date.UTC(
+		now.getUTCFullYear(),
+		now.getUTCMonth(),
+		now.getUTCDate() + 1,
+	);
+}
+
 /** One visitor's counts: the day's calls, and the calls in the UTC minute named. */
 export type VisitorCount = {
 	minute: string;
