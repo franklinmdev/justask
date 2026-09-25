@@ -19,7 +19,6 @@
 	--text: oklch(0.2 0.01 250);
 	--muted: oklch(0.48 0.01 250);
 	--primary: oklch(0.6 0.15 155);
-	--primary-text: oklch(0.48 0.12 155);
 	--action: oklch(0.5 0.13 155);
 	--action-hover: oklch(0.45 0.12 155);
 	--on-action: oklch(1 0 0);
@@ -47,7 +46,7 @@
 @media (prefers-color-scheme: dark) {
 	:root:not([data-theme="light"]) {
 		color-scheme: dark;
-		--bg: oklch(0.16 0.006 250);
+		--bg: oklch(0.14 0.006 250);
 		--window: oklch(0.2 0.007 250);
 		--segment-on: oklch(0.32 0.008 250);
 		--surface: oklch(0.235 0.007 250);
@@ -58,7 +57,6 @@
 		--text: oklch(0.95 0.004 250);
 		--muted: oklch(0.72 0.01 250);
 		--primary: oklch(0.8 0.17 155);
-		--primary-text: oklch(0.82 0.15 155);
 		--action: oklch(0.5 0.13 155);
 		--action-hover: oklch(0.55 0.14 155);
 		--on-action: oklch(1 0 0);
@@ -75,7 +73,7 @@
 
 :root[data-theme="dark"] {
 	color-scheme: dark;
-	--bg: oklch(0.16 0.006 250);
+	--bg: oklch(0.14 0.006 250);
 	--window: oklch(0.2 0.007 250);
 	--segment-on: oklch(0.32 0.008 250);
 	--surface: oklch(0.235 0.007 250);
@@ -86,7 +84,6 @@
 	--text: oklch(0.95 0.004 250);
 	--muted: oklch(0.72 0.01 250);
 	--primary: oklch(0.8 0.17 155);
-	--primary-text: oklch(0.82 0.15 155);
 	--action: oklch(0.5 0.13 155);
 	--action-hover: oklch(0.55 0.14 155);
 	--on-action: oklch(1 0 0);
@@ -141,10 +138,9 @@ dd {
 }
 
 :focus-visible {
-	/* The accent at 30% over a solid accent border. */
-	outline: 1px solid var(--primary);
-	outline-offset: 0;
-	box-shadow: 0 0 0 3px var(--ring);
+	/* A 2px accent ring clear of the box, unlike the fill's light on the border. */
+	outline: 2px solid var(--primary);
+	outline-offset: 2px;
 }
 
 .data {
@@ -635,12 +631,13 @@ h2 {
 }
 
 .calculator-source {
-	max-width: 72ch;
+	max-width: 60ch;
 	font-size: 0.8125rem;
 }
 
 .calculator-link {
-	color: var(--primary-text);
+	color: var(--text);
+	text-decoration-color: var(--primary);
 	text-underline-offset: 2px;
 }
 
@@ -685,10 +682,9 @@ h2 {
 	color: var(--muted);
 }
 
+/* Focus is the page's ring outside the box; the border stays for the fill's light. */
 .box:focus-visible {
-	outline: none;
-	border-color: var(--primary);
-	box-shadow: 0 0 0 3px var(--ring);
+	border-color: var(--border-strong);
 }
 
 /* What the sentence saved, tied to the box above it */
@@ -1179,9 +1175,7 @@ fieldset.table-filter[data-settle]::before {
 
 .control:focus-visible,
 .day-trigger:focus-visible {
-	outline: none;
-	border-color: var(--primary);
-	box-shadow: 0 0 0 3px var(--ring);
+	border-color: var(--border-strong);
 }
 
 .tags {
@@ -1220,8 +1214,8 @@ fieldset.table-filter[data-settle]::before {
 }
 
 .tag:has(:focus-visible) {
-	border-color: var(--primary);
-	box-shadow: 0 0 0 2px var(--ring);
+	outline: 2px solid var(--primary);
+	outline-offset: 2px;
 }
 
 .tag input:focus-visible {
@@ -1499,14 +1493,14 @@ fieldset.table-filter[data-settle]::before {
 	list-style: none;
 }
 
-/* A suggestion reads as a button at rest: a strong border and the accent's text. */
+/* A suggestion reads as a button at rest: a strong border, the text's own color. */
 .chip {
 	min-height: 28px;
 	padding: 4px 10px;
 	border: 1px solid var(--border-strong);
 	border-radius: var(--radius-chip);
 	background: var(--field);
-	color: var(--primary-text);
+	color: var(--text);
 	font: inherit;
 	font-size: 0.8125rem;
 	text-align: left;
@@ -1567,8 +1561,13 @@ fieldset.table-filter[data-settle]::before {
 	background: currentColor;
 }
 
+/* Filled: the words stay in the text color, the dot carries the accent. */
 .status[data-tone="filled"] {
-	color: var(--primary-text);
+	color: var(--text);
+}
+
+.status[data-tone="filled"]::before {
+	background: var(--primary);
 }
 
 .status[data-tone="held"],
@@ -1897,11 +1896,64 @@ fieldset.table-filter[data-settle]::before {
 		margin-left: 0;
 	}
 
-	/* Three tabs beside the name fit 375px in Spanish, the longer language. */
+	/* Three tabs beside the name fit 390px in Spanish, the longer language. */
 	.cases a {
 		min-height: 44px;
 		padding: 0 8px;
 		font-size: 0.875rem;
+	}
+
+	/*
+	 * The chosen vendor's four columns become a card list too: date and
+	 * amount on the first line, the invoice and its status on the second.
+	 * Inside the framed window they no longer fit 375px in Spanish.
+	 */
+	.transactions:not(.all) thead {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+	}
+
+	.transactions:not(.all) tr {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		grid-template-areas:
+			"date amount"
+			"invoice status";
+		gap: 2px 12px;
+		padding: 10px 0;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.transactions:not(.all) td {
+		height: auto;
+		padding: 0;
+		border: 0;
+	}
+
+	.transactions:not(.all) tr > :last-child {
+		padding-left: 0;
+	}
+
+	.transactions:not(.all) td:nth-child(1) {
+		grid-area: invoice;
+		color: var(--muted);
+	}
+
+	.transactions:not(.all) td:nth-child(2) {
+		grid-area: date;
+	}
+
+	.transactions:not(.all) td:nth-child(3) {
+		grid-area: amount;
+	}
+
+	.transactions:not(.all) td:nth-child(4) {
+		grid-area: status;
+		text-align: right;
+		font-size: 0.8125rem;
 	}
 
 	/*
