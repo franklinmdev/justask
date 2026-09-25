@@ -117,7 +117,9 @@ export function SearchPage({
 				)}
 			</SearchItem>
 			<SearchEmpty search={search} className="result">
-				{offer?.kind === "choices" ? (
+				{offer?.kind === "choices" && offer.candidates.length === 0 ? (
+					<p className="empty">{copy.severalFit}</p>
+				) : offer?.kind === "choices" ? (
 					<OfferList
 						id="choices"
 						title={copy.choices}

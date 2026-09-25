@@ -150,14 +150,16 @@ function rows(name = "Transactions") {
  * figure of the count over the table, in either language.
  */
 function kept() {
-	const count = document.querySelector(".applied-count")?.textContent ?? "";
+	const applied = screen.getByRole("region", { name: /^(Applied|Aplicados)$/ });
+	// The count is the first status in the section; the page range, when shown, the second.
+	const count = within(applied).getAllByRole("status")[0]?.textContent ?? "";
 	return Number(count.match(/\d+/)?.[0]);
 }
 
 /** The table's page range, "1 to 10 of 25", or null while one page holds every row. */
 function range() {
 	const pages = screen.queryByRole("navigation", { name: "Pages" });
-	return pages?.querySelector(".page-range")?.textContent ?? null;
+	return pages ? within(pages).getByRole("status").textContent : null;
 }
 
 /** A select among the table's own filter controls, by its label. */
@@ -395,13 +397,9 @@ describe("the demo's Table case", () => {
 		const { user } = renderDemo({ url: "/?case=table&lang=es" });
 
 		const pages = screen.getByRole("navigation", { name: "Páginas" });
-		expect(pages.querySelector(".page-range")?.textContent).toBe(
-			"1 a 10 de 25",
-		);
+		expect(within(pages).getByRole("status").textContent).toBe("1 a 10 de 25");
 		await user.click(screen.getByRole("button", { name: "Siguiente" }));
-		expect(pages.querySelector(".page-range")?.textContent).toBe(
-			"11 a 20 de 25",
-		);
+		expect(within(pages).getByRole("status").textContent).toBe("11 a 20 de 25");
 		expect(
 			screen
 				.getByRole("button", { name: "Anterior" })

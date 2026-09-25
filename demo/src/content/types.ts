@@ -272,6 +272,8 @@ export type Copy = {
 	empty: string;
 	/** Over the vendors a request could mean, for the person to pick one (#134). */
 	choices: string;
+	/** In their place when several held the item and no vendor is above zero. */
+	severalFit: string;
 	/** Under `empty`, the likeliest vendors, for the person to pick one (#134). */
 	closest: string;
 	transactionsWith: (name: string) => string;

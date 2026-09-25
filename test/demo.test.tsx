@@ -70,6 +70,8 @@ const answers: Record<string, FakeAnswers> = {
 		cloudberth: 0.12,
 		swiftlane: 0.12,
 	}),
+	// Several wins with every vendor at zero: nothing to choose from.
+	"a few of our suppliers": answer({ several: 0.99, none: 0.01 }),
 	// None ties one vendor for first place, below the demo's gate of 0.15.
 	"the window guy": answer({ none: 0.12, glasswell: 0.12, several: 0.05 }),
 	"los del catering": answer({ cazuela: 0.92, none: 0.02 }),
@@ -412,6 +414,23 @@ describe("the demo's Search case", () => {
 		expect(
 			panel().getByText(
 				"none (0.61) reached the gate (0.15), so nothing is shown.",
+			),
+		).toBeDefined();
+	});
+
+	it("says more than one vendor could fit when several held the item and no vendor is above zero, as the hood does", async () => {
+		const { user } = renderDemo();
+
+		await user.type(screen.getByRole("searchbox"), "a few of our suppliers");
+
+		expect(
+			await screen.findByText("More than one vendor could fit"),
+		).toBeDefined();
+		expect(screen.queryByText("No vendor matches")).toBeNull();
+		expect(screen.queryByRole("list", { name: "Which one?" })).toBeNull();
+		expect(
+			panel().getByText(
+				"several (0.99) reached the gate (0.15), so nothing is shown.",
 			),
 		).toBeDefined();
 	});

@@ -128,7 +128,11 @@ describe("what the Search case offers when the item is held", () => {
 			kind: "closest",
 			candidates: [],
 		});
-		expect(offerOf(held({ several: 0.99, none: 0.01 }))).toBeNull();
+		// Several held it with no vendor above zero: choices, with none to list.
+		expect(offerOf(held({ several: 0.99, none: 0.01 }))).toEqual({
+			kind: "choices",
+			candidates: [],
+		});
 	});
 
 	it("offers nothing when the shortlist found no candidate, so the provider was not asked", () => {

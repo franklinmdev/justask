@@ -60,8 +60,9 @@ export type Offer<T> = {
  * already returns: nothing once a vendor filled, before an answer, or when
  * no answer ranked the candidates (a failed call, or no shortlist). A
  * vendor at zero is never offered, so the closest can be fewer than three,
- * or none, and the message then stands alone; so it does when several held
- * the item and no vendor is above zero.
+ * or none, and the message then stands alone. When several held the item
+ * and no vendor is above zero, the choices are empty, and the page says more
+ * than one vendor could fit, as the hood does.
  */
 export function offerOf<T>(result: SearchResult<T> | null): Offer<T> | null {
 	if (!result || result.item !== null || result.candidates.length === 0) {
@@ -85,14 +86,11 @@ export function offerOf<T>(result: SearchResult<T> | null): Offer<T> | null {
 		.sort((a, b) => probability(b.id) - probability(a.id));
 	const top = probability(ranked[0]?.id ?? "");
 	const tied = ranked.filter(({ id }) => probability(id) === top);
-	// With no vendor above zero there is nothing to choose, and the message stands alone.
-	const choices = (): Offer<T> | null =>
-		ranked.length === 0
-			? null
-			: {
-					kind: "choices",
-					candidates: tied.length > 1 ? tied : ranked.slice(0, 2),
-				};
+	// With no vendor above zero the choices are empty, and the page says more than one could fit.
+	const choices = (): Offer<T> => ({
+		kind: "choices",
+		candidates: tied.length > 1 ? tied : ranked.slice(0, 2),
+	});
 	const closest: Offer<T> = {
 		kind: "closest",
 		candidates: ranked.slice(0, CLOSEST),

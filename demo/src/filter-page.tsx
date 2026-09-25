@@ -596,7 +596,7 @@ function Pages({
 	];
 	return (
 		<nav className="pages" aria-label={words.label}>
-			<p className="page-range data" aria-live="polite">
+			<p className="page-range data" role="status">
 				{words.range(first, last, total)}
 			</p>
 			<div className="page-steps">

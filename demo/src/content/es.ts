@@ -91,6 +91,7 @@ export const spanish: Content = {
 		nothing: "Nada que encontrar",
 		empty: "Ningún proveedor coincide",
 		choices: "¿Cuál de estos?",
+		severalFit: "Podría ser más de un proveedor",
 		closest: "Los más cercanos",
 		transactionsWith: (name) => `Transacciones con ${name}`,
 		columns: {

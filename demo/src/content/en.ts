@@ -88,6 +88,7 @@ export const english: Content = {
 		nothing: "Nothing to find",
 		empty: "No vendor matches",
 		choices: "Which one?",
+		severalFit: "More than one vendor could fit",
 		closest: "Closest",
 		transactionsWith: (name) => `Transactions with ${name}`,
 		columns: {
