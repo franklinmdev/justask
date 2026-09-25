@@ -4,6 +4,8 @@ import {
 	DEMO_PAUSED,
 	KEY_OUT_OF_SERVICE,
 	type Stopped,
+	VISITOR_DAY_USED,
+	VISITOR_MINUTE_USED,
 } from "./api.ts";
 import type { Content } from "./content/types.ts";
 
@@ -12,8 +14,8 @@ export const REPO_URL = "https://github.com/franklinmdev/justask";
 
 /**
  * The demo's `fetch`, watching for the server's answers that stop live calls
- * on the owner's key (#109): the day's budget or the kill switch, 402, and a
- * key TypeSafe refused, 503. It hands the answer on untouched, so the hook
+ * on the owner's key (#109): the day's budget, the kill switch or this
+ * visitor's limit (#110), 402, and a key TypeSafe refused, 503. It hands the answer on untouched, so the hook
  * still ends its call, and tells the page why.
  */
 export function watchStops(
@@ -32,13 +34,16 @@ async function stoppedBy(response: Response): Promise<Stopped | null> {
 	if (response.status !== 402 && response.status !== 503) return null;
 	try {
 		const body = (await response.clone().json()) as {
-			error?: { kind?: unknown; cause?: unknown };
+			error?: { kind?: unknown; cause?: unknown; limit?: unknown };
 		} | null;
-		const { kind, cause } = body?.error ?? {};
+		const { kind, cause, limit } = body?.error ?? {};
 		if (kind === KEY_OUT_OF_SERVICE.error.kind) return "key";
 		if (kind !== BUDGET_EXCEEDED.error.kind) return null;
 		if (cause === BUDGET_EXCEEDED.error.cause) return "budget";
-		return cause === DEMO_PAUSED.error.cause ? "paused" : null;
+		if (cause === DEMO_PAUSED.error.cause) return "paused";
+		if (cause !== VISITOR_MINUTE_USED.error.cause) return null;
+		if (limit === VISITOR_MINUTE_USED.error.limit) return "minute";
+		return limit === VISITOR_DAY_USED.error.limit ? "day" : null;
 	} catch {
 		// A body that is not JSON is not the demo's own answer: the page's usual error shows.
 		return null;
