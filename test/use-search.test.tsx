@@ -311,4 +311,52 @@ describe("useSearch and its pieces", () => {
 				.map((region) => region.getAttribute("aria-busy")),
 		).toEqual(["false", "false"]);
 	});
+
+	it("calls again when the page is shown after a hide cut its call short, so the answer is there (#135)", async () => {
+		const provider = slowFirstProvider(picksAcme, picksAcme, 80);
+		const { seen, user } = renderSearch({ provider });
+
+		await user.type(screen.getByRole("searchbox"), "acme");
+		await waitFor(() => expect(provider.calls).toHaveLength(1));
+		act(() => seen.setMode("hidden"));
+		act(() => seen.setMode("visible"));
+
+		expect(
+			await screen.findByRole("button", { name: "Acme Supplies" }),
+		).toBeDefined();
+		expect(provider.calls.map(({ request }) => request)).toEqual([
+			"acme",
+			"acme",
+		]);
+	});
+
+	it("calls when the page is shown after a hide during the pause in typing (#135)", async () => {
+		const provider = fakeProvider(picksAcme);
+		const { seen, user } = renderSearch({ provider });
+
+		await user.type(screen.getByRole("searchbox"), "acme");
+		act(() => seen.setMode("hidden"));
+		await pause(DEBOUNCE_MS + 50);
+		expect(provider.calls).toHaveLength(0);
+		act(() => seen.setMode("visible"));
+
+		expect(
+			await screen.findByRole("button", { name: "Acme Supplies" }),
+		).toBeDefined();
+		expect(provider.calls).toHaveLength(1);
+	});
+
+	it("makes no call when the page is shown after a hide with nothing cut short", async () => {
+		const provider = fakeProvider(picksAcme);
+		const { seen, user } = renderSearch({ provider });
+		await user.type(screen.getByRole("searchbox"), "acme");
+		await screen.findByRole("button", { name: "Acme Supplies" });
+
+		act(() => seen.setMode("hidden"));
+		act(() => seen.setMode("visible"));
+		await pause(DEBOUNCE_MS + 50);
+
+		expect(provider.calls).toHaveLength(1);
+		expect(screen.getByRole("button", { name: "Acme Supplies" })).toBeDefined();
+	});
 });
