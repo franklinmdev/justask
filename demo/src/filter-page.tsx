@@ -202,28 +202,6 @@ export function FilterPage({
 				<p className="empty">{copy.filter.empty}</p>
 			</FilterEmpty>
 
-			<section className="suggestions" aria-labelledby="suggestions-title">
-				<h3 id="suggestions-title">{copy.suggestions}</h3>
-				<Suggestions
-					id="fills"
-					title={copy.filter.fills}
-					requests={content.filterSuggestions.fills}
-					onPick={suggest}
-				/>
-				<Suggestions
-					id="holds"
-					title={copy.filter.holds}
-					requests={content.filterSuggestions.holds}
-					onPick={suggest}
-				/>
-				<Suggestions
-					id="nothing"
-					title={copy.filter.nothing}
-					requests={content.filterSuggestions.nothing}
-					onPick={suggest}
-				/>
-			</section>
-
 			<section className="table-section" aria-labelledby="applied-title">
 				<div className="applied">
 					<h3 id="applied-title" className="label">
@@ -259,6 +237,28 @@ export function FilterPage({
 					settling={settling}
 				/>
 				<Transactions content={content} rows={rows} all={transactions} />
+			</section>
+
+			<section className="suggestions" aria-labelledby="suggestions-title">
+				<h3 id="suggestions-title">{copy.suggestions}</h3>
+				<Suggestions
+					id="fills"
+					title={copy.filter.fills}
+					requests={content.filterSuggestions.fills}
+					onPick={suggest}
+				/>
+				<Suggestions
+					id="holds"
+					title={copy.filter.holds}
+					requests={content.filterSuggestions.holds}
+					onPick={suggest}
+				/>
+				<Suggestions
+					id="nothing"
+					title={copy.filter.nothing}
+					requests={content.filterSuggestions.nothing}
+					onPick={suggest}
+				/>
 			</section>
 		</CaseLayout>
 	);
