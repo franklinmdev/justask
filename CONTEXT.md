@@ -96,6 +96,14 @@ _Avoid_: Priming, preflight
 An eval run whose provider probes' median is more than twice the baseline declared before it. Its quality lines still decide, and so does a p95 that passes its line; a p95 that fails is measured again on the same rows in a normal window.
 _Avoid_: Outage, bad run, flaky run
 
+**Daily budget**:
+What the public demo may spend on its owner's key in one UTC day, $1, summed from each call's cost as it returns; the call that crosses it is answered, the next request is refused with no call. Kept in the demo's ledger, never in the core (ADR 0014).
+_Avoid_: Quota, credit, rate limit
+
+**Kill switch**:
+The demo's flag that makes the daily budget count as spent, so every live request gets the budget's answer through the same path. The recorded runs still play.
+_Avoid_: Maintenance mode, off switch
+
 **Held field**:
 A field left empty because its pick did not clear the gate, because the provider picked `not_mentioned` or `not_available`, because a parser marked its candidates ambiguous (such as "next Friday"), because the request names a pair of the field's items, or, on a card, because the request is a command on an existing record. Empty looks the same whatever the reason.
 _Avoid_: Abstained field, unknown, null field
