@@ -150,9 +150,14 @@ export function FilterPage({
 	});
 	// An answer that fills a field applies at once, typed or suggested. No
 	// dependencies: confirm spends the answer, so `ready` stays false until the
-	// next one, and a render for anything else confirms nothing.
+	// next one, and a render for anything else confirms nothing. An answer that
+	// fills nothing still starts over, dropping the last answer's fields; a
+	// failed call is no answer, so its `value` is null and the table stays.
 	useEffect(() => {
 		if (filter.ready) filter.confirm();
+		else if (filter.value !== null) {
+			setTable((now) => (now.byAnswer.length > 0 ? answerOver(now, {}) : now));
+		}
 	});
 	replay.follow(filter);
 	const box = replay.stoppedBy(filter);
@@ -545,7 +550,8 @@ function Transactions({
 		content.vendors.map(({ id, value }) => [id, value.name]),
 	);
 	const shown = useRowMotion(rows, all);
-	if (rows.length === 0) {
+	// Rows still leaving keep the table up until their exit ends.
+	if (shown.length === 0) {
 		return <p className="empty">{copy.filter.none}</p>;
 	}
 	return (

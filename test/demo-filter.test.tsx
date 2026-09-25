@@ -216,6 +216,48 @@ describe("the demo's Table case", () => {
 		expect(rows()).toBe(larkspurOver1000.length);
 	});
 
+	it("drops the last answer's fields on an answer that fills nothing, and keeps them when the call fails (#123)", async () => {
+		const { user } = renderDemo();
+
+		await user.click(screen.getByRole("button", { name: "overdue invoices" }));
+		await waitFor(() => expect(select("Status").value).toBe("overdue"));
+
+		// A failed call is no answer: the table stays as it was and says so.
+		const box = screen.getByRole("searchbox", {
+			name: "Filter the transactions",
+		});
+		await user.clear(box);
+		await user.type(box, "a request the provider fails on");
+		expect(await panel().findByText("Failed")).toBeDefined();
+		expect(select("Status").value).toBe("overdue");
+
+		// A new request that filters nothing still starts over.
+		await user.click(
+			screen.getByRole("button", { name: "how much do we owe in total?" }),
+		);
+		await screen.findByText(
+			"Nothing in that request filters the transactions.",
+		);
+		await waitFor(() => expect(select("Status").value).toBe(""));
+		expect(rows()).toBe(english.transactions.length);
+	});
+
+	it("keeps a field the person changed after an answer set it, over the next request (#123)", async () => {
+		const { user } = renderDemo();
+
+		await user.click(screen.getByRole("button", { name: "overdue invoices" }));
+		await waitFor(() => expect(select("Status").value).toBe("overdue"));
+		// The answer's status, changed by hand: it is the person's now.
+		await user.selectOptions(select("Status"), "paid");
+
+		await user.click(
+			screen.getByRole("button", { name: "Larkspur invoices over $1,000" }),
+		);
+
+		await waitFor(() => expect(select("Vendor").value).toBe("larkspur"));
+		expect(select("Status").value).toBe("paid");
+	});
+
 	it("moves the rows a change brings in or takes out, and only those", async () => {
 		const { container, user } = renderDemo();
 		const motion = (kind: string) =>
@@ -413,7 +455,7 @@ describe("the demo's Table case", () => {
 	});
 
 	it("keeps no row for an amount in another currency, until the person types a bound in the table's own", async () => {
-		const { user } = renderDemo();
+		const { container, user } = renderDemo();
 
 		await user.type(
 			screen.getByRole("searchbox", { name: "Filter the transactions" }),
@@ -421,6 +463,13 @@ describe("the demo's Table case", () => {
 		);
 
 		expect(await screen.findByText("EUR")).toBeDefined();
+		// The rows leave with their motion before the table says it has none.
+		expect(
+			container.querySelectorAll('.transactions tr[data-motion="leave"]'),
+		).toHaveLength(english.transactions.length);
+		expect(
+			await screen.findByText("No transaction matches the applied filters."),
+		).toBeDefined();
 		expect(rows()).toBe(0);
 
 		// The person keeps the minimum and types a maximum: both read in the table's own currency.
