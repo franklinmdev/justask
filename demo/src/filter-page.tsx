@@ -142,7 +142,8 @@ export function FilterPage({
 		onConfirm: (value) => {
 			setTable((now) => answerOver(now, value));
 			const names = fieldOrder.filter((name) => value[name] !== undefined);
-			// An end state opened with nothing typed shows its controls still.
+			// An end state opened with nothing typed shows its controls still. Set
+			// once per answer, so the person taking over never settles them late.
 			setSettling(({ round }) => ({
 				round: round + 1,
 				names: replay.still ? [] : names,

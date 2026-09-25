@@ -1215,9 +1215,13 @@ fieldset.table-filter[data-settle]::before {
 	}
 }
 
-/* An end state opened with nothing typed shows its pick still (#139). */
+/* An end state opened with nothing typed shows its pick still, with no fill line (#139). */
 .item[data-still] {
 	animation: none;
+}
+
+.item[data-still]::before {
+	content: none;
 }
 
 /* A range's two ends side by side: from and to, min and max. */
