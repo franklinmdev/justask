@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import type {
 	HandlerBadRequest,
 	HandlerError,
@@ -52,22 +52,37 @@ export function useRequest<R>({
 	const [loading, setLoading] = useState(false);
 	const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 	const inFlight = useRef<AbortController | null>(null);
+	// The request whose pause or call a hidden <Activity> cut short.
+	const pending = useRef<string | null>(null);
+	// The request of the pause or call now pending, for the cleanup to keep.
+	const due = useRef<string | null>(null);
 
-	useEffect(
-		() => () => {
+	// This render's `call`, with its `fetch` and endpoint, for the effect below.
+	const resend = useEffectEvent((text: string) => call(text));
+
+	useEffect(() => {
+		// A hidden <Activity> shown again runs this: the call it cut short is
+		// made, unless an earlier effect already started a newer one.
+		if (pending.current !== null && due.current === null) {
+			resend(pending.current);
+		}
+		pending.current = null;
+		return () => {
+			pending.current = due.current;
+			due.current = null;
 			clearTimeout(timer.current);
 			inFlight.current?.abort();
 			// A hidden <Activity> keeps this state, and its aborted call never lands.
 			setLoading(false);
-		},
-		[],
-	);
+		};
+	}, []);
 
 	/** Starts a call for `text`, dropping any pending or earlier one. */
 	function call(text: string) {
 		clearTimeout(timer.current);
 		inFlight.current?.abort();
 		inFlight.current = null;
+		due.current = null;
 		if (isBlank(text)) {
 			setAnswer(null);
 			setLoading(false);
@@ -75,11 +90,13 @@ export function useRequest<R>({
 		}
 		const controller = new AbortController();
 		inFlight.current = controller;
+		due.current = text;
 		setLoading(true);
 		post<R>(fetchImpl ?? fetch, endpoint, flow, text, controller.signal).then(
 			(next) => {
 				if (controller.signal.aborted) return;
 				inFlight.current = null;
+				due.current = null;
 				setAnswer({ ...next, request: text });
 				setLoading(false);
 			},
@@ -92,6 +109,7 @@ export function useRequest<R>({
 			call(text);
 		} else if (timing.on === "type") {
 			clearTimeout(timer.current);
+			due.current = text;
 			setLoading(true);
 			timer.current = setTimeout(() => call(text), timing.debounceMs);
 		}
@@ -102,6 +120,7 @@ export function useRequest<R>({
 		clearTimeout(timer.current);
 		inFlight.current?.abort();
 		inFlight.current = null;
+		due.current = null;
 		setRequestState(text);
 		setLoading(false);
 	}

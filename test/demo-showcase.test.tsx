@@ -52,9 +52,19 @@ function tab(name: string) {
 	return screen.getByRole("tab", { name });
 }
 
-/** The hood, found by role alone: a hidden element has no accessible name. */
+/**
+ * The hood of the case on screen, found by role alone: a hidden element has
+ * no accessible name. A case opened before stays mounted, hidden with
+ * `display: none` on its outer elements (#135), and so does its hood.
+ */
 function hood() {
-	return screen.getByRole("complementary", { hidden: true });
+	const shown = screen
+		.getAllByRole("complementary", { hidden: true })
+		.filter(
+			(aside) => aside.closest<HTMLElement>(".case")?.style.display !== "none",
+		);
+	expect(shown).toHaveLength(1);
+	return shown[0] as HTMLElement;
 }
 
 afterEach(() => {

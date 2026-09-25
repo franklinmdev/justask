@@ -25,6 +25,34 @@ function drop(timers: Timers) {
 	timers.current = [];
 }
 
+/** Where a tab remembers that a recording's replay played in it. */
+function playedKey({ set, row }: Recording<Usage>): string {
+	return `justask-demo:played:${set}:${row}`;
+}
+
+/** True when this browser tab already played the recording's replay. Blocked storage never has. */
+function playedBefore(recording: Recording<Usage>): boolean {
+	try {
+		return sessionStorage.getItem(playedKey(recording)) !== null;
+	} catch {
+		return false;
+	}
+}
+
+/** Remembers for the tab's life that the recording's replay played. Blocked storage forgets. */
+function markPlayed(recording: Recording<Usage>) {
+	try {
+		sessionStorage.setItem(playedKey(recording), "1");
+	} catch {}
+}
+
+/** Forgets the recording's replay played, so the next one types in again. */
+export function forgetPlayed(recording: Recording<Usage>) {
+	try {
+		sessionStorage.removeItem(playedKey(recording));
+	} catch {}
+}
+
 /** Under reduced motion the sentence appears whole instead of typing in. */
 function reducedMotion(): boolean {
 	return (
@@ -65,6 +93,13 @@ export type Replay = {
  * Save: that stays the person's. Typing or picking a suggestion ends it,
  * and the next call is a live one that replaces the recording's display.
  * With no recording the case opens idle.
+ *
+ * A replay plays once per browser tab (#135): once it has started, a reload
+ * opens the case on its end state at once, the sentence in the box and the
+ * recorded answer shown, with no typing. The case keeps what it showed while
+ * another case is on screen: a hidden <Activity> runs this hook's effect
+ * again when it shows, so whether the replay started lives in a ref, never
+ * in the effect, and a replay left halfway ends on its end state too.
  */
 export function useReplay({
 	recording,
@@ -81,14 +116,28 @@ export function useReplay({
 	// Set once the person takes over, and once the recorded response is served.
 	const stopped = useRef(recording === null);
 	const served = useRef(false);
+	// Set once the replay has typed in, here or earlier in this browser tab.
+	const played = useRef(recording !== null && playedBefore(recording));
+	// Set while the end state waits for its sentence to render, to call on it.
+	const ending = useRef(false);
 	const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 	// The latest render's flow, for the steps that run later.
 	const latest = useRef<Flow | null>(null);
 
 	useEffect(() => {
-		if (recording === null) return;
+		if (recording === null || stopped.current || served.current) return;
 		const { request } = recording;
-		later(timers, START_MS, () => setStarted(true));
+		if (played.current) {
+			// The end state at once: the sentence, then its call, on the next render.
+			latest.current?.setRequest(request);
+			ending.current = true;
+			return;
+		}
+		later(timers, START_MS, () => {
+			played.current = true;
+			markPlayed(recording);
+			setStarted(true);
+		});
 		const typingMs = reducedMotion() ? 0 : request.length * TYPE_MS;
 		if (typingMs === 0) {
 			later(timers, START_MS, () => latest.current?.setRequest(request));
@@ -108,6 +157,15 @@ export function useReplay({
 		return () => drop(timers);
 	}, [recording, enter]);
 
+	// The end state's call, once the box holds the sentence: the recording answers it.
+	useEffect(() => {
+		if (!ending.current || latest.current?.request !== recording?.request) {
+			return;
+		}
+		ending.current = false;
+		latest.current?.submit();
+	});
+
 	/**
 	 * The person took over: the replay ends, and the label and its
 	 * announcement go with it, even when an empty box makes no call to
@@ -118,6 +176,7 @@ export function useReplay({
 		setStarted(false);
 		if (stopped.current) return;
 		stopped.current = true;
+		ending.current = false;
 		drop(timers);
 	}
 
