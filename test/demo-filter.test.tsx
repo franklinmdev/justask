@@ -8,12 +8,20 @@ import {
 } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import type { Probabilities, Provider } from "justask";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+	afterEach,
+	beforeAll,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	vi,
+} from "vitest";
 import { createDemoHandler } from "../demo/server/handler.ts";
 import { App } from "../demo/src/app.tsx";
 import { english } from "../demo/src/content/en.ts";
 import { spanish } from "../demo/src/content/es.ts";
-import { counter, expectNoAxeViolations, figure } from "./checks.ts";
+import { counter, expectNoAxeViolations, figure, warmUp } from "./checks.ts";
 import {
 	type FakeAnswers,
 	failingProvider,
@@ -129,8 +137,12 @@ function panel(name = "What happened") {
 /** The transactions the table shows. */
 function rows(name = "Transactions") {
 	const table = screen.queryByRole("table", { name });
-	// The header row, then one per transaction.
-	return table ? within(table).getAllByRole("row").length - 1 : 0;
+	// Counted in the body, not by role: a role query over every row cost a
+	// whole-page test about a tenth of its time (#120). A leaving row is already
+	// gone for a screen reader, so it is not counted.
+	return table
+		? table.querySelectorAll("tbody tr:not([aria-hidden])").length
+		: 0;
 }
 
 /** A select among the table's own filter controls, by its label. */
@@ -151,6 +163,8 @@ function announced() {
 		.join(" | ");
 }
 
+beforeAll(() => warmUp(() => renderDemo()));
+
 // The data's months are relative to today, fixed here; Date alone is faked.
 beforeEach(() => {
 	vi.setSystemTime(new Date("2026-09-22T15:00:00Z"));
@@ -164,7 +178,7 @@ afterEach(() => {
 
 describe("the demo's Table case", () => {
 	it("filters the table from a suggested request with no further click, and says what it set (#123)", async () => {
-		const { container, user } = renderDemo();
+		const { user } = renderDemo();
 		const total = english.transactions.length;
 		expect(rows()).toBe(total);
 
@@ -190,10 +204,22 @@ describe("the demo's Table case", () => {
 		).toBeDefined();
 		// Nothing is left to press: filtering is reversible, and Clear filters undoes it.
 		expect(screen.queryByRole("button", { name: /apply/i })).toBeNull();
-		await expectNoAxeViolations(container);
 
 		await user.click(screen.getByRole("button", { name: "Clear filters" }));
 		expect(rows()).toBe(total);
+	});
+
+	// Its own test, apart from the filtering: a whole-page axe run was about
+	// half of that test's time under load, and ran it past its 5 s (#120).
+	it("passes axe once a suggested request has filtered the table", async () => {
+		const { container, user } = renderDemo();
+
+		await user.click(
+			screen.getByRole("button", { name: "Larkspur invoices over $1,000" }),
+		);
+		await waitFor(() => expect(rows()).toBe(2));
+
+		await expectNoAxeViolations(container);
 	});
 
 	it("starts over on each request: a new one replaces the fields earlier answers set (#123)", async () => {

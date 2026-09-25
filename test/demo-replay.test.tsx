@@ -9,7 +9,15 @@ import {
 } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import type { Probabilities, Provider } from "justask";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+	afterEach,
+	beforeAll,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	vi,
+} from "vitest";
 import { createDemoHandler } from "../demo/server/handler.ts";
 import { App } from "../demo/src/app.tsx";
 import { english } from "../demo/src/content/en.ts";
@@ -18,7 +26,7 @@ import type { Language } from "../demo/src/content/types.ts";
 import { formats } from "../demo/src/format.ts";
 import { dayOf, type Recording, recordings } from "../demo/src/recording.ts";
 import { applyTo, matches, transactionsOn } from "../demo/src/transactions.ts";
-import { expectNoAxeViolations as expectNoAxe } from "./checks.ts";
+import { expectNoAxeViolations as expectNoAxe, warmUp } from "./checks.ts";
 import { failingProvider, fakeProvider } from "./fake-provider.ts";
 
 // The recording files themselves: a rerun of the script changes their
@@ -145,6 +153,14 @@ function expectNoAxeViolations(container: Element) {
 	return expectNoAxe(container);
 }
 
+// The page's cold start, before the clock is faked: its replay runs on the
+// real one until the page is dropped.
+beforeAll(async () => {
+	await warmUp(() => renderDemo());
+	// @ts-expect-error jsdom has no matchMedia of its own.
+	delete window.matchMedia;
+});
+
 // A replay is paced by timers, which run on a faked clock: under load, real
 // ones ran past the test's time and let a replay step overtake the person's.
 // Testing Library steps that clock only for Jest's fake timers, so `jest`
@@ -210,6 +226,15 @@ describe("the Table case's recorded run", () => {
 			formats("en").cost(table.response.costUsd ?? Number.NaN),
 		);
 		expect(provider.calls).toHaveLength(0);
+	});
+
+	// Its own test, apart from the replay's steps: a whole-page axe run was
+	// about half of that test's time under load, and ran it past its 5 s (#120).
+	it("passes axe once the replay has set the controls", async () => {
+		const { container } = renderDemo();
+
+		await replayApplied();
+
 		await expectNoAxeViolations(container);
 	});
 
