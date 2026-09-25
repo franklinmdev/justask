@@ -2,7 +2,7 @@ import type { Probabilities, SearchResult } from "justask";
 import { describe, expect, it } from "vitest";
 import { english } from "../demo/src/content/en.ts";
 import type { Vendor } from "../demo/src/content/types.ts";
-import { offerOf } from "../demo/src/offer.ts";
+import { heldBy, offerOf } from "../demo/src/offer.ts";
 
 const candidates = english.vendors;
 
@@ -135,5 +135,43 @@ describe("what the Search case offers when the item is held", () => {
 		expect(
 			offerOf({ ...held({}), candidates: [], pick: null, probabilities: {} }),
 		).toBeNull();
+	});
+});
+
+describe("what held the item, as the hood says it and the page offers it", () => {
+	it("reads a tie between vendors as a tie, which offers them as choices", () => {
+		const result = held(
+			{ brightmop: 0.45, glasswell: 0.45, none: 0.1 },
+			{ pick: null },
+		);
+		expect(heldBy(result)).toBe("tie");
+		expect(offerOf(result)?.kind).toBe("choices");
+	});
+
+	it("reads a vendor tied with none by the gate: none reached it, so the closest show", () => {
+		const result = held(
+			{ none: 0.45, larkspur: 0.45, papergrove: 0.1 },
+			{ pick: null },
+		);
+		expect(heldBy(result)).toBe("none-reached-gate");
+		expect(offerOf(result)?.kind).toBe("closest");
+	});
+
+	it("says none tied for first place when it tied below the gate, and offers the closest", () => {
+		const result = held(
+			{ none: 0.12, glasswell: 0.12, larkspur: 0.1, several: 0.05 },
+			{ pick: null },
+		);
+		expect(heldBy(result)).toBe("none-tied");
+		expect(ids(offerOf(result))).toEqual(["glasswell", "larkspur"]);
+	});
+
+	it("says several tied for first place when it tied below the gate, and offers choices", () => {
+		const result = held(
+			{ several: 0.12, glasswell: 0.12, brightmop: 0.1, none: 0.05 },
+			{ pick: null },
+		);
+		expect(heldBy(result)).toBe("several-tied");
+		expect(offerOf(result)?.kind).toBe("choices");
 	});
 });

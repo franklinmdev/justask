@@ -70,6 +70,8 @@ const answers: Record<string, FakeAnswers> = {
 		cloudberth: 0.12,
 		swiftlane: 0.12,
 	}),
+	// None ties one vendor for first place, below the demo's gate of 0.15.
+	"the window guy": answer({ none: 0.12, glasswell: 0.12, several: 0.05 }),
 	"los del catering": answer({ cazuela: 0.92, none: 0.02 }),
 	"la empresa de limpieza": answer({
 		several: 0.88,
@@ -410,6 +412,23 @@ describe("the demo's Search case", () => {
 		expect(
 			panel().getByText(
 				"none (0.61) reached the gate (0.15), so nothing is shown.",
+			),
+		).toBeDefined();
+	});
+
+	it("says none tied one vendor for first place, and offers that vendor as the closest, as the hood says", async () => {
+		const { user } = renderDemo();
+
+		await user.type(screen.getByRole("searchbox"), "the window guy");
+
+		expect(await screen.findByText("No vendor matches")).toBeDefined();
+		expect(await choiceNames("Closest")).toEqual([
+			"Glasswell Janitorial office cleaning and window washing",
+		]);
+		expect(screen.queryByRole("list", { name: "Which one?" })).toBeNull();
+		expect(
+			panel().getByText(
+				"none (0.12) tied for first place, so nothing is shown.",
 			),
 		).toBeDefined();
 	});

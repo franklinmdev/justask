@@ -215,6 +215,8 @@ export type HeldReason =
 	| { kind: "several-reached-gate"; several: string; gate: string }
 	| { kind: "none-picked"; none: string }
 	| { kind: "several-picked"; several: string }
+	| { kind: "none-tied"; none: string }
+	| { kind: "several-tied"; several: string }
 	| { kind: "pair"; text: string }
 	| { kind: "tie" }
 	| { kind: "no-candidates" }

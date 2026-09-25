@@ -120,6 +120,10 @@ export const spanish: Content = {
 					return `El modelo eligió several (${reason.several}), así que no se muestra nada.`;
 				case "pair":
 					return `La solicitud nombra dos candidatos (“${reason.text}”), así que el código no muestra nada, sin importar la elección.`;
+				case "none-tied":
+					return `none (${reason.none}) empató en el primer lugar, así que no se muestra nada.`;
+				case "several-tied":
+					return `several (${reason.several}) empató en el primer lugar, así que no se muestra nada.`;
 				case "tie":
 					return "Dos candidatos empataron en el primer lugar, así que no se muestra nada.";
 				case "no-candidates":

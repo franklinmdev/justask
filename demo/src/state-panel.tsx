@@ -59,6 +59,16 @@ function verdictOf(
 					gate,
 				},
 			};
+		case "none-tied":
+			return {
+				kind: "held",
+				reason: { kind: "none-tied", none: format.probability(none) },
+			};
+		case "several-tied":
+			return {
+				kind: "held",
+				reason: { kind: "several-tied", several: format.probability(several) },
+			};
 		// Below the gate, a none or several pick still holds, like a tie (ADR 0005, 0007).
 		case "several-picked":
 			return {

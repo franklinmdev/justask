@@ -115,6 +115,10 @@ export const english: Content = {
 					return `The provider picked none (${reason.none}), so nothing is shown.`;
 				case "several-picked":
 					return `The provider picked several (${reason.several}), so nothing is shown.`;
+				case "none-tied":
+					return `none (${reason.none}) tied for first place, so nothing is shown.`;
+				case "several-tied":
+					return `several (${reason.several}) tied for first place, so nothing is shown.`;
 				case "pair":
 					return `The request names two candidates (“${reason.text}”), so the code shows nothing, whatever the pick.`;
 				case "tie":

@@ -10,24 +10,33 @@ export type HeldBy =
 	| "tie"
 	| "none-reached-gate"
 	| "several-reached-gate"
+	| "none-tied"
+	| "several-tied"
 	| "several-picked"
 	| "none-picked";
 
 /**
  * What held the item of an answer with no item: the code holds a named pair
- * before the gate is read (ADR 0011), then a tie, then none or several at the
- * gate, then a none or several pick below it. The state panel says it and the
- * offer follows it, so the two read the gate in one order. A tie offers
- * choices only when vendors share the top; one vendor tied with none offers
- * the closest.
+ * before the gate is read (ADR 0011), then two or more vendors tied for first
+ * place, then none or several at the gate, then none or several tied for
+ * first place or picked below it. A vendor tied with none or several is read
+ * as that label, never as a tie between vendors. The state panel says it and
+ * the offer follows it, so the two always read the same.
  */
 export function heldBy(result: SearchResult<unknown>): HeldBy {
 	if (result.pair) return "pair";
-	if (!result.pick) return "tie";
-	const { probabilities, gate } = result;
+	const { probabilities, gate, pick } = result;
+	const probability = (label: string) => probabilities[label] ?? 0;
+	const top = Math.max(...Object.values(probabilities));
+	const vendorsAtTop = result.candidates.filter(
+		({ id }) => probability(id) === top,
+	);
+	if (!pick && vendorsAtTop.length > 1) return "tie";
 	if ((probabilities[NONE] ?? 1) >= gate) return "none-reached-gate";
-	if ((probabilities[SEVERAL] ?? 0) >= gate) return "several-reached-gate";
-	return result.pick.label === SEVERAL ? "several-picked" : "none-picked";
+	if (probability(SEVERAL) >= gate) return "several-reached-gate";
+	// A tie that holds none reads as none, since no vendor is its equal.
+	if (!pick) return probability(NONE) === top ? "none-tied" : "several-tied";
+	return pick.label === SEVERAL ? "several-picked" : "none-picked";
 }
 
 /** How many of the closest vendors a request that matched none offers. */
@@ -90,9 +99,8 @@ export function offerOf<T>(result: SearchResult<T> | null): Offer<T> | null {
 	};
 	switch (held) {
 		case "tie":
-			// Vendors tied at the top, not one vendor tied with none.
-			return tied.length > 1 && top >= probability(NONE) ? choices() : closest;
 		case "several-reached-gate":
+		case "several-tied":
 		case "several-picked":
 			return choices();
 		default:
