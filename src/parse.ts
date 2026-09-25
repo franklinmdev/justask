@@ -482,10 +482,10 @@ function eitherWeek(
 	step: 7 | -7,
 	word: string,
 ): Hit[] {
-	const calendar = addDays(today, -weekday(today) + step + weekday(closest));
+	const inWeek = addDays(today, -weekday(today) + step + weekday(closest));
 	const way = step > 0 ? "after" : "before";
 	const inTheWeek = `reading '${word}' as that weekday in the week ${way} this one`;
-	if (calendar === closest)
+	if (inWeek === closest)
 		return [{ from: closest, to: closest, note: inTheWeek }];
 	return [
 		{
@@ -494,7 +494,7 @@ function eitherWeek(
 			note: `reading '${word}' as the closest one ${way} today`,
 			ambiguous: true,
 		},
-		{ from: calendar, to: calendar, note: inTheWeek, ambiguous: true },
+		{ from: inWeek, to: inWeek, note: inTheWeek, ambiguous: true },
 	];
 }
 
