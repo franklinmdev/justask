@@ -17,7 +17,9 @@ export type HeldBy =
  * What held the item of an answer with no item: the code holds a named pair
  * before the gate is read (ADR 0011), then a tie, then none or several at the
  * gate, then a none or several pick below it. The state panel says it and the
- * offer follows it, so the two never disagree.
+ * offer follows it, so the two read the gate in one order. A tie offers
+ * choices only when vendors share the top; one vendor tied with none offers
+ * the closest.
  */
 export function heldBy(result: SearchResult<unknown>): HeldBy {
 	if (result.pair) return "pair";
