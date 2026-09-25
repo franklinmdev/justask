@@ -136,7 +136,7 @@ afterEach(() => {
 });
 
 describe("the demo's Search case", () => {
-	// No axe run here: the next test runs it on the same answer, and a whole-page
+	// No axe run here: the next test runs it on the same request, and a whole-page
 	// run on top of this one's checks ran it past its 5 s under load (#120).
 	it("finds the vendor a suggested request names, and shows why in the state panel", async () => {
 		const { user } = renderDemo();
