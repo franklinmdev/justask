@@ -1,75 +1,103 @@
 /*
- * The demo's styles, from ~/.claude/design/DESIGN.md and the repo DESIGN.md:
- * cobalt accent, IBM Plex Sans + JetBrains Mono, achromatic neutrals, sharp
- * corners, flat at rest. Plain CSS on class names, as a host app would style
- * the package's unstyled pieces.
+ * The demo's styles, from the repo DESIGN.md's direction, Mounted specimen:
+ * the app in a framed window on a quiet cool page, one emerald accent, Mona
+ * Sans with Fragment Mono for data, the window the one lifted surface. Plain
+ * CSS on class names, as a host app would style the package's unstyled pieces.
  */
 
 :root {
 	color-scheme: light dark;
-	--bg: oklch(0.99 0 0);
-	--surface: oklch(0.965 0 0);
-	--surface-strong: oklch(0.93 0 0);
-	--border: oklch(0 0 0 / 0.1);
-	--border-strong: oklch(0 0 0 / 0.18);
-	--text: oklch(0.18 0 0);
-	--muted: oklch(0.48 0 0);
-	--primary: oklch(0.55 0.17 255);
-	--primary-text: oklch(0.5 0.17 255);
-	--on-primary: oklch(0.99 0 0);
-	--ring: oklch(0.55 0.17 255 / 0.3);
-	--track: oklch(0 0 0 / 0.06);
-	--bar: oklch(0.55 0.17 255 / 0.35);
-	--bar-none: oklch(0.48 0 0);
+	--bg: oklch(0.967 0.003 250);
+	--window: oklch(1 0 0);
+	/* The raised segment in a segmented track: the tabs and the toggles. */
+	--segment-on: oklch(1 0 0);
+	--surface: oklch(0.975 0.003 250);
+	--surface-strong: oklch(0.93 0.004 250);
+	--field: oklch(1 0 0);
+	--border: oklch(0.2 0.01 250 / 0.1);
+	--border-strong: oklch(0.2 0.01 250 / 0.2);
+	--text: oklch(0.2 0.01 250);
+	--muted: oklch(0.48 0.01 250);
+	--primary: oklch(0.6 0.15 155);
+	--primary-text: oklch(0.48 0.12 155);
+	--action: oklch(0.5 0.13 155);
+	--action-hover: oklch(0.45 0.12 155);
+	--on-action: oklch(1 0 0);
+	--ring: oklch(0.6 0.15 155 / 0.3);
+	--track: oklch(0.2 0.01 250 / 0.07);
+	--bar: oklch(0.2 0.01 250 / 0.25);
+	--bar-none: oklch(0.48 0.01 250);
 	--destructive: oklch(0.55 0.19 27);
 	/* What a field an answer filled lights up with, then fades from. */
-	--fill-wash: oklch(0.55 0.17 255 / 0.1);
+	--fill-wash: oklch(0.6 0.15 155 / 0.12);
+	--shadow-window:
+		0 1px 2px oklch(0.2 0.02 250 / 0.06),
+		0 12px 32px -14px oklch(0.2 0.02 250 / 0.28);
 
-	--sans: "IBM Plex Sans Variable", "IBM Plex Sans", system-ui, sans-serif;
-	--mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+	--radius-window: 0.75rem;
+	--radius-panel: 0.625rem;
+	--radius-control: 0.5rem;
+	--radius-chip: 0.375rem;
+
+	--sans: "Mona Sans Variable", "Mona Sans", system-ui, sans-serif;
+	--mono: "Fragment Mono", ui-monospace, monospace;
 	--ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @media (prefers-color-scheme: dark) {
 	:root:not([data-theme="light"]) {
 		color-scheme: dark;
-		--bg: oklch(0.15 0 0);
-		--surface: oklch(0.2 0 0);
-		--surface-strong: oklch(0.25 0 0);
+		--bg: oklch(0.16 0.006 250);
+		--window: oklch(0.2 0.007 250);
+		--segment-on: oklch(0.32 0.008 250);
+		--surface: oklch(0.235 0.007 250);
+		--surface-strong: oklch(0.28 0.008 250);
+		--field: oklch(0.175 0.006 250);
 		--border: oklch(1 0 0 / 0.1);
-		--border-strong: oklch(1 0 0 / 0.18);
-		--text: oklch(0.93 0 0);
-		--muted: oklch(0.68 0 0);
-		--primary: oklch(0.68 0.15 255);
-		--primary-text: oklch(0.76 0.12 255);
-		--on-primary: oklch(0.15 0 0);
-		--ring: oklch(0.68 0.15 255 / 0.35);
+		--border-strong: oklch(1 0 0 / 0.2);
+		--text: oklch(0.95 0.004 250);
+		--muted: oklch(0.72 0.01 250);
+		--primary: oklch(0.8 0.17 155);
+		--primary-text: oklch(0.82 0.15 155);
+		--action: oklch(0.5 0.13 155);
+		--action-hover: oklch(0.55 0.14 155);
+		--on-action: oklch(1 0 0);
+		--ring: oklch(0.8 0.17 155 / 0.35);
 		--track: oklch(1 0 0 / 0.08);
-		--bar: oklch(0.68 0.15 255 / 0.4);
-		--bar-none: oklch(0.68 0 0);
-		--destructive: oklch(0.7 0.16 27);
-		--fill-wash: oklch(0.68 0.15 255 / 0.16);
+		--bar: oklch(1 0 0 / 0.28);
+		--bar-none: oklch(0.72 0.01 250);
+		--destructive: oklch(0.72 0.16 27);
+		--fill-wash: oklch(0.8 0.17 155 / 0.14);
+		--shadow-window:
+			0 0 0 1px oklch(1 0 0 / 0.04), 0 20px 50px -20px oklch(0 0 0 / 0.8);
 	}
 }
 
 :root[data-theme="dark"] {
 	color-scheme: dark;
-	--bg: oklch(0.15 0 0);
-	--surface: oklch(0.2 0 0);
-	--surface-strong: oklch(0.25 0 0);
+	--bg: oklch(0.16 0.006 250);
+	--window: oklch(0.2 0.007 250);
+	--segment-on: oklch(0.32 0.008 250);
+	--surface: oklch(0.235 0.007 250);
+	--surface-strong: oklch(0.28 0.008 250);
+	--field: oklch(0.175 0.006 250);
 	--border: oklch(1 0 0 / 0.1);
-	--border-strong: oklch(1 0 0 / 0.18);
-	--text: oklch(0.93 0 0);
-	--muted: oklch(0.68 0 0);
-	--primary: oklch(0.68 0.15 255);
-	--primary-text: oklch(0.76 0.12 255);
-	--on-primary: oklch(0.15 0 0);
-	--ring: oklch(0.68 0.15 255 / 0.35);
+	--border-strong: oklch(1 0 0 / 0.2);
+	--text: oklch(0.95 0.004 250);
+	--muted: oklch(0.72 0.01 250);
+	--primary: oklch(0.8 0.17 155);
+	--primary-text: oklch(0.82 0.15 155);
+	--action: oklch(0.5 0.13 155);
+	--action-hover: oklch(0.55 0.14 155);
+	--on-action: oklch(1 0 0);
+	--ring: oklch(0.8 0.17 155 / 0.35);
 	--track: oklch(1 0 0 / 0.08);
-	--bar: oklch(0.68 0.15 255 / 0.4);
-	--bar-none: oklch(0.68 0 0);
-	--destructive: oklch(0.7 0.16 27);
-	--fill-wash: oklch(0.68 0.15 255 / 0.16);
+	--bar: oklch(1 0 0 / 0.28);
+	--bar-none: oklch(0.72 0.01 250);
+	--destructive: oklch(0.72 0.16 27);
+	--fill-wash: oklch(0.8 0.17 155 / 0.14);
+	--shadow-window:
+		0 0 0 1px oklch(1 0 0 / 0.04), 0 20px 50px -20px oklch(0 0 0 / 0.8);
 }
 
 :root[data-theme="light"] {
@@ -165,9 +193,9 @@ dd {
 	left: 16px;
 	top: -48px;
 	padding: 8px 12px;
-	background: var(--primary);
-	color: var(--on-primary);
-	border-radius: 0.125rem;
+	background: var(--action);
+	color: var(--on-action);
+	border-radius: var(--radius-control);
 	z-index: 1;
 }
 
@@ -184,7 +212,6 @@ dd {
 	gap: 16px;
 	height: 56px;
 	padding: 0 24px;
-	border-bottom: 1px solid var(--border);
 }
 
 .brand {
@@ -196,20 +223,33 @@ dd {
 }
 
 .product {
-	font-weight: 600;
+	font-size: 1.0625rem;
+	font-weight: 800;
+	letter-spacing: -0.02em;
 	white-space: nowrap;
 }
 
-/* The case tabs: one per case, the selected one marked with the accent. */
+/*
+ * The case tabs sit in a segmented track, the selected one raised on the
+ * window's surface; the hood's tabs mark theirs with the accent on a hairline.
+ */
 .cases,
 .hood-tabs {
 	display: flex;
-	align-self: stretch;
 	gap: 4px;
 }
 
+.hood-tabs {
+	align-self: stretch;
+}
+
 .cases {
+	align-items: center;
+	gap: 2px;
 	margin-left: 16px;
+	padding: 3px;
+	border-radius: var(--radius-control);
+	background: var(--track);
 }
 
 .cases a,
@@ -223,7 +263,23 @@ dd {
 	transition: color 120ms ease-out;
 }
 
-.cases a[aria-selected="true"],
+.cases a {
+	min-height: 30px;
+	padding: 0 12px;
+	border: 0;
+	border-radius: var(--radius-chip);
+	font-weight: 500;
+	transition:
+		background-color 120ms ease-out,
+		color 120ms ease-out;
+}
+
+.cases a[aria-selected="true"] {
+	background: var(--segment-on);
+	color: var(--text);
+	box-shadow: 0 1px 2px oklch(0 0 0 / 0.12);
+}
+
 .hood-tabs button[aria-selected="true"] {
 	border-bottom-color: var(--primary);
 	color: var(--text);
@@ -240,8 +296,10 @@ dd {
 .themes,
 .show {
 	display: flex;
-	border: 1px solid var(--border);
-	border-radius: 0.125rem;
+	gap: 2px;
+	padding: 3px;
+	border-radius: var(--radius-control);
+	background: var(--track);
 }
 
 .languages a,
@@ -250,12 +308,12 @@ dd {
 .hood-toggle {
 	display: inline-flex;
 	align-items: center;
-	height: 28px;
+	height: 26px;
 	padding: 0 10px;
+	border-radius: var(--radius-chip);
 	color: var(--muted);
-	font-size: 0.75rem;
+	font-size: 0.8125rem;
 	font-weight: 500;
-	letter-spacing: 0.04em;
 	text-decoration: none;
 	transition:
 		background-color 120ms ease-out,
@@ -272,7 +330,7 @@ dd {
 .show {
 	min-width: 0;
 	margin: 0;
-	padding: 0;
+	border: 0;
 }
 
 .themes button,
@@ -306,18 +364,13 @@ dd {
 	cursor: pointer;
 }
 
-.languages a + a,
-.themes button + button,
-.show button + button {
-	border-left: 1px solid var(--border);
-}
-
 .languages a[aria-current="true"],
 .themes button[aria-pressed="true"],
 .show button[aria-pressed="true"],
 .hood-toggle[aria-expanded="true"] {
-	background: var(--surface-strong);
+	background: var(--segment-on);
 	color: var(--text);
+	box-shadow: 0 1px 2px oklch(0 0 0 / 0.12);
 }
 
 @media (hover: hover) {
@@ -325,7 +378,6 @@ dd {
 	.themes button:not([aria-pressed="true"]):hover,
 	.show button:not([aria-pressed="true"]):hover,
 	.hood-toggle:not([aria-expanded="true"]):hover {
-		background: var(--surface);
 		color: var(--text);
 	}
 }
@@ -355,10 +407,13 @@ dd {
 	grid-column: 1 / -1;
 }
 
-/* The toggle is one hairline-bordered button, pressed while the hood shows. */
+/* The toggle is one button in its own track, raised while the hood shows. */
 .hood-toggle {
-	border: 1px solid var(--border);
-	border-radius: 0.125rem;
+	height: 32px;
+	border: 3px solid transparent;
+	border-radius: var(--radius-control);
+	background: var(--track);
+	background-clip: padding-box;
 }
 
 /* The phone's switch spans the case. */
@@ -395,10 +450,10 @@ dd {
 
 /* The strip: the displayed call's figures, always over the hood's tabs. */
 .strip {
-	padding: 10px 12px;
+	padding: 12px 14px;
 	border: 1px solid var(--border);
-	border-radius: 0.25rem;
-	background: var(--surface);
+	border-radius: var(--radius-panel);
+	background: var(--window);
 	transition: opacity 150ms ease-out;
 }
 
@@ -441,8 +496,8 @@ dd {
 	min-width: 0;
 	margin: 0;
 	border: 1px solid var(--border);
-	border-radius: 0.25rem;
-	background: var(--surface);
+	border-radius: var(--radius-panel);
+	background: var(--window);
 	transition: opacity 150ms ease-out;
 }
 
@@ -478,10 +533,17 @@ dd {
 	}
 }
 
+/* The specimen: the app in its window, the one lifted surface on the page. */
 .app {
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
+	min-width: 0;
+	padding: 0 20px 20px;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-window);
+	background: var(--window);
+	box-shadow: var(--shadow-window);
 }
 
 h2 {
@@ -595,24 +657,25 @@ h2 {
 	align-items: baseline;
 	justify-content: space-between;
 	gap: 4px 12px;
+	margin: 0 -20px 4px;
+	padding: 12px 20px;
+	border-bottom: 1px solid var(--border);
 }
 
 .recorded {
 	color: var(--muted);
-	font-size: 0.75rem;
-	font-weight: 500;
-	letter-spacing: 0.04em;
+	font-size: 0.8125rem;
 }
 
 /* The request box */
 
 .box {
 	width: 100%;
-	height: 36px;
-	padding: 0 10px;
+	height: 40px;
+	padding: 0 12px;
 	border: 1px solid var(--border-strong);
-	border-radius: 0.25rem;
-	background: var(--bg);
+	border-radius: var(--radius-control);
+	background: var(--field);
 	color: var(--text);
 	font: inherit;
 	transition: border-color 120ms ease-out;
@@ -625,7 +688,7 @@ h2 {
 .box:focus-visible {
 	outline: none;
 	border-color: var(--primary);
-	box-shadow: 0 0 0 2px var(--ring);
+	box-shadow: 0 0 0 3px var(--ring);
 }
 
 /* What the sentence saved, tied to the box above it */
@@ -653,10 +716,11 @@ h2 {
 	align-items: flex-start;
 	gap: 2px;
 	width: 100%;
+	position: relative;
 	padding: 10px 12px;
 	border: 1px solid var(--border-strong);
-	border-radius: 0.25rem;
-	background: var(--bg);
+	border-radius: var(--radius-control);
+	background: var(--field);
 	color: var(--text);
 	font: inherit;
 	text-align: left;
@@ -723,7 +787,7 @@ h2 {
 .empty {
 	padding: 10px 12px;
 	border: 1px dashed var(--border-strong);
-	border-radius: 0.25rem;
+	border-radius: var(--radius-control);
 	color: var(--muted);
 }
 
@@ -780,16 +844,15 @@ h2 {
 /* Confirm, Clear filters and the table's own filter controls */
 
 .clear {
-	min-height: 24px;
-	padding: 0 6px;
-	border: 0;
-	border-radius: 0.125rem;
-	background: transparent;
-	color: var(--muted);
+	min-height: 28px;
+	padding: 0 8px;
+	border: 1px solid var(--border-strong);
+	border-radius: var(--radius-chip);
+	background: var(--field);
+	color: var(--text);
 	font: inherit;
-	font-size: 0.75rem;
+	font-size: 0.8125rem;
 	font-weight: 500;
-	letter-spacing: 0.04em;
 	cursor: pointer;
 	transition:
 		background-color 120ms ease-out,
@@ -805,15 +868,14 @@ h2 {
 
 .confirm {
 	height: 36px;
-	padding: 0 14px;
+	padding: 0 16px;
 	border: 0;
-	border-radius: 0.125rem;
-	background: var(--primary);
-	color: var(--on-primary);
+	border-radius: var(--radius-control);
+	background: var(--action);
+	color: var(--on-action);
 	font: inherit;
-	font-size: 0.8125rem;
-	font-weight: 500;
-	letter-spacing: 0.04em;
+	font-size: 0.875rem;
+	font-weight: 600;
 	cursor: pointer;
 	transition:
 		background-color 120ms ease-out,
@@ -822,6 +884,12 @@ h2 {
 
 .confirm:active:not([aria-disabled="true"]) {
 	transform: scale(0.97);
+}
+
+@media (hover: hover) {
+	.confirm:hover:not([aria-disabled="true"]) {
+		background: var(--action-hover);
+	}
 }
 
 /* Nothing to apply: it stays focusable, and reads as off. */
@@ -907,6 +975,88 @@ h2 {
 }
 
 /*
+ * The fill line, the direction's signature: an emerald line draws along the
+ * top of each control an answer filled, left to right, in the same field
+ * order as the settle, holds while the light fades, then fades itself. It
+ * marks what justask did and leaves no trace once read. The chosen search
+ * result draws one too. A held field gets none: the app cannot tell it from
+ * one the request never named, so the hood says why.
+ */
+.table-filter[data-settle],
+.entry[data-settle] {
+	position: relative;
+}
+
+.table-filter[data-settle]::before,
+.entry[data-settle]::before,
+.item::before {
+	content: "";
+	position: absolute;
+	top: -7px;
+	right: 0;
+	left: 0;
+	height: 2px;
+	border-radius: 1px;
+	background: var(--primary);
+	transform-origin: left;
+	pointer-events: none;
+	animation: fill-line 1400ms var(--ease-out) both;
+	animation-delay: calc(var(--settle-at, 0) * 50ms);
+}
+
+/*
+ * A fieldset places what it positions below its legend, so its line climbs
+ * back over the legend (0.75rem at line-height 1.5) and the legend's 6px gap.
+ */
+fieldset.table-filter[data-settle]::before {
+	top: calc(-7px - 1.125rem - 6px);
+}
+
+.item::before {
+	top: -1px;
+	right: 10px;
+	left: 10px;
+}
+
+@keyframes fill-line {
+	0% {
+		transform: scaleX(0);
+	}
+	18% {
+		transform: scaleX(1);
+		opacity: 1;
+	}
+	65% {
+		opacity: 1;
+	}
+	100% {
+		transform: scaleX(1);
+		opacity: 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	/* The line only fades in and out: nothing draws. */
+	@keyframes fill-line {
+		0% {
+			opacity: 0;
+		}
+		20%,
+		65% {
+			opacity: 1;
+		}
+		100% {
+			opacity: 0;
+		}
+	}
+	.table-filter[data-settle]::before,
+	.entry[data-settle]::before,
+	.item::before {
+		animation-duration: 1000ms;
+	}
+}
+
+/*
  * A row a change brings in enters as a list insert does, and a row it takes
  * out leaves 25 percent faster; a fade alone under reduced motion.
  */
@@ -977,7 +1127,7 @@ h2 {
 	gap: 16px;
 	padding: 16px;
 	border: 1px solid var(--border);
-	border-radius: 0.25rem;
+	border-radius: var(--radius-panel);
 }
 
 .entry {
@@ -1005,11 +1155,13 @@ h2 {
 	letter-spacing: 0.04em;
 }
 
-/* Provenance: a value the request gave is marked, one the person gave is not. */
+/*
+ * Provenance: a value the request gave is marked, one the person gave is not.
+ * Words in the text face, never a mono label.
+ */
 .entry-source {
 	color: var(--muted);
-	font-family: var(--mono);
-	font-size: 0.6875rem;
+	font-size: 0.75rem;
 }
 
 .control,
@@ -1018,8 +1170,8 @@ h2 {
 	height: 36px;
 	padding: 0 10px;
 	border: 1px solid var(--border-strong);
-	border-radius: 0.25rem;
-	background: var(--bg);
+	border-radius: var(--radius-control);
+	background: var(--field);
 	color: var(--text);
 	font: inherit;
 	transition: border-color 120ms ease-out;
@@ -1029,7 +1181,7 @@ h2 {
 .day-trigger:focus-visible {
 	outline: none;
 	border-color: var(--primary);
-	box-shadow: 0 0 0 2px var(--ring);
+	box-shadow: 0 0 0 3px var(--ring);
 }
 
 .tags {
@@ -1049,7 +1201,7 @@ h2 {
 	min-height: 32px;
 	padding: 0 10px 0 8px;
 	border: 1px solid var(--border-strong);
-	border-radius: 0.125rem;
+	border-radius: var(--radius-chip);
 	font-size: 0.875rem;
 	cursor: pointer;
 	transition:
@@ -1059,7 +1211,7 @@ h2 {
 
 .tag:has(:checked) {
 	border-color: var(--primary);
-	background: var(--surface);
+	background: var(--fill-wash);
 }
 
 .tag input {
@@ -1114,8 +1266,8 @@ h2 {
 	left: 0;
 	width: 264px;
 	padding: 8px;
-	border-radius: 0.375rem;
-	background: var(--bg);
+	border-radius: var(--radius-panel);
+	background: var(--window);
 	/* Floating: it leaves the page plane. */
 	box-shadow:
 		0 0 0 1px oklch(0 0 0 / 0.05),
@@ -1166,7 +1318,7 @@ h2 {
 .calendar-day,
 .calendar-clear {
 	border: 0;
-	border-radius: 0.125rem;
+	border-radius: var(--radius-chip);
 	background: transparent;
 	color: var(--text);
 	font: inherit;
@@ -1219,8 +1371,8 @@ h2 {
 }
 
 .calendar-day[aria-pressed="true"] {
-	background: var(--primary);
-	color: var(--on-primary);
+	background: var(--action);
+	color: var(--on-action);
 }
 
 .calendar-clear {
@@ -1323,7 +1475,7 @@ h2 {
 	gap: 12px;
 	padding: 16px;
 	border: 1px solid var(--border);
-	border-radius: 0.25rem;
+	border-radius: var(--radius-panel);
 	background: var(--surface);
 }
 
@@ -1350,10 +1502,10 @@ h2 {
 /* A suggestion reads as a button at rest: a strong border and the accent's text. */
 .chip {
 	min-height: 28px;
-	padding: 4px 8px;
+	padding: 4px 10px;
 	border: 1px solid var(--border-strong);
-	border-radius: 0.125rem;
-	background: var(--bg);
+	border-radius: var(--radius-chip);
+	background: var(--field);
 	color: var(--primary-text);
 	font: inherit;
 	font-size: 0.8125rem;
@@ -1370,7 +1522,7 @@ h2 {
 
 @media (hover: hover) {
 	.chip:hover {
-		background: var(--surface);
+		background: var(--fill-wash);
 		border-color: var(--primary);
 	}
 }
@@ -1383,8 +1535,8 @@ h2 {
 	gap: 12px;
 	padding: 16px;
 	border: 1px solid var(--border);
-	border-radius: 0.25rem;
-	background: var(--surface);
+	border-radius: var(--radius-panel);
+	background: var(--window);
 }
 
 .panel-head {
@@ -1401,11 +1553,10 @@ h2 {
 	gap: 6px;
 	padding: 2px 8px;
 	border: 1px solid var(--border);
-	border-radius: 0.125rem;
-	background: var(--bg);
+	border-radius: var(--radius-chip);
+	background: var(--surface);
 	font-size: 0.75rem;
 	font-weight: 500;
-	letter-spacing: 0.04em;
 }
 
 .status::before {
@@ -1544,12 +1695,11 @@ h2 {
 .pick {
 	margin-left: 8px;
 	padding: 1px 6px;
-	border-radius: 0.125rem;
-	background: var(--primary);
-	color: var(--on-primary);
+	border-radius: 0.25rem;
+	background: var(--action);
+	color: var(--on-action);
 	font-size: 0.6875rem;
-	font-weight: 500;
-	letter-spacing: 0.04em;
+	font-weight: 600;
 	vertical-align: 1px;
 }
 
@@ -1558,7 +1708,7 @@ h2 {
 	flex: 1;
 	height: 6px;
 	background: var(--track);
-	border-radius: 0.125rem;
+	border-radius: 3px;
 }
 
 .bar-fill {
@@ -1654,6 +1804,15 @@ h2 {
 		padding: 16px;
 	}
 
+	.app {
+		padding: 0 16px 16px;
+	}
+
+	.case-head {
+		margin-inline: -16px;
+		padding-inline: 16px;
+	}
+
 	.header {
 		padding: 0 16px;
 	}
@@ -1666,6 +1825,10 @@ h2 {
 	.box {
 		height: 44px;
 		font-size: 1rem;
+	}
+
+	.hood-toggle {
+		height: 44px;
 	}
 
 	.candidates tbody td {
@@ -1690,6 +1853,7 @@ h2 {
 	}
 
 	.languages a,
+	.themes button,
 	.show button {
 		height: 44px;
 		padding: 0 14px;
@@ -1719,12 +1883,25 @@ h2 {
 
 /* Phone: the brand keeps the first row, the theme and language toggles take the second. */
 @media (max-width: 560px) {
-	.cases {
-		margin-left: 4px;
+	.header {
+		column-gap: 12px;
 	}
 
+	/* Narrower than the name and the tabs together, the tabs take a row of their own. */
+	.brand {
+		flex-wrap: wrap;
+		row-gap: 10px;
+	}
+
+	.cases {
+		margin-left: 0;
+	}
+
+	/* Three tabs beside the name fit 375px in Spanish, the longer language. */
 	.cases a {
 		min-height: 44px;
+		padding: 0 8px;
+		font-size: 0.875rem;
 	}
 
 	/*
