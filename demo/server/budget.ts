@@ -1,5 +1,13 @@
 import { APIError } from "@typesafe-ai/sdk";
 import type { Provider } from "justask";
+import {
+	countCall,
+	newSalt,
+	utcMinute,
+	type VisitorCount,
+	type VisitorLimit,
+	visitorKey,
+} from "./visitors.ts";
 
 /**
  * The owner's key spends at most this much a UTC day, give or take the last
@@ -8,26 +16,51 @@ import type { Provider } from "justask";
 export const DAILY_BUDGET_USD = 1;
 
 /**
- * Where the demo keeps what outlives a request: the day's spend so far. In
- * memory for `pnpm demo` and the tests, a Durable Object with SQLite on the
- * Worker (demo/worker/ledger.ts). The per-visitor limits and the answer cache
- * join it later (#110, #112).
+ * Where the demo keeps what outlives a request: the day's spend so far and
+ * each visitor's calls (#110). In memory for `pnpm demo` and the tests, a
+ * Durable Object with SQLite on the Worker (demo/worker/ledger.ts). The
+ * answer cache joins it later (#112).
  */
 export type Ledger = {
 	/** The US dollars spent on `day`, a UTC date as YYYY-MM-DD. */
 	spent(day: string): Promise<number>;
 	add(day: string, usd: number): Promise<void>;
+	/**
+	 * Counts one call from `address` (visitorAddress) at `now`, or answers
+	 * which of the visitor's limits refuses it, counting nothing. Holds only a
+	 * hash of the address with the UTC day's salt, and drops the earlier days'
+	 * counts and salt on a new day's first call.
+	 */
+	visit(address: string, now: Date): Promise<VisitorLimit | null>;
 };
 
 /** The dev server's real ledger, and the tests': it lasts as long as the process. */
 export function memoryLedger(): Ledger {
 	const days = new Map<string, number>();
+	let visitors: {
+		day: string;
+		salt: string;
+		counts: Map<string, VisitorCount>;
+	} = { day: "", salt: "", counts: new Map() };
 	return {
 		async spent(day) {
 			return days.get(day) ?? 0;
 		},
 		async add(day, usd) {
 			days.set(day, (days.get(day) ?? 0) + usd);
+		},
+		async visit(address, now) {
+			const day = utcDay(now);
+			if (visitors.day < day) {
+				visitors = { day, salt: newSalt(), counts: new Map() };
+			}
+			// Held across the hash, so a new day meanwhile cannot take this call.
+			const { salt, counts } = visitors;
+			const key = await visitorKey(salt, address);
+			const counted = countCall(counts.get(key), utcMinute(now));
+			if ("limit" in counted) return counted.limit;
+			counts.set(key, counted.count);
+			return null;
 		},
 	};
 }

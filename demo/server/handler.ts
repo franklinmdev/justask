@@ -17,6 +17,8 @@ import {
 	filterEndpoint,
 	KEY_OUT_OF_SERVICE,
 	searchEndpoint,
+	VISITOR_DAY_USED,
+	VISITOR_MINUTE_USED,
 } from "../src/api.ts";
 import { english } from "../src/content/en.ts";
 import { spanish } from "../src/content/es.ts";
@@ -36,6 +38,7 @@ import {
 	utcDay,
 } from "./budget.ts";
 import { refusal } from "./policy.ts";
+import { visitorAddress } from "./visitors.ts";
 
 /**
  * Fixed by the owner for round 2, before its rows existed: round 1 failed at
@@ -199,8 +202,13 @@ export function logError(error: AskError): void {
  * never reaches the browser. The demo's policy runs before every route, then
  * the day's budget (#109): past it, or with the kill switch on, the answer is
  * 402 with no call, its cause the budget or the pause; each call's cost is
- * added to the day's spend. The `ledger` defaults to one in memory, the dev
- * server's.
+ * added to the day's spend. Then the visitor's limits (#110), counted by the
+ * address Cloudflare names in `CF-Connecting-IP`: past 20 calls a minute or
+ * 200 a day, the same 402, its cause the visitor. A request that names no
+ * address counts against no visitor: on the Worker Cloudflare always names
+ * one, and the dev server names the socket's; only the recording script and
+ * the tests call the handler directly. The `ledger` defaults to one in
+ * memory, the dev server's.
  */
 export function createDemoHandler(
 	provider: Provider,
@@ -259,6 +267,14 @@ export function createDemoHandler(
 			return Response.json(killSwitch ? DEMO_PAUSED : BUDGET_EXCEEDED, {
 				status: 402,
 			});
+		}
+		const address = visitorAddress(request.headers.get("cf-connecting-ip"));
+		const limit = address && (await ledger.visit(address, new Date()));
+		if (limit) {
+			return Response.json(
+				limit === "minute" ? VISITOR_MINUTE_USED : VISITOR_DAY_USED,
+				{ status: 402 },
+			);
 		}
 		const calls = counted(provider, ledger);
 		const response = await route(calls)(request);

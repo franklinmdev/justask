@@ -57,7 +57,11 @@ function justaskHandler(): Plugin {
 					const response = await handle(
 						new Request(`http://${req.headers.host}${req.originalUrl}`, {
 							method: req.method ?? "GET",
-							headers: req.headers as Record<string, string>,
+							headers: {
+								...(req.headers as Record<string, string>),
+								// Who the visitor's limits count, as Cloudflare names them on the Worker (#110).
+								"cf-connecting-ip": req.socket.remoteAddress ?? "",
+							},
 							body: req.method === "POST" ? await buffer(req) : null,
 						}),
 					);
