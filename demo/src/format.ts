@@ -1,8 +1,20 @@
 /** The currency the demo's amounts are in, and the one the server resolves "$" to. */
 export const LOCAL_CURRENCY = "USD";
 
+/** Each locale's formatters, built once: nine Intl constructors on every render were the demo's heaviest code in the page tests' profile (#120). */
+const byLocale = new Map<string, ReturnType<typeof build>>();
+
 /** The figures the demo shows, formatted in the language's locale. */
 export function formats(locale: string) {
+	let format = byLocale.get(locale);
+	if (!format) {
+		format = build(locale);
+		byLocale.set(locale, format);
+	}
+	return format;
+}
+
+function build(locale: string) {
 	const probability = new Intl.NumberFormat(locale, {
 		minimumFractionDigits: 2,
 		maximumFractionDigits: 2,

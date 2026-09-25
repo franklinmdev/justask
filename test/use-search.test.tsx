@@ -16,6 +16,7 @@ import { expectNoAxeViolations } from "./checks.ts";
 import {
 	failingProvider,
 	fakeProvider,
+	heldLaterProvider,
 	slowFirstProvider,
 } from "./fake-provider.ts";
 
@@ -39,7 +40,11 @@ const picksNone = {
 	search: { acme: 0.1, northwind: 0.05, none: 0.85, several: 0 },
 };
 
-const typing: SearchTiming = { on: "type", debounceMs: 30 };
+// Real, as the provider timeout is, and well past the gap between two keys
+// under other sessions' load: at 30 ms a loaded run called on the first key
+// of a sentence (#120).
+const DEBOUNCE_MS = 200;
+const typing: SearchTiming = { on: "type", debounceMs: DEBOUNCE_MS };
 
 /**
  * The page a host app would write, served by the real handler in process: the
@@ -229,7 +234,7 @@ describe("useSearch and its pieces", () => {
 		await user.type(box, "acme");
 		await screen.findByRole("button", { name: "Acme Supplies" });
 		await user.clear(box);
-		await pause(60);
+		await pause(DEBOUNCE_MS * 2);
 
 		expect(screen.queryByRole("button")).toBeNull();
 		expect(screen.queryByText("No vendor matches")).toBeNull();
@@ -237,7 +242,8 @@ describe("useSearch and its pieces", () => {
 	});
 
 	it("shows the answer to the latest request, never a slower earlier one", async () => {
-		const provider = slowFirstProvider(picksNone, picksAcme, 80);
+		// The first answer lands after the second request's debounce and answer.
+		const provider = slowFirstProvider(picksNone, picksAcme, DEBOUNCE_MS * 2);
 		const { user } = renderSearch({ provider });
 		const box = screen.getByRole("searchbox");
 
@@ -247,13 +253,13 @@ describe("useSearch and its pieces", () => {
 		await user.type(box, "acme");
 
 		await screen.findByRole("button", { name: "Acme Supplies" });
-		await pause(100);
+		await pause(DEBOUNCE_MS * 2);
 		expect(screen.getByRole("button", { name: "Acme Supplies" })).toBeDefined();
 		expect(screen.queryByText("No vendor matches")).toBeNull();
 	});
 
 	it("never offers the item for an earlier request once the person types on", async () => {
-		const provider = slowFirstProvider(picksAcme, picksAcme, 0);
+		const provider = heldLaterProvider(picksAcme, picksAcme);
 		const { onChoose, user } = renderSearch({ provider });
 		const box = screen.getByRole("searchbox");
 
@@ -263,6 +269,7 @@ describe("useSearch and its pieces", () => {
 
 		expect(screen.queryByRole("button")).toBeNull();
 		expect(onChoose).not.toHaveBeenCalled();
+		provider.release();
 		expect(
 			await screen.findByRole("button", { name: "Acme Supplies" }),
 		).toBeDefined();

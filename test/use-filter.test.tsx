@@ -22,7 +22,7 @@ import { expectNoAxeViolations } from "./checks.ts";
 import {
 	failingProvider,
 	fakeProvider,
-	slowFirstProvider,
+	heldLaterProvider,
 } from "./fake-provider.ts";
 
 type Vendor = { id: number; name: string };
@@ -86,7 +86,11 @@ const nothing = {
 	},
 };
 
-const typing: FilterTiming = { on: "type", debounceMs: 30 };
+// Real, as the provider timeout is, and well past the gap between two keys
+// under other sessions' load: at 30 ms a loaded run called on the first key
+// of a sentence (#120).
+const DEBOUNCE_MS = 200;
+const typing: FilterTiming = { on: "type", debounceMs: DEBOUNCE_MS };
 
 function amountText({ min, max, exact }: AmountRange) {
 	if (exact !== undefined) return `exactly ${exact}`;
@@ -388,7 +392,7 @@ describe("useFilter and its pieces", () => {
 	});
 
 	it("never offers the filters of an earlier request once the person types on", async () => {
-		const provider = slowFirstProvider(fills, holdsVendor, 0);
+		const provider = heldLaterProvider(fills, holdsVendor);
 		const { onConfirm, user } = renderFilter({ provider });
 		const box = screen.getByRole("searchbox");
 
@@ -399,6 +403,7 @@ describe("useFilter and its pieces", () => {
 		expect(screen.queryByRole("list")).toBeNull();
 		await user.click(confirmButton());
 		expect(onConfirm).not.toHaveBeenCalled();
+		provider.release();
 		expect(await screen.findByText("Amount: over 500")).toBeDefined();
 		expect(proposed()).toEqual(["Amount: over 500"]);
 	});

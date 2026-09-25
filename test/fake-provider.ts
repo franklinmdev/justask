@@ -185,6 +185,30 @@ export function slowFirstProvider(
 }
 
 /**
+ * Answers its first call from `first` at once, and holds every later call's
+ * answer from `then` until `release`, so a test checks the page between a
+ * request and its answer however slow the machine runs. A debounce is timed
+ * on the real clock, and under load it ran out before such a check (#120).
+ */
+export function heldLaterProvider(
+	first: FakeAnswers,
+	then: FakeAnswers,
+): RecordingProvider & { release(): void } {
+	const firstCall = fakeProvider(first);
+	const later = fakeProvider(then);
+	let release = () => {};
+	const released = new Promise<void>((resolve) => {
+		release = resolve;
+	});
+	const provider = recording(async (input) => {
+		if (firstCall.calls.length === 0) return firstCall.answer(input);
+		await released;
+		return later.answer(input);
+	});
+	return { ...provider, release: () => release() };
+}
+
+/**
  * Rejects each of its first calls with the next of `causes`, after `delayMs`,
  * then answers every later call from `answers`, or never when it is
  * `"hang"`. `costUsd` and `inputTokens`, when given, are reported by each

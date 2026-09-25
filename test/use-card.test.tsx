@@ -569,7 +569,9 @@ describe("useCard and its pieces", () => {
 		const provider = fakeProvider(fills);
 		const { user } = renderCard({
 			provider,
-			timing: { on: "type", debounceMs: 30 },
+			// Well past the gap between two keys under load: at 30 ms a loaded
+			// run can call on the first key (#120).
+			timing: { on: "type", debounceMs: 200 },
 		});
 
 		await user.type(box(), lunch);

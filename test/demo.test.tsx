@@ -8,12 +8,12 @@ import {
 } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { type Provider, ProviderUnavailableError } from "justask";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { createDemoHandler } from "../demo/server/handler.ts";
 import { App } from "../demo/src/app.tsx";
 import { english } from "../demo/src/content/en.ts";
 import { spanish } from "../demo/src/content/es.ts";
-import { counter, expectNoAxeViolations, figure } from "./checks.ts";
+import { counter, expectNoAxeViolations, figure, warmUp } from "./checks.ts";
 import {
 	type FakeAnswers,
 	failingProvider,
@@ -128,14 +128,18 @@ async function hoodView(
 	return within(screen.getByRole("tabpanel", { name }));
 }
 
+beforeAll(() => warmUp(() => renderDemo()));
+
 afterEach(() => {
 	cleanup();
 	byRequest.calls.length = 0;
 });
 
 describe("the demo's Search case", () => {
+	// No axe run here: the next test runs it on the same request, and a whole-page
+	// run on top of this one's checks ran it past its 5 s under load (#120).
 	it("finds the vendor a suggested request names, and shows why in the state panel", async () => {
-		const { container, user } = renderDemo();
+		const { user } = renderDemo();
 
 		await user.click(
 			screen.getByRole("button", { name: "the catering people" }),
@@ -161,7 +165,6 @@ describe("the demo's Search case", () => {
 		expect(state.getByRole("row", { name: /several/ })).toBeDefined();
 		// The shortlist is the whole catalog of 14, plus none and several.
 		expect(state.getAllByRole("row")).toHaveLength(1 + 14 + 2);
-		await expectNoAxeViolations(container);
 	});
 
 	it("shows the call's latency, input tokens and cost in the hood's strip, when the provider reports them", async () => {

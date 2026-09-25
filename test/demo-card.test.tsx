@@ -8,12 +8,20 @@ import {
 } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import type { Probabilities, Provider } from "justask";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+	afterEach,
+	beforeAll,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	vi,
+} from "vitest";
 import { createDemoHandler } from "../demo/server/handler.ts";
 import { App } from "../demo/src/app.tsx";
 import { english } from "../demo/src/content/en.ts";
 import { spanish } from "../demo/src/content/es.ts";
-import { counter, expectNoAxeViolations, figure } from "./checks.ts";
+import { counter, expectNoAxeViolations, figure, warmUp } from "./checks.ts";
 import {
 	type FakeAnswers,
 	failingProvider,
@@ -204,6 +212,8 @@ async function suggest(user: ReturnType<typeof userEvent.setup>, name: string) {
 	);
 }
 
+beforeAll(() => warmUp(() => renderDemo()));
+
 // A Tuesday; "yesterday" is Monday 21 September. Date alone is faked.
 beforeEach(() => {
 	vi.setSystemTime(new Date("2026-09-22T15:00:00Z"));
@@ -217,7 +227,7 @@ afterEach(() => {
 
 describe("the demo's card page", () => {
 	it("fills the expense card from a suggested request, and saves it only on Save", async () => {
-		const { container, user } = renderDemo();
+		const { user } = renderDemo();
 
 		await suggest(user, "lunch with Larkspur yesterday, $86.40");
 
@@ -235,7 +245,6 @@ describe("the demo's card page", () => {
 		).toBeDefined();
 		expect(saved()).toEqual([]);
 		expect(panel().getByText("All 4 fields filled.")).toBeDefined();
-		await expectNoAxeViolations(container);
 
 		await user.click(save());
 
@@ -243,6 +252,16 @@ describe("the demo's card page", () => {
 		expect(screen.getByText("Expense saved.")).toBeDefined();
 		expect(vendor().value).toBe("");
 		expect(save().getAttribute("aria-disabled")).toBe("true");
+	});
+
+	// Its own test, apart from the fill and the Save: a whole-page axe run was about
+	// half of that test's time under load, and ran it past its 5 s (#120).
+	it("passes axe once a request has filled the card", async () => {
+		const { container, user } = renderDemo();
+
+		await suggest(user, "lunch with Larkspur yesterday, $86.40");
+
+		await expectNoAxeViolations(container);
 	});
 
 	it("settles the fields an answer filled in field order, again with the next answer (#123)", async () => {
