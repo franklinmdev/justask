@@ -39,6 +39,19 @@ export const spanish: Content = {
 	locale: "es",
 	copy: {
 		skip: "Ir al contenido",
+		stopped: {
+			budget: {
+				title: "Se agotó el presupuesto de hoy de la demostración",
+				body: "La demostración llama a TypeSafe con la clave de su dueño, con 1 dólar por día, y el dólar de hoy ya se gastó. Vuelve a empezar a la medianoche UTC. Mientras tanto, la ejecución grabada de cada caso sigue disponible, y una copia de justask funciona con su propia clave.",
+			},
+			key: {
+				title:
+					"La clave propia de la demostración está fuera de servicio ahora mismo",
+				body: "No es que justask haya leído mal su solicitud: TypeSafe rechazó la clave con la que llama la demostración. La ejecución grabada de cada caso sigue disponible, y una copia de justask funciona con su propia clave.",
+			},
+			replay: "Reproducir la ejecución grabada",
+			clone: "Clonar justask y usarlo con su propia clave",
+		},
 		product: "justask demo",
 		casesLabel: "Casos",
 		cases: { table: "Tabla", form: "Formulario", search: "Búsqueda" },
