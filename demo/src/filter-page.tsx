@@ -110,8 +110,8 @@ function valueWords<K extends FieldName>(
  * The fictional invoicing app's transactions table, filtered from a request,
  * beside the state panel. Each answer applies itself: filtering is
  * reversible, so nothing asks first, and Clear filters undoes it (#123). The
- * controls it set light up in field order and the rows that enter or leave
- * move, after the answer, never before it. With a recording, the case opens
+ * controls it set light up in field order and the rows it brings in fade in,
+ * after the answer, never before it. With a recording, the case opens
  * on it replayed: the sentence, then the table filtering.
  */
 export function FilterPage({
@@ -142,7 +142,11 @@ export function FilterPage({
 		onConfirm: (value) => {
 			setTable((now) => answerOver(now, value));
 			const names = fieldOrder.filter((name) => value[name] !== undefined);
-			setSettling(({ round }) => ({ round: round + 1, names }));
+			// An end state opened with nothing typed shows its controls still.
+			setSettling(({ round }) => ({
+				round: round + 1,
+				names: replay.still ? [] : names,
+			}));
 			const held = fieldOrder.filter(
 				(name) => filter.result?.value[name] === undefined,
 			);
@@ -269,7 +273,7 @@ export function FilterPage({
 					key={`page-${paging.turned}`}
 					content={content}
 					rows={rows.slice(page * PAGE_ROWS, (page + 1) * PAGE_ROWS)}
-					all={transactions}
+					still={replay.still}
 				/>
 			</section>
 
@@ -523,52 +527,27 @@ function BoundInput({
 	);
 }
 
-/** How long a row that left stays on screen: its exit, 25 percent faster than an entrance. */
-const LEAVE_MS = 150;
-
-/** The row numbers the table holds, and the ones the last change brought in and took out. */
-type Shown = { numbers: Set<string>; entered: Set<string>; left: Set<string> };
-
-/** A row on screen and how it moves: in, out, or not at all. */
-type ShownRow = { row: Transaction; motion?: "enter" | "leave" };
-
 /**
- * The table's rows as they show: the kept ones, the ones the last change
- * brought in, marked to enter, and the ones it took out, kept for their exit
- * then dropped. A change mid-exit drops the rows still leaving, so motion
- * never queues. The table's first rows show still.
+ * The row numbers the last change brought in, which fade in; the rows it
+ * took out go at once, so the table never holds two pages mid motion
+ * (#139). The table's first rows show still, and so do the rows of an end
+ * state opened `still`.
  */
-function useRowMotion(rows: Transaction[], all: Transaction[]): ShownRow[] {
+function useEntering(rows: Transaction[], still: boolean): Set<string> {
 	const numbers = new Set(rows.map(({ number }) => number));
-	const [shown, setShown] = useState<Shown>({
-		numbers,
-		entered: new Set(),
-		left: new Set(),
-	});
+	const [shown, setShown] = useState({ numbers, entered: new Set<string>() });
 	const changed =
 		numbers.size !== shown.numbers.size ||
 		[...numbers].some((number) => !shown.numbers.has(number));
 	if (changed) {
 		setShown({
 			numbers,
-			entered: new Set([...numbers].filter((n) => !shown.numbers.has(n))),
-			left: new Set([...shown.numbers].filter((n) => !numbers.has(n))),
+			entered: new Set(
+				still ? [] : [...numbers].filter((n) => !shown.numbers.has(n)),
+			),
 		});
 	}
-	const { left } = shown;
-	useEffect(() => {
-		if (left.size === 0) return;
-		const timer = setTimeout(
-			() => setShown((now) => ({ ...now, left: new Set() })),
-			LEAVE_MS,
-		);
-		return () => clearTimeout(timer);
-	}, [left]);
-	return all.flatMap((row): ShownRow[] => {
-		if (left.has(row.number)) return [{ row, motion: "leave" }];
-		if (!numbers.has(row.number)) return [];
-		return [{ row, ...(shown.entered.has(row.number) && { motion: "enter" }) }];
-	});
+	return shown.entered;
 }
 
 /**
@@ -624,21 +603,20 @@ function Pages({
 function Transactions({
 	content,
 	rows,
-	all,
+	still,
 }: {
 	content: Content;
 	rows: Transaction[];
-	/** Every transaction, in the table's order, which a leaving row keeps. */
-	all: Transaction[];
+	/** True while the replay's end state opened with nothing typed, so no row fades in. */
+	still: boolean;
 }) {
 	const { copy } = content;
 	const format = formats(content.locale);
 	const vendorName = new Map(
 		content.vendors.map(({ id, value }) => [id, value.name]),
 	);
-	const shown = useRowMotion(rows, all);
-	// Rows still leaving keep the table up until their exit ends.
-	if (shown.length === 0) {
+	const entered = useEntering(rows, still);
+	if (rows.length === 0) {
 		return <p className="empty">{copy.filter.none}</p>;
 	}
 	return (
@@ -656,12 +634,10 @@ function Transactions({
 				</tr>
 			</thead>
 			<tbody>
-				{shown.map(({ row, motion }) => (
+				{rows.map((row) => (
 					<tr
 						key={row.number}
-						data-motion={motion}
-						// A leaving row is gone for a screen reader already.
-						aria-hidden={motion === "leave" || undefined}
+						data-motion={entered.has(row.number) ? "enter" : undefined}
 					>
 						<td className="data">{row.number}</td>
 						<td className="vendor">{vendorName.get(row.vendorId)}</td>

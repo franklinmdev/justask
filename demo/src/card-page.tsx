@@ -20,6 +20,7 @@ import {
 	Saved,
 	Suggestions,
 	settleAt,
+	useStillAnswer,
 	useTypedText,
 } from "./parts.tsx";
 import type { FormRecording } from "./recording.ts";
@@ -77,9 +78,11 @@ export function CardPage({
 		},
 	};
 	// The fields the answer filled, each settling in after the one before it,
-	// again with each answer.
+	// again with each answer; an end state opened with nothing typed shows still.
 	const answer = answerKey(card.result);
-	const filled = fieldOrder.filter((name) => card.filledBy(name) === "answer");
+	const filled = useStillAnswer(answer, replay.still)
+		? []
+		: fieldOrder.filter((name) => card.filledBy(name) === "answer");
 	const settle = (name: ExpenseName) => settleAt(filled.indexOf(name));
 
 	function undo() {

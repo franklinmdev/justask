@@ -595,6 +595,69 @@ describe("a replay plays once per browser tab (#135)", () => {
 		expect(provider.calls).toHaveLength(0);
 	});
 
+	it.each([
+		["table", "Filter the transactions", table.request],
+		["form", "Describe the expense", form.request],
+		["search", "Find a vendor", recordings.search.en.request],
+	])(
+		"opens the %s case's end state still on a reload: nothing settles in or fades (#139)",
+		async (shownCase, box, request) => {
+			const url = `/?case=${shownCase}`;
+			const moving = (container: Element) =>
+				container.querySelectorAll(
+					"[data-settle], tr[data-motion], .item:not([data-still])",
+				).length;
+			const first = renderDemo({ url });
+			await waitFor(() => expect(searchbox(box).value).toBe(request), REPLAY);
+			// Past the box's pause or Enter: what the answer filled settles in.
+			await act(() => vi.advanceTimersByTimeAsync(1_000));
+			expect(moving(first.container)).toBeGreaterThan(0);
+			cleanup();
+
+			const { container, provider } = renderDemo({ url });
+			await act(async () => {});
+			await act(async () => {});
+
+			expect(searchbox(box).value).toBe(request);
+			expect(moving(container)).toBe(0);
+			expect(provider.calls).toHaveLength(0);
+		},
+	);
+
+	it("keeps a reloaded card's filled fields still once the person edits one (#139)", async () => {
+		const url = "/?case=form";
+		renderDemo({ url });
+		await waitFor(
+			() => expect(searchbox("Describe the expense").value).toBe(form.request),
+			REPLAY,
+		);
+		await act(() => vi.advanceTimersByTimeAsync(1_000));
+		cleanup();
+
+		const { container, user } = renderDemo({ url });
+		await act(async () => {});
+		await act(async () => {});
+		await user.type(textbox("Amount"), "5");
+
+		// Settling in now would start on fields that were already on screen.
+		expect(container.querySelectorAll("[data-settle]")).toHaveLength(0);
+	});
+
+	it("fades rows in again once the person acts on a reloaded end state (#139)", async () => {
+		renderDemo();
+		await replayApplied();
+		cleanup();
+
+		const { container, user } = renderDemo();
+		await act(async () => {});
+		expect(control("Vendor").value).toBe("fixbright");
+		await user.click(screen.getByRole("button", { name: "Clear filters" }));
+
+		expect(
+			container.querySelectorAll('tr[data-motion="enter"]').length,
+		).toBeGreaterThan(0);
+	});
+
 	it("replays again in a new tab", async () => {
 		renderDemo();
 		await replayApplied();

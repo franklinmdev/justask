@@ -12,6 +12,7 @@ import {
 	DEBOUNCE_MS,
 	Saved,
 	Suggestions,
+	useStillAnswer,
 } from "./parts.tsx";
 import { dayShown, type SearchRecording } from "./recording.ts";
 import { useReplay } from "./replay.ts";
@@ -73,6 +74,10 @@ export function SearchPage({
 		focusTransactions();
 	}
 
+	// An end state opened with nothing typed shows its pick still.
+	const answer = answerKey(search.result);
+	const still = useStillAnswer(answer, replay.still);
+
 	return (
 		<CaseLayout
 			content={content}
@@ -104,10 +109,13 @@ export function SearchPage({
 			/>
 			{/* Keyed by the answer, so each one's pick settles in and lights again. */}
 			<SearchItem
-				key={answerKey(search.result)}
+				key={answer}
 				search={search}
 				className="result"
-				itemProps={{ className: "item" }}
+				itemProps={{
+					className: "item",
+					...(still && { "data-still": "" }),
+				}}
 			>
 				{(vendor) => (
 					<>

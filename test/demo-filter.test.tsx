@@ -138,11 +138,8 @@ function panel(name = "What happened") {
 function rows(name = "Transactions") {
 	const table = screen.queryByRole("table", { name });
 	// Counted in the body, not by role: a role query over every row cost a
-	// whole-page test about a tenth of its time (#120). A leaving row is already
-	// gone for a screen reader, so it is not counted.
-	return table
-		? table.querySelectorAll("tbody tr:not([aria-hidden])").length
-		: 0;
+	// whole-page test about a tenth of its time (#120).
+	return table ? table.querySelectorAll("tbody tr").length : 0;
 }
 
 /**
@@ -301,10 +298,10 @@ describe("the demo's Table case", () => {
 		expect(select("Status").value).toBe("paid");
 	});
 
-	it("moves the rows a change brings in or takes out, and only those", async () => {
+	it("fades in the rows a change brings in, and drops the ones it takes out at once (#139)", async () => {
 		const { container, user } = renderDemo();
-		const motion = (kind: string) =>
-			container.querySelectorAll(`.transactions tr[data-motion="${kind}"]`)
+		const entering = () =>
+			container.querySelectorAll('.transactions tr[data-motion="enter"]')
 				.length;
 		// The table's first rows show still.
 		expect(container.querySelectorAll("tr[data-motion]")).toHaveLength(0);
@@ -314,22 +311,15 @@ describe("the demo's Table case", () => {
 		);
 		await waitFor(() => expect(kept()).toBe(2));
 
-		// The rows that left the first page stay for their exit, hidden from a
-		// screen reader, then go. Both Larkspur rows were on it.
-		const left = 10 - 2;
-		expect(motion("leave")).toBe(left);
-		expect(
-			container.querySelectorAll('tr[data-motion="leave"][aria-hidden="true"]'),
-		).toHaveLength(left);
-		expect(motion("enter")).toBe(0);
-		await waitFor(() => expect(motion("leave")).toBe(0));
-		expect(container.querySelectorAll(".transactions tbody tr")).toHaveLength(
-			2,
-		);
+		// The rows that left the first page are gone with the answer, so the
+		// table never holds two pages at once. Both Larkspur rows were on it.
+		expect(rows()).toBe(2);
+		expect(entering()).toBe(0);
 
 		// Clearing brings the others back in; the two kept rows stay still.
 		await user.click(screen.getByRole("button", { name: "Clear filters" }));
-		expect(motion("enter")).toBe(left);
+		expect(rows()).toBe(10);
+		expect(entering()).toBe(10 - 2);
 		expect(kept()).toBe(english.transactions.length);
 	});
 
@@ -573,7 +563,7 @@ describe("the demo's Table case", () => {
 	});
 
 	it("keeps no row for an amount in another currency, until the person types a bound in the table's own", async () => {
-		const { container, user } = renderDemo();
+		const { user } = renderDemo();
 
 		await user.type(
 			screen.getByRole("searchbox", { name: "Filter the transactions" }),
@@ -581,12 +571,9 @@ describe("the demo's Table case", () => {
 		);
 
 		expect(await screen.findByText("EUR")).toBeDefined();
-		// The first page's rows leave with their motion before the table says it has none.
+		// The first page's rows go with the answer: the table says at once it has none.
 		expect(
-			container.querySelectorAll('.transactions tr[data-motion="leave"]'),
-		).toHaveLength(10);
-		expect(
-			await screen.findByText("No transaction matches the applied filters."),
+			screen.getByText("No transaction matches the applied filters."),
 		).toBeDefined();
 		expect(kept()).toBe(0);
 
