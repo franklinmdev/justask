@@ -67,7 +67,7 @@ export const spanish: Content = {
 		product: "justask demo",
 		casesLabel: "Casos",
 		cases: { table: "Tabla", form: "Formulario", search: "Búsqueda" },
-		hood: "Bajo el capó",
+		hood: "Qué pasó por dentro",
 		hoodViews: "Vistas",
 		trace: "Traza",
 		json: "JSON",
@@ -89,7 +89,10 @@ export const spanish: Content = {
 		oneVendor: "Nombra un proveedor",
 		ambiguous: "Podría ser uno de dos",
 		nothing: "Nada que encontrar",
-		empty: "Ningún proveedor corresponde a esa solicitud.",
+		empty: "Ningún proveedor coincide",
+		choices: "¿Cuál de estos?",
+		severalFit: "Podría ser más de un proveedor",
+		closest: "Los más cercanos",
 		transactionsWith: (name) => `Transacciones con ${name}`,
 		columns: {
 			number: "Factura",
@@ -118,6 +121,10 @@ export const spanish: Content = {
 					return `El modelo eligió several (${reason.several}), así que no se muestra nada.`;
 				case "pair":
 					return `La solicitud nombra dos candidatos (“${reason.text}”), así que el código no muestra nada, sin importar la elección.`;
+				case "none-tied":
+					return `none (${reason.none}) empató en el primer lugar, así que no se muestra nada.`;
+				case "several-tied":
+					return `several (${reason.several}) empató en el primer lugar, así que no se muestra nada.`;
 				case "tie":
 					return "Dos candidatos empataron en el primer lugar, así que no se muestra nada.";
 				case "no-candidates":
@@ -177,6 +184,12 @@ export const spanish: Content = {
 				count === total
 					? `Las ${total} transacciones`
 					: `${count} de ${total} transacciones`,
+			pages: {
+				label: "Páginas",
+				previous: "Anterior",
+				next: "Siguiente",
+				range: (first, last, total) => `${first} a ${last} de ${total}`,
+			},
 			controls: {
 				allVendors: "Todos",
 				allStatuses: "Todos",

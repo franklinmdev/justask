@@ -787,6 +787,93 @@ h2 {
 	color: var(--muted);
 }
 
+/*
+ * What a held search offers (#134). The choices are the answer's equals,
+ * as wide as the item; the closest sit under the message, smaller. Neither
+ * settles in or lights: the person picks, justask filled nothing.
+ */
+.offer {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.empty + .offer {
+	margin-top: 12px;
+}
+
+.offer-list {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 0;
+	list-style: none;
+}
+
+.choice {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 2px;
+	width: 100%;
+	padding: 10px 12px;
+	border: 1px solid var(--border-strong);
+	border-radius: var(--radius-control);
+	background: var(--field);
+	color: var(--text);
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+	transition:
+		background-color 120ms ease-out,
+		border-color 120ms ease-out,
+		box-shadow 120ms ease-out;
+}
+
+.choice:active {
+	transform: scale(0.99);
+}
+
+@media (hover: hover) {
+	.choice:hover {
+		background: var(--surface);
+		border-color: var(--primary);
+	}
+}
+
+.choice[aria-pressed="true"] {
+	border-color: var(--primary);
+	box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+.offer[data-kind="closest"] .offer-list {
+	flex-direction: row;
+	flex-wrap: wrap;
+}
+
+.offer[data-kind="closest"] .choice {
+	display: block;
+	width: auto;
+	min-height: 28px;
+	padding: 4px 10px;
+	border-radius: var(--radius-chip);
+	font-size: 0.8125rem;
+}
+
+.offer[data-kind="closest"] .item-name {
+	font-weight: 500;
+}
+
+.offer[data-kind="closest"] .item-supplies {
+	font-size: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.choice:active {
+		transform: none;
+	}
+}
+
 .hint {
 	color: var(--muted);
 	font-size: 0.8125rem;
@@ -798,6 +885,11 @@ h2 {
 	width: 100%;
 	border-collapse: collapse;
 	font-size: 0.875rem;
+}
+
+/* The Table case's ten rows a page sit tighter, so its suggestions stay in the first viewport (#134). */
+.transactions.all {
+	--row-height: 30px;
 }
 
 .transactions caption {
@@ -818,7 +910,7 @@ h2 {
 }
 
 .transactions td {
-	height: 36px;
+	height: var(--row-height, 36px);
 	padding: 0 8px 0 0;
 	border-bottom: 1px solid var(--border);
 	white-space: nowrap;
@@ -917,6 +1009,55 @@ h2 {
 
 .applied-count {
 	color: var(--muted);
+}
+
+/* The table's pages (#134): the rows shown, then the two steps, at the Applied row's end. */
+.pages {
+	display: flex;
+	margin-left: auto;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px 12px;
+}
+
+.page-range {
+	color: var(--muted);
+	font-size: 0.8125rem;
+}
+
+.page-steps {
+	display: flex;
+	gap: 6px;
+}
+
+.page-step {
+	min-height: 28px;
+	padding: 0 10px;
+	border: 1px solid var(--border-strong);
+	border-radius: var(--radius-chip);
+	background: var(--field);
+	color: var(--text);
+	font: inherit;
+	font-size: 0.8125rem;
+	font-weight: 500;
+	cursor: pointer;
+	transition:
+		background-color 120ms ease-out,
+		border-color 120ms ease-out;
+}
+
+@media (hover: hover) {
+	.page-step:hover:not([aria-disabled="true"]) {
+		background: var(--surface-strong);
+	}
+}
+
+/* At either end: it stays focusable, and reads as off. */
+.page-step[aria-disabled="true"] {
+	border-color: var(--border);
+	color: var(--muted);
+	cursor: default;
 }
 
 /* The table's own controls: four in a row, two by two on a phone. */
@@ -1855,6 +1996,8 @@ fieldset.table-filter[data-settle]::before {
 	}
 
 	.clear,
+	.page-step,
+	.offer[data-kind="closest"] .choice,
 	.cases a,
 	.hood-tabs button {
 		min-height: 44px;

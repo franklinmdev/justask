@@ -2,12 +2,9 @@ import type { SearchResult } from "justask";
 import type { UseSearch } from "justask/react";
 import type { Content, HeldReason, Vendor } from "./content/types.ts";
 import { formats } from "./format.ts";
+import { heldBy, NONE, SEVERAL } from "./offer.ts";
 import { Bar, failureOf } from "./parts.tsx";
 import type { Trace } from "./trace.ts";
-
-/** The search question's own labels, asked beside the candidates (ADR 0005, 0007). */
-const NONE = "none";
-const SEVERAL = "several";
 
 type Verdict =
 	| { kind: "idle" }
@@ -35,44 +32,58 @@ function verdictOf(
 	if (result.item) {
 		return { kind: "filled", name: result.item.name, none, several };
 	}
-	// The code holds a named pair before the gate is read (ADR 0011).
-	if (result.pair) {
-		return { kind: "held", reason: { kind: "pair", text: result.pair.text } };
-	}
-	if (!result.pick) return { kind: "held", reason: { kind: "tie" } };
-	if (none >= result.gate) {
-		return {
-			kind: "held",
-			reason: {
-				kind: "none-reached-gate",
-				none: format.probability(none),
-				gate: format.probability(result.gate),
-			},
-		};
-	}
-	if (several >= result.gate) {
-		return {
-			kind: "held",
-			reason: {
-				kind: "several-reached-gate",
-				several: format.probability(several),
-				gate: format.probability(result.gate),
-			},
-		};
-	}
-	// Below the gate, a none or several pick still holds, like a tie (ADR 0005, 0007).
-	return result.pick.label === SEVERAL
-		? {
+	const gate = format.probability(result.gate);
+	switch (heldBy(result)) {
+		case "pair":
+			return {
+				kind: "held",
+				reason: { kind: "pair", text: result.pair?.text ?? "" },
+			};
+		case "tie":
+			return { kind: "held", reason: { kind: "tie" } };
+		case "none-reached-gate":
+			return {
+				kind: "held",
+				reason: {
+					kind: "none-reached-gate",
+					none: format.probability(none),
+					gate,
+				},
+			};
+		case "several-reached-gate":
+			return {
+				kind: "held",
+				reason: {
+					kind: "several-reached-gate",
+					several: format.probability(several),
+					gate,
+				},
+			};
+		case "none-tied":
+			return {
+				kind: "held",
+				reason: { kind: "none-tied", none: format.probability(none) },
+			};
+		case "several-tied":
+			return {
+				kind: "held",
+				reason: { kind: "several-tied", several: format.probability(several) },
+			};
+		// Below the gate, a none or several pick still holds, like a tie (ADR 0005, 0007).
+		case "several-picked":
+			return {
 				kind: "held",
 				reason: {
 					kind: "several-picked",
 					several: format.probability(several),
 				},
-			}
-		: {
+			};
+		case "none-picked":
+			return {
 				kind: "held",
 				reason: { kind: "none-picked", none: format.probability(none) },
 			};
+	}
 }
 
 export function StatePanel({

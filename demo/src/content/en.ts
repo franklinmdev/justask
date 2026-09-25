@@ -86,7 +86,10 @@ export const english: Content = {
 		oneVendor: "Names one vendor",
 		ambiguous: "Could mean two",
 		nothing: "Nothing to find",
-		empty: "No vendor fits that request.",
+		empty: "No vendor matches",
+		choices: "Which one?",
+		severalFit: "More than one vendor could fit",
+		closest: "Closest",
 		transactionsWith: (name) => `Transactions with ${name}`,
 		columns: {
 			number: "Invoice",
@@ -113,6 +116,10 @@ export const english: Content = {
 					return `The provider picked none (${reason.none}), so nothing is shown.`;
 				case "several-picked":
 					return `The provider picked several (${reason.several}), so nothing is shown.`;
+				case "none-tied":
+					return `none (${reason.none}) tied for first place, so nothing is shown.`;
+				case "several-tied":
+					return `several (${reason.several}) tied for first place, so nothing is shown.`;
 				case "pair":
 					return `The request names two candidates (“${reason.text}”), so the code shows nothing, whatever the pick.`;
 				case "tie":
@@ -173,6 +180,12 @@ export const english: Content = {
 				count === total
 					? `All ${total} transactions`
 					: `${count} of ${total} transactions`,
+			pages: {
+				label: "Pages",
+				previous: "Previous",
+				next: "Next",
+				range: (first, last, total) => `${first} to ${last} of ${total}`,
+			},
 			controls: {
 				allVendors: "All vendors",
 				allStatuses: "All statuses",

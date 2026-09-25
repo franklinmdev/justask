@@ -145,6 +145,23 @@ function rows(name = "Transactions") {
 		: 0;
 }
 
+/**
+ * How many transactions the applied filters keep, on every page: the first
+ * figure of the count over the table, in either language.
+ */
+function kept() {
+	const applied = screen.getByRole("region", { name: /^(Applied|Aplicados)$/ });
+	// The count is the first status in the section; the page range, when shown, the second.
+	const count = within(applied).getAllByRole("status")[0]?.textContent ?? "";
+	return Number(count.match(/\d+/)?.[0]);
+}
+
+/** The table's page range, "1 to 10 of 25", or null while one page holds every row. */
+function range() {
+	const pages = screen.queryByRole("navigation", { name: "Pages" });
+	return pages ? within(pages).getByRole("status").textContent : null;
+}
+
 /** A select among the table's own filter controls, by its label. */
 function select(name: string) {
 	return screen.getByRole("combobox", { name }) as HTMLSelectElement;
@@ -180,7 +197,7 @@ describe("the demo's Table case", () => {
 	it("filters the table from a suggested request with no further click, and says what it set (#123)", async () => {
 		const { user } = renderDemo();
 		const total = english.transactions.length;
-		expect(rows()).toBe(total);
+		expect(kept()).toBe(total);
 
 		await user.click(
 			screen.getByRole("button", { name: "Larkspur invoices over $1,000" }),
@@ -189,7 +206,7 @@ describe("the demo's Table case", () => {
 		await waitFor(() =>
 			expect(screen.getByText(`2 of ${total} transactions`)).toBeDefined(),
 		);
-		expect(rows()).toBe(2);
+		expect(kept()).toBe(2);
 		const table = within(screen.getByRole("table", { name: "Transactions" }));
 		expect(
 			table.getAllByRole("cell", { name: "Larkspur Catering" }),
@@ -206,7 +223,7 @@ describe("the demo's Table case", () => {
 		expect(screen.queryByRole("button", { name: /apply/i })).toBeNull();
 
 		await user.click(screen.getByRole("button", { name: "Clear filters" }));
-		expect(rows()).toBe(total);
+		expect(kept()).toBe(total);
 	});
 
 	// Its own test, apart from the filtering: a whole-page axe run was about
@@ -217,7 +234,7 @@ describe("the demo's Table case", () => {
 		await user.click(
 			screen.getByRole("button", { name: "Larkspur invoices over $1,000" }),
 		);
-		await waitFor(() => expect(rows()).toBe(2));
+		await waitFor(() => expect(kept()).toBe(2));
 
 		await expectNoAxeViolations(container);
 	});
@@ -239,7 +256,7 @@ describe("the demo's Table case", () => {
 		// Not Larkspur's overdue invoices over $1,000: the status the first answer set goes.
 		await waitFor(() => expect(select("Vendor").value).toBe("larkspur"));
 		expect(select("Status").value).toBe("");
-		expect(rows()).toBe(larkspurOver1000.length);
+		expect(kept()).toBe(larkspurOver1000.length);
 	});
 
 	it("drops the last answer's fields on an answer that fills nothing, and keeps them when the call fails (#123)", async () => {
@@ -265,7 +282,7 @@ describe("the demo's Table case", () => {
 			"Nothing in that request filters the transactions.",
 		);
 		await waitFor(() => expect(select("Status").value).toBe(""));
-		expect(rows()).toBe(english.transactions.length);
+		expect(kept()).toBe(english.transactions.length);
 	});
 
 	it("keeps a field the person changed after an answer set it, over the next request (#123)", async () => {
@@ -295,10 +312,11 @@ describe("the demo's Table case", () => {
 		await user.click(
 			screen.getByRole("button", { name: "Larkspur invoices over $1,000" }),
 		);
-		await waitFor(() => expect(rows()).toBe(2));
+		await waitFor(() => expect(kept()).toBe(2));
 
-		// The rows that left stay for their exit, hidden from a screen reader, then go.
-		const left = english.transactions.length - 2;
+		// The rows that left the first page stay for their exit, hidden from a
+		// screen reader, then go. Both Larkspur rows were on it.
+		const left = 10 - 2;
 		expect(motion("leave")).toBe(left);
 		expect(
 			container.querySelectorAll('tr[data-motion="leave"][aria-hidden="true"]'),
@@ -312,7 +330,81 @@ describe("the demo's Table case", () => {
 		// Clearing brings the others back in; the two kept rows stay still.
 		await user.click(screen.getByRole("button", { name: "Clear filters" }));
 		expect(motion("enter")).toBe(left);
-		expect(rows()).toBe(english.transactions.length);
+		expect(kept()).toBe(english.transactions.length);
+	});
+
+	it("shows 25 rows as 3 pages of at most 10, turned with no row motion (#134)", async () => {
+		const { container, user } = renderDemo();
+		expect(english.transactions).toHaveLength(25);
+		const first = within(
+			screen.getByRole("table", { name: "Transactions" }),
+		).getAllByRole("cell")[0]?.textContent;
+
+		expect(rows()).toBe(10);
+		expect(range()).toBe("1 to 10 of 25");
+		const previous = screen.getByRole("button", { name: "Previous" });
+		const next = screen.getByRole("button", { name: "Next" });
+		expect(previous.getAttribute("aria-disabled")).toBe("true");
+
+		await user.click(next);
+		expect(rows()).toBe(10);
+		expect(range()).toBe("11 to 20 of 25");
+		expect(container.querySelectorAll("tr[data-motion]")).toHaveLength(0);
+
+		await user.click(next);
+		expect(rows()).toBe(5);
+		expect(range()).toBe("21 to 25 of 25");
+		expect(next.getAttribute("aria-disabled")).toBe("true");
+		// A disabled step stays put, and keeps the focus where it was.
+		await user.click(next);
+		expect(range()).toBe("21 to 25 of 25");
+
+		await user.click(previous);
+		await user.click(previous);
+		expect(range()).toBe("1 to 10 of 25");
+		expect(
+			within(screen.getByRole("table", { name: "Transactions" })).getAllByRole(
+				"cell",
+			)[0]?.textContent,
+		).toBe(first);
+		await expectNoAxeViolations(container);
+	});
+
+	it("goes back to the first page when a new answer or the person changes the filters (#134)", async () => {
+		const { user } = renderDemo();
+		const paid = english.transactions.filter(({ status }) => status === "paid");
+		expect(paid.length).toBeGreaterThan(10);
+
+		await user.click(screen.getByRole("button", { name: "Next" }));
+		expect(range()).toBe("11 to 20 of 25");
+		await user.selectOptions(select("Status"), "paid");
+		expect(range()).toBe(`1 to 10 of ${paid.length}`);
+
+		await user.click(screen.getByRole("button", { name: "Next" }));
+		expect(range()).toBe(`11 to ${paid.length} of ${paid.length}`);
+		await user.click(screen.getByRole("button", { name: "overdue invoices" }));
+		// The answer leaves one page, so the pages go and every kept row shows.
+		await waitFor(() => expect(select("Status").value).toBe("overdue"));
+		expect(range()).toBeNull();
+		expect(rows()).toBe(kept());
+		expect(screen.queryByRole("button", { name: "Next" })).toBeNull();
+
+		await user.click(screen.getByRole("button", { name: "Clear filters" }));
+		expect(range()).toBe("1 to 10 of 25");
+	});
+
+	it("names the pages in Spanish", async () => {
+		const { user } = renderDemo({ url: "/?case=table&lang=es" });
+
+		const pages = screen.getByRole("navigation", { name: "Páginas" });
+		expect(within(pages).getByRole("status").textContent).toBe("1 a 10 de 25");
+		await user.click(screen.getByRole("button", { name: "Siguiente" }));
+		expect(within(pages).getByRole("status").textContent).toBe("11 a 20 de 25");
+		expect(
+			screen
+				.getByRole("button", { name: "Anterior" })
+				.getAttribute("aria-disabled"),
+		).toBe("false");
 	});
 
 	it("shows the call's latency, input tokens and cost in the hood's strip, when the provider reports them", async () => {
@@ -365,7 +457,7 @@ describe("the demo's Table case", () => {
 		const august = english.transactions.filter(({ date }) =>
 			date.startsWith("2026-08"),
 		);
-		await waitFor(() => expect(rows()).toBe(august.length));
+		await waitFor(() => expect(kept()).toBe(august.length));
 		const vendor = within(panel().getByRole("region", { name: "Vendor" }));
 		expect(vendor.getByText("Held")).toBeDefined();
 		expect(
@@ -408,12 +500,12 @@ describe("the demo's Table case", () => {
 			screen.getByRole("button", { name: "End date Aug 31" }),
 		).toBeDefined();
 		expect(select("Vendor").value).toBe("");
-		expect(rows()).toBe(august.length);
+		expect(kept()).toBe(august.length);
 
 		// The person fills the held vendor with the table's own control.
 		await user.selectOptions(select("Vendor"), "Brightmop Cleaning");
 		const brightmop = august.filter(({ vendorId }) => vendorId === "brightmop");
-		expect(rows()).toBe(brightmop.length);
+		expect(kept()).toBe(brightmop.length);
 
 		// A second request fills only the status: the person's vendor stays, the
 		// first answer's date goes.
@@ -424,7 +516,7 @@ describe("the demo's Table case", () => {
 		expect(
 			screen.getByRole("button", { name: "Start date Start" }),
 		).toBeDefined();
-		expect(rows()).toBe(
+		expect(kept()).toBe(
 			english.transactions.filter(
 				({ vendorId, status }) =>
 					vendorId === "brightmop" && status === "overdue",
@@ -447,12 +539,12 @@ describe("the demo's Table case", () => {
 		const max = screen.getByRole("textbox", { name: "Maximum amount" });
 		expect((min as HTMLInputElement).value).toBe("1000");
 		expect((max as HTMLInputElement).value).toBe("");
-		expect(rows()).toBe(2);
+		expect(kept()).toBe(2);
 
 		await user.clear(min);
 		await user.type(min, "500");
 		const overFive = larkspur.filter(({ amount }) => amount >= 500);
-		expect(rows()).toBe(overFive.length);
+		expect(kept()).toBe(overFive.length);
 
 		// No native date input: the date range opens a calendar on today, the 22nd of September.
 		expect(container.querySelector('input[type="date"]')).toBeNull();
@@ -466,13 +558,13 @@ describe("the demo's Table case", () => {
 		expect(
 			screen.getByRole("button", { name: "Start date Aug 22" }),
 		).toBeDefined();
-		expect(rows()).toBe(
+		expect(kept()).toBe(
 			overFive.filter(({ date }) => date >= "2026-08-22").length,
 		);
 		await expectNoAxeViolations(container);
 
 		await user.click(screen.getByRole("button", { name: "Clear filters" }));
-		expect(rows()).toBe(english.transactions.length);
+		expect(kept()).toBe(english.transactions.length);
 		expect(select("Vendor").value).toBe("");
 		expect(amountBox("Minimum amount").value).toBe("");
 		expect(
@@ -489,14 +581,14 @@ describe("the demo's Table case", () => {
 		);
 
 		expect(await screen.findByText("EUR")).toBeDefined();
-		// The rows leave with their motion before the table says it has none.
+		// The first page's rows leave with their motion before the table says it has none.
 		expect(
 			container.querySelectorAll('.transactions tr[data-motion="leave"]'),
-		).toHaveLength(english.transactions.length);
+		).toHaveLength(10);
 		expect(
 			await screen.findByText("No transaction matches the applied filters."),
 		).toBeDefined();
-		expect(rows()).toBe(0);
+		expect(kept()).toBe(0);
 
 		// The person keeps the minimum and types a maximum: both read in the table's own currency.
 		await user.type(
@@ -505,7 +597,7 @@ describe("the demo's Table case", () => {
 		);
 
 		expect(screen.queryByText("EUR")).toBeNull();
-		expect(rows()).toBe(
+		expect(kept()).toBe(
 			english.transactions.filter(
 				({ amount }) => amount >= 500 && amount <= 1000,
 			).length,
@@ -516,7 +608,7 @@ describe("the demo's Table case", () => {
 		const { user } = renderDemo();
 
 		await user.type(amountBox("Minimum amount"), "1 000");
-		expect(rows()).toBe(
+		expect(kept()).toBe(
 			english.transactions.filter(({ amount }) => amount >= 1000).length,
 		);
 
@@ -524,7 +616,7 @@ describe("the demo's Table case", () => {
 		await user.type(amountBox("Maximum amount"), "1.2.3");
 		await user.click(screen.getByRole("button", { name: "Clear filters" }));
 
-		expect(rows()).toBe(english.transactions.length);
+		expect(kept()).toBe(english.transactions.length);
 		expect(amountBox("Minimum amount").value).toBe("");
 		expect(amountBox("Maximum amount").value).toBe("");
 	});
@@ -542,7 +634,7 @@ describe("the demo's Table case", () => {
 			),
 		).toBeDefined();
 		expect(panel().getByText("No field filled, all 4 held.")).toBeDefined();
-		expect(rows()).toBe(english.transactions.length);
+		expect(kept()).toBe(english.transactions.length);
 		expect(screen.queryByRole("button", { name: "Clear filters" })).toBeNull();
 	});
 
@@ -621,7 +713,7 @@ describe("the demo's Table case", () => {
 				"La solicitud nombra “pesos”, que no es la moneda local, así que el código retuvo el campo sin consultar al modelo.",
 			),
 		).toBeDefined();
-		expect(rows("Transacciones")).toBe(spanish.transactions.length);
+		expect(kept()).toBe(spanish.transactions.length);
 		await expectNoAxeViolations(container);
 	});
 
@@ -695,7 +787,7 @@ describe("the demo's Table case", () => {
 			screen.getByText("Nothing in that request filters the transactions."),
 		).toBeDefined();
 		expect(counter()).toBeNull();
-		expect(rows()).toBe(english.transactions.length);
+		expect(kept()).toBe(english.transactions.length);
 		await expectNoAxeViolations(container);
 	});
 });

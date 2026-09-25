@@ -156,6 +156,14 @@ export type FilterCopy = {
 	) => string;
 	clear: string;
 	showing: (count: number, total: number) => string;
+	/** The table's pages, 10 rows each (#134). */
+	pages: {
+		label: string;
+		previous: string;
+		next: string;
+		/** The rows on screen: the first and last, of every row kept. */
+		range: (first: number, last: number, total: number) => string;
+	};
 	/** The table's own filter controls, which an answer sets and the person can change. */
 	controls: {
 		allVendors: string;
@@ -207,6 +215,8 @@ export type HeldReason =
 	| { kind: "several-reached-gate"; several: string; gate: string }
 	| { kind: "none-picked"; none: string }
 	| { kind: "several-picked"; several: string }
+	| { kind: "none-tied"; none: string }
+	| { kind: "several-tied"; several: string }
 	| { kind: "pair"; text: string }
 	| { kind: "tie" }
 	| { kind: "no-candidates" }
@@ -258,7 +268,14 @@ export type Copy = {
 	oneVendor: string;
 	ambiguous: string;
 	nothing: string;
+	/** Once the answer held the item: no vendor matched, or failed. */
 	empty: string;
+	/** Over the vendors a request could mean, for the person to pick one (#134). */
+	choices: string;
+	/** In their place when several held the item and no vendor is above zero. */
+	severalFit: string;
+	/** Under `empty`, the likeliest vendors, for the person to pick one (#134). */
+	closest: string;
 	transactionsWith: (name: string) => string;
 	columns: { number: string; date: string; amount: string; status: string };
 	statuses: Record<TransactionStatus, string>;
