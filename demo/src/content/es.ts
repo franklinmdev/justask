@@ -59,7 +59,7 @@ export const spanish: Content = {
 		product: "justask demo",
 		casesLabel: "Casos",
 		cases: { table: "Tabla", form: "Formulario", search: "Búsqueda" },
-		hood: "Bajo el capó",
+		hood: "Qué pasó por dentro",
 		hoodViews: "Vistas",
 		trace: "Traza",
 		json: "JSON",
@@ -81,7 +81,9 @@ export const spanish: Content = {
 		oneVendor: "Nombra un proveedor",
 		ambiguous: "Podría ser uno de dos",
 		nothing: "Nada que encontrar",
-		empty: "Ningún proveedor corresponde a esa solicitud.",
+		empty: "Ningún proveedor coincide",
+		choices: "¿Cuál de estos?",
+		closest: "Los más cercanos",
 		transactionsWith: (name) => `Transacciones con ${name}`,
 		columns: {
 			number: "Factura",
@@ -169,6 +171,12 @@ export const spanish: Content = {
 				count === total
 					? `Las ${total} transacciones`
 					: `${count} de ${total} transacciones`,
+			pages: {
+				label: "Páginas",
+				previous: "Anterior",
+				next: "Siguiente",
+				range: (first, last, total) => `${first} a ${last} de ${total}`,
+			},
 			controls: {
 				allVendors: "Todos",
 				allStatuses: "Todos",

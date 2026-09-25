@@ -37,6 +37,16 @@ import {
 /** The table's controls in the order they show, which an answer sets them in. */
 const fieldOrder: FieldName[] = ["vendor", "status", "date", "amount"];
 
+/** How many rows a page of the table holds (#134). */
+const PAGE_ROWS = 10;
+
+/**
+ * The page the table is on, for the controls it was turned under: any change
+ * to them goes back to the first. `turned` counts the steps, so a turn
+ * swaps the rows at once, with no row motion.
+ */
+type Paging = { for: Applied; page: number; turned: number };
+
 /** The controls one answer set, in field order; the round restarts their motion. */
 type Settling = { round: number; names: FieldName[] };
 
@@ -167,6 +177,15 @@ export function FilterPage({
 		dayShown(recording, replay.recorded),
 	);
 	const rows = transactions.filter((row) => matches(row, applied));
+	const [paging, setPaging] = useState<Paging>({
+		for: applied,
+		page: 0,
+		turned: 0,
+	});
+	const pages = Math.max(1, Math.ceil(rows.length / PAGE_ROWS));
+	const page = paging.for === applied ? Math.min(paging.page, pages - 1) : 0;
+	const turn = (to: number) =>
+		setPaging(({ turned }) => ({ for: applied, page: to, turned: turned + 1 }));
 
 	return (
 		<CaseLayout
@@ -223,6 +242,16 @@ export function FilterPage({
 							{copy.filter.clear}
 						</button>
 					)}
+					{/* Over the table, beside the count, so the case's suggestions stay in the first viewport (#134). */}
+					{rows.length > PAGE_ROWS && (
+						<Pages
+							content={content}
+							page={page}
+							pages={pages}
+							total={rows.length}
+							onTurn={turn}
+						/>
+					)}
 				</div>
 				<TableFilters
 					key={cleared}
@@ -236,7 +265,12 @@ export function FilterPage({
 					}}
 					settling={settling}
 				/>
-				<Transactions content={content} rows={rows} all={transactions} />
+				<Transactions
+					key={`page-${paging.turned}`}
+					content={content}
+					rows={rows.slice(page * PAGE_ROWS, (page + 1) * PAGE_ROWS)}
+					all={transactions}
+				/>
 			</section>
 
 			<section className="suggestions" aria-labelledby="suggestions-title">
@@ -532,6 +566,56 @@ function useRowMotion(rows: Transaction[], all: Transaction[]): ShownRow[] {
 		if (!numbers.has(row.number)) return [];
 		return [{ row, ...(shown.entered.has(row.number) && { motion: "enter" }) }];
 	});
+}
+
+/**
+ * The table's pages: which rows show, of every row the filters keep, then
+ * the steps. A step at either end stays focusable and does nothing, so the
+ * focus never drops to the page.
+ */
+function Pages({
+	content,
+	page,
+	pages,
+	total,
+	onTurn,
+}: {
+	content: Content;
+	page: number;
+	pages: number;
+	total: number;
+	onTurn: (page: number) => void;
+}) {
+	const words = content.copy.filter.pages;
+	const first = page * PAGE_ROWS + 1;
+	const last = Math.min(total, (page + 1) * PAGE_ROWS);
+	const step = (to: number) => (to < 0 || to >= pages ? undefined : to);
+	const steps = [
+		{ name: words.previous, to: step(page - 1) },
+		{ name: words.next, to: step(page + 1) },
+	];
+	return (
+		<nav className="pages" aria-label={words.label}>
+			<p className="page-range data" aria-live="polite">
+				{words.range(first, last, total)}
+			</p>
+			<div className="page-steps">
+				{steps.map(({ name, to }) => (
+					<button
+						key={name}
+						type="button"
+						className="page-step"
+						aria-disabled={to === undefined}
+						onClick={() => {
+							if (to !== undefined) onTurn(to);
+						}}
+					>
+						{name}
+					</button>
+				))}
+			</div>
+		</nav>
+	);
 }
 
 function Transactions({

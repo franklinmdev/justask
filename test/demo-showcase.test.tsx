@@ -224,7 +224,7 @@ describe("the demo's showcase page", () => {
 			within(show)
 				.getAllByRole("button")
 				.map((option) => option.textContent),
-		).toEqual(["Aplicación", "Bajo el capó"]);
+		).toEqual(["Aplicación", "Qué pasó por dentro"]);
 	});
 
 	it.each([

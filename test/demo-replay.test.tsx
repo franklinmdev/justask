@@ -359,14 +359,13 @@ describe("the Table case's recorded run", () => {
 
 		await user.click(screen.getByRole("button", { name: "Clear filters" }));
 
+		// The first page of today's rows, ten a page (#134).
+		const firstPage = (rows: typeof english.transactions) =>
+			rows.slice(0, 10).map((row) => date(row.date));
 		expect(shown()).toEqual(
-			transactionsOn(english.transactions, "2027-09-24").map((row) =>
-				date(row.date),
-			),
+			firstPage(transactionsOn(english.transactions, "2027-09-24")),
 		);
-		expect(shown()).not.toEqual(
-			english.transactions.map((row) => date(row.date)),
-		);
+		expect(shown()).not.toEqual(firstPage(english.transactions));
 	});
 });
 

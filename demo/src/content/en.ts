@@ -78,7 +78,9 @@ export const english: Content = {
 		oneVendor: "Names one vendor",
 		ambiguous: "Could mean two",
 		nothing: "Nothing to find",
-		empty: "No vendor fits that request.",
+		empty: "No vendor matches",
+		choices: "Which one?",
+		closest: "Closest",
 		transactionsWith: (name) => `Transactions with ${name}`,
 		columns: {
 			number: "Invoice",
@@ -165,6 +167,12 @@ export const english: Content = {
 				count === total
 					? `All ${total} transactions`
 					: `${count} of ${total} transactions`,
+			pages: {
+				label: "Pages",
+				previous: "Previous",
+				next: "Next",
+				range: (first, last, total) => `${first} to ${last} of ${total}`,
+			},
 			controls: {
 				allVendors: "All vendors",
 				allStatuses: "All statuses",

@@ -71,6 +71,13 @@ const answers: Record<string, FakeAnswers> = {
 		swiftlane: 0.12,
 	}),
 	"los del catering": answer({ cazuela: 0.92, none: 0.02 }),
+	"la empresa de limpieza": answer({
+		several: 0.88,
+		relucir: 0.1,
+		brisamar: 0.01,
+		none: 0.01,
+	}),
+	"¿cuánto debemos en total?": answer({ none: 0.7, cazuela: 0.1 }),
 	// None wins, below the demo's gate of 0.15, spread over the catalog.
 	"the plumber who fixed the leak": answer({
 		none: 0.13,
@@ -126,6 +133,23 @@ async function hoodView(
 ) {
 	await user.click(screen.getByRole("tab", { name }));
 	return within(screen.getByRole("tabpanel", { name }));
+}
+
+/** The accessible names of the offer's buttons, once the list shows. */
+async function choiceNames(name: string): Promise<string[]> {
+	const list = await screen.findByRole("list", { name });
+	return within(list)
+		.getAllByRole("button")
+		.map((button) => button.textContent ?? "");
+}
+
+/** Nothing picked for the person: no choice pressed, no vendor's transactions. */
+function expectNothingChosen(name: string) {
+	const list = screen.getByRole("list", { name });
+	for (const button of within(list).getAllByRole("button")) {
+		expect(button.getAttribute("aria-pressed")).toBe("false");
+	}
+	expect(screen.queryByRole("table", { name: /Transactions with/ })).toBeNull();
 }
 
 beforeAll(() => warmUp(() => renderDemo()));
@@ -274,7 +298,7 @@ describe("the demo's Search case", () => {
 		await expectNoAxeViolations(container);
 
 		await user.click(screen.getByRole("button", { name: "the cleaners" }));
-		await screen.findByText("No vendor fits that request.");
+		await choiceNames("Which one?");
 
 		const next = shown();
 		expect(next.item).toBeNull();
@@ -304,14 +328,17 @@ describe("the demo's Search case", () => {
 		).toContain("null");
 	});
 
-	it("holds a request that could mean two vendors, and says several reached the gate", async () => {
+	it("holds a request that could mean two vendors, says several reached the gate, and offers the two as choices", async () => {
 		const { container, user } = renderDemo();
 
 		await user.click(screen.getByRole("button", { name: "the cleaners" }));
 
-		expect(
-			await screen.findByText("No vendor fits that request."),
-		).toBeDefined();
+		expect(await choiceNames("Which one?")).toEqual([
+			"Brightmop Cleaning nightly office cleaning",
+			"Glasswell Janitorial office cleaning and window washing",
+		]);
+		expect(screen.queryByText("No vendor matches")).toBeNull();
+		expectNothingChosen("Which one?");
 		const state = panel();
 		expect(state.getByText("Held")).toBeDefined();
 		expect(
@@ -319,10 +346,45 @@ describe("the demo's Search case", () => {
 				"several (0.43) reached the gate (0.15), so nothing is shown.",
 			),
 		).toBeDefined();
-		expect(
-			screen.queryByRole("button", { name: /Brightmop Cleaning/ }),
-		).toBeNull();
 		await expectNoAxeViolations(container);
+	});
+
+	it("shows a choice's transactions once the person picks it, as a confident pick does", async () => {
+		const { user } = renderDemo();
+
+		await user.click(screen.getByRole("button", { name: "the cleaners" }));
+		await choiceNames("Which one?");
+		await user.click(screen.getByRole("button", { name: /Glasswell/ }));
+
+		const table = screen.getByRole("table", {
+			name: "Transactions with Glasswell Janitorial",
+		});
+		expect(within(table).getAllByRole("row").length).toBeGreaterThan(1);
+		expect(document.activeElement).toBe(table);
+		expect(
+			screen
+				.getByRole("button", { name: /Glasswell/ })
+				.getAttribute("aria-pressed"),
+		).toBe("true");
+		// The hood still says why the answer held the item.
+		expect(panel().getByText("Held")).toBeDefined();
+	});
+
+	it("drops the person's choice once a new answer comes back", async () => {
+		const { user } = renderDemo();
+
+		await user.click(screen.getByRole("button", { name: "the cleaners" }));
+		await choiceNames("Which one?");
+		await user.click(screen.getByRole("button", { name: /Brightmop/ }));
+		await user.click(
+			screen.getByRole("button", { name: "how much do we owe in total?" }),
+		);
+
+		await screen.findByText("No vendor matches");
+		expect(
+			screen.queryByRole("table", { name: /Transactions with/ }),
+		).toBeNull();
+		expectNothingChosen("Closest");
 	});
 
 	it("holds a request with nothing to find, and says none reached the gate", async () => {
@@ -332,13 +394,39 @@ describe("the demo's Search case", () => {
 			screen.getByRole("button", { name: "how much do we owe in total?" }),
 		);
 
+		const message = await screen.findByText("No vendor matches");
+		// Only the two above zero: a vendor at zero is close to nothing.
+		expect(await choiceNames("Closest")).toEqual([
+			"Papergrove Supplies office paper, toner and stationery",
+			"Larkspur Catering catering and office lunches",
+		]);
+		// The message comes first, so the closest never reads as the answer.
+		const closest = screen.getByRole("list", { name: "Closest" });
 		expect(
-			await screen.findByText("No vendor fits that request."),
-		).toBeDefined();
+			message.compareDocumentPosition(closest) &
+				Node.DOCUMENT_POSITION_FOLLOWING,
+		).toBeTruthy();
+		expectNothingChosen("Closest");
 		expect(
 			panel().getByText(
 				"none (0.61) reached the gate (0.15), so nothing is shown.",
 			),
+		).toBeDefined();
+	});
+
+	it("shows a closest vendor's transactions once the person picks it", async () => {
+		const { user } = renderDemo();
+
+		await user.click(
+			screen.getByRole("button", { name: "how much do we owe in total?" }),
+		);
+		await choiceNames("Closest");
+		await user.click(screen.getByRole("button", { name: /Larkspur Catering/ }));
+
+		expect(
+			screen.getByRole("table", {
+				name: "Transactions with Larkspur Catering",
+			}),
 		).toBeDefined();
 	});
 
@@ -351,9 +439,10 @@ describe("the demo's Search case", () => {
 			}),
 		);
 
-		expect(
-			await screen.findByText("No vendor fits that request."),
-		).toBeDefined();
+		expect(await choiceNames("Which one?")).toEqual([
+			"Papergrove Supplies office paper, toner and stationery",
+			"Larkspur Catering catering and office lunches",
+		]);
 		expect(
 			panel().getByText(
 				"The request names two candidates (“Papergrove or Larkspur”), so the code shows nothing, whatever the pick.",
@@ -369,9 +458,8 @@ describe("the demo's Search case", () => {
 			"the paper or the catering invoice",
 		);
 
-		expect(
-			await screen.findByText("No vendor fits that request."),
-		).toBeDefined();
+		// Seven vendors tie at the top, so all seven are choices, none dropped.
+		expect(await choiceNames("Which one?")).toHaveLength(7);
 		expect(
 			panel().getByText(
 				"The provider picked several (0.13), so nothing is shown.",
@@ -386,9 +474,8 @@ describe("the demo's Search case", () => {
 			screen.getByRole("button", { name: "the plumber who fixed the leak" }),
 		);
 
-		expect(
-			await screen.findByText("No vendor fits that request."),
-		).toBeDefined();
+		expect(await screen.findByText("No vendor matches")).toBeDefined();
+		expect(await choiceNames("Closest")).toHaveLength(3);
 		const state = panel();
 		expect(state.getByText("Held")).toBeDefined();
 		expect(
@@ -447,6 +534,22 @@ describe("the demo's Search case", () => {
 		await expectNoAxeViolations(container);
 	});
 
+	it("offers the choices and the closest in Spanish", async () => {
+		const { user } = renderDemo({ url: "/?case=search&lang=es" });
+
+		await user.click(
+			screen.getByRole("button", { name: "la empresa de limpieza" }),
+		);
+		expect(await choiceNames("¿Cuál de estos?")).toHaveLength(2);
+		await user.click(
+			screen.getByRole("button", { name: "¿cuánto debemos en total?" }),
+		);
+		expect(await screen.findByText("Ningún proveedor coincide")).toBeDefined();
+		expect(await choiceNames("Los más cercanos")).toEqual([
+			"Banquetes Cazuela Azul catering y almuerzos para la oficina",
+		]);
+	});
+
 	it("opens in Spanish from the link", () => {
 		renderDemo({ url: "/?case=search&lang=es" });
 
@@ -463,9 +566,7 @@ describe("the demo's Search case", () => {
 
 		await user.type(screen.getByRole("searchbox"), "the cleaners");
 
-		expect(
-			await screen.findByText("No vendor fits that request."),
-		).toBeDefined();
+		expect(await choiceNames("Which one?")).toHaveLength(2);
 		expect(byRequest.calls.map(({ request }) => request)).toEqual([
 			"the cleaners",
 		]);
@@ -482,7 +583,7 @@ describe("the demo's Search case", () => {
 		expect(counter()).toBe("1 sentence vs 2 clicks in 1 menu");
 
 		await user.click(screen.getByRole("button", { name: "the cleaners" }));
-		await screen.findByText("No vendor fits that request.");
+		await choiceNames("Which one?");
 		expect(counter()).toBeNull();
 	});
 
@@ -514,8 +615,10 @@ describe("the demo's Search case", () => {
 		expect(state.getAllByRole("row")).toHaveLength(1 + 14 + 2);
 		expect(state.queryByText("0.00")).toBeNull();
 		await waitFor(() =>
-			expect(screen.getByText("No vendor fits that request.")).toBeDefined(),
+			expect(screen.getByText("No vendor matches")).toBeDefined(),
 		);
+		// No answer ranked the candidates, so nothing is offered.
+		expect(screen.queryByRole("list", { name: "Closest" })).toBeNull();
 		await expectNoAxeViolations(container);
 	});
 });
