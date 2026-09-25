@@ -1,8 +1,32 @@
 import type { Candidate, SearchResult } from "justask";
 
 /** The search question's own labels, asked beside the candidates (ADR 0005, 0007). */
-const NONE = "none";
-const SEVERAL = "several";
+export const NONE = "none";
+export const SEVERAL = "several";
+
+/** What held a search's item, in the order the gate is read (ADR 0005, 0007, 0011). */
+export type HeldBy =
+	| "pair"
+	| "tie"
+	| "none-reached-gate"
+	| "several-reached-gate"
+	| "several-picked"
+	| "none-picked";
+
+/**
+ * What held the item of an answer with no item: the code holds a named pair
+ * before the gate is read (ADR 0011), then a tie, then none or several at the
+ * gate, then a none or several pick below it. The state panel says it and the
+ * offer follows it, so the two never disagree.
+ */
+export function heldBy(result: SearchResult<unknown>): HeldBy {
+	if (result.pair) return "pair";
+	if (!result.pick) return "tie";
+	const { probabilities, gate } = result;
+	if ((probabilities[NONE] ?? 1) >= gate) return "none-reached-gate";
+	if ((probabilities[SEVERAL] ?? 0) >= gate) return "several-reached-gate";
+	return result.pick.label === SEVERAL ? "several-picked" : "none-picked";
+}
 
 /** How many of the closest vendors a request that matched none offers. */
 const CLOSEST = 3;
@@ -32,9 +56,10 @@ export function offerOf<T>(result: SearchResult<T> | null): Offer<T> | null {
 	if (!result || result.item !== null || result.candidates.length === 0) {
 		return null;
 	}
-	const { probabilities, pick, pair } = result;
+	const { probabilities, pair } = result;
 	if (Object.keys(probabilities).length === 0) return null;
 
+	const held = heldBy(result);
 	if (pair) {
 		const named = pair.ids.flatMap(
 			(id) => result.candidates.find((candidate) => candidate.id === id) ?? [],
@@ -61,13 +86,14 @@ export function offerOf<T>(result: SearchResult<T> | null): Offer<T> | null {
 		kind: "closest",
 		candidates: ranked.slice(0, CLOSEST),
 	};
-	// In the order the state panel reads the gate, so the two never disagree.
-	if (pick === null) {
-		return tied.length > 1 && top >= probability(NONE) ? choices() : closest;
+	switch (held) {
+		case "tie":
+			// Vendors tied at the top, not one vendor tied with none.
+			return tied.length > 1 && top >= probability(NONE) ? choices() : closest;
+		case "several-reached-gate":
+		case "several-picked":
+			return choices();
+		default:
+			return closest;
 	}
-	if (probability(NONE) >= result.gate) return closest;
-	if (probability(SEVERAL) >= result.gate || pick.label === SEVERAL) {
-		return choices();
-	}
-	return closest;
 }
