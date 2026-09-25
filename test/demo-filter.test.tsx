@@ -790,4 +790,37 @@ describe("the demo's Table case", () => {
 		expect(kept()).toBe(english.transactions.length);
 		await expectNoAxeViolations(container);
 	});
+
+	it("keeps the request, the answer and the filters when the person leaves the case and comes back (#135)", async () => {
+		const { user } = renderDemo();
+		const box = screen.getByRole("searchbox", {
+			name: "Filter the transactions",
+		});
+		await user.type(box, "Larkspur invoices over $1,000");
+		await waitFor(() => expect(select("Vendor").value).toBe("larkspur"));
+		await user.type(amountBox("Maximum amount"), "5000");
+		const calls = byRequest.calls.length;
+
+		await user.click(screen.getByRole("tab", { name: "Form" }));
+		expect(
+			screen.queryByRole("searchbox", { name: "Filter the transactions" }),
+		).toBeNull();
+		await user.click(screen.getByRole("tab", { name: "Table" }));
+
+		expect(
+			(
+				screen.getByRole("searchbox", {
+					name: "Filter the transactions",
+				}) as HTMLInputElement
+			).value,
+		).toBe("Larkspur invoices over $1,000");
+		expect(select("Vendor").value).toBe("larkspur");
+		expect(amountBox("Minimum amount").value).toBe("1000");
+		expect(amountBox("Maximum amount").value).toBe("5000");
+		expect(
+			panel().getByText("2 of 4 fields filled, the rest held."),
+		).toBeDefined();
+		// Coming back shows what was there: no call is made again.
+		expect(byRequest.calls).toHaveLength(calls);
+	});
 });

@@ -142,7 +142,7 @@ export function CaseLayout({
 							type="button"
 							className="hood-toggle"
 							aria-expanded={place.open}
-							aria-controls="hood"
+							aria-controls={`${shownCase}-hood`}
 							onClick={() => place.setOpen(!place.open)}
 						>
 							{copy.hood}
@@ -170,7 +170,7 @@ export function CaseLayout({
 					{children}
 				</section>
 				<aside
-					id="hood"
+					id={`${shownCase}-hood`}
 					className="hood"
 					aria-label={copy.hood}
 					hidden={hoodHidden}
@@ -182,9 +182,9 @@ export function CaseLayout({
 								key={view}
 								type="button"
 								role="tab"
-								id={`hood-tab-${view}`}
+								id={`${shownCase}-hood-tab-${view}`}
 								aria-selected={view === place.view}
-								aria-controls={`hood-${view}`}
+								aria-controls={`${shownCase}-hood-${view}`}
 								tabIndex={view === place.view ? 0 : -1}
 								onClick={() => place.setView(view)}
 								onKeyDown={(event) => {
@@ -192,17 +192,19 @@ export function CaseLayout({
 									if (next === null) return;
 									event.preventDefault();
 									place.setView(next);
-									document.getElementById(`hood-tab-${next}`)?.focus();
+									document
+										.getElementById(`${shownCase}-hood-tab-${next}`)
+										?.focus();
 								}}
 							>
 								{copy[view]}
 							</button>
 						))}
 					</div>
-					<HoodPanel view="trace" shown={place.view}>
+					<HoodPanel shownCase={shownCase} view="trace" shown={place.view}>
 						{hood}
 					</HoodPanel>
-					<HoodPanel view="json" shown={place.view}>
+					<HoodPanel shownCase={shownCase} view="json" shown={place.view}>
 						{call.trace ? (
 							<CodeFile
 								file={{
@@ -215,7 +217,7 @@ export function CaseLayout({
 							<p className="muted">{copy.jsonIdle}</p>
 						)}
 					</HoodPanel>
-					<HoodPanel view="code" shown={place.view}>
+					<HoodPanel shownCase={shownCase} view="code" shown={place.view}>
 						<CodeFile file={snippet.server} />
 						<CodeFile file={snippet.client} />
 					</HoodPanel>
@@ -228,10 +230,13 @@ export function CaseLayout({
 
 /** One of the hood's tab panels, hidden while another tab is chosen. */
 function HoodPanel({
+	shownCase,
 	view,
 	shown,
 	children,
 }: {
+	/** The case the hood is in: every case stays mounted, so its ids name it. */
+	shownCase: Case;
 	view: HoodView;
 	shown: HoodView;
 	children: ReactNode;
@@ -239,8 +244,8 @@ function HoodPanel({
 	return (
 		<div
 			role="tabpanel"
-			id={`hood-${view}`}
-			aria-labelledby={`hood-tab-${view}`}
+			id={`${shownCase}-hood-${view}`}
+			aria-labelledby={`${shownCase}-hood-tab-${view}`}
 			className="hood-panel"
 			// biome-ignore lint/a11y/noNoninteractiveTabindex: a tab panel is a tab stop, so keys reach it when nothing inside takes the focus (ARIA tabs pattern).
 			tabIndex={0}

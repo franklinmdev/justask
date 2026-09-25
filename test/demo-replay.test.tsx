@@ -175,6 +175,8 @@ beforeEach(() => {
 	vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
 	vi.stubGlobal("jest", { advanceTimersByTime: vi.advanceTimersByTime });
 	vi.setSystemTime(new Date("2026-09-23T15:00:00Z"));
+	// A new browser tab: no replay has played in it yet.
+	sessionStorage.clear();
 });
 
 afterEach(() => {
@@ -575,6 +577,106 @@ describe("the Form case's recorded run", () => {
 	});
 });
 
+describe("a replay plays once per browser tab (#135)", () => {
+	it("opens a reload on the recorded run's end state at once, with no typing", async () => {
+		renderDemo({ reduced: false });
+		await replayApplied();
+		cleanup();
+
+		const { provider } = renderDemo({ reduced: false });
+		// No clock steps: the end state is in before the replay's first pause.
+		await act(async () => {});
+
+		expect(searchbox("Filter the transactions").value).toBe(table.request);
+		expect(control("Vendor").value).toBe("fixbright");
+		expect(screen.getByText(label("en", table))).toBeDefined();
+		expect(announced()).not.toContain("Replaying a recorded run");
+		expect(figure("Latency")).toBe(`${table.latencyMs} ms`);
+		expect(provider.calls).toHaveLength(0);
+	});
+
+	it("replays again in a new tab", async () => {
+		renderDemo();
+		await replayApplied();
+		cleanup();
+		sessionStorage.clear();
+
+		renderDemo();
+		await act(async () => {});
+
+		expect(searchbox("Filter the transactions").value).toBe("");
+		await waitFor(
+			() => expect(announced()).toContain("Replaying a recorded run"),
+			REPLAY,
+		);
+		await replayApplied();
+	});
+
+	it("replays on every load when the browser blocks storage, and the page still works", async () => {
+		vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+			throw new DOMException("blocked", "SecurityError");
+		});
+		vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+			throw new DOMException("blocked", "SecurityError");
+		});
+		try {
+			renderDemo();
+			await replayApplied();
+			cleanup();
+
+			renderDemo();
+			await act(async () => {});
+			expect(searchbox("Filter the transactions").value).toBe("");
+			await replayApplied();
+		} finally {
+			vi.restoreAllMocks();
+		}
+	});
+
+	it("keeps each case's played run when the person leaves it and comes back, with no call", async () => {
+		const { user, provider } = renderDemo();
+		await replayApplied();
+		await user.selectOptions(control("Status"), "paid");
+
+		await user.click(screen.getByRole("tab", { name: "Search" }));
+		await waitFor(
+			() =>
+				expect(searchbox("Find a vendor").value).toBe(
+					recordings.search.en.request,
+				),
+			REPLAY,
+		);
+		await user.click(screen.getByRole("tab", { name: "Table" }));
+		// Past a whole replay: nothing types in again.
+		await act(() => vi.advanceTimersByTimeAsync(2_500));
+
+		expect(searchbox("Filter the transactions").value).toBe(table.request);
+		expect(control("Vendor").value).toBe("fixbright");
+		expect(control("Status").value).toBe("paid");
+		expect(provider.calls).toHaveLength(0);
+	});
+
+	it("ends a replay the person left halfway on its recorded run when they come back", async () => {
+		const { user, provider } = renderDemo({ reduced: false });
+		const box = searchbox("Filter the transactions");
+		await waitFor(
+			() => {
+				expect(box.value.length).toBeGreaterThan(0);
+				expect(box.value.length).toBeLessThan(table.request.length);
+			},
+			{ ...REPLAY, interval: 5 },
+		);
+
+		await user.click(screen.getByRole("tab", { name: "Form" }));
+		await user.click(screen.getByRole("tab", { name: "Table" }));
+		await act(async () => {});
+
+		expect(searchbox("Filter the transactions").value).toBe(table.request);
+		expect(control("Vendor").value).toBe("fixbright");
+		expect(provider.calls).toHaveLength(0);
+	});
+});
+
 describe("the recorded runs while the kill switch is on (#109)", () => {
 	it.each([
 		["table", "Filter the transactions", table.request],
@@ -609,6 +711,11 @@ describe("the recorded runs while the kill switch is on (#109)", () => {
 		);
 
 		expect(screen.queryByRole("heading", { name: PAUSED })).toBeNull();
+		// Asked for, the replay types in again, though this tab has played it.
+		await waitFor(
+			() => expect(announced()).toContain("Replaying a recorded run"),
+			REPLAY,
+		);
 		await replayApplied();
 		expect(searchbox("Filter the transactions").value).toBe(table.request);
 	});

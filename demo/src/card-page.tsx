@@ -268,22 +268,22 @@ export function CardPage({
 				</CardUndo>
 			</div>
 
-			<section className="suggestions" aria-labelledby="suggestions-title">
-				<h3 id="suggestions-title">{copy.suggestions}</h3>
+			<section className="suggestions" aria-labelledby="card-suggestions-title">
+				<h3 id="card-suggestions-title">{copy.suggestions}</h3>
 				<Suggestions
-					id="fills"
+					id="card-fills"
 					title={copy.card.fills}
 					requests={content.cardSuggestions.fills}
 					onPick={suggest}
 				/>
 				<Suggestions
-					id="holds"
+					id="card-holds"
 					title={copy.card.holds}
 					requests={content.cardSuggestions.holds}
 					onPick={suggest}
 				/>
 				<Suggestions
-					id="nothing"
+					id="card-nothing"
 					title={copy.card.nothing}
 					requests={content.cardSuggestions.nothing}
 					onPick={suggest}
