@@ -606,7 +606,7 @@ export const spanish: Content = {
 		],
 		holds: [
 			"almuerzo con los de limpieza ayer, $40",
-			"tóner de Tintaverde el viernes pasado, $120",
+			"tóner de Tintaverde la semana pasada, $120",
 			"mensajería Pieveloz, 300 pesos",
 		],
 		nothing: ["¿cuánto gastamos en almuerzos?", "borre el taxi de ayer"],

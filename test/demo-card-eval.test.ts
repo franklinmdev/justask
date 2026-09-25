@@ -35,6 +35,19 @@ const TODAY = "2026-09-23";
 
 const FIELDS: ExpenseName[] = ["vendor", "tags", "spent_on", "total"];
 
+/**
+ * Rows frozen before #140 expecting a "last X" day held, where "last X" read
+ * two ways on every day. On the eval's Wednesday the closest Thursday or
+ * Friday is the one of the week before, so the parser now reads them one way.
+ * The owner ruled on 2026-09-25 that they stay as frozen and scored; any other
+ * row still holds its day by the parser's reading (docs/card-eval.md).
+ */
+const HELD_BEFORE_140 = new Set(
+	["r2-33", "r4-33", "r5-33", "r7-034", "r7-087", "r9-076", "r9-161"].flatMap(
+		(row) => [`en-${row}`, `es-${row}`],
+	),
+);
+
 describe.each([english, spanish])("the card sets in $language", (content) => {
 	const sets = Object.fromEntries(
 		CARD_SET_NAMES.map((set) => [
@@ -189,6 +202,37 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 		}
 	});
 
+	it("read every row frozen before #140 as held one way now, so the list names no row it need not", () => {
+		for (const row of allSets.filter(({ id }) => HELD_BEFORE_140.has(id))) {
+			const { dates = [] } = builtInParser(row.request, {
+				today: TODAY,
+				facts: FACTS,
+				reads: "past",
+			});
+			expect(row.expected.spent_on, row.id).toBe("held");
+			expect(
+				dates.filter((d) => !d.ambiguous && d.from === d.to),
+				row.id,
+			).toHaveLength(1);
+		}
+	});
+
+	it("offer a held day among the suggestions that holds on every day of the week", () => {
+		const request = content.cardSuggestions.holds[1] ?? "";
+		for (let day = 21; day <= 27; day++) {
+			const { dates = [] } = builtInParser(request, {
+				today: `2026-09-${day}`,
+				facts: FACTS,
+				reads: "past",
+			});
+			expect(dates, `${request} on 2026-09-${day}`).not.toEqual([]);
+			expect(
+				dates.filter((d) => !d.ambiguous && d.from === d.to),
+				`${request} on 2026-09-${day}`,
+			).toEqual([]);
+		}
+	});
+
 	it("hold each ambiguous day and amount by the parser's own reading, or by two candidates", () => {
 		for (const row of rows(allSets, "ambiguous")) {
 			const { dates = [], amounts = [] } = builtInParser(row.request, {
@@ -196,7 +240,7 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 				facts: FACTS,
 				reads: "past",
 			});
-			if (row.expected.spent_on === "held") {
+			if (row.expected.spent_on === "held" && !HELD_BEFORE_140.has(row.id)) {
 				const days = dates.filter((d) => !d.ambiguous && d.from === d.to);
 				expect(days, row.id).toEqual([]);
 			}
