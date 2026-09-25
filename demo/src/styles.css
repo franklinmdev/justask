@@ -777,7 +777,7 @@ h2 {
 	color: var(--muted);
 }
 
-/* The proposed filters, Confirm and the table's own filter controls */
+/* Confirm, Clear filters and the table's own filter controls */
 
 .clear {
 	min-height: 24px;
