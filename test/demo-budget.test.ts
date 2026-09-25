@@ -10,6 +10,7 @@ import { createDemoHandler } from "../demo/server/handler.ts";
 import {
 	BUDGET_EXCEEDED,
 	cardEndpoint,
+	DEMO_PAUSED,
 	filterEndpoint,
 	KEY_OUT_OF_SERVICE,
 	searchEndpoint,
@@ -131,13 +132,13 @@ describe("the demo's daily budget", () => {
 });
 
 describe("the demo's kill switch", () => {
-	it("gives the budget's answer, with nothing spent and no provider call", async () => {
+	it("gives the budget's 402, its cause the pause, with nothing spent and no provider call", async () => {
 		const { handler, provider } = demo({ killSwitch: true });
 
 		const response = await search(handler);
 
 		expect(response.status).toBe(402);
-		expect(await response.json()).toEqual(BUDGET_EXCEEDED);
+		expect(await response.json()).toEqual(DEMO_PAUSED);
 		expect(provider.calls).toHaveLength(0);
 	});
 });

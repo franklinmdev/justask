@@ -101,7 +101,7 @@ What the public demo may spend on its owner's key in one UTC day, $1, summed fro
 _Avoid_: Quota, credit, rate limit
 
 **Kill switch**:
-The demo's flag that makes the daily budget count as spent, so every live request gets the budget's answer through the same path. The recorded runs still play.
+The demo's flag that makes the daily budget count as spent, so every live request gets the budget's 402 through the same path, its cause `paused`. The page says the live demo is paused, never when it comes back. The recorded runs still play.
 _Avoid_: Maintenance mode, off switch
 
 **Held field**:

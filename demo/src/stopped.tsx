@@ -1,5 +1,10 @@
 import { useEffect, useRef } from "react";
-import { BUDGET_EXCEEDED, KEY_OUT_OF_SERVICE, type Stopped } from "./api.ts";
+import {
+	BUDGET_EXCEEDED,
+	DEMO_PAUSED,
+	KEY_OUT_OF_SERVICE,
+	type Stopped,
+} from "./api.ts";
 import type { Content } from "./content/types.ts";
 
 /** The repo a visitor clones to run justask on their own key. */
@@ -7,8 +12,8 @@ export const REPO_URL = "https://github.com/franklinmdev/justask";
 
 /**
  * The demo's `fetch`, watching for the server's answers that stop live calls
- * on the owner's key (#109): the day's budget, 402, and a key TypeSafe
- * refused, 503. It hands the answer on untouched, so the hook still ends its
+ * on the owner's key (#109): the day's budget or the kill switch, 402, and a
+ * key TypeSafe refused, 503. It hands the answer on untouched, so the hook still ends its
  * call, and tells the page why.
  */
 export function watchStops(
@@ -27,14 +32,15 @@ async function stoppedBy(response: Response): Promise<Stopped | null> {
 	if (response.status !== 402 && response.status !== 503) return null;
 	try {
 		const body = (await response.clone().json()) as {
-			error?: { kind?: unknown };
+			error?: { kind?: unknown; cause?: unknown };
 		} | null;
-		const kind = body?.error?.kind;
-		return kind === BUDGET_EXCEEDED.error.kind ||
-			kind === KEY_OUT_OF_SERVICE.error.kind
-			? kind
-			: null;
+		const { kind, cause } = body?.error ?? {};
+		if (kind === KEY_OUT_OF_SERVICE.error.kind) return "key";
+		if (kind !== BUDGET_EXCEEDED.error.kind) return null;
+		if (cause === BUDGET_EXCEEDED.error.cause) return "budget";
+		return cause === DEMO_PAUSED.error.cause ? "paused" : null;
 	} catch {
+		// A body that is not JSON is not the demo's own answer: the page's usual error shows.
 		return null;
 	}
 }
@@ -56,8 +62,7 @@ export function StoppedNotice({
 	onReplay: (() => void) | null;
 }) {
 	const copy = content.copy.stopped;
-	const { title, body } =
-		stopped === "budget_exceeded" ? copy.budget : copy.key;
+	const { title, body } = copy[stopped];
 	const heading = useRef<HTMLHeadingElement>(null);
 
 	// The box the visitor typed in is gone; focus lands on what replaced it.

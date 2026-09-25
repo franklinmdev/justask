@@ -220,6 +220,8 @@ export type HeldReason =
  */
 export type StoppedCopy = {
 	budget: { title: string; body: string };
+	/** The kill switch: no time it comes back, since the owner ends it. */
+	paused: { title: string; body: string };
 	key: { title: string; body: string };
 	replay: string;
 	clone: string;

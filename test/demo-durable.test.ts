@@ -4,7 +4,7 @@ import {
 	type TestHarness,
 	unstable_readConfig,
 } from "wrangler";
-import { BUDGET_EXCEEDED } from "../demo/src/api.ts";
+import { BUDGET_EXCEEDED, DEMO_PAUSED } from "../demo/src/api.ts";
 
 // The Worker in local workerd, through wrangler's own test harness: what only
 // the Durable Object has, its SQL and its one object for every isolate, is
@@ -41,13 +41,16 @@ function search(server: TestHarness) {
 	});
 }
 
-/** Searches until the first that is not a 200, and answers how many were. */
-async function answeredUntilRefused(server: TestHarness): Promise<number> {
+/** Searches until the first that is not a 200, the budget's 402 with `body`, and answers how many were. */
+async function answeredUntilRefused(
+	server: TestHarness,
+	body: typeof BUDGET_EXCEEDED | typeof DEMO_PAUSED = BUDGET_EXCEEDED,
+): Promise<number> {
 	for (let answered = 0; answered < 10; answered++) {
 		const response = await search(server);
 		if (response.status !== 200) {
 			expect(response.status).toBe(402);
-			expect(await response.json()).toEqual(BUDGET_EXCEEDED);
+			expect(await response.json()).toEqual(body);
 			return answered;
 		}
 	}
@@ -88,7 +91,7 @@ describe("the Worker's kill switch", () => {
 	beforeAll(() => server.listen(), 60_000);
 	afterAll(() => server.close());
 
-	it("gives the budget's answer to the first request", async () => {
-		expect(await answeredUntilRefused(server)).toBe(0);
+	it("gives the budget's 402, paused, to the first request", async () => {
+		expect(await answeredUntilRefused(server, DEMO_PAUSED)).toBe(0);
 	});
 });

@@ -44,6 +44,10 @@ export const spanish: Content = {
 				title: "Se agotó el presupuesto de hoy de la demostración",
 				body: "La demostración llama a TypeSafe con la clave de su dueño, con 1 dólar por día, y el dólar de hoy ya se gastó. Vuelve a empezar a la medianoche UTC. Mientras tanto, la ejecución grabada de cada caso sigue disponible, y una copia de justask funciona con su propia clave.",
 			},
+			paused: {
+				title: "La demostración en vivo está en pausa",
+				body: "El dueño de la demostración pausó sus llamadas en vivo a TypeSafe. La ejecución grabada de cada caso sigue disponible, y una copia de justask funciona con su propia clave.",
+			},
 			key: {
 				title:
 					"La clave propia de la demostración está fuera de servicio ahora mismo",

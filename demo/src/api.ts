@@ -22,14 +22,27 @@ export const REQUEST_LIMIT = 200;
 
 /**
  * The server's answer, 402, once the day's budget on the owner's key is
- * spent, or the kill switch is on, with no provider call (#109). `cause` says
- * which limit: the day's budget, the only one so far.
+ * spent, with no provider call (#109). `cause` says which limit: the day's
+ * budget, the only one so far.
  */
 export const BUDGET_EXCEEDED = {
 	error: {
 		kind: "budget_exceeded",
 		cause: "budget",
 		message: "The demo's budget for today is spent",
+	},
+} as const;
+
+/**
+ * The same 402 through the same path while the kill switch is on, whose
+ * `cause` lets the page say the live demo is paused, with no time it comes
+ * back: the switch ends when the owner turns it off, not at midnight (#109).
+ */
+export const DEMO_PAUSED = {
+	error: {
+		kind: "budget_exceeded",
+		cause: "paused",
+		message: "The live demo is paused",
 	},
 } as const;
 
@@ -45,7 +58,8 @@ export const KEY_OUT_OF_SERVICE = {
 	},
 } as const;
 
-/** Why the demo stopped calling on the owner's key, from the server's answer. */
-export type Stopped =
-	| (typeof BUDGET_EXCEEDED)["error"]["kind"]
-	| (typeof KEY_OUT_OF_SERVICE)["error"]["kind"];
+/**
+ * Why the demo stopped calling on the owner's key, from the server's answer:
+ * the day's budget, the kill switch, or a key TypeSafe refused.
+ */
+export type Stopped = "budget" | "paused" | "key";
