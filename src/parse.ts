@@ -471,25 +471,30 @@ function dayMonth(
 }
 
 /**
- * "next Friday" and "last Friday": the nearest one that way, or the one a
- * week further. Nothing in the words chooses, so both readings are ambiguous.
+ * "next Friday" and "last Friday": the closest one that way, or that weekday
+ * in the week after or before this one, weeks starting on Monday (ADR 0008).
+ * When both are the same day the words say which; when they differ nothing
+ * in the words chooses, so both readings are ambiguous.
  */
-function eitherWeek(nearest: string, step: 7 | -7, word: string): Hit[] {
-	const further = addDays(nearest, step);
+function eitherWeek(
+	closest: string,
+	today: string,
+	step: 7 | -7,
+	word: string,
+): Hit[] {
+	const calendar = addDays(today, -weekday(today) + step + weekday(closest));
 	const way = step > 0 ? "after" : "before";
+	const inTheWeek = `reading '${word}' as that weekday in the week ${way} this one`;
+	if (calendar === closest)
+		return [{ from: closest, to: closest, note: inTheWeek }];
 	return [
 		{
-			from: nearest,
-			to: nearest,
-			note: `reading '${word}' as the first one ${way} today`,
+			from: closest,
+			to: closest,
+			note: `reading '${word}' as the closest one ${way} today`,
 			ambiguous: true,
 		},
-		{
-			from: further,
-			to: further,
-			note: `reading '${word}' as the one a week ${step > 0 ? "later" : "earlier"}`,
-			ambiguous: true,
-		},
+		{ from: calendar, to: calendar, note: inTheWeek, ambiguous: true },
 	];
 }
 
@@ -733,7 +738,7 @@ const DATE_RULES: DateRule[] = [
 		read: (m, today) => {
 			const w = WEEKDAYS[m[1] ?? m[2] ?? ""] ?? 0;
 			const ahead = (w - weekday(today) + 7) % 7 || 7;
-			return eitherWeek(addDays(today, ahead), 7, "next");
+			return eitherWeek(addDays(today, ahead), today, 7, "next");
 		},
 	},
 	{
@@ -757,7 +762,7 @@ const DATE_RULES: DateRule[] = [
 		read: (m, today) => {
 			const w = WEEKDAYS[m[1] ?? m[2] ?? ""] ?? 0;
 			const back = (weekday(today) - w + 7) % 7 || 7;
-			return eitherWeek(addDays(today, -back), -7, "last");
+			return eitherWeek(addDays(today, -back), today, -7, "last");
 		},
 	},
 	{
@@ -868,6 +873,19 @@ const DATE_RULES: DateRule[] = [
 			const days = unitIsWeeks(m[2] ?? m[4] ?? "") ? n * 7 : n;
 			return point(addDays(today, days), `today plus ${days} days`);
 		},
+	},
+	{
+		// A part of the day is that day: a date field holds a day, never hours.
+		re: new RegExp(
+			`${b}(?:this\\s+(?:morning|afternoon|evening)|tonight|esta\\s+(?:manana|tarde|noche))${e}`,
+			"g",
+		),
+		read: (_m, today) => point(today),
+	},
+	{
+		// Last night is yesterday's date whatever the hour, as Duckling and Recognizers-Text read it.
+		re: new RegExp(`${b}(?:last\\s+night|anoche)${e}`, "g"),
+		read: (_m, today) => point(addDays(today, -1)),
 	},
 	{
 		re: new RegExp(`${b}(?:hoy|today)${e}`, "g"),

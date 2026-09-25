@@ -893,21 +893,24 @@ describe("ask: card", () => {
 			},
 		);
 
-		it("holds 'next Monday' said on a Tuesday, where the nearest Monday is already next week's", async () => {
+		it("fills 'next Monday' said on a Tuesday, where the closest Monday is the one of next week, so it reads one way", async () => {
 			const result = await ask({
 				...base,
 				request: "Acme bill due next Monday",
 				provider: fakeProvider({
 					intent: answer(INTENT, "new_record", 0.97),
-					due_on: answer(["d0", "d1", ...MISSING], "d0", 0.99),
+					due_on: answer(["d0", ...MISSING], "d0", 0.99),
 				}),
 				card: billCard(),
 			});
 
 			expect(
-				result.card.fields.due_on.candidates.map(({ value }) => value.from),
-			).toEqual(["2026-09-28", "2026-10-05"]);
-			expect(result.card.value).toEqual({});
+				result.card.fields.due_on.candidates.map(({ value }) => [
+					value.from,
+					value.ambiguous,
+				]),
+			).toEqual([["2026-09-28", undefined]]);
+			expect(result.card.value).toEqual({ due_on: "2026-09-28" });
 		});
 
 		it("fills a bare weekday forward on a field that reads the future, and back on one that reads the past", async () => {
