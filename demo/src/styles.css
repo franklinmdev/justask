@@ -29,6 +29,8 @@
 	--destructive: oklch(0.55 0.19 27);
 	/* What a field an answer filled lights up with, then fades from. */
 	--fill-wash: oklch(0.6 0.15 155 / 0.12);
+	/* The raised segment's contact shadow: the track's convention, not depth. */
+	--shadow-segment: 0 1px 2px oklch(0 0 0 / 0.12);
 	--shadow-window:
 		0 1px 2px oklch(0.2 0.02 250 / 0.06),
 		0 12px 32px -14px oklch(0.2 0.02 250 / 0.28);
@@ -273,7 +275,7 @@ dd {
 .cases a[aria-selected="true"] {
 	background: var(--segment-on);
 	color: var(--text);
-	box-shadow: 0 1px 2px oklch(0 0 0 / 0.12);
+	box-shadow: var(--shadow-segment);
 }
 
 .hood-tabs button[aria-selected="true"] {
@@ -366,7 +368,7 @@ dd {
 .hood-toggle[aria-expanded="true"] {
 	background: var(--segment-on);
 	color: var(--text);
-	box-shadow: 0 1px 2px oklch(0 0 0 / 0.12);
+	box-shadow: var(--shadow-segment);
 }
 
 @media (hover: hover) {
@@ -680,11 +682,6 @@ h2 {
 
 .box::placeholder {
 	color: var(--muted);
-}
-
-/* Focus is the page's ring outside the box; the border stays for the fill's light. */
-.box:focus-visible {
-	border-color: var(--border-strong);
 }
 
 /* What the sentence saved, tied to the box above it */
@@ -1904,11 +1901,13 @@ fieldset.table-filter[data-settle]::before {
 	}
 
 	/*
-	 * The chosen vendor's four columns become a card list too: date and
-	 * amount on the first line, the invoice and its status on the second.
-	 * Inside the framed window they no longer fit 375px in Spanish.
+	 * Both transactions tables become card lists. The Table case's five
+	 * columns: vendor and amount on the first line, date and status on the
+	 * second, the invoice last. The Search case's four, the chosen vendor's:
+	 * date and amount, then the invoice and its status; inside the framed
+	 * window they no longer fit 375px in Spanish.
 	 */
-	.transactions:not(.all) thead {
+	.transactions thead {
 		position: absolute;
 		width: 1px;
 		height: 1px;
@@ -1916,78 +1915,29 @@ fieldset.table-filter[data-settle]::before {
 		clip-path: inset(50%);
 	}
 
-	.transactions:not(.all) tr {
+	.transactions tr {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) auto;
-		grid-template-areas:
-			"date amount"
-			"invoice status";
 		gap: 2px 12px;
 		padding: 10px 0;
 		border-bottom: 1px solid var(--border);
 	}
 
-	.transactions:not(.all) td {
+	.transactions td {
 		height: auto;
 		padding: 0;
 		border: 0;
 	}
 
-	.transactions:not(.all) tr > :last-child {
+	.transactions tr > :last-child {
 		padding-left: 0;
 	}
 
-	.transactions:not(.all) td:nth-child(1) {
-		grid-area: invoice;
-		color: var(--muted);
-	}
-
-	.transactions:not(.all) td:nth-child(2) {
-		grid-area: date;
-	}
-
-	.transactions:not(.all) td:nth-child(3) {
-		grid-area: amount;
-	}
-
-	.transactions:not(.all) td:nth-child(4) {
-		grid-area: status;
-		text-align: right;
-		font-size: 0.8125rem;
-	}
-
-	/*
-	 * The five-column transactions become a card list: vendor and amount on
-	 * the first line, date and status on the second, the invoice last.
-	 */
-	.transactions.all thead {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		overflow: hidden;
-		clip-path: inset(50%);
-	}
-
 	.transactions.all tr {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
 		grid-template-areas:
 			"vendor amount"
 			"date status"
 			"invoice invoice";
-		gap: 2px 12px;
-		padding: 10px 0;
-		border-bottom: 1px solid var(--border);
-	}
-
-	.transactions.all td {
-		height: auto;
-		padding: 0;
-		border: 0;
-	}
-
-	.transactions.all tr > :last-child {
-		padding-left: 0;
 	}
 
 	.transactions.all td:nth-child(1) {
@@ -2010,6 +1960,31 @@ fieldset.table-filter[data-settle]::before {
 	}
 
 	.transactions.all td:nth-child(5) {
+		grid-area: status;
+		text-align: right;
+		font-size: 0.8125rem;
+	}
+
+	.transactions:not(.all) tr {
+		grid-template-areas:
+			"date amount"
+			"invoice status";
+	}
+
+	.transactions:not(.all) td:nth-child(1) {
+		grid-area: invoice;
+		color: var(--muted);
+	}
+
+	.transactions:not(.all) td:nth-child(2) {
+		grid-area: date;
+	}
+
+	.transactions:not(.all) td:nth-child(3) {
+		grid-area: amount;
+	}
+
+	.transactions:not(.all) td:nth-child(4) {
 		grid-area: status;
 		text-align: right;
 		font-size: 0.8125rem;
