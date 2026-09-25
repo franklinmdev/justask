@@ -81,7 +81,7 @@ function diagnosticsOf(snippets: { dir: string; snippet: Snippet }[]): string {
 }
 
 describe("the showcase's Code tab snippets", () => {
-	it("typecheck as copied, with nothing imported but justask and each other", () => {
+	it("typecheck as copied, with nothing imported but React, justask and each other", () => {
 		expect(
 			diagnosticsOf(
 				projects.map(({ shown, language, snippet }) => ({
@@ -97,6 +97,7 @@ describe("the showcase's Code tab snippets", () => {
 				);
 				for (const from of imported) {
 					expect([
+						"react",
 						"justask",
 						"justask/jev",
 						"justask/react",

@@ -146,24 +146,17 @@ export type FilterCopy = {
 	transactions: string;
 	boxLabel: string;
 	placeholder: string;
-	proposed: string;
 	fields: Record<FieldName, string>;
-	/** The visible text of a proposed filter's remove button. */
-	remove: string;
-	removeLabel: (field: string) => string;
-	/** What a screen reader hears once a proposed filter is removed. */
-	removed: (field: string) => string;
-	confirm: string;
 	empty: string;
 	applied: string;
-	/** What a screen reader hears once Apply sets the controls: each field set, with its value, then each field held. */
+	/** What a screen reader hears once an answer sets the controls: each field set, with its value, then each field held. */
 	appliedFields: (
 		set: [field: string, value: string][],
 		held: string[],
 	) => string;
 	clear: string;
 	showing: (count: number, total: number) => string;
-	/** The table's own filter controls, which Apply sets and the person can change. */
+	/** The table's own filter controls, which an answer sets and the person can change. */
 	controls: {
 		allVendors: string;
 		allStatuses: string;

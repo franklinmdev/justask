@@ -1,12 +1,6 @@
 import type { AmountRange, DateRange, FieldValue } from "justask";
-import {
-	FilterBox,
-	FilterConfirm,
-	FilterEmpty,
-	FilterFields,
-	useFilter,
-} from "justask/react";
-import { useState } from "react";
+import { FilterBox, FilterEmpty, useFilter } from "justask/react";
+import { useEffect, useState } from "react";
 import { filterEndpoint, REQUEST_LIMIT } from "./api.ts";
 import type {
 	Content,
@@ -33,18 +27,20 @@ import { CaseLayout } from "./showcase.tsx";
 import { useSuggest } from "./trace.ts";
 import {
 	type Applied,
-	applyTo,
+	answerOver,
 	matches,
+	setByHand,
+	type Table,
 	transactionsOn,
 } from "./transactions.ts";
 
-/** The table's controls in the order they show, which Apply sets them in. */
+/** The table's controls in the order they show, which an answer sets them in. */
 const fieldOrder: FieldName[] = ["vendor", "status", "date", "amount"];
 
-/** The controls one Apply set, in field order; the round restarts their motion. */
+/** The controls one answer set, in field order; the round restarts their motion. */
 type Settling = { round: number; names: FieldName[] };
 
-/** One field's filter in the page's own words, for the proposed and the applied filters alike. */
+/** One field's filter in the page's own words, as a screen reader hears what an answer set. */
 function fieldWords(content: Content) {
 	const { copy } = content;
 	const format = formats(content.locale);
@@ -100,21 +96,13 @@ function valueWords<K extends FieldName>(
 	return words[name](value[name] as FieldValue<TransactionFields[K]>);
 }
 
-function FieldChip({ name, text }: { name: string; text: string }) {
-	return (
-		<>
-			<span className="filter-name">{name}</span>
-			<span className="filter-value">{text}</span>
-		</>
-	);
-}
-
 /**
  * The fictional invoicing app's transactions table, filtered from a request,
- * beside the state panel. The proposed filters stay in justask until the
- * person applies them; only then does the table change, its controls
- * settling in field order. With a recording, the case opens on it replayed:
- * the sentence, the proposal, then Apply pressed on screen.
+ * beside the state panel. Each answer applies itself: filtering is
+ * reversible, so nothing asks first, and Clear filters undoes it (#123). The
+ * controls it set light up in field order and the rows that enter or leave
+ * move, after the answer, never before it. With a recording, the case opens
+ * on it replayed: the sentence, then the table filtering.
  */
 export function FilterPage({
 	content,
@@ -127,12 +115,13 @@ export function FilterPage({
 }) {
 	const { copy } = content;
 	const words = fieldWords(content);
-	// What the table's own controls hold: Apply sets them, and so does the person.
-	const [applied, setApplied] = useState<Applied>({});
+	// What the table's own controls hold: an answer sets them, and so does the person.
+	const [table, setTable] = useState<Table>({ applied: {}, byAnswer: [] });
+	const { applied } = table;
 	// Clear filters renews the controls, so text in a box that set no bound goes too.
 	const [cleared, setCleared] = useState(0);
 	const [settling, setSettling] = useState<Settling>({ round: 0, names: [] });
-	// What Apply set and held, for a screen reader.
+	// What the answer set and held, for a screen reader.
 	const [appliedWords, setAppliedWords] = useState("");
 	const replay = useReplay({ recording, fetch: fetchImpl });
 	const { trace } = replay;
@@ -141,7 +130,7 @@ export function FilterPage({
 		endpoint: filterEndpoint(content.language),
 		timing: { on: "type", debounceMs: DEBOUNCE_MS },
 		onConfirm: (value) => {
-			setApplied((table) => applyTo(table, value));
+			setTable((now) => answerOver(now, value));
 			const names = fieldOrder.filter((name) => value[name] !== undefined);
 			setSettling(({ round }) => ({ round: round + 1, names }));
 			const held = fieldOrder.filter(
@@ -159,15 +148,20 @@ export function FilterPage({
 		},
 		fetch: replay.fetch,
 	});
-	replay.follow(filter, { ready: filter.ready, press: filter.confirm });
+	// An answer that fills a field applies at once, typed or suggested. No
+	// dependencies: confirm spends the answer, so `ready` stays false until the
+	// next one, and a render for anything else confirms nothing. An answer that
+	// fills nothing still starts over, dropping the last answer's fields; a
+	// failed call is no answer, so its `value` is null and the table stays.
+	useEffect(() => {
+		if (filter.ready) filter.confirm();
+		else if (filter.value !== null) {
+			setTable((now) => (now.byAnswer.length > 0 ? answerOver(now, {}) : now));
+		}
+	});
+	replay.follow(filter);
 	const box = replay.stoppedBy(filter);
 	const suggest = useSuggest(box);
-
-	const chip =
-		<K extends FieldName>(name: K) =>
-		(value: FieldValue<TransactionFields[K]>) => (
-			<FieldChip name={copy.filter.fields[name]} text={words[name](value)} />
-		);
 	const transactions = transactionsOn(
 		content.transactions,
 		dayShown(recording, replay.recorded),
@@ -204,37 +198,9 @@ export function FilterPage({
 				cost={costOf(tableControls(filter.result?.value ?? {}))}
 				stale={filter.loading}
 			/>
-			<FilterFields
-				filter={filter}
-				label={copy.filter.proposed}
-				className="proposed"
-				itemProps={{ className: "filter" }}
-				removeProps={{ className: "filter-remove" }}
-				render={{
-					vendor: chip("vendor"),
-					status: chip("status"),
-					date: chip("date"),
-					amount: chip("amount"),
-				}}
-				removeLabel={(name) =>
-					copy.filter.removeLabel(copy.filter.fields[name])
-				}
-				removeContent={copy.filter.remove}
-				removedLabel={(name) => copy.filter.removed(copy.filter.fields[name])}
-				announcementProps={{ className: "visually-hidden" }}
-			/>
 			<FilterEmpty filter={filter} className="result">
 				<p className="empty">{copy.filter.empty}</p>
 			</FilterEmpty>
-			<div className="confirm-row">
-				<FilterConfirm
-					filter={filter}
-					className="confirm"
-					data-pressed={replay.pressing || undefined}
-				>
-					{copy.filter.confirm}
-				</FilterConfirm>
-			</div>
 
 			<section className="suggestions" aria-labelledby="suggestions-title">
 				<h3 id="suggestions-title">{copy.suggestions}</h3>
@@ -272,7 +238,7 @@ export function FilterPage({
 							className="clear"
 							onClick={() => {
 								replay.stop();
-								setApplied({});
+								setTable({ applied: {}, byAnswer: [] });
 								setCleared((count) => count + 1);
 							}}
 						>
@@ -284,14 +250,15 @@ export function FilterPage({
 					key={cleared}
 					content={content}
 					value={applied}
-					onChange={(value) => {
-						// The person's choice stands: the replay never presses Apply over it.
+					onChange={(value, name) => {
+						// The person's choice stands: the replay never applies over it,
+						// and a later answer keeps it.
 						replay.stop();
-						setApplied(value);
+						setTable((now) => setByHand(now, name, value));
 					}}
 					settling={settling}
 				/>
-				<Transactions content={content} rows={rows} />
+				<Transactions content={content} rows={rows} all={transactions} />
 			</section>
 		</CaseLayout>
 	);
@@ -299,8 +266,8 @@ export function FilterPage({
 
 /**
  * The table's own filter controls: vendor, status, a date range and an
- * amount range. Apply sets them from the request, and the person fills or
- * changes any of them here, never through justask's pieces.
+ * amount range. An answer sets them from the request, and the person fills
+ * or changes any of them here, never through justask's pieces.
  */
 function TableFilters({
 	content,
@@ -310,7 +277,8 @@ function TableFilters({
 }: {
 	content: Content;
 	value: Applied;
-	onChange: (value: Applied) => void;
+	/** The controls' new value, and the field the person changed. */
+	onChange: (value: Applied, name: FieldName) => void;
 	settling: Settling;
 }) {
 	const { copy } = content;
@@ -318,7 +286,7 @@ function TableFilters({
 	const format = formats(content.locale);
 
 	function set<K extends FieldName>(name: K, field: Applied[K] | undefined) {
-		onChange(withKey(value, name, field));
+		onChange(withKey(value, name, field), name);
 	}
 	const day = (end: "from" | "to") => (iso: string | undefined) =>
 		set("date", withEnd(value.date, end, iso));
@@ -328,7 +296,7 @@ function TableFilters({
 		set("amount", withEnd(range, end, amount));
 	};
 	const currency = value.amount?.currency;
-	// A control Apply just set remounts, so it settles in again, after the ones before it.
+	// A control an answer just set remounts, so it settles in again, after the ones before it.
 	const at = (name: FieldName) => settling.names.indexOf(name);
 	const keyOf = (name: FieldName) =>
 		at(name) === -1 ? name : `${name}-${settling.round}`;
@@ -518,19 +486,72 @@ function BoundInput({
 	);
 }
 
+/** How long a row that left stays on screen: its exit, 25 percent faster than an entrance. */
+const LEAVE_MS = 150;
+
+/** The row numbers the table holds, and the ones the last change brought in and took out. */
+type Shown = { numbers: Set<string>; entered: Set<string>; left: Set<string> };
+
+/** A row on screen and how it moves: in, out, or not at all. */
+type ShownRow = { row: Transaction; motion?: "enter" | "leave" };
+
+/**
+ * The table's rows as they show: the kept ones, the ones the last change
+ * brought in, marked to enter, and the ones it took out, kept for their exit
+ * then dropped. A change mid-exit drops the rows still leaving, so motion
+ * never queues. The table's first rows show still.
+ */
+function useRowMotion(rows: Transaction[], all: Transaction[]): ShownRow[] {
+	const numbers = new Set(rows.map(({ number }) => number));
+	const [shown, setShown] = useState<Shown>({
+		numbers,
+		entered: new Set(),
+		left: new Set(),
+	});
+	const changed =
+		numbers.size !== shown.numbers.size ||
+		[...numbers].some((number) => !shown.numbers.has(number));
+	if (changed) {
+		setShown({
+			numbers,
+			entered: new Set([...numbers].filter((n) => !shown.numbers.has(n))),
+			left: new Set([...shown.numbers].filter((n) => !numbers.has(n))),
+		});
+	}
+	const { left } = shown;
+	useEffect(() => {
+		if (left.size === 0) return;
+		const timer = setTimeout(
+			() => setShown((now) => ({ ...now, left: new Set() })),
+			LEAVE_MS,
+		);
+		return () => clearTimeout(timer);
+	}, [left]);
+	return all.flatMap((row): ShownRow[] => {
+		if (left.has(row.number)) return [{ row, motion: "leave" }];
+		if (!numbers.has(row.number)) return [];
+		return [{ row, ...(shown.entered.has(row.number) && { motion: "enter" }) }];
+	});
+}
+
 function Transactions({
 	content,
 	rows,
+	all,
 }: {
 	content: Content;
 	rows: Transaction[];
+	/** Every transaction, in the table's order, which a leaving row keeps. */
+	all: Transaction[];
 }) {
 	const { copy } = content;
 	const format = formats(content.locale);
 	const vendorName = new Map(
 		content.vendors.map(({ id, value }) => [id, value.name]),
 	);
-	if (rows.length === 0) {
+	const shown = useRowMotion(rows, all);
+	// Rows still leaving keep the table up until their exit ends.
+	if (shown.length === 0) {
 		return <p className="empty">{copy.filter.none}</p>;
 	}
 	return (
@@ -548,8 +569,13 @@ function Transactions({
 				</tr>
 			</thead>
 			<tbody>
-				{rows.map((row) => (
-					<tr key={row.number}>
+				{shown.map(({ row, motion }) => (
+					<tr
+						key={row.number}
+						data-motion={motion}
+						// A leaving row is gone for a screen reader already.
+						aria-hidden={motion === "leave" || undefined}
+					>
 						<td className="data">{row.number}</td>
 						<td className="vendor">{vendorName.get(row.vendorId)}</td>
 						<td className="data">{format.date(row.date)}</td>
