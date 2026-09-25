@@ -174,7 +174,7 @@ The proposed filters sit in a polite live region that reads only what is added, 
 
 The built-in parser reads English and general Spanish; no regional formats ship. A host app adds its own in `filter.parsers`: each is a function from the request and `{ today, reads, facts }` to `{ dates?, times?, amounts? }`, runs before the built-in one, and wins where their text overlaps. `reads` is `"past"` or `"future"`: which way a date that does not say its year or week should read.
 
-A reading the request itself leaves open is marked `ambiguous` by the parser, and a field whose pick lands on one is held whatever its probability: "next Friday" and "last Friday" (the nearest one, or the one a week further), "a las 2 y pico". The same request always holds the same field.
+A reading the request itself leaves open is marked `ambiguous` by the parser, and a field whose pick lands on one is held whatever its probability: "a las 2 y pico", and "next Friday" or "last Friday" when the closest Friday that way and the Friday of the week after or before this one (weeks start on Monday) are different days. Said on a Saturday, "last Friday" is held; said on a Wednesday, both readings are the Friday five days back, and it fills. The same request on the same day always holds the same field. A part of the day reads as its day: "this morning", "tonight" and "esta tarde" are today, "last night" and "anoche" yesterday.
 
 ## Card
 

@@ -92,8 +92,8 @@ const answers: Record<string, FakeAnswers> = {
 		day: "d0",
 		amount: "a0",
 	}),
-	// "last Friday" reads two ways, so the day is held whatever its probability.
-	"Papergrove toner last Friday, $120": answer({
+	// "last week" is a period, not one day, so the day is held whatever its probability, on any day.
+	"Papergrove toner last week, $120": answer({
 		vendor: question(vendors, "papergrove"),
 		tagged: ["office"],
 		day: "d0",
@@ -286,7 +286,7 @@ describe("the demo's card page", () => {
 
 		await user.click(
 			screen.getByRole("button", {
-				name: "Papergrove toner last Friday, $120",
+				name: "Papergrove toner last week, $120",
 			}),
 		);
 		await waitFor(() => expect(vendor().value).toBe("papergrove"));
@@ -388,10 +388,10 @@ describe("the demo's card page", () => {
 		expect(saved()).toEqual(["Brightmop CleaningSep 21, 2026 · Meals$40.00"]);
 	});
 
-	it("holds the day for 'last Friday', which reads two ways, whatever its probability", async () => {
+	it("holds the day for 'last week', a period, whatever its probability", async () => {
 		const { user } = renderDemo();
 
-		await suggest(user, "Papergrove toner last Friday, $120");
+		await suggest(user, "Papergrove toner last week, $120");
 
 		expect(
 			screen.getByRole("button", { name: "Day Pick a day" }),
@@ -399,7 +399,7 @@ describe("the demo's card page", () => {
 		const day = within(panel().getByRole("region", { name: "Day" }));
 		expect(
 			day.getByText(
-				"“last Friday” reads two ways, so the code held the field whatever its probability.",
+				"“last week” is a period, not one day, so the code held the field.",
 			),
 		).toBeDefined();
 	});
@@ -407,7 +407,7 @@ describe("the demo's card page", () => {
 	it("lets the person pick the day from a calendar", async () => {
 		const { user } = renderDemo();
 
-		await suggest(user, "Papergrove toner last Friday, $120");
+		await suggest(user, "Papergrove toner last week, $120");
 		await user.click(screen.getByRole("button", { name: "Day Pick a day" }));
 		const calendar = within(
 			screen.getByRole("dialog", { name: "Choose the day" }),
@@ -430,7 +430,7 @@ describe("the demo's card page", () => {
 	it("moves through the calendar's days with the arrow keys, and closes on Escape", async () => {
 		const { user } = renderDemo();
 
-		await suggest(user, "Papergrove toner last Friday, $120");
+		await suggest(user, "Papergrove toner last week, $120");
 		await user.click(screen.getByRole("button", { name: "Day Pick a day" }));
 		// With no day chosen, the calendar opens on today.
 		expect(document.activeElement?.getAttribute("aria-label")).toBe(

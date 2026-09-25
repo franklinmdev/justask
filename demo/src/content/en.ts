@@ -569,7 +569,7 @@ export const english: Content = {
 		],
 		holds: [
 			"lunch with the cleaners yesterday, $40",
-			"Papergrove toner last Friday, $120",
+			"Papergrove toner last week, $120",
 			"Swiftlane courier, 300 pesos",
 		],
 		nothing: ["how much did we spend on lunch?", "delete yesterday's taxi"],

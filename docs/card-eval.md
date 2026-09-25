@@ -22,6 +22,8 @@
 
 **Copy probes and round 9 (#99): copying someone is a send, the label now says so, and round 9 passes in both languages and both runs.** The new label held every English copy probe; Spanish `cópiale` read as a new record with it too, so the owner added the Spanish copy verbs to the command list and no reference, and the label's measured cost is two of the ten `copyrec` records, both of which copy a document. On fresh rows of round 7's shapes, English run 1 clears every line (exact 0.956, coverage 0.843, invented 0, held ambiguous 0.969) and so does Spanish (0.941, 0.8, 0, 0.875); every nothing row held in all four runs, and no row errored or retried. See Copy probes and Round 9: result below; rounds 1 to 8 are unchanged.
 
+**Dates (#140): "last X" and "next X" are held only when their two readings differ, and a part of the day reads as its day.** On the runs' fixed Wednesday 2026-09-23, "last Monday" and "last Tuesday" are still held and "last Wednesday" to "last Sunday" now fill. The owner ruled on 2026-09-25 that today stays fixed at that Wednesday, the 14 frozen rows it moves stay as frozen and scored, and the next round runs under the new rule. See Dates (#140) below; rounds 1 to 9 are unchanged.
+
 **Latency (#65): from the next verdict run on, every run sends a fixed provider probe before and after its rows, and a run whose probes are more than twice the baseline leaves a failing latency line pending, to be measured again in a normal window.** See Latency below; round 4 stays a FAIL.
 
 **Hypothesis:** on the demo's fictional vendors, the expense card turns a typed expense into the record a person means (vendor, tags, day, amount), leaves a field empty when it cannot tell, and fills nothing when the request asks for no new expense, in English and in Spanish, on Enter. The lab measured a salon appointment card; this is a new measurement.
@@ -1435,3 +1437,14 @@ English: 9 flips on 8 rows, no error, no retry. Exact 0.956 (130 of 136), covera
 - Run 2: `demo/eval/runs/card-en-round9-2.jsonl`, `demo/eval/runs/card-es-round9-2.jsonl`
 
 Each rescores with `scoreCardRun(await readCardRun(path), { gates })` and no call.
+
+## Dates (#140)
+
+The owner's decision on [#140](https://github.com/franklinmdev/justask/issues/140), 2026-09-25, amending [ADR 0008](adr/0008-card-dates-declare-their-direction.md). The parser computes two readings of "last X" and "next X": the closest one that way, and that weekday in the week before or after this one, weeks starting on Monday. When they are the same day the field can fill; when they differ both are marked ambiguous and the field is held, as before. A part of the day reads as its day: "this morning", "tonight", "esta tarde" are today, "last night" and "anoche" yesterday.
+
+- **No row depends on the run day.** The card eval writes today as a fixed fact, Wednesday 2026-09-23 (`demo/eval/card.ts`), and the parser reads its today from that fact, never from the clock. The owner ruled that today stays fixed there, so every round keeps one day and the demo's recordings and the eval keep reading the same week.
+- **What moves on that Wednesday.** "last Monday" and "last Tuesday" (this week's, or last week's) are still held. "last Wednesday" to "last Sunday" now read one way, the day in the week before this one, and fill. "next Thursday" to "next Sunday" are held; "next Monday" to "next Wednesday" fill.
+- **Frozen rows stay as they are.** 14 rows frozen before #140 expect a Thursday or Friday held, which the parser now reads one way: `en-r2-33`, `en-r4-33`, `en-r5-33`, `en-r7-034`, `en-r7-087`, `en-r9-076`, `en-r9-161` and their Spanish twins. Their sets, logs, scores and verdicts are unchanged: a log saves each field's candidates and picks, so it rescores as it ran. `test/demo-card-eval.test.ts` lists them by id (`HELD_BEFORE_140`) and checks every other row's held day against the parser, and checks that each listed row now reads one way, so the list names no row it need not.
+- **The next round runs under the new rule.** Its `day held: last and a weekday` rows name a Monday or a Tuesday, the weekdays held on that Wednesday; a "last X" row that fills expects its one day, which the set test checks is the one the parser builds.
+- **The demo's suggestion.** "Papergrove toner last Friday, $120" (`tóner de Tintaverde el viernes pasado, $120`) under "Leaves one empty" would fill on most days. It is now "Papergrove toner last week, $120" (`tóner de Tintaverde la semana pasada, $120`): a period, held on every day of the week, checked for each day of a week by the same test file.
+- **No call was made for this change.**
