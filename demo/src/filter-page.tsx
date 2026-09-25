@@ -273,22 +273,25 @@ export function FilterPage({
 				/>
 			</section>
 
-			<section className="suggestions" aria-labelledby="suggestions-title">
-				<h3 id="suggestions-title">{copy.suggestions}</h3>
+			<section
+				className="suggestions"
+				aria-labelledby="table-suggestions-title"
+			>
+				<h3 id="table-suggestions-title">{copy.suggestions}</h3>
 				<Suggestions
-					id="fills"
+					id="table-fills"
 					title={copy.filter.fills}
 					requests={content.filterSuggestions.fills}
 					onPick={suggest}
 				/>
 				<Suggestions
-					id="holds"
+					id="table-holds"
 					title={copy.filter.holds}
 					requests={content.filterSuggestions.holds}
 					onPick={suggest}
 				/>
 				<Suggestions
-					id="nothing"
+					id="table-nothing"
 					title={copy.filter.nothing}
 					requests={content.filterSuggestions.nothing}
 					onPick={suggest}

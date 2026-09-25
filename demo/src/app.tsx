@@ -1,6 +1,8 @@
 import {
+	Activity,
 	type KeyboardEvent,
 	type MouseEvent,
+	type ReactNode,
 	useEffect,
 	useMemo,
 	useState,
@@ -14,6 +16,7 @@ import type { Case, Language } from "./content/types.ts";
 import { retryOnCpuLimit } from "./cpu-limit.ts";
 import { FilterPage } from "./filter-page.tsx";
 import { type Recordings, recordings as recordingFiles } from "./recording.ts";
+import { forgetPlayed } from "./replay.ts";
 import { SearchPage } from "./search-page.tsx";
 import {
 	HoodPlaceContext,
@@ -59,9 +62,12 @@ function hrefOf(view: View): string {
  * toggle, then one case with its hood. The language toggle switches the UI
  * text, the suggested requests and the data, and starts the case over, since
  * the other language is another catalog. Every case opens on its recorded
- * run; with `recordings` null every case opens idle. Once the server stops
- * live calls on the owner's key, the case gives way to a notice until the
- * visitor opens a case or replays this one (#109).
+ * run; with `recordings` null every case opens idle. A case out of view is
+ * hidden in an <Activity>, never unmounted, so each keeps what the person
+ * did in it (#135); the other language is another catalog, so a language
+ * switch drops them all. Once the server stops live calls on the owner's key,
+ * the case gives way to a notice until the visitor opens a case or replays
+ * this one (#109), which types the recorded run in again.
  */
 export function App({
 	fetch,
@@ -78,9 +84,15 @@ export function App({
 	const [users, setUsers] = useState("1000");
 	const [actions, setActions] = useState("10");
 	const [stopped, setStopped] = useState<Stopped | null>(null);
-	// Bumped to open the case again on its recorded run.
-	const [run, setRun] = useState(0);
 	const { language, case: shownCase } = view;
+	// The cases opened in this language, each kept once opened. One opened later
+	// mounts then, so the page first renders only its own case.
+	const [opened, setOpened] = useState({ language, cases: [shownCase] });
+	if (opened.language !== language) {
+		setOpened({ language, cases: [shownCase] });
+	} else if (!opened.cases.includes(shownCase)) {
+		setOpened({ language, cases: [...opened.cases, shownCase] });
+	}
 	const content = contents[language];
 	const { copy } = content;
 
@@ -131,6 +143,19 @@ export function App({
 	);
 	const recording = recordings?.[shownCase][language] ?? null;
 	const shared = { content, fetch: sent };
+	/**
+	 * A case once opened: shown while it is the one open, hidden otherwise. The
+	 * notice unmounts the case it replaces, so the case opens again on its
+	 * recorded run.
+	 */
+	const caseOf = (option: Case, page: ReactNode) =>
+		option === shownCase
+			? !stopped && <Activity key={`${option}-${language}`}>{page}</Activity>
+			: opened.cases.includes(option) && (
+					<Activity key={`${option}-${language}`} mode="hidden">
+						{page}
+					</Activity>
+				);
 	return (
 		<HoodPlaceContext
 			value={{
@@ -205,32 +230,32 @@ export function App({
 								onReplay={
 									recording &&
 									(() => {
+										forgetPlayed(recording);
 										setStopped(null);
-										setRun((last) => last + 1);
 									})
 								}
 							/>
 						)}
-						{!stopped && shownCase === "table" && (
+						{caseOf(
+							"table",
 							<FilterPage
-								key={`${language}-${run}`}
 								recording={recordings?.table[language] ?? null}
 								{...shared}
-							/>
+							/>,
 						)}
-						{!stopped && shownCase === "form" && (
+						{caseOf(
+							"form",
 							<CardPage
-								key={`${language}-${run}`}
 								recording={recordings?.form[language] ?? null}
 								{...shared}
-							/>
+							/>,
 						)}
-						{!stopped && shownCase === "search" && (
+						{caseOf(
+							"search",
 							<SearchPage
-								key={`${language}-${run}`}
 								recording={recordings?.search[language] ?? null}
 								{...shared}
-							/>
+							/>,
 						)}
 					</CalculatorInputsContext>
 				</div>

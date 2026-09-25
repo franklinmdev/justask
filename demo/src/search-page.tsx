@@ -150,22 +150,25 @@ export function SearchPage({
 				/>
 			)}
 
-			<section className="suggestions" aria-labelledby="suggestions-title">
-				<h3 id="suggestions-title">{copy.suggestions}</h3>
+			<section
+				className="suggestions"
+				aria-labelledby="search-suggestions-title"
+			>
+				<h3 id="search-suggestions-title">{copy.suggestions}</h3>
 				<Suggestions
-					id="one-vendor"
+					id="search-one-vendor"
 					title={copy.oneVendor}
 					requests={content.suggestions.oneVendor}
 					onPick={suggest}
 				/>
 				<Suggestions
-					id="ambiguous"
+					id="search-ambiguous"
 					title={copy.ambiguous}
 					requests={content.suggestions.ambiguous}
 					onPick={suggest}
 				/>
 				<Suggestions
-					id="nothing"
+					id="search-nothing"
 					title={copy.nothing}
 					requests={content.suggestions.nothing}
 					onPick={suggest}

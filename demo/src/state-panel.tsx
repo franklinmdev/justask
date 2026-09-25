@@ -111,9 +111,9 @@ export function StatePanel({
 					: null;
 
 	return (
-		<section className="panel" aria-labelledby="panel-title">
+		<section className="panel" aria-labelledby="state-panel-title">
 			<header className="panel-head">
-				<h2 id="panel-title">{copy.panel}</h2>
+				<h2 id="state-panel-title">{copy.panel}</h2>
 				{status && (
 					<span className="status" data-tone={status.tone}>
 						{status.text}
