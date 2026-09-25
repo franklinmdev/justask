@@ -27,7 +27,10 @@
 	--bar: oklch(0.2 0.01 250 / 0.25);
 	--bar-none: oklch(0.48 0.01 250);
 	--destructive: oklch(0.55 0.19 27);
-	/* What a field an answer filled lights up with, then fades from. */
+	/*
+	 * The accent's wash: a field an answer filled lights with it, then fades;
+	 * a checked tag and a hovered chip rest on it.
+	 */
 	--fill-wash: oklch(0.6 0.15 155 / 0.12);
 	/* The raised segment's contact shadow: the track's convention, not depth. */
 	--shadow-segment: 0 1px 2px oklch(0 0 0 / 0.12);
@@ -229,7 +232,7 @@ dd {
 
 /*
  * The case tabs sit in a segmented track, the selected one raised on the
- * window's surface; the hood's tabs mark theirs with the accent on a hairline.
+ * segment's own surface; the hood's tabs mark theirs with the accent on a hairline.
  */
 .cases,
 .hood-tabs {
@@ -1170,11 +1173,6 @@ fieldset.table-filter[data-settle]::before {
 	transition: border-color 120ms ease-out;
 }
 
-.control:focus-visible,
-.day-trigger:focus-visible {
-	border-color: var(--border-strong);
-}
-
 .tags {
 	display: contents;
 }
@@ -1878,7 +1876,10 @@ fieldset.table-filter[data-settle]::before {
 	}
 }
 
-/* Phone: the brand keeps the first row, the theme and language toggles take the second. */
+/*
+ * Phone: the brand and its tabs keep the first row, the tabs taking one of
+ * their own when too narrow, and the theme and language toggles the next.
+ */
 @media (max-width: 560px) {
 	.header {
 		column-gap: 12px;
