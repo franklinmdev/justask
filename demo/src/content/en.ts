@@ -51,6 +51,14 @@ export const english: Content = {
 				title: "The demo's own key is out of service right now",
 				body: "This is not justask misreading your request. TypeSafe refused the key the demo calls it with. Every case's recorded run still plays, and a clone of justask runs on your own key.",
 			},
+			minute: {
+				title: "You have used your 20 live requests this minute",
+				body: "Each visitor gets 20 live requests a minute and 200 a day on the demo's key, counted by IP address. They come back in about a minute. Until then every case's recorded run still plays, and a clone of justask runs on your own key.",
+			},
+			day: {
+				title: "You have used your 200 live requests today",
+				body: "Each visitor gets 200 live requests a day on the demo's key, counted by IP address, so people on one office network share them. They come back at midnight UTC. Until then every case's recorded run still plays, and a clone of justask runs on your own key.",
+			},
 			replay: "Replay the recorded run",
 			clone: "Clone justask and run it with your own key",
 		},

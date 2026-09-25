@@ -104,6 +104,10 @@ _Avoid_: Quota, credit, rate limit
 The demo's flag that makes the daily budget count as spent, so every live request gets the budget's 402 through the same path, its cause `paused`. The page says the live demo is paused, never when it comes back. The recorded runs still play.
 _Avoid_: Maintenance mode, off switch
 
+**Visitor limits**:
+What one visitor may call on the public demo's owner's key: 20 calls a UTC minute and 200 a UTC day, counted per request that passes the budget, by IP address (an IPv6 address by its /64) and never by a cookie, so an office behind one address shares them. Past either, the budget's 402 through the same path, its cause `visitor` and its `limit` the minute or the day; a refused request counts nothing. The ledger holds only a hash of the address with the day's salt, dropped at UTC midnight. Checked after the daily budget, which names itself first.
+_Avoid_: Rate limit, quota, throttle
+
 **Held field**:
 A field left empty because its pick did not clear the gate, because the provider picked `not_mentioned` or `not_available`, because a parser marked its candidates ambiguous (such as "next Friday"), because the request names a pair of the field's items, or, on a card, because the request is a command on an existing record. Empty looks the same whatever the reason.
 _Avoid_: Abstained field, unknown, null field

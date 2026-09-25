@@ -53,6 +53,14 @@ export const spanish: Content = {
 					"La clave propia de la demostración está fuera de servicio ahora mismo",
 				body: "No es que justask haya leído mal su solicitud: TypeSafe rechazó la clave con la que llama la demostración. La ejecución grabada de cada caso sigue disponible, y una copia de justask funciona con su propia clave.",
 			},
+			minute: {
+				title: "Usó sus 20 solicitudes en vivo de este minuto",
+				body: "Cada visitante tiene 20 solicitudes en vivo por minuto y 200 por día con la clave de la demostración, contadas por dirección IP. Vuelven en alrededor de un minuto. Mientras tanto, la ejecución grabada de cada caso sigue disponible, y una copia de justask funciona con su propia clave.",
+			},
+			day: {
+				title: "Usó sus 200 solicitudes en vivo de hoy",
+				body: "Cada visitante tiene 200 solicitudes en vivo por día con la clave de la demostración, contadas por dirección IP, así que quienes comparten la red de una oficina también las comparten. Vuelven a la medianoche UTC. Mientras tanto, la ejecución grabada de cada caso sigue disponible, y una copia de justask funciona con su propia clave.",
+			},
 			replay: "Reproducir la ejecución grabada",
 			clone: "Clonar justask y usarlo con su propia clave",
 		},

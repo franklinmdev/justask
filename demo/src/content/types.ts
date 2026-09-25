@@ -231,6 +231,9 @@ export type StoppedCopy = {
 	/** The kill switch: no time it comes back, since the owner ends it. */
 	paused: { title: string; body: string };
 	key: { title: string; body: string };
+	/** This visitor's limits (#110): each says when its calls come back. */
+	minute: { title: string; body: string };
+	day: { title: string; body: string };
 	replay: string;
 	clone: string;
 };
