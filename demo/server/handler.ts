@@ -198,8 +198,9 @@ export function logError(error: AskError): void {
  * no currency. The provider is built by the caller, on the server, so the key
  * never reaches the browser. The demo's policy runs before every route, then
  * the day's budget (#109): past it, or with the kill switch on, the answer is
- * 402 with no call, its cause the budget or the pause; each call's cost is added to the day's spend. The
- * `ledger` defaults to one in memory, the dev server's.
+ * 402 with no call, its cause the budget or the pause; each call's cost is
+ * added to the day's spend. The `ledger` defaults to one in memory, the dev
+ * server's.
  */
 export function createDemoHandler(
 	provider: Provider,
