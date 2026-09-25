@@ -10,7 +10,14 @@ import {
 	type Provider,
 	type Search,
 } from "justask";
-import { cardEndpoint, filterEndpoint, searchEndpoint } from "../src/api.ts";
+import {
+	BUDGET_EXCEEDED,
+	cardEndpoint,
+	DEMO_PAUSED,
+	filterEndpoint,
+	KEY_OUT_OF_SERVICE,
+	searchEndpoint,
+} from "../src/api.ts";
 import { english } from "../src/content/en.ts";
 import { spanish } from "../src/content/es.ts";
 import type {
@@ -21,6 +28,13 @@ import type {
 	Vendor,
 } from "../src/content/types.ts";
 import { LOCAL_CURRENCY } from "../src/format.ts";
+import {
+	counted,
+	DAILY_BUDGET_USD,
+	type Ledger,
+	memoryLedger,
+	utcDay,
+} from "./budget.ts";
 import { refusal } from "./policy.ts";
 
 /**
@@ -182,49 +196,74 @@ export function logError(error: AskError): void {
  * language, each at its own route with its own catalog. Both languages'
  * local currency is USD, so "$" and "dólares" read as USD and "pesos" names
  * no currency. The provider is built by the caller, on the server, so the key
- * never reaches the browser. The demo's policy runs before every route.
+ * never reaches the browser. The demo's policy runs before every route, then
+ * the day's budget (#109): past it, or with the kill switch on, the answer is
+ * 402 with no call, its cause the budget or the pause; each call's cost is
+ * added to the day's spend. The `ledger` defaults to one in memory, the dev
+ * server's.
  */
 export function createDemoHandler(
 	provider: Provider,
-	{ onError }: { onError?: (error: AskError) => void } = {},
+	{
+		onError,
+		ledger = memoryLedger(),
+		killSwitch = false,
+	}: {
+		onError?: (error: AskError) => void;
+		ledger?: Ledger;
+		/** Counts the owner's budget as spent: every request gets the budget's answer. */
+		killSwitch?: boolean;
+	} = {},
 ): (request: Request) => Promise<Response> {
-	const routes = new Map(
-		Object.values(contents).flatMap((content) => [
-			[
-				searchEndpoint(content.language),
-				createSearchHandler({
-					provider,
-					timeoutMs: TIMEOUT_MS,
-					facts: FACTS,
-					search: demoSearch(content),
-					...(onError && { onError }),
-				}),
-			],
-			[
-				filterEndpoint(content.language),
-				createFilterHandler({
-					provider,
-					timeoutMs: TIMEOUT_MS,
-					facts: FACTS,
-					filter: demoFilter(content),
-					...(onError && { onError }),
-				}),
-			],
-			[
-				cardEndpoint(content.language),
-				createCardHandler({
-					provider,
-					timeoutMs: TIMEOUT_MS,
-					facts: FACTS,
-					card: demoCard(content),
-					...(onError && { onError }),
-				}),
-			],
-		]),
+	// The catalogs' shortlists are built once; each request gets a handler over its own counted provider.
+	const routes = new Map<
+		string,
+		(provider: Provider) => (request: Request) => Promise<Response>
+	>(
+		Object.values(contents).flatMap((content) => {
+			const search = demoSearch(content);
+			const filter = demoFilter(content);
+			const card = demoCard(content);
+			const shared = (provider: Provider) => ({
+				provider,
+				timeoutMs: TIMEOUT_MS,
+				facts: FACTS,
+				...(onError && { onError }),
+			});
+			return [
+				[
+					searchEndpoint(content.language),
+					(provider) => createSearchHandler({ ...shared(provider), search }),
+				],
+				[
+					filterEndpoint(content.language),
+					(provider) => createFilterHandler({ ...shared(provider), filter }),
+				],
+				[
+					cardEndpoint(content.language),
+					(provider) => createCardHandler({ ...shared(provider), card }),
+				],
+			];
+		}),
 	);
 	return async (request) => {
 		const route = routes.get(new URL(request.url).pathname);
 		if (!route) return new Response(null, { status: 404 });
-		return (await refusal(request)) ?? route(request);
+		const refused = await refusal(request);
+		if (refused) return refused;
+		// One path for the kill switch and a spent day: the budget's 402, its cause saying which.
+		if (
+			killSwitch ||
+			(await ledger.spent(utcDay(new Date()))) >= DAILY_BUDGET_USD
+		) {
+			return Response.json(killSwitch ? DEMO_PAUSED : BUDGET_EXCEEDED, {
+				status: 402,
+			});
+		}
+		const calls = counted(provider, ledger);
+		const response = await route(calls)(request);
+		return calls.refused
+			? Response.json(KEY_OUT_OF_SERVICE, { status: 503 })
+			: response;
 	};
 }

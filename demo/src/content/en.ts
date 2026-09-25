@@ -38,6 +38,22 @@ export const english: Content = {
 	locale: "en-US",
 	copy: {
 		skip: "Skip to the content",
+		stopped: {
+			budget: {
+				title: "The demo's budget for today is spent",
+				body: "The demo calls TypeSafe on its owner's key, with $1 to spend a day, and the day's dollar is gone. It starts over at midnight UTC. Until then every case's recorded run still plays, and a clone of justask runs on your own key.",
+			},
+			paused: {
+				title: "The live demo is paused",
+				body: "The demo's owner has paused its live calls to TypeSafe. Every case's recorded run still plays, and a clone of justask runs on your own key.",
+			},
+			key: {
+				title: "The demo's own key is out of service right now",
+				body: "This is not justask misreading your request. TypeSafe refused the key the demo calls it with. Every case's recorded run still plays, and a clone of justask runs on your own key.",
+			},
+			replay: "Replay the recorded run",
+			clone: "Clone justask and run it with your own key",
+		},
 		product: "justask demo",
 		casesLabel: "Cases",
 		cases: { table: "Table", form: "Form", search: "Search" },

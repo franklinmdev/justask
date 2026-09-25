@@ -214,8 +214,22 @@ export type HeldReason =
 	| { kind: "timeout"; timeoutMs: number }
 	| { kind: "unreachable"; message: string };
 
+/**
+ * What the page says once the demo stops calling on the owner's key (#109):
+ * a heading and one paragraph per cause, then the way on.
+ */
+export type StoppedCopy = {
+	budget: { title: string; body: string };
+	/** The kill switch: no time it comes back, since the owner ends it. */
+	paused: { title: string; body: string };
+	key: { title: string; body: string };
+	replay: string;
+	clone: string;
+};
+
 export type Copy = {
 	skip: string;
+	stopped: StoppedCopy;
 	product: string;
 	casesLabel: string;
 	cases: Record<Case, string>;

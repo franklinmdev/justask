@@ -5,6 +5,7 @@ import {
 	useMemo,
 	useState,
 } from "react";
+import type { Stopped } from "./api.ts";
 import { CalculatorInputsContext } from "./calculator.tsx";
 import { CardPage } from "./card-page.tsx";
 import { english } from "./content/en.ts";
@@ -20,6 +21,7 @@ import {
 	type HoodView,
 	nextTab,
 } from "./showcase.tsx";
+import { StoppedNotice, watchStops } from "./stopped.tsx";
 import { ThemeToggle } from "./theme.tsx";
 
 const contents = { en: english, es: spanish };
@@ -57,7 +59,9 @@ function hrefOf(view: View): string {
  * toggle, then one case with its hood. The language toggle switches the UI
  * text, the suggested requests and the data, and starts the case over, since
  * the other language is another catalog. Every case opens on its recorded
- * run; with `recordings` null every case opens idle.
+ * run; with `recordings` null every case opens idle. Once the server stops
+ * live calls on the owner's key, the case gives way to a notice until the
+ * visitor opens a case or replays this one (#109).
  */
 export function App({
 	fetch,
@@ -73,6 +77,9 @@ export function App({
 	// The calculator's starting point, a round figure for the person to change.
 	const [users, setUsers] = useState("1000");
 	const [actions, setActions] = useState("10");
+	const [stopped, setStopped] = useState<Stopped | null>(null);
+	// Bumped to open the case again on its recorded run.
+	const [run, setRun] = useState(0);
 	const { language, case: shownCase } = view;
 	const content = contents[language];
 	const { copy } = content;
@@ -94,6 +101,7 @@ export function App({
 	 */
 	function show(next: View, step = false) {
 		if (next.language === language && next.case === shownCase) return;
+		setStopped(null);
 		if (step) history.replaceState(null, "", hrefOf(next));
 		else history.pushState(null, "", hrefOf(next));
 		setView(next);
@@ -118,9 +126,10 @@ export function App({
 
 	// One function for the page's life, so no hook sees a new fetch on a render.
 	const sent = useMemo(
-		() => retryOnCpuLimit(fetch ?? globalThis.fetch),
+		() => watchStops(retryOnCpuLimit(fetch ?? globalThis.fetch), setStopped),
 		[fetch],
 	);
+	const recording = recordings?.[shownCase][language] ?? null;
 	const shared = { content, fetch: sent };
 	return (
 		<HoodPlaceContext
@@ -189,23 +198,36 @@ export function App({
 							actions: { value: actions, set: setActions },
 						}}
 					>
-						{shownCase === "table" && (
+						{stopped && (
+							<StoppedNotice
+								content={content}
+								stopped={stopped}
+								onReplay={
+									recording &&
+									(() => {
+										setStopped(null);
+										setRun((last) => last + 1);
+									})
+								}
+							/>
+						)}
+						{!stopped && shownCase === "table" && (
 							<FilterPage
-								key={language}
+								key={`${language}-${run}`}
 								recording={recordings?.table[language] ?? null}
 								{...shared}
 							/>
 						)}
-						{shownCase === "form" && (
+						{!stopped && shownCase === "form" && (
 							<CardPage
-								key={language}
+								key={`${language}-${run}`}
 								recording={recordings?.form[language] ?? null}
 								{...shared}
 							/>
 						)}
-						{shownCase === "search" && (
+						{!stopped && shownCase === "search" && (
 							<SearchPage
-								key={language}
+								key={`${language}-${run}`}
 								recording={recordings?.search[language] ?? null}
 								{...shared}
 							/>

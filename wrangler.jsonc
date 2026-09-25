@@ -1,10 +1,11 @@
 // The demo as one Cloudflare Worker (#107, docs/workers.md): the frontend
 // Vite builds into demo/dist as static assets, and the demo's handler for
-// /api/* alone. The key is the Worker's secret TYPESAFE_API_KEY, never here.
+// /api/* alone. The key is the Worker's secret TYPESAFE_API_KEY, never here,
+// and the kill switch is the secret DEMO_KILL_SWITCH (docs/workers.md).
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "justask-demo",
-	"main": "demo/worker/index.ts",
+	"main": "demo/worker/main.ts",
 	"compatibility_date": "2026-09-21",
 	// Fills process.env from the Worker's secrets, where the TypeSafe SDK reads the key.
 	"compatibility_flags": ["nodejs_compat"],
@@ -13,6 +14,11 @@
 		// Only the API reaches the Worker; every other path is a static file, which costs no Worker CPU.
 		"run_worker_first": ["/api/*"]
 	},
+	// The day's spend on the owner's key (#109): one SQLite-backed Durable Object, the free plan's kind.
+	"durable_objects": {
+		"bindings": [{ "name": "LEDGER", "class_name": "DemoLedger" }]
+	},
+	"migrations": [{ "tag": "v1", "new_sqlite_classes": ["DemoLedger"] }],
 	// Workers Logs, where each request's CPU time is read.
 	"observability": { "enabled": true }
 }

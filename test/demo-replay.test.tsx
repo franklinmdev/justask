@@ -64,14 +64,17 @@ function renderDemo({
 	url = "/",
 	reduced = true,
 	provider = failingProvider(new Error("the replay makes no call")),
+	killSwitch = false,
 }: {
 	url?: string;
 	reduced?: boolean;
 	provider?: Provider & { calls: unknown[] };
+	/** Every live request gets the budget's 402, paused (#109). */
+	killSwitch?: boolean;
 } = {}) {
 	setMedia({ reduced });
 	history.replaceState(null, "", url);
-	const handler = createDemoHandler(provider);
+	const handler = createDemoHandler(provider, { killSwitch });
 	const { container } = render(
 		<App
 			fetch={(input, init) =>
@@ -112,6 +115,9 @@ function picking(candidates: { id: string }[], pick: string): Probabilities {
  * then the box's pause or Enter.
  */
 const REPLAY = { timeout: 4_000 };
+
+/** The notice's heading once a live request meets the kill switch. */
+const PAUSED = "The live demo is paused";
 
 /** Everything the page's live regions say, together. */
 function announced() {
@@ -567,5 +573,44 @@ describe("the Form case's recorded run", () => {
 		expect(screen.queryByText(label("en", form))).toBeNull();
 		expect(textbox("Amount").value).toBe("");
 		expect(provider.calls).toHaveLength(0);
+	});
+});
+
+describe("the recorded runs while the kill switch is on (#109)", () => {
+	it.each([
+		["table", "Filter the transactions", table.request],
+		["form", "Describe the expense", form.request],
+		["search", "Find a vendor", recordings.search.en.request],
+	])(
+		"still open the %s case, with no call",
+		async (shownCase, box, request) => {
+			const { provider } = renderDemo({
+				url: `/?case=${shownCase}`,
+				killSwitch: true,
+			});
+
+			await waitFor(() => expect(searchbox(box).value).toBe(request), REPLAY);
+			// Past the box's pause or Enter: the recorded answer is in, and nothing was stopped.
+			await act(() => vi.advanceTimersByTimeAsync(1_000));
+			expect(screen.queryByRole("heading", { name: PAUSED })).toBeNull();
+			expect(provider.calls).toHaveLength(0);
+		},
+	);
+
+	it("replays the case again from the notice a live request brought", async () => {
+		const { user } = renderDemo({ killSwitch: true });
+		await replayApplied();
+		const box = searchbox("Filter the transactions");
+
+		await user.clear(box);
+		await user.type(box, "overdue invoices");
+		await screen.findByRole("heading", { name: PAUSED }, REPLAY);
+		await user.click(
+			screen.getByRole("button", { name: "Replay the recorded run" }),
+		);
+
+		expect(screen.queryByRole("heading", { name: PAUSED })).toBeNull();
+		await replayApplied();
+		expect(searchbox("Filter the transactions").value).toBe(table.request);
 	});
 });
