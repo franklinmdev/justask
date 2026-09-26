@@ -126,7 +126,6 @@ export function SearchPage({
 				)}
 			</SearchItem>
 			<SearchEmpty search={search} className="result">
-				{/* A failed call measured no vendor, so it never says none matched (#138). */}
 				{search.error ? (
 					<p className="empty">{copy.unanswered}</p>
 				) : offer?.kind === "choices" && offer.candidates.length === 0 ? (

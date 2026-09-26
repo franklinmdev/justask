@@ -224,7 +224,6 @@ export function FilterPage({
 				stale={filter.loading}
 			/>
 			<FilterEmpty filter={filter} className="result">
-				{/* A failed call checked nothing, so it never says nothing filters (#156). */}
 				<p className="empty">
 					{filter.error ? copy.filter.unanswered : copy.filter.empty}
 				</p>

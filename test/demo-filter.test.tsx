@@ -771,7 +771,6 @@ describe("the demo's Table case", () => {
 				"The provider failed, so nothing is shown. The server log has the details.",
 			),
 		).toBeDefined();
-		// Nothing checked the request, so the page says the call failed, not that nothing filters.
 		expect(
 			screen.getByText(
 				"The request could not be read, so the table stays as it was. Try again.",
@@ -785,7 +784,7 @@ describe("the demo's Table case", () => {
 		await expectNoAxeViolations(container);
 	});
 
-	it("says the call failed in Spanish, not that nothing filters", async () => {
+	it("says the request could not be read in Spanish, not that nothing filters", async () => {
 		const { container, user } = renderDemo({
 			provider: failingProvider(new Error("no key")),
 			url: "/?case=table&lang=es",

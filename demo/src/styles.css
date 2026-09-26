@@ -1304,8 +1304,8 @@ fieldset.table-filter[data-settle]::before {
 /*
  * A row a change brings in fades in, opacity only, and a row it takes out
  * goes at once, so the table never changes height mid motion (#139). Under
- * reduced motion the same fade, twice as fast: opacity is no movement, as
- * the settle's light stays there too.
+ * reduced motion the fade stays, twice as fast, since a fade moves nothing;
+ * the settle's light stays too.
  */
 .transactions tr[data-motion="enter"] {
 	animation: row-enter 160ms var(--ease-out);

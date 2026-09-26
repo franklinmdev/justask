@@ -1,18 +1,18 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const dir = new URL("./", import.meta.url);
+const testDir = new URL("./", import.meta.url);
 
-/** Every test file that renders the demo's whole page, with its source. */
-const pageFiles = readdirSync(dir, { recursive: true, encoding: "utf8" })
+/** Every test file that renders the demo's whole page, however it imports it, with its source. */
+const pageFiles = readdirSync(testDir, { recursive: true, encoding: "utf8" })
 	.filter((name) => name.endsWith(".test.tsx"))
-	.map((name) => ({ name, source: readFileSync(new URL(name, dir), "utf8") }))
-	.filter(({ source }) => /from "(\.\.\/)+demo\/src\/app\.tsx"/.test(source));
+	.map((name) => ({
+		name,
+		source: readFileSync(new URL(name, testDir), "utf8"),
+	}))
+	.filter(({ source }) => /<App\b/.test(source));
 
-// A whole-page axe run under other sessions' load ran a test past 5 s even
-// after its file had warmed up and the run had a test of its own (#161): the
-// page tag's timeout, in vitest.config.ts, is the rule, and no page file is
-// left out of it.
+// The page tag's timeout, and why, is in vitest.config.ts (#161).
 describe("the page tag", () => {
 	it("finds the page files", () => {
 		expect(pageFiles.length).toBeGreaterThan(0);

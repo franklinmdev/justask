@@ -653,7 +653,6 @@ describe("the demo's Search case", () => {
 		// No answer came back, so no candidate shows a probability, not even zero.
 		expect(state.getAllByRole("row")).toHaveLength(1 + 14 + 2);
 		expect(state.queryByText("0.00")).toBeNull();
-		// Nothing measured the vendors, so the page says the call failed, not that none matched.
 		await waitFor(() =>
 			expect(
 				screen.getByText(
@@ -667,7 +666,7 @@ describe("the demo's Search case", () => {
 		await expectNoAxeViolations(container);
 	});
 
-	it("says the call failed in Spanish, not that no vendor matches", async () => {
+	it("says the request could not be read in Spanish, not that no vendor matches", async () => {
 		const { container, user } = renderDemo({
 			provider: failingProvider(new Error("no key")),
 			url: "/?case=search&lang=es",
