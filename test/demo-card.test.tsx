@@ -729,7 +729,7 @@ describe("the demo's card page", () => {
 		},
 	);
 
-	it("drops an emptied box's currency on the next answer, one with no amount or one in the local currency (#160, #164)", async () => {
+	it("drops the amount's EUR on the next answer, from an emptied box and straight into the local currency (#160, #164)", async () => {
 		const { user } = renderDemo();
 		await user.type(
 			screen.getByRole("searchbox", { name: "Describe the expense" }),
@@ -742,6 +742,11 @@ describe("the demo's card page", () => {
 		await waitFor(() => expect(amount().value).toBe(""));
 		expect(screen.queryByText("EUR")).toBeNull();
 
+		// A EUR answer straight into one in the local currency, nothing emptied.
+		const box = screen.getByRole("searchbox", { name: "Describe the expense" });
+		await user.clear(box);
+		await user.type(box, "airport taxi yesterday, 42 euros{Enter}");
+		await waitFor(() => expect(amount("Amount, EUR").value).toBe("42.00"));
 		await suggest(user, "lunch with Larkspur yesterday, $86.40");
 
 		await waitFor(() => expect(amount().value).toBe("86.40"));
