@@ -8,6 +8,8 @@ import {
 	vendor,
 } from "./types.ts";
 
+const listFormat = new Intl.ListFormat("en");
+
 /** Why a filter or card field is held, as both panels say it. */
 function fieldHeldBecause(reason: FieldHeldReason): string {
 	switch (reason.kind) {
@@ -275,9 +277,7 @@ export const english: Content = {
 			fromVendor: "from the vendor",
 			announce: (filled, waiting) => {
 				const list = (names: string[]) =>
-					new Intl.ListFormat("en").format(
-						names.map((name) => name.toLowerCase()),
-					);
+					listFormat.format(names.map((name) => name.toLowerCase()));
 				if (filled.length === 0) {
 					return `Nothing filled. For you to fill: ${list(waiting)}.`;
 				}

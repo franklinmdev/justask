@@ -7,12 +7,7 @@ import {
 	useState,
 } from "react";
 import type { CalendarCopy } from "./content/types.ts";
-import { today } from "./format.ts";
-
-// Days are ISO strings, YYYY-MM-DD, and their arithmetic runs in UTC.
-function dateOf(iso: string): Date {
-	return new Date(`${iso}T00:00:00Z`);
-}
+import { dateOf, formats, today } from "./format.ts";
 
 function isoOf(date: Date): string {
 	return date.toISOString().slice(0, 10);
@@ -163,22 +158,7 @@ export function DayPicker({
 
 	const weekStart = locale.startsWith("en") ? 0 : 1;
 	const weeks = weeksOf(active, weekStart);
-	const long = new Intl.DateTimeFormat(locale, {
-		weekday: "long",
-		month: "long",
-		day: "numeric",
-		year: "numeric",
-		timeZone: "UTC",
-	});
-	const weekday = new Intl.DateTimeFormat(locale, {
-		weekday: "short",
-		timeZone: "UTC",
-	});
-	const title = new Intl.DateTimeFormat(locale, {
-		month: "long",
-		year: "numeric",
-		timeZone: "UTC",
-	}).format(dateOf(active));
+	const { longDay, weekday, month } = formats(locale);
 	const now = today();
 
 	return (
@@ -223,7 +203,7 @@ export function DayPicker({
 							<Chevron back />
 						</button>
 						<p className="calendar-title" aria-live="polite">
-							{title}
+							{month(active)}
 						</p>
 						<button
 							type="button"
@@ -238,8 +218,8 @@ export function DayPicker({
 						<thead>
 							<tr>
 								{weeks[0]?.map((day) => (
-									<th key={day} scope="col" abbr={weekday.format(dateOf(day))}>
-										{weekday.format(dateOf(day)).slice(0, 2)}
+									<th key={day} scope="col" abbr={weekday(day)}>
+										{weekday(day).slice(0, 2)}
 									</th>
 								))}
 							</tr>
@@ -257,7 +237,7 @@ export function DayPicker({
 													day.slice(0, 7) !== active.slice(0, 7) || undefined
 												}
 												tabIndex={day === active ? 0 : -1}
-												aria-label={long.format(dateOf(day))}
+												aria-label={longDay(day)}
 												aria-pressed={day === value}
 												aria-current={day === now ? "date" : undefined}
 												onClick={() => pick(day)}

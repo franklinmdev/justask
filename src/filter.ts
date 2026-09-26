@@ -351,6 +351,8 @@ export function describeTime({ text, time, note }: TimeReading): string {
 	return `"${text}": ${time}${note ? ` (${note})` : ""}`;
 }
 
+const currencyNames = new Intl.DisplayNames("en", { type: "currency" });
+
 /** What the provider reads about an amount candidate: its value is already read. */
 export function describeAmount({
 	text,
@@ -358,7 +360,7 @@ export function describeAmount({
 	currency,
 }: AmountReading): string {
 	const named = currency
-		? `${value} ${currency} (${new Intl.DisplayNames("en", { type: "currency" }).of(currency)})`
+		? `${value} ${currency} (${currencyNames.of(currency)})`
 		: `${value}, the request does not say in which currency`;
 	return `"${text}": ${named}`;
 }

@@ -19,6 +19,11 @@ export function formats(locale: string) {
 	return format;
 }
 
+/** A YYYY-MM-DD calendar day as a Date at its UTC midnight: day arithmetic runs in UTC. */
+export function dateOf(iso: string): Date {
+	return new Date(`${iso}T00:00:00Z`);
+}
+
 function build(locale: string) {
 	const probability = new Intl.NumberFormat(locale, {
 		minimumFractionDigits: 2,
@@ -58,6 +63,23 @@ function build(locale: string) {
 		minimumFractionDigits: 2,
 		maximumFractionDigits: 2,
 	});
+	// The calendar's day names, weekday heads and month title.
+	const longDay = new Intl.DateTimeFormat(locale, {
+		weekday: "long",
+		month: "long",
+		day: "numeric",
+		year: "numeric",
+		timeZone: "UTC",
+	});
+	const weekday = new Intl.DateTimeFormat(locale, {
+		weekday: "short",
+		timeZone: "UTC",
+	});
+	const month = new Intl.DateTimeFormat(locale, {
+		month: "long",
+		year: "numeric",
+		timeZone: "UTC",
+	});
 	const count = new Intl.NumberFormat(locale);
 	const currencyName = new Intl.DisplayNames(locale, { type: "currency" });
 	return {
@@ -77,12 +99,15 @@ function build(locale: string) {
 			foreignCurrency(currency) ??
 			currencyName.of(LOCAL_CURRENCY) ??
 			LOCAL_CURRENCY,
-		date: (iso: string) => date.format(new Date(`${iso}T00:00:00Z`)),
+		date: (iso: string) => date.format(dateOf(iso)),
+		longDay: (iso: string) => longDay.format(dateOf(iso)),
+		weekday: (iso: string) => weekday.format(dateOf(iso)),
+		month: (iso: string) => month.format(dateOf(iso)),
 		day: (iso: string) =>
 			(Number(iso.slice(0, 4)) === new Date().getFullYear()
 				? day
 				: dayInYear
-			).format(new Date(`${iso}T00:00:00Z`)),
+			).format(dateOf(iso)),
 	};
 }
 
