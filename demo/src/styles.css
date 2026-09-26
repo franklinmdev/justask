@@ -1690,18 +1690,21 @@ fieldset.table-filter[data-settle]::before {
 
 /* The amount: the currency mark sits inside the box, before the number. */
 .amount {
+	--mark-inset: 10px;
+	--mark-gap: 6px;
 	position: relative;
 }
 
 .amount-mark {
 	position: absolute;
 	top: 50%;
-	left: 10px;
+	left: var(--mark-inset);
 	transform: translateY(-50%);
 	color: var(--muted);
 	pointer-events: none;
 }
 
+/* The inset, "$" and the gap. */
 .amount-input {
 	padding-left: 26px;
 	text-align: right;
@@ -1709,10 +1712,12 @@ fieldset.table-filter[data-settle]::before {
 
 /*
  * Another currency's three-letter code: the widest, MWK, is 2.5em in the
- * text face, so the value starts past it with the same 6px gap as after "$".
+ * text face, so the value starts past it with the same gap as after "$".
+ * The em is the box's, so it holds while the mark and the box share one
+ * font size, as the phone's rule keeps them.
  */
 .amount[data-mark="code"] .amount-input {
-	padding-left: calc(10px + 2.5em + 6px);
+	padding-left: calc(var(--mark-inset) + 2.5em + var(--mark-gap));
 }
 
 .confirm-row {
