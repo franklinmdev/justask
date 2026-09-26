@@ -111,7 +111,8 @@ function valueWords<K extends FieldName>(
  * beside the state panel. Each answer applies itself: filtering is
  * reversible, so nothing asks first, and Clear filters undoes it (#123). The
  * controls it set light up in field order and the rows it brings in fade in,
- * after the answer, never before it. With a recording, the case opens
+ * after the answer, never before it. A failed call leaves the table as it
+ * was and says only that it failed (#156). With a recording, the case opens
  * on it replayed: the sentence, then the table filtering.
  */
 export function FilterPage({
@@ -223,7 +224,10 @@ export function FilterPage({
 				stale={filter.loading}
 			/>
 			<FilterEmpty filter={filter} className="result">
-				<p className="empty">{copy.filter.empty}</p>
+				{/* A failed call checked nothing, so it never says nothing filters (#156). */}
+				<p className="empty">
+					{filter.error ? copy.filter.unanswered : copy.filter.empty}
+				</p>
 			</FilterEmpty>
 
 			<section className="table-section" aria-labelledby="applied-title">

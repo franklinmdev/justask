@@ -171,6 +171,8 @@ export const spanish: Content = {
 				amount: "Monto",
 			},
 			empty: "Nada en esa solicitud filtra las transacciones.",
+			unanswered:
+				"No se pudo leer la solicitud, así que la tabla queda como estaba. Inténtelo de nuevo.",
 			applied: "Aplicados",
 			appliedFields: (set, held) =>
 				[

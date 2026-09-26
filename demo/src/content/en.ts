@@ -168,6 +168,8 @@ export const english: Content = {
 				amount: "Amount",
 			},
 			empty: "Nothing in that request filters the transactions.",
+			unanswered:
+				"The request could not be read, so the table stays as it was. Try again.",
 			applied: "Applied",
 			appliedFields: (set, held) =>
 				[
