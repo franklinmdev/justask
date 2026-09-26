@@ -1707,6 +1707,14 @@ fieldset.table-filter[data-settle]::before {
 	text-align: right;
 }
 
+/*
+ * Another currency's three-letter code: the widest, MWK, is 2.5em in the
+ * text face, so the value starts past it with the same 6px gap as after "$".
+ */
+.amount[data-mark="code"] .amount-input {
+	padding-left: calc(16px + 2.5em);
+}
+
 .confirm-row {
 	display: flex;
 	flex-wrap: wrap;
