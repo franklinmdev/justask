@@ -38,6 +38,26 @@ Each step needs the owner's Cloudflare account. The key is typed at a prompt, ne
 5. Only then `pnpm exec wrangler secret put TYPESAFE_API_KEY`, and paste the key at the prompt. Logged in, every flow now answers.
 6. For the measure, create a service token (Zero Trust, Access controls, Service credentials, Service Tokens), add a second policy to the Worker's Access application with the **Service Auth** action and that token as its rule (with the Allow action, Access sends the token to the login page), and put its pair in the main checkout's `.env` as `CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET`. Cloudflare shows the secret once. Delete the token once the measure is written down.
 
+### Every push to main deploys itself (#129)
+
+Cloudflare Workers Builds builds and deploys `justask-demo` on every push to `main`: no GitHub secret, no Actions workflow. Owner's dashboard settings, entered 2026-09-26 (Workers & Pages, `justask-demo`, Settings, Builds):
+
+| Setting | Value |
+|---|---|
+| Git repository | `franklinmdev/justask` |
+| Git branch | `main` |
+| Build command | `pnpm demo:build` |
+| Deploy command | `pnpm exec wrangler deploy`, the wrangler pinned in `package.json` |
+| Root directory | empty, the repo root |
+| Build variables | `NODE_VERSION=24.18.0`, `PNPM_VERSION=12.5.1`, `WRANGLER_BUILD_CONDITIONS=source,workerd,worker,browser` |
+| Branch control | Enable Preview Builds off, so no other branch deploys anything |
+
+- `NODE_VERSION` names a Node the build image preinstalls. A version it has to install leaves no `pnpm` on the path ("No preset version installed for command pnpm"). Its default pnpm is older than `packageManager`, hence `PNPM_VERSION`.
+- Build variables exist only during the build. `TYPESAFE_API_KEY` and `DEMO_KILL_SWITCH` are the Worker's runtime secrets, set with `wrangler secret put`; a build never sees or changes them.
+- Workers Builds does not wait for GitHub's checks (its docs say nothing of it, read 2026-09-26), so a merge with red CI deploys too. Merge only on green.
+- The first connection picked the wrong repository, and the build ran `uv sync` on it: when a build log installs anything but pnpm packages, check the connected repository first.
+- `pnpm demo:deploy` stays for a first deploy, a rollback, or a deploy while Workers Builds is down.
+
 The Worker stays behind Access until the launch ticket of #29, so nobody spends the key before the limits exist.
 
 The first deploy with #109 creates the `DemoLedger` class from the `v1` migration in `wrangler.jsonc`; nothing is set up by hand. The class creates its own tables when it starts (`CREATE TABLE IF NOT EXISTS`), so #110's tables need no new tag; a new tag is for creating, renaming or deleting a class, never an edit of `v1`.
@@ -133,6 +153,7 @@ The one fake stays the provider; the Worker side adds no other.
 - One-click Access on `workers.dev`: https://developers.cloudflare.com/changelog/post/2025-10-03-one-click-access-for-workers/
 - Service tokens and their headers: https://developers.cloudflare.com/cloudflare-one/access-controls/service-credentials/service-tokens/
 - Durable Objects on free: SQLite-backed only, 100,000 rows written a day: https://developers.cloudflare.com/durable-objects/platform/pricing/
+- Workers Builds: settings, the build image's preinstalled Node (22.23.2, 24.18.0) and default pnpm (10.11.1, `PNPM_VERSION`), and Branch control's Enable Preview Builds (read 2026-09-26): https://developers.cloudflare.com/workers/ci-cd/builds/configuration/, https://developers.cloudflare.com/workers/ci-cd/builds/build-image/, https://developers.cloudflare.com/workers/ci-cd/builds/build-branches/
 - wrangler 4.136.3 is pinned, not the latest 4.138.0, which was younger than pnpm's minimum release age that day.
 
 ## Facts read (2026-09-25, #109)
