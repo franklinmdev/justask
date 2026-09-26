@@ -270,6 +270,31 @@ describe("createSearchHandler", () => {
 		);
 	});
 
+	it("logs the full error to the server's console when no onError is passed, so a missing key is not silent", async () => {
+		const log = vi.spyOn(console, "error").mockImplementation(() => {});
+		const cause = new Error("No API key was provided");
+
+		const response = await handler({ provider: failingProvider(cause) })(
+			post(asked),
+		);
+
+		expect((await response.json()).error.kind).toBe("provider");
+		expect(log).toHaveBeenCalledWith("justask: No API key was provided", cause);
+		log.mockRestore();
+	});
+
+	it("leaves the console alone when onError is passed", async () => {
+		const log = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		await handler({
+			provider: failingProvider(new Error("down")),
+			onError: () => {},
+		})(post(asked));
+
+		expect(log).not.toHaveBeenCalled();
+		log.mockRestore();
+	});
+
 	it("holds everything and sends a timeout error when the provider outlasts the timeout", async () => {
 		const response = await handler({
 			provider: hangingProvider(),

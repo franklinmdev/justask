@@ -29,7 +29,11 @@ type HandlerConfig = {
 	 * time zone the browser sends, so it cannot be configured.
 	 */
 	facts?: Facts;
-	/** Called with the full error, cause included, which never reaches the browser. */
+	/**
+	 * Called with the full error, cause included, which never reaches the
+	 * browser. Without it, the handler logs the error with `console.error`, so
+	 * a missing or refused key says so on the server.
+	 */
 	onError?: (error: AskError) => void;
 };
 
@@ -167,7 +171,7 @@ const CLIENT_CLOSED = 499;
 
 /** What every handler shares: POST only, the body read, today written, errors kept on the server. */
 function serve(
-	{ provider, timeoutMs, facts = {}, onError }: HandlerConfig,
+	{ provider, timeoutMs, facts = {}, onError = logError }: HandlerConfig,
 	run: (input: AskBase) => Promise<{
 		response: { error?: HandlerError };
 		error: AskError | undefined;
@@ -211,7 +215,7 @@ function serve(
 		}
 		const { response, error } = answered;
 		if (error) {
-			onError?.(error);
+			onError(error);
 			response.error = forBrowser(error);
 		}
 		return Response.json(response);
@@ -298,6 +302,14 @@ function sentAsJson(httpRequest: Request): boolean {
 function badRequest(message: string, status: 400 | 413 | 415 = 400): Response {
 	const body: HandlerBadRequest = { error: { kind: "request", message } };
 	return Response.json(body, { status });
+}
+
+/** The default `onError`: the message and, for a provider error, its cause. */
+function logError(error: AskError): void {
+	console.error(
+		`justask: ${error.message}`,
+		...(error.kind === "provider" ? [error.cause] : []),
+	);
 }
 
 /** The cause, and a provider's own message, may carry server details such as the key. */
