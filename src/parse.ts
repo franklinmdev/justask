@@ -884,8 +884,8 @@ const DATE_RULES: DateRule[] = [
 		read: (_m, today) => point(today),
 	},
 	{
-		// Last night is yesterday's date whatever the hour, as Duckling and Recognizers-Text read it.
-		re: new RegExp(`${b}(?:last\\s+night|anoche)${e}`, "g"),
+		// Last night and last evening are yesterday's date whatever the hour, as Duckling and Recognizers-Text read last night.
+		re: new RegExp(`${b}(?:last\\s+(?:night|evening)|anoche)${e}`, "g"),
 		read: (_m, today) => point(addDays(today, -1)),
 	},
 	{

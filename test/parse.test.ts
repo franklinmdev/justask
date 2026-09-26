@@ -209,7 +209,7 @@ describe("parts of the day", () => {
 		expect(both(`gas ${text}`)).toEqual([[text, TODAY, TODAY]]);
 	});
 
-	it.each(["last night", "anoche"])(
+	it.each(["last night", "last evening", "anoche"])(
 		"reads '%s' as yesterday, whichever way the field reads",
 		(text) => {
 			expect(both(`dinner ${text}`)).toEqual([
