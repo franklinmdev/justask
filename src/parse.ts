@@ -959,6 +959,31 @@ const DATE_RULES: DateRule[] = [
 	},
 ];
 
+/**
+ * "before X" and "after X" leave X out, so a filter's bound is the day next
+ * to it: "after May 5" starts on May 6, "antes de mayo" ends on April 30.
+ * "since", "until", "desde" and "hasta" keep X, and stay the period itself.
+ */
+const BOUND =
+	/(?<![a-z0-9])(before|after|antes\s+del?|despues\s+del?|luego\s+del?)\s+$/;
+
+function beyond(
+	hit: Hit,
+	bound: RegExpExecArray,
+	said: string,
+	typed: string,
+): Hit {
+	const after = /^(after|despues|luego)/.test(bound[1] ?? "");
+	const day = after ? addDays(hit.to, 1) : addDays(hit.from, -1);
+	const word = typed.trim().replace(/\s+/g, " ");
+	return {
+		from: day,
+		to: day,
+		note: `the ${after ? "first day after" : "last day before"} ${said}, which '${word}' leaves out${hit.note ? `; ${said} read as ${hit.note}` : ""}`,
+		...(hit.ambiguous && { ambiguous: true }),
+	};
+}
+
 // Amount rules
 
 /** "RD$", "US$", "£", or a code: a mark touching the number, letters before a "$" included. */
@@ -1430,11 +1455,18 @@ function readSpans(
 	for (const rule of DATE_RULES) {
 		rule.re.lastIndex = 0;
 		for (let m = rule.re.exec(folded); m; m = rule.re.exec(folded)) {
-			const s = m.index + (rule.lead?.(m) ?? 0);
+			let s = m.index + (rule.lead?.(m) ?? 0);
 			const t = m.index + m[0].length;
 			if (!free(s, t, true)) continue;
-			const hits = rule.read(m, today, reads);
+			let hits = rule.read(m, today, reads);
 			if (!hits) continue;
+			const bound = rule.soft ? null : BOUND.exec(folded.slice(0, s));
+			if (bound && free(bound.index, s, true)) {
+				hits = hits.map((hit) =>
+					beyond(hit, bound, text.slice(s, t), text.slice(bound.index, s)),
+				);
+				s = bound.index;
+			}
 			(rule.soft ? soft : hard).fill(true, s, t);
 			for (const hit of hits) {
 				dates.push({ at: [s, t], reading: { text: text.slice(s, t), ...hit } });

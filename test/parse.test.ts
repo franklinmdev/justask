@@ -490,6 +490,70 @@ describe("month names", () => {
 	});
 });
 
+describe("before and after leave the day they name out (#183)", () => {
+	it.each([
+		["invoices after May 5", "after May 5", "2026-05-06"],
+		["invoices before September 10", "before September 10", "2026-09-09"],
+		["invoices before yesterday", "before yesterday", "2026-09-19"],
+		["invoices before May", "before May", "2026-04-30"],
+		["invoices after June", "after June", "2026-07-01"],
+		["facturas de antes de mayo", "antes de mayo", "2026-04-30"],
+		["facturas antes del mes pasado", "antes del mes pasado", "2026-07-31"],
+		[
+			"facturas después de la semana pasada",
+			"después de la semana pasada",
+			"2026-09-21",
+		],
+		["gastos luego del 5 de agosto", "luego del 5 de agosto", "2026-08-06"],
+	])("%s", (text, span, day) => {
+		expect(dates(text)).toEqual([[span, day, day]]);
+	});
+
+	it("says which day the bound leaves out", () => {
+		expect(parse("after May 5").dates?.[0]?.note).toBe(
+			"the first day after May 5, which 'after' leaves out",
+		);
+		expect(parse("antes de mayo").dates?.[0]?.note).toBe(
+			"the last day before mayo, which 'antes de' leaves out",
+		);
+	});
+
+	it("keeps both readings of an ambiguous day, each moved, and ambiguous", () => {
+		expect(
+			(parse("after last Friday").dates ?? []).map((d) => [
+				d.from,
+				d.ambiguous,
+			]),
+		).toEqual(
+			(parse("last Friday").dates ?? []).map((d) => [
+				// Read on a Monday, both last Fridays are single days.
+				new Date(Date.parse(`${d.from}T00:00:00Z`) + 86_400_000)
+					.toISOString()
+					.slice(0, 10),
+				d.ambiguous,
+			]),
+		);
+	});
+
+	it.each([
+		["since March", "March", "2026-03-01", "2026-03-31"],
+		["until July", "July", "2026-07-01", "2026-07-31"],
+		["hasta mayo", "mayo", "2026-05-01", "2026-05-31"],
+		[
+			"the day before yesterday",
+			"the day before yesterday",
+			"2026-09-19",
+			"2026-09-19",
+		],
+		["antes de ayer", "antes de ayer", "2026-09-19", "2026-09-19"],
+	])(
+		"leaves an inclusive bound as the period it names: %s",
+		(text, span, from, to) => {
+			expect(dates(text)).toEqual([[span, from, to]]);
+		},
+	);
+});
+
 describe("numeric dates", () => {
 	it("reads an unambiguous day/month one way", () => {
 		expect(dates("desde el 25/08")).toEqual([

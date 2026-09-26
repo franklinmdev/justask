@@ -48,6 +48,18 @@ const HELD_BEFORE_140 = new Set(
 	),
 );
 
+/**
+ * Rows frozen before #232 whose candidates its parser readings change, each
+ * with the span the parser reads now and did not then. Their expected values
+ * stay as frozen and scored; a log saves each field's candidates and picks,
+ * so it rescores as it ran (docs/card-eval.md, Parser readings (#232)).
+ */
+const MOVED_BY_232: Record<string, string> = {
+	// A nothing row: "before Friday" is now the Thursday before it, not that Friday.
+	"en-r8-163": "before Friday",
+	"es-r8-163": "antes del viernes",
+};
+
 describe.each([english, spanish])("the card sets in $language", (content) => {
 	const sets = Object.fromEntries(
 		CARD_SET_NAMES.map((set) => [
@@ -214,6 +226,26 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 				dates.filter((d) => !d.ambiguous && d.from === d.to),
 				row.id,
 			).toHaveLength(1);
+		}
+	});
+
+	it("read every row #232 moves with the span it reads now, so the list names no row it need not", () => {
+		const moved = allSets.filter(({ id }) => id in MOVED_BY_232);
+		expect(moved.map(({ id }) => id).sort()).toEqual(
+			Object.keys(MOVED_BY_232)
+				.filter((id) => id.startsWith(content === english ? "en-" : "es-"))
+				.sort(),
+		);
+		for (const row of moved) {
+			const { dates = [], amounts = [] } = builtInParser(row.request, {
+				today: TODAY,
+				facts: FACTS,
+				reads: "past",
+			});
+			expect(
+				[...dates, ...amounts].map(({ text }) => text),
+				row.id,
+			).toContain(MOVED_BY_232[row.id]);
 		}
 	});
 
