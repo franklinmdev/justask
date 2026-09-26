@@ -667,7 +667,7 @@ describe("the demo's Search case", () => {
 	});
 
 	it("says the call failed in Spanish, not that no vendor matches", async () => {
-		const { user } = renderDemo({
+		const { container, user } = renderDemo({
 			provider: failingProvider(new Error("no key")),
 			url: "/?case=search&lang=es",
 		});
@@ -681,5 +681,6 @@ describe("the demo's Search case", () => {
 		).toBeDefined();
 		expect(screen.queryByText("Ningún proveedor coincide")).toBeNull();
 		expect(screen.queryByRole("list", { name: "Los más cercanos" })).toBeNull();
+		await expectNoAxeViolations(container);
 	});
 });
