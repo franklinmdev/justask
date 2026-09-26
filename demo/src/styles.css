@@ -687,6 +687,99 @@ h2 {
 	color: var(--muted);
 }
 
+/*
+ * The Form's box calls only on Enter, so Fill sits beside it and sends the
+ * same (#147). It rests quiet, and reads as the next step, filled, while the
+ * sentence in the box has not been sent; every send, by Enter, a suggestion
+ * or the replay too, shows on it as a press. Its key glyph teaches the shortcut, on a keyboard only.
+ */
+.box-row {
+	display: flex;
+	gap: 8px;
+}
+
+.box-row .box {
+	flex: 1;
+	min-width: 0;
+}
+
+.fill {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	gap: 8px;
+	height: 40px;
+	padding: 0 14px;
+	border: 1px solid var(--border-strong);
+	border-radius: var(--radius-control);
+	background: var(--field);
+	color: var(--text);
+	font: inherit;
+	font-size: 0.875rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition:
+		background-color 120ms ease-out,
+		border-color 120ms ease-out,
+		color 120ms ease-out,
+		transform 100ms ease-out;
+}
+
+.fill[data-next] {
+	border-color: var(--action);
+	background: var(--action);
+	color: var(--on-action);
+}
+
+.fill:active:not([aria-disabled="true"]),
+.fill[data-pressed] {
+	transform: scale(0.97);
+}
+
+@media (hover: hover) {
+	.fill:hover:not([aria-disabled="true"]):not([data-next]) {
+		background: var(--surface-strong);
+	}
+	.fill[data-next]:hover {
+		border-color: var(--action-hover);
+		background: var(--action-hover);
+	}
+}
+
+.fill[aria-disabled="true"] {
+	border-color: var(--border);
+	background: var(--surface-strong);
+	color: var(--muted);
+	cursor: default;
+}
+
+.fill-key {
+	padding: 0 5px;
+	border: 1px solid currentColor;
+	border-radius: 4px;
+	font: inherit;
+	font-size: 0.75rem;
+	line-height: 1.25rem;
+	opacity: 0.7;
+}
+
+@media (pointer: coarse) {
+	.fill-key {
+		display: none;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.fill:active:not([aria-disabled="true"]),
+	.fill[data-pressed] {
+		transform: none;
+	}
+}
+
+.fill-hint:empty {
+	display: none;
+}
+
 /* What the sentence saved, tied to the box above it */
 .saved {
 	margin-top: -4px;
@@ -1948,6 +2041,10 @@ fieldset.table-filter[data-settle]::before {
 		font-size: 1rem;
 	}
 
+	.fill {
+		height: 44px;
+	}
+
 	.hood-toggle {
 		height: 44px;
 	}
@@ -2021,6 +2118,15 @@ fieldset.table-filter[data-settle]::before {
 @media (max-width: 560px) {
 	.header {
 		column-gap: 12px;
+	}
+
+	/* Beside it, Fill left the box a third of the row at 375px; below, the sentence keeps the width (#147). */
+	.box-row {
+		flex-wrap: wrap;
+	}
+
+	.box-row .box {
+		flex-basis: 100%;
 	}
 
 	/* Narrower than the name and the tabs together, the tabs take a row of their own. */

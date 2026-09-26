@@ -252,6 +252,8 @@ export const spanish: Content = {
 			title: "Nuevo gasto",
 			boxLabel: "Describa el gasto",
 			placeholder: "Describa el gasto con sus palabras",
+			fill: "Completar la tarjeta",
+			fillHint: "Presione Enter para completar la tarjeta",
 			fields: {
 				vendor: "Proveedor",
 				tags: "Etiquetas",

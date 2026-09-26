@@ -8,7 +8,7 @@ import {
 	type FilledBy,
 	useCard,
 } from "justask/react";
-import { type ReactNode, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { cardEndpoint, REQUEST_LIMIT } from "./api.ts";
 import { CardPanel, impliedByOf } from "./card-panel.tsx";
 import type { Content, ExpenseFields, ExpenseName } from "./content/types.ts";
@@ -30,6 +30,9 @@ import { CaseLayout } from "./showcase.tsx";
 import { useSuggest } from "./trace.ts";
 
 type Expense = CardValue<ExpenseFields> & { id: number };
+
+/** How long the Fill button shows a send, its own click or not, as a press. */
+const PRESS_MS = 150;
 
 /** The card's fields in the order they show, which an answer fills them in. */
 const fieldOrder: ExpenseName[] = ["vendor", "tags", "spent_on", "total"];
@@ -58,16 +61,43 @@ export function CardPage({
 	const replay = useReplay({ recording, fetch: fetchImpl, enter: true });
 	const { trace } = replay;
 
+	// The sentence last sent, by Enter, the Fill button, a suggestion or the
+	// replay, so the page can tell one typed since and not yet sent (#147).
+	// Saving starts the next expense with nothing sent; Undo brings it back.
+	const [sent, setSent] = useState<string | null>(null);
+	const sentBeforeSave = useRef<string | null>(null);
+	const [pressed, setPressed] = useState(false);
+
 	const card = useCard<ExpenseFields>({
 		endpoint: cardEndpoint(content.language),
 		onConfirm: (value) => {
 			const id = nextId.current++;
 			setExpenses((saved) => [{ ...value, id }, ...saved]);
+			sentBeforeSave.current = sent;
+			setSent(null);
 		},
 		fetch: replay.fetch,
 	});
-	replay.follow(card);
-	const box = replay.stoppedBy(card);
+	const blank = card.request.trim() === "";
+	// An end state opened still was sent by the replay, and shows no press (#139).
+	const unsent = !blank && card.request !== sent && !replay.still;
+	const sending: typeof card = {
+		...card,
+		submit: () => {
+			if (!blank) {
+				setSent(card.request);
+				if (!replay.still) setPressed(true);
+			}
+			card.submit();
+		},
+	};
+	useEffect(() => {
+		if (!pressed) return;
+		const timer = setTimeout(() => setPressed(false), PRESS_MS);
+		return () => clearTimeout(timer);
+	}, [pressed]);
+	replay.follow(sending);
+	const box = replay.stoppedBy(sending);
 	const suggest = useSuggest(box);
 	// A field the person sets ends the replay, so its answer never writes over their choice.
 	const fields: typeof card = {
@@ -88,6 +118,7 @@ export function CardPage({
 	function undo() {
 		setExpenses((saved) => saved.slice(1));
 		card.restore();
+		setSent(sentBeforeSave.current);
 		// The undo control is gone with the slot; the restored request takes the focus.
 		document.getElementById("card-box")?.focus();
 	}
@@ -133,16 +164,41 @@ export function CardPage({
 				recording={recording}
 				replay={replay}
 			/>
-			<CardBox
-				card={box}
-				id="card-box"
-				label={copy.card.boxLabel}
-				placeholder={copy.card.placeholder}
-				className="box"
-				autoComplete="off"
-				spellCheck={false}
-				maxLength={REQUEST_LIMIT}
-			/>
+			<div className="box-row">
+				<CardBox
+					card={box}
+					id="card-box"
+					label={copy.card.boxLabel}
+					placeholder={copy.card.placeholder}
+					className="box"
+					autoComplete="off"
+					spellCheck={false}
+					maxLength={REQUEST_LIMIT}
+					enterKeyHint="go"
+					aria-describedby="card-box-hint"
+				/>
+				{/* Sends what Enter sends; off while the box is blank, as Save is with nothing to save. */}
+				<button
+					type="button"
+					className="fill"
+					aria-disabled={blank}
+					data-next={unsent || undefined}
+					data-pressed={pressed || undefined}
+					onClick={() => {
+						if (blank) return;
+						replay.stop();
+						sending.submit();
+					}}
+				>
+					{copy.card.fill}
+					<span className="fill-key" aria-hidden="true">
+						↵
+					</span>
+				</button>
+			</div>
+			<p id="card-box-hint" className="hint fill-hint">
+				{unsent ? copy.card.fillHint : ""}
+			</p>
 			<Saved
 				content={content}
 				cost={costOf(formControls(card.result?.value ?? {}))}

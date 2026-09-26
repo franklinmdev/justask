@@ -488,6 +488,27 @@ describe("the Form case's recorded run", () => {
 		await expectNoAxeViolations(container);
 	});
 
+	it("shows Enter pressed on the Fill button, which then reads as sent (#147)", async () => {
+		renderDemo({ url: "/?case=form" });
+		const fill = () => screen.getByRole("button", { name: "Fill the card" });
+
+		await waitFor(
+			() => expect(fill().hasAttribute("data-pressed")).toBe(true),
+			REPLAY,
+		);
+		expect(fill().hasAttribute("data-next")).toBe(false);
+		await replayFilled();
+		await waitFor(() =>
+			expect(fill().hasAttribute("data-pressed")).toBe(false),
+		);
+		expect(fill().hasAttribute("data-next")).toBe(false);
+		expect(box().getAttribute("aria-describedby")).toBeTruthy();
+		expect(
+			document.getElementById(box().getAttribute("aria-describedby") ?? "")
+				?.textContent,
+		).toBe("");
+	});
+
 	it("replays in Spanish with no call", async () => {
 		const { provider } = renderDemo({ url: "/?case=form&lang=es" });
 
@@ -623,6 +644,28 @@ describe("a replay plays once per browser tab (#135)", () => {
 			expect(provider.calls).toHaveLength(0);
 		},
 	);
+
+	it("opens a reloaded card with Fill still, neither pressed nor unsent (#147)", async () => {
+		const url = "/?case=form";
+		const fill = () => screen.getByRole("button", { name: "Fill the card" });
+		renderDemo({ url });
+		await waitFor(
+			() => expect(searchbox("Describe the expense").value).toBe(form.request),
+			REPLAY,
+		);
+		await act(() => vi.advanceTimersByTimeAsync(1_000));
+		cleanup();
+
+		renderDemo({ url });
+		await act(async () => {});
+		await act(async () => {});
+
+		expect(searchbox("Describe the expense").value).toBe(form.request);
+		// No clock step since: a press made on the reload would still show.
+		expect(fill().hasAttribute("data-pressed")).toBe(false);
+		expect(fill().hasAttribute("data-next")).toBe(false);
+		expect(screen.queryByText("Press Enter to fill the card")).toBeNull();
+	});
 
 	it("keeps a reloaded card's filled fields still once the person edits one (#139)", async () => {
 		const url = "/?case=form";
