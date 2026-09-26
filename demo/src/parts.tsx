@@ -100,6 +100,9 @@ export function settleAt(at: number): Settle {
 /** A settling control's props, spread on its outermost element. */
 export type Settle = { "data-settle"?: ""; style?: CSSProperties };
 
+/** The answer key while there is no answer. */
+const NO_ANSWER = 0;
+
 const answerIds = new WeakMap<object, number>();
 let lastAnswerId = 0;
 
@@ -109,7 +112,7 @@ let lastAnswerId = 0;
  * typed that no longer stands for its amount.
  */
 export function answerKey(result: object | null): number {
-	if (result === null) return 0;
+	if (result === null) return NO_ANSWER;
 	let id = answerIds.get(result);
 	if (id === undefined) {
 		id = ++lastAnswerId;
@@ -124,9 +127,11 @@ export function answerKey(result: object | null): number {
  * over, so nothing on screen settles in late; the next answer settles in.
  */
 export function useStillAnswer(answer: number, still: boolean): boolean {
-	const [stillAnswer, setStillAnswer] = useState(0);
-	if (still && answer !== 0 && answer !== stillAnswer) setStillAnswer(answer);
-	return answer !== 0 && (still || answer === stillAnswer);
+	const [stillAnswer, setStillAnswer] = useState(NO_ANSWER);
+	if (still && answer !== NO_ANSWER && answer !== stillAnswer) {
+		setStillAnswer(answer);
+	}
+	return answer !== NO_ANSWER && (still || answer === stillAnswer);
 }
 
 /**

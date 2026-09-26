@@ -30,27 +30,34 @@ function playedKey({ set, row }: Recording<Usage>): string {
 	return `justask-demo:played:${set}:${row}`;
 }
 
+/** Runs `use` on the tab's storage; a browser that blocks it answers `blocked`. */
+function tabStorage<T>(use: (storage: Storage) => T, blocked: T): T {
+	try {
+		return use(sessionStorage);
+	} catch {
+		return blocked;
+	}
+}
+
 /** True when this browser tab already played the recording's replay. Blocked storage never has. */
 function playedBefore(recording: Recording<Usage>): boolean {
-	try {
-		return sessionStorage.getItem(playedKey(recording)) !== null;
-	} catch {
-		return false;
-	}
+	return tabStorage(
+		(storage) => storage.getItem(playedKey(recording)) !== null,
+		false,
+	);
 }
 
 /** Remembers for the tab's life that the recording's replay played. Blocked storage forgets. */
 function markPlayed(recording: Recording<Usage>) {
-	try {
-		sessionStorage.setItem(playedKey(recording), "1");
-	} catch {}
+	tabStorage(
+		(storage) => storage.setItem(playedKey(recording), "1"),
+		undefined,
+	);
 }
 
 /** Forgets the recording's replay played, so the next one types in again. */
 export function forgetPlayed(recording: Recording<Usage>) {
-	try {
-		sessionStorage.removeItem(playedKey(recording));
-	} catch {}
+	tabStorage((storage) => storage.removeItem(playedKey(recording)), undefined);
 }
 
 /** Under reduced motion the sentence appears whole instead of typing in. */
