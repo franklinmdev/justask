@@ -72,7 +72,7 @@ export type CardHandlerResponse<F extends CardFields> = Spent & {
 	error?: HandlerError;
 };
 
-/** The body of a 400 response. */
+/** The body of a 400 or 413 response. */
 export type HandlerBadRequest = {
 	error: { kind: "request"; message: string };
 };
@@ -138,6 +138,20 @@ export function createCardHandler<F extends CardFields>(
 
 type AskBase = Omit<AskInput<unknown>, "search">;
 
+/**
+ * The longest request a handler takes, in characters as JavaScript counts
+ * them. What a person types is far shorter; the cap bounds what one call
+ * parses, and asks the provider.
+ */
+const MAX_REQUEST_LENGTH = 1_000;
+
+/**
+ * The largest body a handler reads, in bytes: room for the longest request
+ * with every character escaped, and its time zone. Past it the handler stops
+ * reading, so no body can hold the server's memory.
+ */
+const MAX_BODY_BYTES = 16 * 1024;
+
 /** What every handler shares: POST only, the body read, today written, errors kept on the server. */
 function serve(
 	{ provider, timeoutMs, facts = {}, onError }: HandlerConfig,
@@ -157,7 +171,7 @@ function serve(
 			return new Response(null, { status: 405, headers: { allow: "POST" } });
 		}
 		const read = await readBody(httpRequest);
-		if ("error" in read) return badRequest(read.error);
+		if ("error" in read) return badRequest(read.error, read.status);
 
 		const now = new Date();
 		const { response, error } = await run({
@@ -176,10 +190,14 @@ function serve(
 
 async function readBody(
 	httpRequest: Request,
-): Promise<{ body: HandlerRequest } | { error: string }> {
+): Promise<{ body: HandlerRequest } | { error: string; status?: 413 }> {
+	const text = await readCapped(httpRequest);
+	if (text === null) {
+		return { error: `The body is over ${MAX_BODY_BYTES} bytes`, status: 413 };
+	}
 	let body: unknown;
 	try {
-		body = await httpRequest.json();
+		body = JSON.parse(text);
 	} catch {
 		return { error: "The body is not JSON" };
 	}
@@ -189,6 +207,9 @@ async function readBody(
 	const { request, timeZone } = body as Record<string, unknown>;
 	if (typeof request !== "string") {
 		return { error: '"request" must be a string' };
+	}
+	if (request.length > MAX_REQUEST_LENGTH) {
+		return { error: `The request is over ${MAX_REQUEST_LENGTH} characters` };
 	}
 	if (typeof timeZone !== "string") {
 		return { error: '"timeZone" must be the browser\'s IANA time zone' };
@@ -201,9 +222,34 @@ async function readBody(
 	return { body: { request, timeZone } };
 }
 
-function badRequest(message: string): Response {
+/**
+ * The body as text, or null past MAX_BODY_BYTES: refused on its declared
+ * length before a byte is read, else read no further than the cap.
+ */
+async function readCapped(httpRequest: Request): Promise<string | null> {
+	if (Number(httpRequest.headers.get("content-length")) > MAX_BODY_BYTES) {
+		return null;
+	}
+	if (!httpRequest.body) return "";
+	const reader = httpRequest.body.getReader();
+	const decoder = new TextDecoder();
+	let size = 0;
+	let text = "";
+	for (;;) {
+		const { done, value } = await reader.read();
+		if (done) return text + decoder.decode();
+		size += value.byteLength;
+		if (size > MAX_BODY_BYTES) {
+			await reader.cancel();
+			return null;
+		}
+		text += decoder.decode(value, { stream: true });
+	}
+}
+
+function badRequest(message: string, status: 400 | 413 = 400): Response {
 	const body: HandlerBadRequest = { error: { kind: "request", message } };
-	return Response.json(body, { status: 400 });
+	return Response.json(body, { status });
 }
 
 /** The cause, and a provider's own message, may carry server details such as the key. */

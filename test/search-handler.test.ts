@@ -281,4 +281,101 @@ describe("createSearchHandler", () => {
 		});
 		expect(provider.calls).toHaveLength(0);
 	});
+
+	it("answers 400 without calling the provider for a request over 1000 characters", async () => {
+		const provider = fakeProvider(picksAcme);
+
+		const response = await handler({ provider })(
+			post({ ...asked, request: "a".repeat(1_001) }),
+		);
+
+		expect(response.status).toBe(400);
+		expect(await response.json()).toEqual({
+			error: {
+				kind: "request",
+				message: "The request is over 1000 characters",
+			},
+		});
+		expect(provider.calls).toHaveLength(0);
+	});
+
+	it("takes a request of exactly 1000 characters", async () => {
+		const provider = fakeProvider(picksAcme);
+
+		const response = await handler({ provider })(
+			post({ ...asked, request: "a".repeat(1_000) }),
+		);
+
+		expect(response.status).toBe(200);
+		expect(provider.calls).toHaveLength(1);
+	});
+
+	it("answers 413 for a body over 16 KiB, without calling the provider", async () => {
+		const provider = fakeProvider(picksAcme);
+		const body = JSON.stringify({ ...asked, pad: "x".repeat(16 * 1024) });
+
+		const response = await handler({ provider })(post(body));
+
+		expect(response.status).toBe(413);
+		expect(await response.json()).toEqual({
+			error: { kind: "request", message: "The body is over 16384 bytes" },
+		});
+		expect(provider.calls).toHaveLength(0);
+	});
+
+	it("stops reading a body that never ends once it passes 16 KiB", async () => {
+		let pulled = 0;
+		let cancelled = false;
+		const endless = new ReadableStream<Uint8Array>({
+			pull(controller) {
+				pulled += 1024;
+				controller.enqueue(new Uint8Array(1024).fill(0x20));
+			},
+			cancel() {
+				cancelled = true;
+			},
+		});
+
+		const response = await handler()(
+			new Request("https://app.test/api/justask", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: endless,
+				duplex: "half",
+			} as RequestInit),
+		);
+
+		expect(response.status).toBe(413);
+		expect(cancelled).toBe(true);
+		expect(pulled).toBeLessThanOrEqual(20 * 1024);
+	});
+
+	it("answers 413 from a declared length over 16 KiB before reading the body", async () => {
+		let pulled = 0;
+		// No high-water mark, so the stream is pulled only when read.
+		const body = new ReadableStream<Uint8Array>(
+			{
+				pull(controller) {
+					pulled += 1;
+					controller.close();
+				},
+			},
+			{ highWaterMark: 0 },
+		);
+
+		const response = await handler()(
+			new Request("https://app.test/api/justask", {
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+					"content-length": String(50 * 1024 * 1024),
+				},
+				body,
+				duplex: "half",
+			} as RequestInit),
+		);
+
+		expect(response.status).toBe(413);
+		expect(pulled).toBe(0);
+	});
 });

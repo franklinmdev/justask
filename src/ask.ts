@@ -445,8 +445,17 @@ function fillImplied(
 }
 
 /**
+ * The most readings of one kind a field weighs. A request with more, such as
+ * a pasted list of numbers, has no one reading to pick, and each would add
+ * labels to the call and its cost; that kind is left with none, so its fields
+ * are held without a question.
+ */
+const MAX_READINGS = 10;
+
+/**
  * The parsers' readings as candidates: dates d0, d1..., times t0, t1...,
- * amounts a0, a1..., in the order they appear in the request.
+ * amounts a0, a1..., in the order they appear in the request. A kind with
+ * more than MAX_READINGS has none.
  */
 function readCandidates(
 	request: string,
@@ -465,18 +474,20 @@ function readCandidates(
 		{ today, reads, facts },
 		parsers,
 	);
+	const weighed = <R>(readings: R[]) =>
+		readings.length > MAX_READINGS ? [] : readings;
 	return {
-		dates: dates.map((value, i) => ({
+		dates: weighed(dates).map((value, i) => ({
 			id: `d${i}`,
 			description: describeDate(value),
 			value,
 		})),
-		times: times.map((value, i) => ({
+		times: weighed(times).map((value, i) => ({
 			id: `t${i}`,
 			description: describeTime(value),
 			value,
 		})),
-		amounts: amounts.map((value, i) => ({
+		amounts: weighed(amounts).map((value, i) => ({
 			id: `a${i}`,
 			description: describeAmount(value),
 			value,
