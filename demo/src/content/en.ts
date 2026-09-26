@@ -133,7 +133,7 @@ export const english: Content = {
 				case "timeout":
 					return `The provider did not answer within ${reason.timeoutMs} ms, so nothing is shown.`;
 				case "unreachable":
-					return `The search handler could not be reached: ${reason.message}`;
+					return `The server could not be reached: ${reason.message}`;
 			}
 		},
 		request: "Request",
@@ -168,6 +168,8 @@ export const english: Content = {
 				amount: "Amount",
 			},
 			empty: "Nothing in that request filters the transactions.",
+			unanswered:
+				"The request could not be read, so the table stays as it was. Try again.",
 			applied: "Applied",
 			appliedFields: (set, held) =>
 				[

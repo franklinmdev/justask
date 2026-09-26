@@ -136,7 +136,7 @@ export const spanish: Content = {
 				case "timeout":
 					return `El modelo no respondió en ${reason.timeoutMs} ms, así que no se muestra nada.`;
 				case "unreachable":
-					return `No se pudo contactar al servidor de búsqueda: ${reason.message}`;
+					return `No se pudo contactar al servidor: ${reason.message}`;
 			}
 		},
 		request: "Solicitud",
@@ -171,6 +171,8 @@ export const spanish: Content = {
 				amount: "Monto",
 			},
 			empty: "Nada en esa solicitud filtra las transacciones.",
+			unanswered:
+				"No se pudo leer la solicitud, así que la tabla queda como estaba. Inténtelo de nuevo.",
 			applied: "Aplicados",
 			appliedFields: (set, held) =>
 				[
