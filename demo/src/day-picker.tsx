@@ -1,4 +1,11 @@
-import { type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
+import {
+	type KeyboardEvent,
+	useEffect,
+	useId,
+	useLayoutEffect,
+	useRef,
+	useState,
+} from "react";
 import type { CalendarCopy } from "./content/types.ts";
 import { today } from "./format.ts";
 
@@ -104,7 +111,10 @@ export function DayPicker({
 	const trigger = useRef<HTMLButtonElement>(null);
 	const dialog = useRef<HTMLDivElement>(null);
 
-	useEffect(() => {
+	// In the commit, not after it: a render's passive effect still pending when
+	// the next key lands would take that key's focus move and leave the focus
+	// a day behind the tab stop (#153).
+	useLayoutEffect(() => {
 		if (!open || !moveFocus.current) return;
 		moveFocus.current = false;
 		dialog.current
