@@ -90,6 +90,8 @@ export const spanish: Content = {
 		ambiguous: "Podría ser uno de dos",
 		nothing: "Nada que encontrar",
 		empty: "Ningún proveedor coincide",
+		unanswered:
+			"No se pudo leer la solicitud, así que no se muestra ningún proveedor. Inténtelo de nuevo.",
 		choices: "¿Cuál de estos?",
 		severalFit: "Podría ser más de un proveedor",
 		closest: "Los más cercanos",

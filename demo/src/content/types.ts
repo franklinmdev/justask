@@ -272,8 +272,10 @@ export type Copy = {
 	oneVendor: string;
 	ambiguous: string;
 	nothing: string;
-	/** Once the answer held the item: no vendor matched, or failed. */
+	/** Once the answer held the item: no vendor matched. */
 	empty: string;
+	/** In its place when the call failed: nothing measured the vendors (#138). */
+	unanswered: string;
 	/** Over the vendors a request could mean, for the person to pick one (#134). */
 	choices: string;
 	/** In their place when several held the item and no vendor is above zero. */
