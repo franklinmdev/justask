@@ -151,7 +151,10 @@ export type FilterCopy = {
 	boxLabel: string;
 	placeholder: string;
 	fields: Record<FieldName, string>;
+	/** Once an answer filled no field. */
 	empty: string;
+	/** In its place when the call failed: nothing checked the request (#156). */
+	unanswered: string;
 	applied: string;
 	/** What a screen reader hears once an answer sets the controls: each field set, with its value, then each field held. */
 	appliedFields: (
