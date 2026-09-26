@@ -114,16 +114,21 @@ const priced = fakeProvider(fixtureFor, {
 function renderDemo({
 	provider = byRequest,
 	url = "/?case=table",
+	fetch,
 }: {
 	provider?: Provider;
 	url?: string;
+	/** In place of the handler, such as one that cannot be reached. */
+	fetch?: typeof globalThis.fetch;
 } = {}) {
 	history.replaceState(null, "", url);
 	const handler = createDemoHandler(provider);
 	const { container } = render(
 		<App
-			fetch={(input, init) =>
-				handler(new Request(new URL(String(input), location.href), init))
+			fetch={
+				fetch ??
+				((input, init) =>
+					handler(new Request(new URL(String(input), location.href), init)))
 			}
 			recordings={null}
 		/>,
@@ -808,6 +813,7 @@ describe("the demo's Table case", () => {
 		{
 			lang: "en",
 			suggestion: "overdue invoices",
+			hood: "What happened",
 			failed: "Failed",
 			reason: "The server could not be reached: offline",
 			line: "The request could not be read, so the table stays as it was. Try again.",
@@ -815,27 +821,22 @@ describe("the demo's Table case", () => {
 		{
 			lang: "es",
 			suggestion: "facturas vencidas",
+			hood: "Qué pasó",
 			failed: "Falló",
 			reason: "No se pudo contactar al servidor: offline",
 			line: "No se pudo leer la solicitud, así que la tabla queda como estaba. Inténtelo de nuevo.",
 		},
 	])(
 		"names the server, not the search's, when it cannot be reached ($lang)",
-		async ({ lang, suggestion, failed, reason, line }) => {
-			history.replaceState(null, "", `/?case=table&lang=${lang}`);
-			const { container } = render(
-				<App
-					fetch={() => Promise.reject(new TypeError("offline"))}
-					recordings={null}
-				/>,
-			);
-			const user = userEvent.setup();
+		async ({ lang, suggestion, hood, failed, reason, line }) => {
+			const { container, user } = renderDemo({
+				url: `/?case=table&lang=${lang}`,
+				fetch: () => Promise.reject(new TypeError("offline")),
+			});
 
 			await user.click(screen.getByRole("button", { name: suggestion }));
 
-			const state = within(
-				screen.getByRole("region", { name: /^(What happened|Qué pasó)$/ }),
-			);
+			const state = panel(hood);
 			expect(await state.findByText(failed)).toBeDefined();
 			expect(state.getByText(reason)).toBeDefined();
 			expect(screen.getByText(line)).toBeDefined();

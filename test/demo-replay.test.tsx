@@ -27,7 +27,11 @@ import type { Language } from "../demo/src/content/types.ts";
 import { formats } from "../demo/src/format.ts";
 import { dayOf, type Recording, recordings } from "../demo/src/recording.ts";
 import { applyTo, matches, transactionsOn } from "../demo/src/transactions.ts";
-import { expectNoAxeViolations as expectNoAxe, warmUp } from "./checks.ts";
+import {
+	description,
+	expectNoAxeViolations as expectNoAxe,
+	warmUp,
+} from "./checks.ts";
 import { failingProvider, fakeProvider } from "./fake-provider.ts";
 
 // The recording files themselves: a rerun of the script changes their
@@ -507,10 +511,7 @@ describe("the Form case's recorded run", () => {
 		);
 		expect(fill().hasAttribute("data-next")).toBe(false);
 		expect(box().getAttribute("aria-describedby")).toBeTruthy();
-		expect(
-			document.getElementById(box().getAttribute("aria-describedby") ?? "")
-				?.textContent,
-		).toBe("");
+		expect(description(box())).toBe("");
 	});
 
 	it("replays in Spanish with no call", async () => {

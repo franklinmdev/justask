@@ -24,7 +24,13 @@ import { App } from "../demo/src/app.tsx";
 import { english } from "../demo/src/content/en.ts";
 import { spanish } from "../demo/src/content/es.ts";
 import { DayPicker } from "../demo/src/day-picker.tsx";
-import { counter, expectNoAxeViolations, figure, warmUp } from "./checks.ts";
+import {
+	counter,
+	description,
+	expectNoAxeViolations,
+	figure,
+	warmUp,
+} from "./checks.ts";
 import {
 	type FakeAnswers,
 	failingProvider,
@@ -863,11 +869,7 @@ describe("the demo's Fill button and its hint (#147)", () => {
 		screen.getByRole("searchbox", { name }) as HTMLInputElement;
 	const fill = (name = "Fill the card") => screen.getByRole("button", { name });
 	/** The hint the box is described by, or "" with none. */
-	const hint = () =>
-		(box().getAttribute("aria-describedby") ?? "")
-			.split(" ")
-			.map((id) => document.getElementById(id)?.textContent ?? "")
-			.join("");
+	const hint = (name?: string) => description(box(name));
 
 	it("fills the card from the button, with one call", async () => {
 		const { user } = renderDemo();
@@ -956,18 +958,14 @@ describe("the demo's Fill button and its hint (#147)", () => {
 		);
 
 		await user.type(caja(), "almuerzo con Cazuela Azul ayer, $86.40");
-		expect(
-			document.getElementById(caja().getAttribute("aria-describedby") ?? "")
-				?.textContent,
-		).toBe("Presione Enter para completar la tarjeta");
+		expect(hint("Describa el gasto")).toBe(
+			"Presione Enter para completar la tarjeta",
+		);
 		await user.click(fill("Completar la tarjeta"));
 
 		await waitFor(() => expect(vendor("Proveedor").value).toBe("cazuela"));
 		expect(byRequest.calls).toHaveLength(1);
-		expect(
-			document.getElementById(caja().getAttribute("aria-describedby") ?? "")
-				?.textContent,
-		).toBe("");
+		expect(hint("Describa el gasto")).toBe("");
 	});
 
 	it("names Go on a phone keyboard's key", () => {
