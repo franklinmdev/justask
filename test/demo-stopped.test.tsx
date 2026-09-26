@@ -308,6 +308,7 @@ describe("a live request past the visitor's own limit", () => {
 			await typeRequest(user, box, "the caterers");
 
 			const heading = await screen.findByRole("heading", { name: title });
+			// Focus moves a moment after the heading shows (#153).
 			await waitFor(() => expect(document.activeElement).toBe(heading));
 			const notice = heading.closest("section");
 			expect(notice?.textContent).toContain(resets);

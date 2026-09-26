@@ -27,7 +27,11 @@ import type { Language } from "../demo/src/content/types.ts";
 import { formats } from "../demo/src/format.ts";
 import { dayOf, type Recording, recordings } from "../demo/src/recording.ts";
 import { applyTo, matches, transactionsOn } from "../demo/src/transactions.ts";
-import { expectNoAxeViolations as expectNoAxe, warmUp } from "./checks.ts";
+import {
+	description,
+	expectNoAxeViolations as expectNoAxe,
+	warmUp,
+} from "./checks.ts";
 import { failingProvider, fakeProvider } from "./fake-provider.ts";
 
 // The recording files themselves: a rerun of the script changes their
@@ -227,7 +231,7 @@ describe("the Table case's recorded run", () => {
 			["Amount", "2"],
 		]);
 
-		expect(figure("Latency")).toBe(`${table.latencyMs} ms`);
+		expect(figure("Latency")).toBe(`${table.latencyMs}\u00a0ms`);
 		expect(figure("Input tokens")).toBe(
 			formats("en").count(table.response.inputTokens ?? Number.NaN),
 		);
@@ -396,7 +400,9 @@ describe("the Search case's recorded run", () => {
 		expect(screen.getByText(/^1 frase /).textContent).toBe(
 			"1 frase frente a 2 clics en 1 menú",
 		);
-		expect(figure("Latencia", "Esta llamada")).toBe(`${search.latencyMs} ms`);
+		expect(figure("Latencia", "Esta llamada")).toBe(
+			`${search.latencyMs}\u00a0ms`,
+		);
 		expect(provider.calls).toHaveLength(0);
 		await expectNoAxeViolations(container);
 	});
@@ -482,7 +488,7 @@ describe("the Form case's recorded run", () => {
 				"The code found no candidates, so the provider was not asked.",
 			),
 		).toBeDefined();
-		expect(figure("Latency")).toBe(`${form.latencyMs} ms`);
+		expect(figure("Latency")).toBe(`${form.latencyMs}\u00a0ms`);
 		expect(figure("Cost")).toBe(
 			formats("en").cost(form.response.costUsd ?? Number.NaN),
 		);
@@ -507,10 +513,7 @@ describe("the Form case's recorded run", () => {
 		);
 		expect(fill().hasAttribute("data-next")).toBe(false);
 		expect(box().getAttribute("aria-describedby")).toBeTruthy();
-		expect(
-			document.getElementById(box().getAttribute("aria-describedby") ?? "")
-				?.textContent,
-		).toBe("");
+		expect(description(box())).toBe("");
 	});
 
 	it("replays in Spanish with no call", async () => {
@@ -619,7 +622,7 @@ describe("a replay plays once per browser tab (#135)", () => {
 		expect(control("Vendor").value).toBe("fixbright");
 		expect(screen.getByText(label("en", table))).toBeDefined();
 		expect(announced()).not.toContain("Replaying a recorded run");
-		expect(figure("Latency")).toBe(`${table.latencyMs} ms`);
+		expect(figure("Latency")).toBe(`${table.latencyMs}\u00a0ms`);
 		expect(provider.calls).toHaveLength(0);
 	});
 

@@ -23,6 +23,14 @@ export function counter() {
 	return screen.queryByText(/^1 (sentence|frase) /)?.textContent ?? null;
 }
 
+/** The text an element is described by, or "" with none. */
+export function description(element: Element) {
+	return (element.getAttribute("aria-describedby") ?? "")
+		.split(" ")
+		.map((id) => document.getElementById(id)?.textContent ?? "")
+		.join("");
+}
+
 /** The figure a panel shows under a term, once the call has returned. */
 export async function figure(panel: ReturnType<typeof within>, term: string) {
 	const dt = await panel.findByText(term, { selector: "dt" });

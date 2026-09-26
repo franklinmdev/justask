@@ -24,7 +24,13 @@ import { App } from "../demo/src/app.tsx";
 import { english } from "../demo/src/content/en.ts";
 import { spanish } from "../demo/src/content/es.ts";
 import { DayPicker } from "../demo/src/day-picker.tsx";
-import { counter, expectNoAxeViolations, figure, warmUp } from "./checks.ts";
+import {
+	counter,
+	description,
+	expectNoAxeViolations,
+	figure,
+	warmUp,
+} from "./checks.ts";
 import {
 	type FakeAnswers,
 	failingProvider,
@@ -207,6 +213,8 @@ const amount = (name = "Amount, US Dollar") =>
 	screen.getByRole("textbox", { name }) as HTMLInputElement;
 const checkbox = (name: string) =>
 	screen.getByRole("checkbox", { name }) as HTMLInputElement;
+/** The calendar day the focus is on, by its full name. */
+const focusedDay = () => document.activeElement?.getAttribute("aria-label");
 const save = (name = "Save expense") => screen.getByRole("button", { name });
 
 /** The expenses saved in memory, as the page lists them. */
@@ -342,7 +350,7 @@ describe("the demo's card page", () => {
 		await suggest(user, "lunch with Larkspur yesterday, $86.40");
 
 		const state = panel("This call");
-		expect(await figure(state, "Latency")).toMatch(/^\d+ ms$/);
+		expect(await figure(state, "Latency")).toMatch(/^\d+\u00a0ms$/);
 		expect(await figure(state, "Input tokens")).toBe("Not reported");
 		expect(await figure(state, "Cost")).toBe("Not reported");
 	});
@@ -447,74 +455,15 @@ describe("the demo's card page", () => {
 		await suggest(user, "Papergrove toner last week, $120");
 		await user.click(screen.getByRole("button", { name: "Day Pick a day" }));
 		// With no day chosen, the calendar opens on today.
-		expect(document.activeElement?.getAttribute("aria-label")).toBe(
-			"Tuesday, September 22, 2026",
-		);
+		expect(focusedDay()).toBe("Tuesday, September 22, 2026");
 		await user.keyboard("{ArrowLeft}{ArrowUp}");
-		expect(document.activeElement?.getAttribute("aria-label")).toBe(
-			"Monday, September 14, 2026",
-		);
+		expect(focusedDay()).toBe("Monday, September 14, 2026");
 		await user.keyboard("{Escape}");
 
 		expect(screen.queryByRole("dialog")).toBeNull();
 		expect(document.activeElement).toBe(
 			screen.getByRole("button", { name: "Day Pick a day" }),
 		);
-	});
-
-	it("moves the focus with a key that lands before another render's effects run (#153)", async () => {
-		let setNote: (note: string) => void = () => {};
-		function Field() {
-			const [note, set] = useState("");
-			setNote = set;
-			return (
-				<>
-					<span id="day-label">Day{note}</span>
-					<DayPicker
-						labelId="day-label"
-						value={undefined}
-						onChange={() => {}}
-						copy={english.copy.card}
-						locale="en-US"
-						format={(iso) => iso}
-					/>
-				</>
-			);
-		}
-		render(<Field />);
-		const user = userEvent.setup();
-		await user.click(screen.getByRole("button", { name: "Day Pick a day" }));
-		await user.keyboard("{ArrowLeft}");
-		expect(document.activeElement?.getAttribute("aria-label")).toBe(
-			"Monday, September 21, 2026",
-		);
-
-		// A render the keys did not ask for commits, as a person's page does
-		// when an answer arrives, and a key lands before that render's effects
-		// run. Outside act, so React schedules the render as a browser would.
-		const acting = Reflect.get(globalThis, "IS_REACT_ACT_ENVIRONMENT");
-		Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", false);
-		try {
-			const observer = new MutationObserver(() => {
-				observer.disconnect();
-				document.activeElement?.dispatchEvent(
-					new KeyboardEvent("keydown", { key: "ArrowUp", bubbles: true }),
-				);
-			});
-			observer.observe(document.body, {
-				subtree: true,
-				childList: true,
-				characterData: true,
-			});
-			setNote(" (edited)");
-			await waitFor(() =>
-				expect(document.activeElement?.getAttribute("aria-label")).toBe(
-					"Monday, September 14, 2026",
-				),
-			);
-		} finally {
-			Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", acting);
-		}
 	});
 
 	it("fills nothing from a request that is not a new expense, and says why", async () => {
@@ -780,6 +729,30 @@ describe("the demo's card page", () => {
 		},
 	);
 
+	it("drops the amount's EUR on the next answer, from an emptied box and straight into the local currency (#160, #164)", async () => {
+		const { user } = renderDemo();
+		await user.type(
+			screen.getByRole("searchbox", { name: "Describe the expense" }),
+			"airport taxi yesterday, 42 euros{Enter}",
+		);
+		await waitFor(() => expect(amount("Amount, EUR").value).toBe("42.00"));
+		await user.clear(amount("Amount, EUR"));
+
+		await suggest(user, "delete yesterday's taxi");
+		await waitFor(() => expect(amount().value).toBe(""));
+		expect(screen.queryByText("EUR")).toBeNull();
+
+		// A EUR answer straight into one in the local currency, nothing emptied.
+		const box = screen.getByRole("searchbox", { name: "Describe the expense" });
+		await user.clear(box);
+		await user.type(box, "airport taxi yesterday, 42 euros{Enter}");
+		await waitFor(() => expect(amount("Amount, EUR").value).toBe("42.00"));
+		await suggest(user, "lunch with Larkspur yesterday, $86.40");
+
+		await waitFor(() => expect(amount().value).toBe("86.40"));
+		expect(screen.queryByText("EUR")).toBeNull();
+	});
+
 	it("fills the Spanish card from a Spanish request", async () => {
 		const { container, user } = renderDemo({ url: "/?case=form&lang=es" });
 
@@ -858,16 +831,69 @@ describe("the demo's card page", () => {
 	});
 });
 
+describe("the demo's day picker, alone", () => {
+	it("moves the focus with a key that lands before another render's effects run (#153)", async () => {
+		let setNote: (note: string) => void = () => {};
+		function Field() {
+			const [note, changeNote] = useState("");
+			// Leaked out of render: act would flush the effects this test must outrun.
+			setNote = changeNote;
+			return (
+				<>
+					<span id="day-label">Day{note}</span>
+					<DayPicker
+						labelId="day-label"
+						value={undefined}
+						onChange={() => {}}
+						copy={english.copy.card}
+						locale="en-US"
+						format={(iso) => iso}
+					/>
+				</>
+			);
+		}
+		render(<Field />);
+		const user = userEvent.setup();
+		await user.click(screen.getByRole("button", { name: "Day Pick a day" }));
+		await user.keyboard("{ArrowLeft}");
+		expect(focusedDay()).toBe("Monday, September 21, 2026");
+
+		// A render the keys did not ask for commits, as a person's page does
+		// when an answer arrives, and a key lands before that render's effects
+		// run. Outside act, so React schedules the render as a browser would.
+		const wasActEnvironment = Reflect.get(
+			globalThis,
+			"IS_REACT_ACT_ENVIRONMENT",
+		);
+		Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", false);
+		try {
+			const observer = new MutationObserver(() => {
+				observer.disconnect();
+				document.activeElement?.dispatchEvent(
+					new KeyboardEvent("keydown", { key: "ArrowUp", bubbles: true }),
+				);
+			});
+			observer.observe(document.body, {
+				subtree: true,
+				childList: true,
+				characterData: true,
+			});
+			setNote(" (edited)");
+			await waitFor(() =>
+				expect(focusedDay()).toBe("Monday, September 14, 2026"),
+			);
+		} finally {
+			Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", wasActEnvironment);
+		}
+	});
+});
+
 describe("the demo's Fill button and its hint (#147)", () => {
 	const box = (name = "Describe the expense") =>
 		screen.getByRole("searchbox", { name }) as HTMLInputElement;
 	const fill = (name = "Fill the card") => screen.getByRole("button", { name });
 	/** The hint the box is described by, or "" with none. */
-	const hint = () =>
-		(box().getAttribute("aria-describedby") ?? "")
-			.split(" ")
-			.map((id) => document.getElementById(id)?.textContent ?? "")
-			.join("");
+	const hint = (name?: string) => description(box(name));
 
 	it("fills the card from the button, with one call", async () => {
 		const { user } = renderDemo();
@@ -956,18 +982,14 @@ describe("the demo's Fill button and its hint (#147)", () => {
 		);
 
 		await user.type(caja(), "almuerzo con Cazuela Azul ayer, $86.40");
-		expect(
-			document.getElementById(caja().getAttribute("aria-describedby") ?? "")
-				?.textContent,
-		).toBe("Presione Enter para completar la tarjeta");
+		expect(hint("Describa el gasto")).toBe(
+			"Presione Enter para completar la tarjeta",
+		);
 		await user.click(fill("Completar la tarjeta"));
 
 		await waitFor(() => expect(vendor("Proveedor").value).toBe("cazuela"));
 		expect(byRequest.calls).toHaveLength(1);
-		expect(
-			document.getElementById(caja().getAttribute("aria-describedby") ?? "")
-				?.textContent,
-		).toBe("");
+		expect(hint("Describa el gasto")).toBe("");
 	});
 
 	it("names Go on a phone keyboard's key", () => {

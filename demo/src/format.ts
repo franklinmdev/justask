@@ -1,6 +1,11 @@
 /** The currency the demo's amounts are in, and the one the server resolves "$" to. */
 export const LOCAL_CURRENCY = "USD";
 
+/** The currency's code when it names one other than the local currency, which shows as a bare "$". */
+export function foreignCurrency(currency?: string | null): string | undefined {
+	return currency && currency !== LOCAL_CURRENCY ? currency : undefined;
+}
+
 /** Each locale's formatters, built once: nine Intl constructors on every render were the demo's heaviest code in the page tests' profile (#120). */
 const byLocale = new Map<string, ReturnType<typeof build>>();
 
@@ -12,6 +17,11 @@ export function formats(locale: string) {
 		byLocale.set(locale, format);
 	}
 	return format;
+}
+
+/** A YYYY-MM-DD calendar day as a Date at its UTC midnight: day arithmetic runs in UTC. */
+export function dateOf(iso: string): Date {
+	return new Date(`${iso}T00:00:00Z`);
 }
 
 function build(locale: string) {
@@ -53,6 +63,23 @@ function build(locale: string) {
 		minimumFractionDigits: 2,
 		maximumFractionDigits: 2,
 	});
+	// The calendar's day names, weekday heads and month title.
+	const longDay = new Intl.DateTimeFormat(locale, {
+		weekday: "long",
+		month: "long",
+		day: "numeric",
+		year: "numeric",
+		timeZone: "UTC",
+	});
+	const weekday = new Intl.DateTimeFormat(locale, {
+		weekday: "short",
+		timeZone: "UTC",
+	});
+	const month = new Intl.DateTimeFormat(locale, {
+		month: "long",
+		year: "numeric",
+		timeZone: "UTC",
+	});
 	const count = new Intl.NumberFormat(locale);
 	const currencyName = new Intl.DisplayNames(locale, { type: "currency" });
 	return {
@@ -63,21 +90,24 @@ function build(locale: string) {
 			usd >= 0.01 || usd === 0 ? cents.format(usd) : cost.format(usd),
 		count: (value: number) => count.format(value),
 		/** In the local currency, or as the bare number and its code when another one is named. */
-		amount: (value: number, currency?: string | null) =>
-			currency && currency !== LOCAL_CURRENCY
-				? `${value} ${currency}`
-				: amount.format(value),
+		amount: (value: number, currency?: string | null) => {
+			const code = foreignCurrency(currency);
+			return code ? `${value} ${code}` : amount.format(value);
+		},
 		/** How a screen reader hears an amount's currency: the local one by its name, since its mark is a bare "$", any other by its code, as its mark shows it. */
 		currency: (currency?: string | null) =>
-			currency && currency !== LOCAL_CURRENCY
-				? currency
-				: (currencyName.of(LOCAL_CURRENCY) ?? LOCAL_CURRENCY),
-		date: (iso: string) => date.format(new Date(`${iso}T00:00:00Z`)),
+			foreignCurrency(currency) ??
+			currencyName.of(LOCAL_CURRENCY) ??
+			LOCAL_CURRENCY,
+		date: (iso: string) => date.format(dateOf(iso)),
+		longDay: (iso: string) => longDay.format(dateOf(iso)),
+		weekday: (iso: string) => weekday.format(dateOf(iso)),
+		month: (iso: string) => month.format(dateOf(iso)),
 		day: (iso: string) =>
 			(Number(iso.slice(0, 4)) === new Date().getFullYear()
 				? day
 				: dayInYear
-			).format(new Date(`${iso}T00:00:00Z`)),
+			).format(dateOf(iso)),
 	};
 }
 

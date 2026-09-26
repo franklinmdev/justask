@@ -8,6 +8,8 @@ import {
 	vendor,
 } from "./types.ts";
 
+const listFormat = new Intl.ListFormat("es");
+
 /** Why a filter or card field is held, as both panels say it. */
 function fieldHeldBecause(reason: FieldHeldReason): string {
 	switch (reason.kind) {
@@ -105,7 +107,7 @@ export const spanish: Content = {
 		statuses: { paid: "Pagada", open: "Pendiente", overdue: "Vencida" },
 		panel: "Qué pasó",
 		idle: "Escriba una solicitud o pruebe una de las sugerencias.",
-		waiting: "Esperando la respuesta",
+		waiting: "Esperando la respuesta…",
 		filled: "Completado",
 		held: "Retenido",
 		failed: "Falló",
@@ -134,7 +136,7 @@ export const spanish: Content = {
 				case "provider":
 					return "El modelo falló, así que no se muestra nada. El registro del servidor tiene los detalles.";
 				case "timeout":
-					return `El modelo no respondió en ${reason.timeoutMs} ms, así que no se muestra nada.`;
+					return `El modelo no respondió en ${reason.timeoutMs}\u00a0ms, así que no se muestra nada.`;
 				case "unreachable":
 					return `No se pudo contactar al servidor: ${reason.message}`;
 			}
@@ -275,9 +277,7 @@ export const spanish: Content = {
 			fromVendor: "del proveedor",
 			announce: (filled, waiting) => {
 				const list = (names: string[]) =>
-					new Intl.ListFormat("es").format(
-						names.map((name) => name.toLowerCase()),
-					);
+					listFormat.format(names.map((name) => name.toLowerCase()));
 				if (filled.length === 0) {
 					return `Nada completado. Por completar: ${list(waiting)}.`;
 				}

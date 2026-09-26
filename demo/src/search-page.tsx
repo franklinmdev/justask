@@ -1,4 +1,4 @@
-import type { Candidate } from "justask";
+import type { Candidate, SearchResult } from "justask";
 import { SearchBox, SearchEmpty, SearchItem, useSearch } from "justask/react";
 import { useState } from "react";
 import { flushSync } from "react-dom";
@@ -58,7 +58,7 @@ export function SearchPage({
 	const suggest = useSuggest(box);
 	// The vendor the person picked from the offer, for the answer it was offered on.
 	const [chosen, setChosen] = useState<{
-		result: object;
+		result: SearchResult<Vendor>;
 		vendor: Vendor;
 	} | null>(null);
 	const offer = search.answered ? offerOf(search.result) : null;
@@ -82,7 +82,7 @@ export function SearchPage({
 	return (
 		<CaseLayout
 			content={content}
-			shownCase="search"
+			caseName="search"
 			call={{ trace, result: search.result, loading: search.loading }}
 			labelledBy="vendors-title"
 			hood={<StatePanel content={content} search={search} trace={trace} />}
@@ -126,7 +126,6 @@ export function SearchPage({
 				)}
 			</SearchItem>
 			<SearchEmpty search={search} className="result">
-				{/* A failed call measured no vendor, so it never says none matched (#138). */}
 				{search.error ? (
 					<p className="empty">{copy.unanswered}</p>
 				) : offer?.kind === "choices" && offer.candidates.length === 0 ? (

@@ -206,7 +206,7 @@ describe("the demo's Search case", () => {
 		const state = panel("This call");
 		expect(await figure(state, "Input tokens")).toBe("120");
 		expect(await figure(state, "Cost")).toBe("$0.000005");
-		expect(await figure(state, "Latency")).toMatch(/^\d+ ms$/);
+		expect(await figure(state, "Latency")).toMatch(/^\d+\u00a0ms$/);
 		// One call, so the strip has no figure for calls.
 		expect(state.queryByText("Calls")).toBeNull();
 		await expectNoAxeViolations(container);
@@ -228,7 +228,7 @@ describe("the demo's Search case", () => {
 		const state = panel("This call");
 		expect(await figure(state, "Calls")).toBe("2 (retried)");
 		expect(await figure(state, "Cost")).toBe("$0.000005");
-		expect(await figure(state, "Latency")).toMatch(/^\d+ ms$/);
+		expect(await figure(state, "Latency")).toMatch(/^\d+\u00a0ms$/);
 		// The second call answered, so the search filled.
 		expect(
 			await screen.findByRole("button", { name: /Larkspur Catering/ }),
@@ -244,7 +244,7 @@ describe("the demo's Search case", () => {
 		);
 
 		const state = panel("This call");
-		expect(await figure(state, "Latency")).toMatch(/^\d+ ms$/);
+		expect(await figure(state, "Latency")).toMatch(/^\d+\u00a0ms$/);
 		expect(await figure(state, "Input tokens")).toBe("Not reported");
 		expect(await figure(state, "Cost")).toBe("Not reported");
 	});
@@ -325,7 +325,7 @@ describe("the demo's Search case", () => {
 		);
 
 		const state = panel("This call");
-		expect(await figure(state, "Latency")).toMatch(/^\d+ ms$/);
+		expect(await figure(state, "Latency")).toMatch(/^\d+\u00a0ms$/);
 		expect(await figure(state, "Input tokens")).toBe("Not reported");
 		const json = await hoodView(user, "JSON");
 		expect(
@@ -653,7 +653,6 @@ describe("the demo's Search case", () => {
 		// No answer came back, so no candidate shows a probability, not even zero.
 		expect(state.getAllByRole("row")).toHaveLength(1 + 14 + 2);
 		expect(state.queryByText("0.00")).toBeNull();
-		// Nothing measured the vendors, so the page says the call failed, not that none matched.
 		await waitFor(() =>
 			expect(
 				screen.getByText(
@@ -667,7 +666,7 @@ describe("the demo's Search case", () => {
 		await expectNoAxeViolations(container);
 	});
 
-	it("says the call failed in Spanish, not that no vendor matches", async () => {
+	it("says the request could not be read in Spanish, not that no vendor matches", async () => {
 		const { container, user } = renderDemo({
 			provider: failingProvider(new Error("no key")),
 			url: "/?case=search&lang=es",

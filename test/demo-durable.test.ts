@@ -119,8 +119,8 @@ describe("the Worker's per-visitor limits, in the same Durable Object", {
 	async function inOneMinute<T>(calls: () => Promise<T>): Promise<T> {
 		for (let tries = 1; ; tries++) {
 			const minute = utcMinute(new Date());
-			const answered = await calls();
-			if (utcMinute(new Date()) === minute) return answered;
+			const result = await calls();
+			if (utcMinute(new Date()) === minute) return result;
 			if (tries === 2) throw new Error("Both tries crossed a minute's edge");
 			await server.reset();
 		}
@@ -128,27 +128,24 @@ describe("the Worker's per-visitor limits, in the same Durable Object", {
 
 	/** Sends `times` searches from `address` and answers each status. */
 	async function statuses(times: number, address: string) {
-		const answered: number[] = [];
+		const codes: number[] = [];
 		for (let i = 0; i < times; i++) {
-			answered.push((await search(server, address)).status);
+			codes.push((await search(server, address)).status);
 		}
-		return answered;
+		return codes;
 	}
 
 	it(`answers one IP's ${VISITOR_MINUTE_LIMIT + 1}st call in a minute 402, naming the visitor, and another IP 200`, async () => {
-		const { allowed, refused, refusedBody, other } = await inOneMinute(
-			async () => {
-				const allowed = await statuses(VISITOR_MINUTE_LIMIT, "203.0.113.7");
-				const refused = await search(server, "203.0.113.7");
-				const refusedBody = await refused.json();
-				const other = (await search(server, "203.0.113.8")).status;
-				return { allowed, refused: refused.status, refusedBody, other };
-			},
-		);
+		const { allowed, refused, other } = await inOneMinute(async () => {
+			const allowed = await statuses(VISITOR_MINUTE_LIMIT, "203.0.113.7");
+			const response = await search(server, "203.0.113.7");
+			const refused = { status: response.status, body: await response.json() };
+			const other = (await search(server, "203.0.113.8")).status;
+			return { allowed, refused, other };
+		});
 
 		expect(allowed).toEqual(Array(VISITOR_MINUTE_LIMIT).fill(200));
-		expect(refused).toBe(402);
-		expect(refusedBody).toEqual(VISITOR_MINUTE_USED);
+		expect(refused).toEqual({ status: 402, body: VISITOR_MINUTE_USED });
 		expect(other).toBe(200);
 	});
 
