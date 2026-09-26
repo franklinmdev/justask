@@ -76,16 +76,24 @@ Node's `http` module and Express speak their own request types. A few lines turn
 
 ```ts
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { buffer } from "node:stream/consumers";
+import { Readable } from "node:stream";
 
 export function toNode(handler: (request: Request) => Promise<Response>) {
   return async (req: IncomingMessage, res: ServerResponse) => {
+    // Aborts the provider call when the browser goes away.
+    const browser = new AbortController();
+    res.on("close", () => browser.abort());
     const response = await handler(
-      new Request(`http://${req.headers.host}${req.url}`, {
+      // The handler reads no URL, so a malformed Host header cannot break it.
+      new Request("http://localhost/", {
         method: req.method ?? "GET",
         headers: req.headers as Record<string, string>,
-        body: req.method === "POST" ? await buffer(req) : null,
-      }),
+        // Streamed, so the handler stops reading a body past its 16 KiB cap.
+        body: req.method === "POST" ? (Readable.toWeb(req) as ReadableStream) : null,
+        signal: browser.signal,
+        // A streamed body needs it; the DOM's own types do not know it yet.
+        duplex: "half",
+      } as RequestInit),
     );
     res.writeHead(response.status, Object.fromEntries(response.headers));
     res.end(Buffer.from(await response.arrayBuffer()));
