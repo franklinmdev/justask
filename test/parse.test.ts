@@ -490,6 +490,47 @@ describe("month names", () => {
 	});
 });
 
+describe("common day phrases (#189)", () => {
+	it.each([
+		["Beanhaven coffee on the 3rd $5", "on the 3rd", "$5"],
+		["Beanhaven on the 3rd for $5", "on the 3rd", "$5"],
+		["café en Cafetal el día 3 por 5 dólares", "el día 3", "5 dólares"],
+		["Cafetal el 3 5 dólares", "el 3", "5 dólares"],
+		["the 3rd, $5", "the 3rd", "$5"],
+	])(
+		"reads the day of the month before an amount, and not as one: %s",
+		(text, day, amount) => {
+			const read = parse(text);
+			expect(read.dates?.map((d) => [d.text, d.from])).toEqual([
+				[day, "2026-09-03"],
+			]);
+			expect(read.amounts?.map((a) => a.text)).toEqual([amount]);
+		},
+	);
+
+	it.each([
+		["a week ago, Beanhaven, $6", "a week ago", "2026-09-14"],
+		["a day ago", "a day ago", "2026-09-20"],
+		["a couple days ago", "a couple days ago", "2026-09-19"],
+		["a couple of days ago", "a couple of days ago", "2026-09-19"],
+		["Cafetal 4 dólares dos días atrás", "dos días atrás", "2026-09-19"],
+		["hace un par de días", "hace un par de días", "2026-09-19"],
+		["hace una semana", "hace una semana", "2026-09-14"],
+		["Beanhaven $6 yday", "yday", "2026-09-20"],
+	])("%s", (text, span, day) => {
+		expect(dates(text)).toEqual([[span, day, day]]);
+	});
+
+	it.each([
+		["next month", "next month"],
+		["el mes que viene", "el mes que viene"],
+		["el próximo mes", "próximo mes"],
+		["el mes próximo", "el mes próximo"],
+	])("reads %s as the month after this one", (text, span) => {
+		expect(dates(text)).toEqual([[span, "2026-10-01", "2026-10-31"]]);
+	});
+});
+
 describe("before and after leave the day they name out (#183)", () => {
 	it.each([
 		["invoices after May 5", "after May 5", "2026-05-06"],

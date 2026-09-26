@@ -312,6 +312,12 @@ const LOWERCASE_CODES = [
 ];
 const CURRENCY_WORDS = "pesos|peso|dolares|dolar|dollars|dollar|euros|euro";
 
+/** A count before a unit of time: a number, "un par de" or "a couple of", "a" or "an". */
+const COUNT_ES = `(un\\s+par\\s+de|${SMALL.slice(1)}`;
+const COUNT_EN = `(a\\s+couple(?:\\s+of)?|an?|${SMALL.slice(1)}`;
+const count = (s: string | undefined) =>
+	/par|couple/.test(s ?? "") ? 2 : /^an?$/.test(s ?? "") ? 1 : small(s);
+
 const WEEKDAYS: Record<string, number> = {
 	lunes: 0,
 	martes: 1,
@@ -615,14 +621,14 @@ const DATE_RULES: DateRule[] = [
 		},
 	},
 	{
-		// N days, weeks or months ago
+		// N days, weeks or months ago: "hace un par de días", "dos días atrás", "a couple of days ago".
 		re: new RegExp(
-			`${b}(?:hace\\s+${SMALL}\\s+(dias?|semanas?|mes(?:es)?)|${SMALL}\\s+(days?|weeks?|months?)\\s+ago)${e}`,
+			`${b}(?:hace\\s+${COUNT_ES}\\s+(dias?|semanas?|mes(?:es)?)|${COUNT_ES}\\s+(dias?|semanas?|mes(?:es)?)\\s+atras|${COUNT_EN}\\s+(days?|weeks?|months?)\\s+ago)${e}`,
 			"g",
 		),
 		read: (m, today) => {
-			const n = small(m[1] ?? m[3]);
-			const unit = m[2] ?? m[4] ?? "";
+			const n = count(m[1] ?? m[3] ?? m[5]);
+			const unit = m[2] ?? m[4] ?? m[6] ?? "";
 			if (unitIsMonths(unit)) {
 				return point(
 					fmt(Date.UTC(yearOf(today), monthOf(today) - 1 - n, dayOf(today))),
@@ -814,15 +820,25 @@ const DATE_RULES: DateRule[] = [
 		},
 	},
 	{
-		// This or last month
+		// This, last or next month
 		re: new RegExp(
-			`${b}(?:(este)\\s+mes|(?:el\\s+)?mes\\s+(pasado|anterior|actual)|(this|last|previous|current)\\s+month)${e}`,
+			`${b}(?:(este|proximo)\\s+mes|(?:el\\s+)?mes\\s+(pasado|anterior|actual|que\\s+viene|proximo|siguiente)|(this|last|previous|current|next)\\s+month)${e}`,
 			"g",
 		),
 		read: (m, today) => {
 			const word = m[1] ?? m[2] ?? m[3] ?? "";
 			const y = yearOf(today);
 			const mo = monthOf(today);
+			if (/proximo|viene|siguiente|next/.test(word)) {
+				const ny = mo === 12 ? y + 1 : y;
+				const nm = mo === 12 ? 1 : mo + 1;
+				return [
+					{
+						...monthRange(ny, nm),
+						note: `${MONTH_EN[nm - 1]} ${ny}, next month`,
+					},
+				];
+			}
 			if (/este|actual|this|current/.test(word)) {
 				return [
 					{
@@ -914,7 +930,7 @@ const DATE_RULES: DateRule[] = [
 		read: (_m, today) => point(today),
 	},
 	{
-		re: new RegExp(`${b}(?:ayer|yesterday)${e}`, "g"),
+		re: new RegExp(`${b}(?:ayer|yesterday|yday)${e}`, "g"),
 		read: (_m, today) => point(addDays(today, -1)),
 	},
 	{
@@ -931,9 +947,9 @@ const DATE_RULES: DateRule[] = [
 		},
 	},
 	{
-		// A day of the month alone: "el día 28", "on the 3rd", "el 28 a las 3". Not "the 3rd largest".
+		// A day of the month alone: "el día 28", "on the 3rd", "el 28 a las 3", "the 3rd $5". Not "the 3rd largest".
 		re: new RegExp(
-			`${b}(?:(?:el\\s+)?dia\\s+(\\d{1,2})|(?:el|the|on\\s+the)\\s+(\\d{1,2})(?:st|nd|rd|th)?)${e}(?=\\s*(?:$|[,.;:!?)]|a\\s+las?\\s|at\\s|@))`,
+			`${b}(?:(?:el\\s+)?dia\\s+(\\d{1,2})${e}|(?:el|the|on\\s+the)\\s+(\\d{1,2})(?:st|nd|rd|th)?${e}(?=\\s*(?:$|[,.;:!?)]|a\\s+las?\\s|at\\s|@|[$€£¥]|\\d|(?:for|por|para)\\s)))`,
 			"g",
 		),
 		read: (m, today, reads) =>
