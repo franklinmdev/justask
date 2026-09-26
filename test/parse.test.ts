@@ -190,46 +190,156 @@ describe("reading the future, as a due date does", () => {
 	});
 });
 
+describe("parts of the day", () => {
+	const both = (text: string) => {
+		const past = dates(text);
+		expect(ahead(text)).toEqual(past);
+		return past;
+	};
+
+	it.each([
+		"this morning",
+		"this afternoon",
+		"this evening",
+		"tonight",
+		"esta mañana",
+		"esta tarde",
+		"esta noche",
+	])("reads '%s' as today, whichever way the field reads", (text) => {
+		expect(both(`gas ${text}`)).toEqual([[text, TODAY, TODAY]]);
+	});
+
+	it.each(["last night", "anoche"])(
+		"reads '%s' as yesterday, whichever way the field reads",
+		(text) => {
+			expect(both(`dinner ${text}`)).toEqual([
+				[text, "2026-09-20", "2026-09-20"],
+			]);
+		},
+	);
+
+	it("reads the hour beside a part of the day as a time, and the part as the day", () => {
+		expect(both("a las 9 esta noche")).toEqual([["esta noche", TODAY, TODAY]]);
+		expect(times("a las 9 esta noche").map(([span]) => span)).toContain(
+			"a las 9",
+		);
+	});
+
+	it("still reads 'mañana' alone as tomorrow", () => {
+		expect(ahead("mañana")).toEqual([["mañana", "2026-09-22", "2026-09-22"]]);
+	});
+});
+
 describe("next and last weekdays", () => {
+	const SATURDAY = "2026-09-26";
+	const WEDNESDAY = "2026-09-23";
 	const readings = (text: string, reads: "past" | "future", today = TODAY) =>
 		(builtInParser(text, { today, reads, facts: {} }).dates ?? []).map((d) => [
 			d.from,
 			d.ambiguous ?? false,
 		]);
-
-	it.each(["next Friday", "el próximo viernes", "el viernes que viene"])(
-		"marks both readings of '%s' ambiguous, whichever way the field reads",
-		(text) => {
-			const both = [
-				["2026-09-25", true],
-				["2026-10-02", true],
-			];
-			expect(readings(text, "future")).toEqual(both);
-			expect(readings(text, "past")).toEqual(both);
-		},
-	);
+	/** The same readings on a past and a future field (ADR 0008). */
+	const bothWays = (text: string, today: string) => {
+		const past = readings(text, "past", today);
+		expect(readings(text, "future", today)).toEqual(past);
+		return past;
+	};
 
 	it.each([
-		["next Tuesday", "2026-09-24", "2026-09-29", "2026-10-06"],
-		["next Monday", "2026-09-27", "2026-09-28", "2026-10-05"],
-		["el próximo lunes", "2026-09-21", "2026-09-28", "2026-10-05"],
+		["last Friday", SATURDAY],
+		["el viernes pasado", SATURDAY],
+		["el pasado viernes", SATURDAY],
 	])(
-		"marks '%s' said on %s ambiguous too: the first one after today, or the one a week later",
-		(text, today, first, later) => {
-			expect(readings(text, "future", today)).toEqual([
-				[first, true],
-				[later, true],
+		"holds '%s' said on Saturday %s: yesterday, or the Friday of the week before this one",
+		(text, today) => {
+			expect(bothWays(text, today)).toEqual([
+				["2026-09-25", true],
+				["2026-09-18", true],
 			]);
 		},
 	);
 
-	it("marks 'el pasado viernes' ambiguous like 'el viernes pasado', whichever way the field reads", () => {
-		const both = [
-			["2026-09-18", true],
-			["2026-09-11", true],
-		];
-		expect(readings("el pasado viernes", "future")).toEqual(both);
-		expect(readings("el pasado viernes", "past")).toEqual(both);
+	it.each([
+		["last Friday", WEDNESDAY],
+		["el viernes pasado", WEDNESDAY],
+		["el pasado viernes", WEDNESDAY],
+	])(
+		"reads '%s' said on Wednesday %s one way: the closest Friday is the one of the week before this one",
+		(text, today) => {
+			expect(bothWays(text, today)).toEqual([["2026-09-18", false]]);
+		},
+	);
+
+	it.each([
+		["last Monday", SATURDAY],
+		["el lunes pasado", SATURDAY],
+		["last Monday", WEDNESDAY],
+		["el lunes pasado", WEDNESDAY],
+	])(
+		"holds '%s' said on %s: this week's Monday, or last week's",
+		(text, today) => {
+			expect(bothWays(text, today)).toEqual([
+				["2026-09-21", true],
+				["2026-09-14", true],
+			]);
+		},
+	);
+
+	it.each(["last Monday", "el lunes pasado"])(
+		"reads '%s' said on a Monday one way: a week ago",
+		(text) => {
+			expect(bothWays(text, TODAY)).toEqual([["2026-09-14", false]]);
+		},
+	);
+
+	it.each([
+		["next Friday", WEDNESDAY],
+		["el próximo viernes", WEDNESDAY],
+		["el viernes que viene", WEDNESDAY],
+	])(
+		"holds '%s' said on Wednesday %s: this week's Friday, or the one of the week after this one",
+		(text, today) => {
+			expect(bothWays(text, today)).toEqual([
+				["2026-09-25", true],
+				["2026-10-02", true],
+			]);
+		},
+	);
+
+	it.each([
+		["next Friday", SATURDAY],
+		["el próximo viernes", SATURDAY],
+		["el viernes que viene", SATURDAY],
+	])(
+		"reads '%s' said on Saturday %s one way: the closest Friday is the one of the week after this one",
+		(text, today) => {
+			expect(bothWays(text, today)).toEqual([["2026-10-02", false]]);
+		},
+	);
+
+	it.each([
+		["next Monday", WEDNESDAY],
+		["el próximo lunes", SATURDAY],
+		["el próximo lunes", TODAY],
+	])(
+		"reads '%s' said on %s one way: the Monday that starts next week",
+		(text, today) => {
+			expect(bothWays(text, today)).toEqual([["2026-09-28", false]]);
+		},
+	);
+
+	it("says which way each held reading was taken", () => {
+		const notes = (
+			builtInParser("last Friday", {
+				today: SATURDAY,
+				reads: "past",
+				facts: {},
+			}).dates ?? []
+		).map((d) => d.note);
+		expect(notes).toEqual([
+			"reading 'last' as the closest one before today",
+			"reading 'last' as that weekday in the week before this one",
+		]);
 	});
 
 	it("reads 'this coming Friday' as the first one after today, whichever way the field reads", () => {
@@ -238,19 +348,6 @@ describe("next and last weekdays", () => {
 		]);
 		expect(readings("the coming Friday", "future")).toEqual([
 			["2026-09-25", false],
-		]);
-	});
-
-	it("marks both readings of 'last Tuesday' ambiguous: the most recent one before today, or the one a week earlier", () => {
-		const both = [
-			["2026-09-22", true],
-			["2026-09-15", true],
-		];
-		expect(readings("last Tuesday", "past", "2026-09-24")).toEqual(both);
-		expect(readings("el martes pasado", "past", "2026-09-24")).toEqual(both);
-		expect(readings("last Friday", "past")).toEqual([
-			["2026-09-18", true],
-			["2026-09-11", true],
 		]);
 	});
 });
