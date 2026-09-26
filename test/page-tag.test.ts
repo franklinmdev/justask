@@ -3,14 +3,11 @@ import { describe, expect, it } from "vitest";
 
 const dir = new URL("./", import.meta.url);
 
-/** Every test file that renders the demo's whole page. */
-const pageFiles = readdirSync(dir)
+/** Every test file that renders the demo's whole page, with its source. */
+const pageFiles = readdirSync(dir, { recursive: true, encoding: "utf8" })
 	.filter((name) => name.endsWith(".test.tsx"))
-	.filter((name) =>
-		readFileSync(new URL(name, dir), "utf8").includes(
-			'from "../demo/src/app.tsx"',
-		),
-	);
+	.map((name) => ({ name, source: readFileSync(new URL(name, dir), "utf8") }))
+	.filter(({ source }) => /from "(\.\.\/)+demo\/src\/app\.tsx"/.test(source));
 
 // A whole-page axe run under other sessions' load ran a test past 5 s even
 // after its file had warmed up and the run had a test of its own (#161): the
@@ -21,9 +18,7 @@ describe("the page tag", () => {
 		expect(pageFiles.length).toBeGreaterThan(0);
 	});
 
-	it.each(pageFiles)("tags %s", (name) => {
-		expect(readFileSync(new URL(name, dir), "utf8")).toMatch(
-			/^\/\/ @module-tag page$/m,
-		);
+	it.each(pageFiles)("tags $name", ({ source }) => {
+		expect(source).toMatch(/^\/\/ @module-tag page$/m);
 	});
 });
