@@ -310,6 +310,61 @@ describe("ask: search", () => {
 		expect(provider.calls[0]?.signal.aborted).toBe(true);
 	});
 
+	it("aborts the provider call when the caller's signal aborts, and rejects with its reason", async () => {
+		const provider = hangingProvider();
+		const caller = new AbortController();
+
+		const pending = ask({
+			...base,
+			timeoutMs: 5_000,
+			provider,
+			search: vendorSearch(),
+			signal: caller.signal,
+		});
+		await expect.poll(() => provider.calls.length).toBe(1);
+		caller.abort();
+
+		await expect(pending).rejects.toMatchObject({ name: "AbortError" });
+		expect(provider.calls[0]?.signal.aborted).toBe(true);
+	});
+
+	it("does not call again after the caller's signal aborts an unavailable call", async () => {
+		const caller = new AbortController();
+		const provider = unavailableFirstProvider(
+			[new ProviderUnavailableError("529 high traffic")],
+			{ search: { acme: 0.9, northwind: 0.05, none: 0.05, several: 0 } },
+		);
+		const answer = provider.answer.bind(provider);
+		provider.answer = async (input) => {
+			caller.abort();
+			return answer(input);
+		};
+
+		await expect(
+			ask({
+				...base,
+				provider,
+				search: vendorSearch(),
+				signal: caller.signal,
+			}),
+		).rejects.toMatchObject({ name: "AbortError" });
+		expect(provider.calls).toHaveLength(1);
+	});
+
+	it("makes no call when the caller's signal has already aborted", async () => {
+		const provider = hangingProvider();
+
+		await expect(
+			ask({
+				...base,
+				provider,
+				search: vendorSearch(),
+				signal: AbortSignal.abort(),
+			}),
+		).rejects.toMatchObject({ name: "AbortError" });
+		expect(provider.calls).toHaveLength(0);
+	});
+
 	it.each<[string, ProviderAnswer]>([
 		["leaves the question out", {}],
 		["leaves a label out", { search: { acme: 0.9, none: 0.1, several: 0 } }],

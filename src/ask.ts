@@ -64,6 +64,11 @@ type AskBase = {
 	provider: Provider;
 	/** How long the provider call may take before everything is held. No default. */
 	timeoutMs: number;
+	/**
+	 * Aborts the provider call when the caller no longer wants the answer, such
+	 * as a browser that went away; `ask` then rejects with the signal's reason.
+	 */
+	signal?: AbortSignal;
 };
 
 export type AskInput<T> = AskBase & { search: Search<T> };
@@ -164,6 +169,7 @@ async function askSearch<T>({
 	facts,
 	provider,
 	timeoutMs,
+	signal,
 	search,
 }: AskInput<T>): Promise<AskResult<T>> {
 	checkGate(search.gate, "the search's gate");
@@ -188,6 +194,7 @@ async function askSearch<T>({
 		provider,
 		{ request, facts, questions },
 		timeoutMs,
+		{ signal },
 	);
 	if ("error" in outcome) {
 		return { search: held, ...spent(outcome), error: outcome.error };
@@ -217,6 +224,7 @@ async function askFilter<F extends Fields>({
 	facts,
 	provider,
 	timeoutMs,
+	signal,
 	filter,
 }: AskFilterInput<F>): Promise<AskFilterResult<F>> {
 	checkJoiners(filter.joiners, "filter");
@@ -277,6 +285,7 @@ async function askFilter<F extends Fields>({
 		provider,
 		{ request, facts, questions },
 		timeoutMs,
+		{ signal },
 	);
 	if ("error" in outcome) {
 		return { filter: held(), ...spent(outcome), error: outcome.error };
@@ -308,6 +317,7 @@ async function askCard<F extends CardFields>({
 	facts,
 	provider,
 	timeoutMs,
+	signal,
 	card,
 }: AskCardInput<F>): Promise<AskCardResult<F>> {
 	checkGate(card.gate, "the card's gate");
@@ -387,6 +397,7 @@ async function askCard<F extends CardFields>({
 		provider,
 		{ request, facts, questions },
 		timeoutMs,
+		{ signal },
 	);
 	if ("error" in outcome) {
 		return { card: held(), ...spent(outcome), error: outcome.error };
@@ -499,14 +510,27 @@ function readCandidates(
  * One call to the provider under the timeout, and one more within it when
  * the provider was unavailable (ADR 0013). The eval's probes make theirs
  * through it too, with `retry` off, since they time the provider's one call.
+ * The caller's `signal` aborts the call and rejects with its reason.
  */
 export async function answer(
 	provider: Provider,
 	input: { request: string; facts: Facts; questions: Question[] },
 	timeoutMs: number,
-	{ retry = true }: { retry?: boolean } = {},
+	{
+		retry = true,
+		signal,
+	}: { retry?: boolean; signal?: AbortSignal | undefined } = {},
 ): Promise<({ answer: ProviderAnswer } | { error: AskError }) & Spent> {
+	signal?.throwIfAborted();
 	const controller = new AbortController();
+	let stop: (() => void) | undefined;
+	const aborted = new Promise<never>((_, reject) => {
+		stop = () => {
+			controller.abort(signal?.reason);
+			reject(signal?.reason);
+		};
+		signal?.addEventListener("abort", stop, { once: true });
+	});
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	const timeout = new Promise<{ error: AskError }>((resolve) => {
 		timer = setTimeout(() => {
@@ -537,7 +561,7 @@ export async function answer(
 				(cause: unknown) => ({ error: providerError(cause) }),
 			);
 	// Each call races the one timeout, so a second call cut short is still marked.
-	const timed = () => Promise.race([once(), timeout]);
+	const timed = () => Promise.race([once(), timeout, aborted]);
 	try {
 		const first = await timed();
 		return retry &&
@@ -549,6 +573,7 @@ export async function answer(
 			: first;
 	} finally {
 		clearTimeout(timer);
+		if (stop) signal?.removeEventListener("abort", stop);
 	}
 }
 

@@ -17,7 +17,10 @@ export type ProviderInput = {
 	request: string;
 	facts: Facts;
 	questions: Question[];
-	/** Aborted when the developer's timeout runs out; an adapter passes it to its SDK. */
+	/**
+	 * Aborted when the developer's timeout runs out, or when the caller no
+	 * longer wants the answer; an adapter passes it to its SDK.
+	 */
 	signal: AbortSignal;
 };
 

@@ -251,6 +251,20 @@ describe("createSearchHandler", () => {
 		});
 	});
 
+	it("aborts the provider call when the browser goes away, and answers nobody", async () => {
+		const provider = hangingProvider();
+		const browser = new AbortController();
+
+		const pending = handler({ provider, timeoutMs: 5_000 })(
+			new Request(post(asked), { signal: browser.signal }),
+		);
+		await expect.poll(() => provider.calls.length).toBe(1);
+		browser.abort();
+
+		expect((await pending).status).toBe(499);
+		expect(provider.calls[0]?.signal.aborted).toBe(true);
+	});
+
 	it("refuses anything but POST", async () => {
 		const response = await handler()(
 			new Request("https://app.test/api/justask"),

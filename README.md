@@ -57,6 +57,7 @@ It answers:
 - `400` with `{ error: { kind: "request", message } }` when the body is not JSON, has no `request` string or no valid `timeZone`, or its request is over 1,000 characters (as JavaScript counts them, `request.length`).
 - `413` with the same body when the body is over 16 KiB (16,384 bytes). The handler refuses a larger declared `content-length` before reading, and stops reading any other body at the cap.
 - `405` for anything but `POST`.
+- `499` with no body when the browser goes away mid call: the request's `signal` aborts the provider call, so an answer nobody reads is not paid for to the end. `ask` takes the same `signal` and rejects with its reason.
 
 A date, time or amount field weighs at most 10 readings of its kind: a request with more, such as a pasted list of numbers, gives that kind none, and its fields are held without a question.
 

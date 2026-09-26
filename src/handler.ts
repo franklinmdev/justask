@@ -152,6 +152,9 @@ const MAX_REQUEST_LENGTH = 1_000;
  */
 const MAX_BODY_BYTES = 16 * 1024;
 
+/** The status for a request the browser dropped before its answer, as nginx names it. */
+const CLIENT_CLOSED = 499;
+
 /** What every handler shares: POST only, the body read, today written, errors kept on the server. */
 function serve(
 	{ provider, timeoutMs, facts = {}, onError }: HandlerConfig,
@@ -174,12 +177,23 @@ function serve(
 		if ("error" in read) return badRequest(read.error, read.status);
 
 		const now = new Date();
-		const { response, error } = await run({
-			request: read.body.request,
-			facts: { today: todayFact(now, read.body.timeZone), ...facts },
-			provider,
-			timeoutMs,
-		});
+		let answered: Awaited<ReturnType<typeof run>>;
+		try {
+			answered = await run({
+				request: read.body.request,
+				facts: { today: todayFact(now, read.body.timeZone), ...facts },
+				provider,
+				timeoutMs,
+				signal: httpRequest.signal,
+			});
+		} catch (error) {
+			// The browser went away, and its call with it: nobody reads this answer.
+			if (httpRequest.signal.aborted) {
+				return new Response(null, { status: CLIENT_CLOSED });
+			}
+			throw error;
+		}
+		const { response, error } = answered;
 		if (error) {
 			onError?.(error);
 			response.error = forBrowser(error);
