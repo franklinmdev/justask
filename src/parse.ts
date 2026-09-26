@@ -959,67 +959,187 @@ const LOWERCASE_CODES = [
 /** "RD$", "US$", "£", or a code: a mark touching the number, letters before a "$" included. */
 const PRE_MARK = `(us\\$|[a-z]{1,2}\\$|${LOWERCASE_CODES.join("|")}|\\$|€|£|¥)?\\s*`;
 /**
- * Thousands with commas ("1,500.50"), thousands with dots ("1.500,50"), or a
- * plain number with an optional decimal part. A single separator followed by
- * exactly three digits is always thousands: nobody types a money amount to
- * three decimals.
+ * Thousands with spaces ("1 234,56"), with commas ("1,500.50") or with dots
+ * ("1.500,50"), or a plain number with an optional decimal part. A single
+ * separator followed by exactly three digits is always thousands: nobody
+ * types a money amount to three decimals.
  */
 const NUMBER =
-	"(\\d{1,3}(?:,\\d{3})+(?:\\.\\d+)?|\\d{1,3}(?:\\.\\d{3})+(?:,\\d+)?|\\d+(?:[.,]\\d+)?)";
+	"(\\d{1,3}(?:[ \\u00a0]\\d{3})+(?:[.,]\\d{1,2})?(?!\\d)|\\d{1,3}(?:,\\d{3})+(?:\\.\\d+)?|\\d{1,3}(?:\\.\\d{3})+(?:,\\d+)?|\\d+(?:[.,]\\d+)?)";
+/** "m" and "mm" are millions only beside a currency: "5m" alone may be minutes or meters. */
 const MULTIPLIER =
-	"(?:\\s*(k|mil|millones|millon|millions|million|thousand)(?![a-z]))?";
+	"(?:\\s*(k|mil|millones|millon|millions|million|thousand|mm|m)(?![a-z]))?";
 const CURRENCY_WORDS = "pesos|peso|dolares|dolar|dollars|dollar|euros|euro";
 const POST_MARK = `(?:\\s*(${CURRENCY_WORDS}|${LOWERCASE_CODES.join("|")}|us\\$|€)(?![a-z]))?`;
+const MILLIONS_MARK = new Set(["m", "mm"]);
 const DIGIT_AMOUNT = new RegExp(
 	`${b}${PRE_MARK}${NUMBER}${MULTIPLIER}${POST_MARK}`,
 	"g",
 );
 
-const WORD_NUMBERS: Record<string, number> = {
-	...SMALL_NUMBERS,
-	veinte: 20,
-	treinta: 30,
-	cuarenta: 40,
-	cincuenta: 50,
-	cien: 100,
-	ciento: 100,
-	doscientos: 200,
-	trescientos: 300,
-	cuatrocientos: 400,
-	quinientos: 500,
-	seiscientos: 600,
-	setecientos: 700,
-	ochocientos: 800,
-	novecientos: 900,
-	twenty: 20,
-	thirty: 30,
-	forty: 40,
-	fifty: 50,
-	hundred: 100,
+/** What a number word does: adds itself, multiplies what came before, or starts a group of thousands or millions. */
+type NumberWord =
+	| { kind: "unit" | "teen" | "tens" | "hundreds"; value: number }
+	| { kind: "hundred" | "thousand" | "million" | "article" };
+
+const NUMBER_WORDS: Record<string, NumberWord> = {};
+const words = (kind: "unit" | "teen" | "tens" | "hundreds", list: string) => {
+	for (const pair of list.split(" ")) {
+		const [word = "", value] = pair.split("=");
+		NUMBER_WORDS[word] = { kind, value: Number(value) };
+	}
 };
-const WORDS = byLength(Object.keys(WORD_NUMBERS));
-/** "mil", "diez mil", "un millón", "a thousand", "mil pesos", "un millón de pesos". */
-const WORD_MULTIPLIED = new RegExp(
-	`${b}(?:(${WORDS})\\s+)?(mil|millones|millon|thousand|million)(?:\\s+(?:de\\s+)?(${CURRENCY_WORDS}))?${e}`,
-	"g",
+words(
+	"unit",
+	"un=1 uno=1 una=1 dos=2 tres=3 cuatro=4 cinco=5 seis=6 siete=7 ocho=8 nueve=9 one=1 two=2 three=3 four=4 five=5 six=6 seven=7 eight=8 nine=9",
 );
-/** Number words without a multiplier count only with a currency after them: "dos" alone is not money. */
-const WORD_WITH_CURRENCY = new RegExp(
-	`${b}(${byLength(Object.keys(WORD_NUMBERS).filter((w) => w !== "a" && w !== "an"))})\\s+(${CURRENCY_WORDS})${e}`,
-	"g",
+words(
+	"teen",
+	"diez=10 once=11 doce=12 trece=13 catorce=14 quince=15 dieciseis=16 diecisiete=17 dieciocho=18 diecinueve=19 veintiun=21 veintiuno=21 veintiuna=21 veintidos=22 veintitres=23 veinticuatro=24 veinticinco=25 veintiseis=26 veintisiete=27 veintiocho=28 veintinueve=29 ten=10 eleven=11 twelve=12 thirteen=13 fourteen=14 fifteen=15 sixteen=16 seventeen=17 eighteen=18 nineteen=19",
 );
+words(
+	"tens",
+	"veinte=20 treinta=30 cuarenta=40 cincuenta=50 sesenta=60 setenta=70 ochenta=80 noventa=90 twenty=20 thirty=30 forty=40 fifty=50 sixty=60 seventy=70 eighty=80 ninety=90",
+);
+words(
+	"hundreds",
+	"cien=100 ciento=100 doscientos=200 doscientas=200 trescientos=300 trescientas=300 cuatrocientos=400 cuatrocientas=400 quinientos=500 quinientas=500 seiscientos=600 seiscientas=600 setecientos=700 setecientas=700 ochocientos=800 ochocientas=800 novecientos=900 novecientas=900",
+);
+for (const word of ["hundred", "hundreds"])
+	NUMBER_WORDS[word] = { kind: "hundred" };
+for (const word of ["mil", "thousand", "thousands"])
+	NUMBER_WORDS[word] = { kind: "thousand" };
+for (const word of ["millon", "millones", "million", "millions"])
+	NUMBER_WORDS[word] = { kind: "million" };
+for (const word of ["a", "an"]) NUMBER_WORDS[word] = { kind: "article" };
+
+type Words = { value: number; start: number; end: number; multiplied: boolean };
+
+/**
+ * The longest number written in words from the token at `first`: "twenty-five",
+ * "two hundred and fifty", "doscientos noventa y nueve", "mil quinientos". It
+ * stops before the first word that cannot follow, so "once twenty" is 11.
+ */
+function readWords(
+	folded: string,
+	tokens: RegExpExecArray[],
+	first: number,
+): Words | null {
+	let total = 0;
+	let group = 0;
+	let multiplied = false;
+	let last = -1;
+	for (let j = first; j < tokens.length; j++) {
+		const token = tokens[j] as RegExpExecArray;
+		if (j > first) {
+			const previous = tokens[j - 1] as RegExpExecArray;
+			const gap = folded.slice(
+				previous.index + previous[0].length,
+				token.index,
+			);
+			if (!/^[\s-]+$/.test(gap)) break;
+		}
+		const word = token[0];
+		if ((word === "y" || word === "and") && last === j - 1 && last >= first) {
+			continue;
+		}
+		const number = NUMBER_WORDS[word];
+		if (!number) break;
+		const unitsOpen =
+			group % 10 === 0 && (group % 100 === 0 || group % 100 >= 20);
+		if (number.kind === "article") {
+			// "a thousand", never the Spanish "a" in "de 500 a mil".
+			const next = tokens[j + 1]?.[0] ?? "";
+			if (j !== first || !/^(?:hundred|thousand|million)$/.test(next)) break;
+			group = 1;
+		} else if (number.kind === "unit") {
+			if (!unitsOpen) break;
+			group += number.value;
+		} else if (number.kind === "teen" || number.kind === "tens") {
+			if (group % 100 !== 0) break;
+			group += number.value;
+		} else if (number.kind === "hundreds") {
+			if (group !== 0) break;
+			group = number.value;
+		} else if (number.kind === "hundred") {
+			if (group >= 100) break;
+			group = (group || 1) * 100;
+		} else if (number.kind === "thousand") {
+			if (total % 1e6 !== 0 || group >= 1000) break;
+			total += (group || 1) * 1e3;
+			group = 0;
+			multiplied = true;
+		} else {
+			if (total !== 0) break;
+			total = (group || 1) * 1e6;
+			group = 0;
+			multiplied = true;
+		}
+		last = j;
+	}
+	if (last < first) return null;
+	const end = tokens[last] as RegExpExecArray;
+	return {
+		value: total + group,
+		start: (tokens[first] as RegExpExecArray).index,
+		end: end.index + end[0].length,
+		multiplied,
+	};
+}
+
+/** A currency word right after a number written in words: "pesos", "de pesos", "dólares". */
+const WORDS_CURRENCY = new RegExp(
+	`^\\s+(?:de\\s+)?(${CURRENCY_WORDS}|${LOWERCASE_CODES.join("|")})${e}`,
+);
+
+/**
+ * Cents said after a currency word: "con cincuenta", "con 50", "and fifty
+ * cents", "y 50 centavos". After "and" or "y" the cents word must be said, so
+ * "10 dollars and 5 coffees" is not 10.05.
+ */
+function centsAfter(
+	folded: string,
+	at: number,
+	tokens: RegExpExecArray[],
+): { cents: number; end: number } | null {
+	const lead = /^\s+(con|and|y)\s+/.exec(folded.slice(at));
+	if (!lead) return null;
+	const from = at + lead[0].length;
+	let cents: number;
+	let end: number;
+	const digits = /^\d{1,2}(?![\d.,])/.exec(folded.slice(from));
+	if (digits) {
+		cents = Number(digits[0]);
+		end = from + digits[0].length;
+	} else {
+		const first = tokens.findIndex((token) => token.index === from);
+		const said = first < 0 ? null : readWords(folded, tokens, first);
+		if (!said || said.multiplied || said.value >= 100) return null;
+		cents = said.value;
+		end = said.end;
+	}
+	const unit = /^\s+(?:centavos?|centimos?|cents?)(?![a-z])/.exec(
+		folded.slice(end),
+	);
+	if (unit) end += unit[0].length;
+	else if (lead[1] !== "con") return null;
+	return { cents: cents / 100, end };
+}
 
 const MULTIPLY: Record<string, number> = {
 	k: 1e3,
 	mil: 1e3,
 	thousand: 1e3,
+	m: 1e6,
+	mm: 1e6,
 	millon: 1e6,
 	millones: 1e6,
 	million: 1e6,
 	millions: 1e6,
 };
 
-function parseNumber(raw: string): number {
+function parseNumber(spaced: string): number {
+	const raw = spaced.replace(/[ \u00a0]/g, "");
 	if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(raw)) {
 		return Number(raw.replace(/,/g, ""));
 	}
@@ -1336,6 +1456,7 @@ function readSpans(
 			},
 		});
 	};
+	const tokens = [...folded.matchAll(/[a-z]+/g)];
 	DIGIT_AMOUNT.lastIndex = 0;
 	for (let m = DIGIT_AMOUNT.exec(folded); m; m = DIGIT_AMOUNT.exec(folded)) {
 		let s = m.index + (m[0].length - m[0].trimStart().length);
@@ -1360,39 +1481,36 @@ function readSpans(
 				t += after[0].length;
 			}
 		}
-		const value = parseNumber(m[2] ?? "") * (MULTIPLY[m[3] ?? ""] ?? 1);
+		if (MILLIONS_MARK.has(m[3] ?? "") && mark === null) continue;
+		let value = parseNumber(m[2] ?? "") * (MULTIPLY[m[3] ?? ""] ?? 1);
+		if (m[4] && new RegExp(`^(?:${CURRENCY_WORDS})$`).test(m[4])) {
+			const said = centsAfter(folded, t, tokens);
+			if (said) {
+				value += said.cents;
+				t = said.end;
+			}
+		}
 		claim(s, t, value, mark);
 	}
-	WORD_MULTIPLIED.lastIndex = 0;
-	for (
-		let m = WORD_MULTIPLIED.exec(folded);
-		m;
-		m = WORD_MULTIPLIED.exec(folded)
-	) {
-		const value = (WORD_NUMBERS[m[1] ?? ""] ?? 1) * (MULTIPLY[m[2] ?? ""] ?? 1);
-		const t = m.index + m[0].length;
-		const written = m[3];
-		claim(
-			m.index,
-			t,
-			value,
-			written ? text.slice(t - written.length, t) : null,
-		);
-	}
-	WORD_WITH_CURRENCY.lastIndex = 0;
-	for (
-		let m = WORD_WITH_CURRENCY.exec(folded);
-		m;
-		m = WORD_WITH_CURRENCY.exec(folded)
-	) {
-		const t = m.index + m[0].length;
-		const written = m[2] ?? "";
-		claim(
-			m.index,
-			t,
-			WORD_NUMBERS[m[1] ?? ""] ?? 0,
-			text.slice(t - written.length, t),
-		);
+	// Numbers in words count with a currency after them or a multiplier in them: "dos" alone is not money.
+	for (let i = 0; i < tokens.length; i++) {
+		const said = readWords(folded, tokens, i);
+		if (!said) continue;
+		const currency = WORDS_CURRENCY.exec(folded.slice(said.end));
+		if (!currency && !said.multiplied) continue;
+		let { value, end } = said;
+		let mark: string | null = null;
+		if (currency) {
+			end += currency[0].length;
+			mark = text.slice(end - (currency[1] ?? "").length, end);
+			const cents = centsAfter(folded, end, tokens);
+			if (cents) {
+				value += cents.cents;
+				end = cents.end;
+			}
+		}
+		claim(said.start, end, value, mark);
+		while (i + 1 < tokens.length && (tokens[i + 1]?.index ?? 0) < end) i++;
 	}
 
 	const inOrder = <R>(placed: Placed<R>[]) =>

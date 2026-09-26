@@ -594,6 +594,83 @@ describe("amounts", () => {
 		expect(amounts("500 for rent")).toEqual([["500", 500, null]]);
 	});
 
+	describe("numbers written in words (#182)", () => {
+		it.each([
+			["twenty-five dollars", 25],
+			["thirty two dollars", 32],
+			["one hundred fifty dollars", 150],
+			["two hundred and fifty dollars", 250],
+			["two hundred dollars", 200],
+			["twelve hundred dollars", 1200],
+			["sixty-five dollars", 65],
+			["cuarenta y cinco dólares", 45],
+			["doscientos cincuenta dólares", 250],
+			["trescientos cincuenta dólares", 350],
+			["ciento veinte dólares", 120],
+			["doscientos noventa y nueve dólares", 299],
+			["veinticinco dólares", 25],
+			["dieciséis dólares", 16],
+			["mil quinientos dólares", 1500],
+			["mil doscientos dólares", 1200],
+			["dos mil trescientos dólares", 2300],
+			["one thousand two hundred dollars", 1200],
+		])("reads %s whole", (text, value) => {
+			expect(amounts(text)).toEqual([[text, value, "USD"]]);
+		});
+
+		it.each([
+			["diez dólares con cincuenta", 10.5],
+			["10 dólares con 50", 10.5],
+			["ten dollars and fifty cents", 10.5],
+		])("reads the cents said after the currency: %s", (text, value) => {
+			expect(amounts(text)).toEqual([[text, value, "USD"]]);
+		});
+
+		it("reads a number of words with a multiplier whole, currency or not", () => {
+			expect(amounts("over two thousand five hundred")).toEqual([
+				["two thousand five hundred", 2500, null],
+			]);
+			expect(amounts("más de dos mil quinientos")).toEqual([
+				["dos mil quinientos", 2500, null],
+			]);
+		});
+
+		it("still reads no money from number words with neither a multiplier nor a currency", () => {
+			expect(amounts("the two hundred rows")).toEqual([]);
+			expect(amounts("los dos de Ana")).toEqual([]);
+			expect(amounts("a coffee")).toEqual([]);
+		});
+	});
+
+	describe("abbreviated millions and spaced thousands (#182)", () => {
+		it.each([
+			["$1.5M", 1500000, "USD"],
+			["$2M", 2000000, "USD"],
+			["1.5m dollars", 1500000, "USD"],
+			["US$3MM", 3000000, "USD"],
+		])("reads %s as millions beside a currency", (text, value, currency) => {
+			expect(amounts(text, { local_currency: "USD" })).toEqual([
+				[text, value, currency],
+			]);
+		});
+
+		it("reads no amount from an M with no currency beside it, which may be minutes or meters", () => {
+			expect(amounts("a 5m walk")).toEqual([]);
+		});
+
+		it.each([
+			["1 234,56", 1234.56, null],
+			["$ 1 234,56", 1234.56, null],
+			["1 000 pesos", 1000, null],
+			["12 500", 12500, null],
+		])(
+			"reads %s with a space between thousands as one number",
+			(text, value, currency) => {
+				expect(amounts(text)).toEqual([[text, value, currency]]);
+			},
+		);
+	});
+
 	describe("a currency the request names beside the number (#181)", () => {
 		it.each([
 			["over RD$300", "RD$300", 300, "DOP"],
