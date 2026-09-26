@@ -31,7 +31,7 @@ import { useSuggest } from "./trace.ts";
 
 type Expense = CardValue<ExpenseFields> & { id: number };
 
-/** How long the Fill button shows a send made by Enter, a suggestion or the replay. */
+/** How long the Fill button shows a send, its own click or not, as a press. */
 const PRESS_MS = 150;
 
 /** The card's fields in the order they show, which an answer fills them in. */
@@ -61,26 +61,32 @@ export function CardPage({
 	const replay = useReplay({ recording, fetch: fetchImpl, enter: true });
 	const { trace } = replay;
 
+	// The sentence last sent, by Enter, the Fill button, a suggestion or the
+	// replay, so the page can tell one typed since and not yet sent (#147).
+	// Saving starts the next expense with nothing sent; Undo brings it back.
+	const [sent, setSent] = useState<string | null>(null);
+	const sentBeforeSave = useRef<string | null>(null);
+	const [pressed, setPressed] = useState(false);
+
 	const card = useCard<ExpenseFields>({
 		endpoint: cardEndpoint(content.language),
 		onConfirm: (value) => {
 			const id = nextId.current++;
 			setExpenses((saved) => [{ ...value, id }, ...saved]);
+			sentBeforeSave.current = sent;
+			setSent(null);
 		},
 		fetch: replay.fetch,
 	});
-	// The sentence last sent, by Enter, the Fill button, a suggestion or the
-	// replay, so the page can tell one typed since and not yet sent (#147).
-	const [sent, setSent] = useState<string | null>(null);
-	const [pressed, setPressed] = useState(false);
 	const blank = card.request.trim() === "";
-	const unsent = !blank && card.request !== sent;
+	// An end state opened still was sent by the replay, and shows no press (#139).
+	const unsent = !blank && card.request !== sent && !replay.still;
 	const sending: typeof card = {
 		...card,
 		submit: () => {
 			if (!blank) {
 				setSent(card.request);
-				setPressed(true);
+				if (!replay.still) setPressed(true);
 			}
 			card.submit();
 		},
@@ -112,6 +118,7 @@ export function CardPage({
 	function undo() {
 		setExpenses((saved) => saved.slice(1));
 		card.restore();
+		setSent(sentBeforeSave.current);
 		// The undo control is gone with the slot; the restored request takes the focus.
 		document.getElementById("card-box")?.focus();
 	}

@@ -814,9 +814,23 @@ describe("the demo's Fill button and its hint (#147)", () => {
 		expect(fill().hasAttribute("data-next")).toBe(false);
 	});
 
+	it("hints again for the same sentence typed for the next expense, once the last is saved", async () => {
+		const { user } = renderDemo();
+
+		await suggest(user, "lunch with Larkspur yesterday, $86.40");
+		await user.click(save());
+		await user.type(box(), "lunch with Larkspur yesterday, $86.40");
+
+		expect(hint()).toBe("Press Enter to fill the card");
+		expect(fill().hasAttribute("data-next")).toBe(true);
+	});
+
 	it("names the button and the hint in Spanish", async () => {
 		const { user } = renderDemo({ url: "/?case=form&lang=es" });
 		const caja = () => box("Describa el gasto");
+		expect(fill("Completar la tarjeta").getAttribute("aria-disabled")).toBe(
+			"true",
+		);
 
 		await user.type(caja(), "almuerzo con Cazuela Azul ayer, $86.40");
 		expect(
