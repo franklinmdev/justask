@@ -95,7 +95,7 @@ describe("the Worker's ledger, a Durable Object with SQLite", () => {
 
 // Room for inOneMinute's second try. At load average 33 (#166) a test's calls
 // took up to 12.6 s and a reset up to 5.6 s: two tries and the reset between
-// them, 31 s.
+// them, 31 s, and half again for a machine loaded past that, 45 s.
 describe("the Worker's per-visitor limits, in the same Durable Object", {
 	timeout: 45_000,
 }, () => {
