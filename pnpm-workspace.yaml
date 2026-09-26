@@ -2,3 +2,6 @@
 allowBuilds:
   esbuild: false
   workerd: false
+
+# A package whose trust signals weaken between releases is refused.
+trustPolicy: no-downgrade
