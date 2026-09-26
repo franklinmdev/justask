@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+// @module-tag page
 import { act, cleanup, render, screen, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
