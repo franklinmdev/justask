@@ -24,7 +24,7 @@
 
 **Dates (#140): "last X" and "next X" are held only when their two readings differ, and a part of the day reads as its day.** On the runs' fixed Wednesday 2026-09-23, "last Monday" and "last Tuesday" are still held and "last Wednesday" to "last Sunday" now fill. The owner ruled on 2026-09-25 that today stays fixed at that Wednesday, the 14 frozen rows it moves stay as frozen and scored, and the next round runs under the new rule. See Dates (#140) below; rounds 1 to 9 are unchanged.
 
-**Parser readings (#232): the QA's parser fixes move two frozen nothing rows' candidates, and no row's expected value.** See Parser readings (#232) below; rounds 1 to 9 are unchanged.
+**Parser readings (#232): the QA's parser fixes change the candidates of eight frozen rows, and no row's expected value.** See Parser readings (#232) below; rounds 1 to 9 are unchanged.
 
 **Latency (#65): from the next verdict run on, every run sends a fixed provider probe before and after its rows, and a run whose probes are more than twice the baseline leaves a failing latency line pending, to be measured again in a normal window.** See Latency below; round 4 stays a FAIL.
 
@@ -1456,5 +1456,7 @@ The owner's decision on [#140](https://github.com/franklinmdev/justask/issues/14
 The pre-launch QA's parser fixes ([#232](https://github.com/franklinmdev/justask/issues/232)) change what the built-in parser reads from some requests. Every frozen row of every set was parsed before and after the change, on the eval's Wednesday 2026-09-23, and the rows whose candidates changed are listed here.
 
 - **"before X" and "after X" leave X out (#183).** `en-r8-163` (`don't let me forget to pay Farwander before Friday`) and `es-r8-163` (`que no se me olvide pagarle a Rumbo Claro antes del viernes`) now read the Thursday before that Friday. Both are nothing rows: only the intent is scored, so no expected value moves.
-- **Frozen rows stay as they are.** Their sets, logs, scores and verdicts are unchanged: a log saves each field's candidates and picks, so it rescores as it ran. `test/demo-card-eval.test.ts` lists them by id (`MOVED_BY_232`) with the span each now reads, and fails when a listed row stops reading it.
+- **A weekday and its day of the month are one day (#193).** `en-r7-092` (`Monday the 14th`), `en-r8-062` (`Thursday the 10th`) and `en-r9-165` (`Friday the 11th`) read one candidate, the day they expect, where they read two: the weekday's last one and the day of the month. Their Spanish twins say the month (`el lunes 14 de septiembre`) and read as before.
+- **The number after a dash in a form's name is no amount (#193).** `en-r5-33` and `en-r9-134` (`W-2`) and `en-r9-049` (`I-9`) no longer read a stray amount of 2 or 9 beside the total they expect.
+- **Frozen rows stay as they are.** Their sets, logs, scores and verdicts are unchanged: a log saves each field's candidates and picks, so it rescores as it ran. `test/demo-card-eval.test.ts` lists them by id (`MOVED_BY_232`) with the span each now reads or no longer reads, and fails when a listed row stops being moved.
 - **No call was made for this change.**

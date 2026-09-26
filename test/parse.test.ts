@@ -962,6 +962,94 @@ describe("amounts", () => {
 	});
 });
 
+describe("small misreads (#193)", () => {
+	it("does not read the verb 'march' after its subject as March", () => {
+		expect(dates("we march on")).toEqual([]);
+		expect(dates("March invoices")).toEqual([
+			["March", "2026-03-01", "2026-03-31"],
+		]);
+	});
+
+	it.each([
+		["8.30am", "8.30am", ["08:30"]],
+		["8 de la mañana", "8 de la mañana", ["08:00"]],
+		["8 de la noche", "8 de la noche", ["20:00"]],
+		["nos vemos a las 12", "a las 12", ["12:00"]],
+		["pagué a las 3.", "a las 3", ["03:00", "15:00"]],
+		["pagué las 3.", "las 3", ["03:00", "15:00"]],
+		["almuerzo, las 12", "las 12", ["12:00"]],
+	])("reads %s as a time, not an amount", (text, span, at) => {
+		expect(times(text)).toEqual(at.map((time) => [span, time]));
+		expect(amounts(text)).toEqual([]);
+	});
+
+	it("still reads the count after 'las' as a count", () => {
+		expect(times("las 3 facturas")).toEqual([]);
+	});
+
+	it.each(["31/02", "02/30/2026", "2026-02-30"])(
+		"reads nothing from %s, a day that does not exist",
+		(text) => {
+			expect(parse(text)).toEqual({ dates: [], times: [], amounts: [] });
+		},
+	);
+
+	it.each(["$-50", "-$50", "gastos de -50"])(
+		"reads no amount from %s, a negative number",
+		(text) => {
+			expect(amounts(text)).toEqual([]);
+		},
+	);
+
+	it("still reads both ends of a range written with a dash", () => {
+		expect(amounts("$5-10")).toEqual([
+			["$5", 5, null],
+			["10", 10, null],
+		]);
+	});
+
+	it("reads no amount from 1e3", () => {
+		expect(amounts("1e3")).toEqual([]);
+	});
+
+	it("reads a weekday and its day of the month as one day when they agree", () => {
+		expect(dates("el martes 15")).toEqual([
+			["el martes 15", "2026-09-15", "2026-09-15"],
+		]);
+		expect(dates("Tuesday the 15th")).toEqual([
+			["Tuesday the 15th", "2026-09-15", "2026-09-15"],
+		]);
+		expect(amounts("el martes 15")).toEqual([]);
+	});
+
+	it("holds a weekday and a day of the month that disagree, both readings ambiguous", () => {
+		const read = parse("el martes 16");
+		expect(read.dates?.map((d) => [d.text, d.from, d.ambiguous])).toEqual([
+			["el martes 16", "2026-09-15", true],
+			["el martes 16", "2026-09-16", true],
+		]);
+		expect(read.amounts).toEqual([]);
+	});
+
+	it("leaves the money after a weekday to the amounts", () => {
+		expect(dates("martes 15 dólares")).toEqual([
+			["martes", "2026-09-15", "2026-09-15"],
+		]);
+		expect(amounts("martes 15 dólares")).toEqual([["15 dólares", 15, "USD"]]);
+	});
+
+	it("reads cañas, Dominican for pesos, as the local peso only when it is the Dominican one", () => {
+		expect(
+			parse("Cafetal, 500 cañas", { local_currency: "USD" }).amounts,
+		).toEqual([
+			{ text: "500 cañas", value: 500, currency: null, unresolved: "cañas" },
+		]);
+		expect(amounts("Cafetal, 500 cañas", { local_currency: "DOP" })).toEqual([
+			["500 cañas", 500, "DOP"],
+		]);
+	});
+});
+
 describe("accents", () => {
 	it("keeps every span where the person typed it, accents included", () => {
 		expect(dates("Pagos de María del año pasado")).toEqual([

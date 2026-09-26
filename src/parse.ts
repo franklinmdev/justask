@@ -310,7 +310,12 @@ const LOWERCASE_CODES = [
 	"brl",
 	"ars",
 ];
-const CURRENCY_WORDS = "pesos|peso|dolares|dolar|dollars|dollar|euros|euro";
+/** "cañas" is Dominican for pesos; folded, it reads "canas". */
+const CURRENCY_WORDS =
+	"pesos|peso|canas|cana|dolares|dolar|dollars|dollar|euros|euro";
+
+/** Not money: "martes 15 dólares" is a weekday and an amount. */
+const NOT_MONEY = `(?![.,]\\d|\\s*(?:${CURRENCY_WORDS}|${LOWERCASE_CODES.join("|")}|%|k(?![a-z])|mil(?![a-z])))`;
 
 /** A count before a unit of time: a number, "un par de" or "a couple of", "a" or "an". */
 const COUNT_ES = `(un\\s+par\\s+de|${SMALL.slice(1)}`;
@@ -374,7 +379,7 @@ type Hit = { from: string; to: string; note?: string; ambiguous?: boolean };
 
 type DateRule = {
 	re: RegExp;
-	/** Returns the readings of one match, or null to reject it. */
+	/** Returns the readings of one match, or null to reject it; none claims the span, as "31/02" is no day and no amount. */
 	read: (m: RegExpExecArray, today: string, reads: Reads) => Hit[] | null;
 	/** Soft spans stay available to the amount rules ("2025" can be a year or a number). */
 	soft?: boolean;
@@ -536,7 +541,7 @@ const DATE_RULES: DateRule[] = [
 	{
 		// ISO
 		re: new RegExp(`${b}(\\d{4})-(\\d{1,2})-(\\d{1,2})${e}`, "g"),
-		read: (m) => point(ymd(Number(m[1]), Number(m[2]), Number(m[3]))),
+		read: (m) => point(ymd(Number(m[1]), Number(m[2]), Number(m[3]))) ?? [],
 	},
 	{
 		// Numeric with a year
@@ -547,14 +552,14 @@ const DATE_RULES: DateRule[] = [
 		read: (m, today, reads) => {
 			const raw = m[4] ?? "";
 			const y = raw.length === 2 ? 2000 + Number(raw) : Number(raw);
-			return numericReadings(Number(m[1]), Number(m[3]), y, today, reads);
+			return numericReadings(Number(m[1]), Number(m[3]), y, today, reads) ?? [];
 		},
 	},
 	{
 		// Numeric without a year
 		re: new RegExp(`${b}(\\d{1,2})/(\\d{1,2})${e}(?!/)`, "g"),
 		read: (m, today, reads) =>
-			numericReadings(Number(m[1]), Number(m[2]), null, today, reads),
+			numericReadings(Number(m[1]), Number(m[2]), null, today, reads) ?? [],
 	},
 	{
 		// A day range in one month, Spanish
@@ -733,6 +738,16 @@ const DATE_RULES: DateRule[] = [
 		read: (m, today, reads) => {
 			// "may" is a month only after a preposition or with a year: "you may see" is not May.
 			if (m[2] === "may" && !m[1] && !m[3]) return null;
+			// "we march on": the verb, after its subject.
+			if (
+				m[2] === "march" &&
+				!m[1] &&
+				/(?<![a-z])(?:we|they|i|you|to|will|lets|let's|us)\s+$/.test(
+					m.input.slice(0, m.index),
+				)
+			) {
+				return null;
+			}
 			const y = resolveYear(m[3], today);
 			return [
 				y === null
@@ -932,6 +947,38 @@ const DATE_RULES: DateRule[] = [
 	{
 		re: new RegExp(`${b}(?:ayer|yesterday|yday)${e}`, "g"),
 		read: (_m, today) => point(addDays(today, -1)),
+	},
+	{
+		// A weekday and its day of the month: "el martes 15", "Tuesday the 15th". Held when they disagree.
+		re: new RegExp(
+			`${b}(?:el\\s+)?${WEEKDAY_ANY}\\s+(?:the\\s+)?(\\d{1,2})(?:st|nd|rd|th)?${e}${NOT_MONEY}`,
+			"g",
+		),
+		read: (m, today, reads) => {
+			const w = WEEKDAYS[m[1] ?? ""] ?? 0;
+			const day = undatedDayOfMonth(Number(m[2]), today, reads);
+			if (!day) return null;
+			if (weekday(day) === w) return point(day);
+			const step =
+				reads === "past"
+					? -((weekday(today) - w + 7) % 7 || 7)
+					: (w - weekday(today) + 7) % 7 || 7;
+			const note = "the weekday and the day of the month name different days";
+			return [
+				{
+					from: addDays(today, step),
+					to: addDays(today, step),
+					note: `${note}; reading the weekday`,
+					ambiguous: true,
+				},
+				{
+					from: day,
+					to: day,
+					note: `${note}; reading the day of the month`,
+					ambiguous: true,
+				},
+			].sort((x, y) => x.from.localeCompare(y.from));
+		},
 	},
 	{
 		// A weekday: the nearest one that way, never today, so on a Monday "el lunes" is a week away.
@@ -1268,6 +1315,7 @@ function currencyOf(
 		return named.length === 1 ? (named[0] ?? null) : null;
 	}
 	if (m === "$") return local && symbolOf(local) === "$" ? local : null;
+	if (m.startsWith("cana")) return local === "DOP" ? local : null;
 	if (m.startsWith("peso")) {
 		return local && nameOf(local, "es").includes("peso") ? local : null;
 	}
@@ -1394,18 +1442,29 @@ const TIME_RULES: TimeRule[] = [
 		read: (m) => readClock(m, 1),
 	},
 	{
-		// "las 10 de la mañana", "la una y media": after "las" alone only with minutes or a part of the day, so "las 3 facturas" is a count.
+		// "las 10 de la mañana", "la una y media", "las 12.": after "las" alone only with minutes, a part of the day or nothing after, so "las 3 facturas" is a count.
 		re: new RegExp(
 			`${b}las?\\s+${HOUR}${MINUTES}${MERIDIEM}${e}${NOT_A_TIME}`,
 			"g",
 		),
 		read: (m) =>
-			m.slice(2).some((group) => group !== undefined) ? readClock(m, 1) : null,
+			m.slice(2).some((group) => group !== undefined) ||
+			/^\s*(?:$|[,.;:!?)])/.test(m.input.slice(m.index + m[0].length))
+				? readClock(m, 1)
+				: null,
 	},
 	{
-		// "4pm", "9:30 a.m."
+		// "8 de la mañana", "9 en la noche": an hour and its part of the day, with no "a las".
 		re: new RegExp(
-			`${b}(\\d{1,2})(?::(\\d{2}))?()()\\s*(a\\.?\\s?m\\.?|p\\.?\\s?m\\.?)(?![a-z])()`,
+			`${b}(\\d{1,2})()()()()\\s+(?:de|en|por)\\s+la\\s+(manana|tarde|noche)${e}`,
+			"g",
+		),
+		read: (m) => readClock(m, 1),
+	},
+	{
+		// "4pm", "9:30 a.m.", "8.30am"
+		re: new RegExp(
+			`${b}(\\d{1,2})(?:[:.](\\d{2}))?()()\\s*(a\\.?\\s?m\\.?|p\\.?\\s?m\\.?)(?![a-z])()`,
 			"g",
 		),
 		read: (m) => readClock(m, 1),
@@ -1513,6 +1572,12 @@ function readSpans(
 	for (let m = DIGIT_AMOUNT.exec(folded); m; m = DIGIT_AMOUNT.exec(folded)) {
 		let s = m.index + (m[0].length - m[0].trimStart().length);
 		let t = m.index + m[0].trimEnd().length;
+		// A negative number ("$-50", "-$50"), a form's number ("W-2") and an exponent ("1e3") are no amount; "5-10" is a range.
+		const numberAt = folded.indexOf(m[2] ?? "", s);
+		if (/(?<!\d\s*)-\s*(?:[$€£¥]\s*)?$/.test(folded.slice(0, numberAt))) {
+			continue;
+		}
+		if (/^e\d/.test(folded.slice(t))) continue;
 		// A word after the number says more than a "$" before it: "$500 pesos".
 		const written = m[4] ?? m[1];
 		let mark: string | null = null;

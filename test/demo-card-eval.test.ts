@@ -50,14 +50,23 @@ const HELD_BEFORE_140 = new Set(
 
 /**
  * Rows frozen before #232 whose candidates its parser readings change, each
- * with the span the parser reads now and did not then. Their expected values
- * stay as frozen and scored; a log saves each field's candidates and picks,
- * so it rescores as it ran (docs/card-eval.md, Parser readings (#232)).
+ * with the span the parser reads now and did not then, or the one it no
+ * longer reads. Their expected values stay as frozen and scored; a log saves
+ * each field's candidates and picks, so it rescores as it ran
+ * (docs/card-eval.md, Parser readings (#232)).
  */
-const MOVED_BY_232: Record<string, string> = {
-	// A nothing row: "before Friday" is now the Thursday before it, not that Friday.
-	"en-r8-163": "before Friday",
-	"es-r8-163": "antes del viernes",
+const MOVED_BY_232: Record<string, { now: string } | { gone: string }> = {
+	// A nothing row: "before Friday" is now the Thursday before it, not that Friday (#183).
+	"en-r8-163": { now: "before Friday" },
+	"es-r8-163": { now: "antes del viernes" },
+	// A weekday and its day of the month are one day, not two candidates (#193).
+	"en-r7-092": { now: "Monday the 14th" },
+	"en-r8-062": { now: "Thursday the 10th" },
+	"en-r9-165": { now: "Friday the 11th" },
+	// The number of a form's name after its dash is no amount (#193).
+	"en-r5-33": { gone: "2" },
+	"en-r9-049": { gone: "9" },
+	"en-r9-134": { gone: "2" },
 };
 
 describe.each([english, spanish])("the card sets in $language", (content) => {
@@ -242,10 +251,10 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 				facts: FACTS,
 				reads: "past",
 			});
-			expect(
-				[...dates, ...amounts].map(({ text }) => text),
-				row.id,
-			).toContain(MOVED_BY_232[row.id]);
+			const texts = [...dates, ...amounts].map(({ text }) => text);
+			const moved = MOVED_BY_232[row.id] ?? { now: "" };
+			if ("now" in moved) expect(texts, row.id).toContain(moved.now);
+			else expect(texts, row.id).not.toContain(moved.gone);
 		}
 	});
 
