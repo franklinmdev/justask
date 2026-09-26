@@ -23,5 +23,16 @@ export default defineConfig({
 		// run at the default, none at half; about a second slower idle. A share,
 		// not a count: 4 workers on CI's 4 cores failed the same tests.
 		maxWorkers: "50%",
+		tags: [
+			{
+				// A whole-page axe run was 0.2 to 1.4 s a test at load average 11,
+				// and at 21 ran a test to 5.6 s even with its file warmed up and the
+				// run in a test of its own (#161). Each file that renders the demo's
+				// App carries `// @module-tag page`; test/page-tag.test.ts checks it.
+				name: "page",
+				description: "Renders the demo's whole page and runs axe on it.",
+				timeout: 15_000,
+			},
+		],
 	},
 });
