@@ -220,7 +220,34 @@ describe("jevProvider", () => {
 		},
 	);
 
-	it("rethrows the SDK's abort as it is, since only ask's timeout aborts a call", async () => {
+	it.each([
+		["an empty object", {}],
+		["no body", null],
+		["a page of HTML", "<html>Bad gateway</html>"],
+	])("names a result that is not a SystemOne result: %s", async (_, body) => {
+		const client = fakeJevClient(
+			async () => body as unknown as ReturnType<typeof jevResult>,
+		);
+
+		await expect(jevProvider({ client }).answer(input)).rejects.toThrow(
+			"Jev answered with no answers: not a SystemOne result",
+		);
+	});
+
+	it("reports no cost or tokens when the result has no usage", async () => {
+		const { usage: _, ...result } = jevResult(answers);
+		const client = fakeJevClient(
+			async () => result as ReturnType<typeof jevResult>,
+		);
+
+		const answered = await jevProvider({ client }).answer(input);
+
+		expect(answered.answers).toEqual(answers);
+		expect(answered).not.toHaveProperty("costUsd");
+		expect(answered).not.toHaveProperty("inputTokens");
+	});
+
+	it("rethrows the SDK's abort as it is, since ask's timeout or its caller aborts a call", async () => {
 		const cause = new APIUserAbortError();
 		const client = fakeJevClient(() => Promise.reject(cause));
 
