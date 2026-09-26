@@ -1426,7 +1426,8 @@ fieldset.table-filter[data-settle]::before {
 .select::after {
 	position: absolute;
 	top: 50%;
-	right: 10px;
+	/* The path starts 3.5px inside its box, so its stroke sits at the text's 10px. */
+	right: 6.5px;
 	width: 16px;
 	height: 16px;
 	background: var(--muted);
@@ -1495,6 +1496,21 @@ fieldset.table-filter[data-settle]::before {
 		var(--action)
 		url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5 6.75 11 12 5' fill='none' stroke='white' stroke-width='1.75'/%3E%3C/svg%3E")
 		center / 14px no-repeat;
+}
+
+/*
+ * Forced colors repaint backgrounds, so the drawn chevron and check would go;
+ * there the select and the checkbox keep the browser's own, which it repaints.
+ */
+@media (forced-colors: active) {
+	.select .control,
+	.tag input {
+		appearance: auto;
+	}
+
+	.select::after {
+		display: none;
+	}
 }
 
 .tag:has(:focus-visible) {
