@@ -147,6 +147,16 @@ const answers: Record<string, FakeAnswers> = {
 		day: "d0",
 		amount: "a0",
 	}),
+	"airport taxi yesterday, 42 euros": answer({
+		tagged: ["travel"],
+		day: "d0",
+		amount: "a0",
+	}),
+	"taxi al aeropuerto ayer, 42 euros": answer({
+		tagged: ["travel"],
+		day: "d0",
+		amount: "a0",
+	}),
 	"almuerzo con Cazuela Azul ayer, $86.40": answer({
 		vendor: question(vendors, "cazuela"),
 		tagged: ["meals"],
@@ -715,6 +725,56 @@ describe("the demo's card page", () => {
 
 		expect(amount().value).toBe("");
 	});
+
+	it.each([
+		{
+			url: "/?case=form",
+			box: "Describe the expense",
+			request: "airport taxi yesterday, 42 euros",
+			total: "Amount",
+			confirm: "Save expense",
+			list: "Saved expenses",
+			undo: "Undo",
+		},
+		{
+			url: "/?case=form&lang=es",
+			box: "Describa el gasto",
+			request: "taxi al aeropuerto ayer, 42 euros",
+			total: "Monto",
+			confirm: "Guardar gasto",
+			list: "Gastos guardados",
+			undo: "Deshacer",
+		},
+	])(
+		"keeps the amount's currency while its box is emptied, until Save starts the card over ($url)",
+		async ({ url, box, request, total, confirm, list, undo }) => {
+			const { user } = renderDemo({ url });
+			await user.type(
+				screen.getByRole("searchbox", { name: box }),
+				`${request}{Enter}`,
+			);
+			await waitFor(() => expect(amount(total).value).toBe("42.00"));
+			expect(screen.getByText("EUR")).toBeDefined();
+
+			// Emptied, the box holds no amount and still shows its currency.
+			await user.clear(amount(total));
+			expect(amount(total).value).toBe("");
+			expect(screen.getByText("EUR")).toBeDefined();
+
+			await user.type(amount(total), "50");
+			await user.click(save(confirm));
+			expect(saved(list)).toEqual([expect.stringContaining("50 EUR")]);
+
+			// Saving starts the card over: the box is empty, in the local currency.
+			expect(amount(total).value).toBe("");
+			expect(screen.queryByText("EUR")).toBeNull();
+
+			// Undo brings the saved amount back, currency and all.
+			await user.click(screen.getByRole("button", { name: undo }));
+			expect(amount(total).value).toBe("50.00");
+			expect(screen.getByText("EUR")).toBeDefined();
+		},
+	);
 
 	it("fills the Spanish card from a Spanish request", async () => {
 		const { container, user } = renderDemo({ url: "/?case=form&lang=es" });
