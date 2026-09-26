@@ -331,6 +331,39 @@ describe("createSearchHandler", () => {
 		expect(provider.calls).toHaveLength(0);
 	});
 
+	it.each([
+		["text/plain;charset=UTF-8"],
+		["application/x-www-form-urlencoded"],
+		["multipart/form-data; boundary=x"],
+		[null],
+	])(
+		"answers 415 without calling the provider for a body sent as %s, which another site can post without asking",
+		async (type) => {
+			const provider = fakeProvider(picksAcme);
+			const request = post(asked);
+			if (type === null) request.headers.delete("content-type");
+			else request.headers.set("content-type", type);
+
+			const response = await handler({ provider })(request);
+
+			expect(response.status).toBe(415);
+			expect(await response.json()).toEqual({
+				error: {
+					kind: "request",
+					message: "The body must be sent as application/json",
+				},
+			});
+			expect(provider.calls).toHaveLength(0);
+		},
+	);
+
+	it("takes application/json with a charset, in any case", async () => {
+		const request = post(asked);
+		request.headers.set("content-type", "Application/JSON; charset=utf-8");
+
+		expect((await handler()(request)).status).toBe(200);
+	});
+
 	it("names a short time zone it refuses, and does not echo a long one", async () => {
 		const short = await handler()(post({ ...asked, timeZone: "Mars/Olympus" }));
 		const long = await handler()(

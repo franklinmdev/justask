@@ -76,7 +76,7 @@ export type CardHandlerResponse<F extends CardFields> = Spent & {
 	error?: HandlerError;
 };
 
-/** The body of a 400 or 413 response. */
+/** The body of a 400, 413 or 415 response. */
 export type HandlerBadRequest = {
 	error: { kind: "request"; message: string };
 };
@@ -184,6 +184,11 @@ function serve(
 		if (httpRequest.method !== "POST") {
 			return new Response(null, { status: 405, headers: { allow: "POST" } });
 		}
+		// Another site's page can post a form or plain text with no preflight,
+		// and spend the host's budget; a JSON post needs the host's CORS consent.
+		if (!sentAsJson(httpRequest)) {
+			return badRequest("The body must be sent as application/json", 415);
+		}
 		const read = await readBody(httpRequest);
 		if ("error" in read) return badRequest(read.error, read.status);
 
@@ -274,7 +279,12 @@ async function readCapped(httpRequest: Request): Promise<string | null> {
 	}
 }
 
-function badRequest(message: string, status: 400 | 413 = 400): Response {
+function sentAsJson(httpRequest: Request): boolean {
+	const type = httpRequest.headers.get("content-type") ?? "";
+	return type.split(";")[0]?.trim().toLowerCase() === "application/json";
+}
+
+function badRequest(message: string, status: 400 | 413 | 415 = 400): Response {
 	const body: HandlerBadRequest = { error: { kind: "request", message } };
 	return Response.json(body, { status });
 }
