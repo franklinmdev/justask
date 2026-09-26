@@ -80,12 +80,44 @@ export type Parser = (request: string, input: ParserInput) => Readings;
  */
 export const builtInParser: Parser = (request, input) => {
 	const { dates, times, amounts } = readSpans(request, input, []);
-	return {
+	return distinct({
 		dates: dates.map(({ reading }) => reading),
 		times: times.map(({ reading }) => reading),
 		amounts: amounts.map(({ reading }) => reading),
-	};
+	});
 };
+
+/**
+ * One reading per value, the first one said: "yesterday, yes yesterday" is
+ * one candidate, so the provider never splits its probability between two
+ * copies of one day (#201). A number with no currency is kept each time it
+ * is said: in "500 invoices over 500" one is a count and the other money.
+ */
+function distinct(readings: {
+	dates: DateReading[];
+	times: TimeReading[];
+	amounts: AmountReading[];
+}) {
+	const once = <R>(list: R[], key: (reading: R) => string | null) => {
+		const seen = new Set<string>();
+		return list.filter((reading) => {
+			const k = key(reading);
+			if (k === null) return true;
+			if (seen.has(k)) return false;
+			seen.add(k);
+			return true;
+		});
+	};
+	return {
+		dates: once(readings.dates, (d) => `${d.from} ${d.to} ${!!d.ambiguous}`),
+		times: once(readings.times, (t) => `${t.time} ${!!t.ambiguous}`),
+		amounts: once(readings.amounts, (a) =>
+			a.currency === null && a.unresolved === undefined
+				? null
+				: `${a.value} ${a.currency} ${a.unresolved ?? ""}`,
+		),
+	};
+}
 
 type Span = [number, number];
 type Placed<R> = { at: Span; reading: R };
@@ -119,11 +151,11 @@ export function parseRequest(
 	const own = readSpans(request, input, claimed);
 	const inOrder = <R>(placed: Placed<R>[]) =>
 		placed.sort((x, y) => x.at[0] - y.at[0]).map(({ reading }) => reading);
-	return {
+	return distinct({
 		dates: inOrder([...dates, ...own.dates]),
 		times: inOrder([...times, ...own.times]),
 		amounts: inOrder([...amounts, ...own.amounts]),
-	};
+	});
 }
 
 /** The first unclaimed place a host parser's text sits, claimed; a text not found sorts last and claims nothing. */

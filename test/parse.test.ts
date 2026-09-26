@@ -1050,6 +1050,42 @@ describe("small misreads (#193)", () => {
 	});
 });
 
+describe("the same value said twice (#201)", () => {
+	it("reads it once, where it is first said", () => {
+		expect(dates("Paid Acme $12 yesterday, yes yesterday")).toEqual([
+			["yesterday", "2026-09-20", "2026-09-20"],
+		]);
+		expect(
+			amounts("Paid Acme $12 yesterday, $12", { local_currency: "USD" }),
+		).toEqual([["$12", 12, "USD"]]);
+		expect(amounts("Paid Acme 12 dollars yesterday, 12 dollars total")).toEqual(
+			[["12 dollars", 12, "USD"]],
+		);
+		expect(times("a las 3pm, sí, a las 3pm")).toEqual([["a las 3pm", "15:00"]]);
+	});
+
+	it("reads one amount however it is written, when both ways name the same currency", () => {
+		expect(amounts("$12 or 12 dollars", { local_currency: "CAD" })).toEqual([
+			["$12", 12, "CAD"],
+		]);
+	});
+
+	it("keeps two readings that differ, even by their currency alone", () => {
+		expect(amounts("12 pesos, $12", { local_currency: "USD" })).toEqual([
+			["12 pesos", 12, null],
+			["$12", 12, "USD"],
+		]);
+		expect(dates("ayer o anteayer")).toHaveLength(2);
+	});
+
+	it("keeps a number with no currency each time it is said, since one may be a count", () => {
+		expect(amounts("500 invoices over 500")).toEqual([
+			["500", 500, null],
+			["500", 500, null],
+		]);
+	});
+});
+
 describe("accents", () => {
 	it("keeps every span where the person typed it, accents included", () => {
 		expect(dates("Pagos de María del año pasado")).toEqual([
