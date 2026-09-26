@@ -227,24 +227,27 @@ export function CardPage({
 					{({ value, set, filledBy }) => (
 						<>
 							{head("vendor", filledBy, "card-vendor")}
-							<select
-								id="card-vendor"
-								className="control"
-								value={value?.id ?? ""}
-								onChange={(event) =>
-									set(
-										content.vendors.find(({ id }) => id === event.target.value)
-											?.value,
-									)
-								}
-							>
-								<option value="">{copy.card.chooseVendor}</option>
-								{content.vendors.map(({ id, value: vendor }) => (
-									<option key={id} value={id}>
-										{vendor.name}
-									</option>
-								))}
-							</select>
+							<div className="select">
+								<select
+									id="card-vendor"
+									className="control"
+									value={value?.id ?? ""}
+									onChange={(event) =>
+										set(
+											content.vendors.find(
+												({ id }) => id === event.target.value,
+											)?.value,
+										)
+									}
+								>
+									<option value="">{copy.card.chooseVendor}</option>
+									{content.vendors.map(({ id, value: vendor }) => (
+										<option key={id} value={id}>
+											{vendor.name}
+										</option>
+									))}
+								</select>
+							</div>
 						</>
 					)}
 				</CardEntry>
@@ -428,7 +431,7 @@ function AmountInput({
 			</span>
 			<input
 				id={id}
-				className="control amount-input data"
+				className="control amount-input"
 				inputMode="decimal"
 				autoComplete="off"
 				value={text}

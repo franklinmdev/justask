@@ -465,23 +465,25 @@ function CatalogSelect<T>({
 			<label htmlFor={id} className="entry-label">
 				{label}
 			</label>
-			<select
-				id={id}
-				className="control"
-				value={chosen ?? ""}
-				onChange={(event) =>
-					onChange(
-						options.find((option) => option.id === event.target.value)?.value,
-					)
-				}
-			>
-				<option value="">{all}</option>
-				{options.map((option) => (
-					<option key={option.id} value={option.id}>
-						{option.name}
-					</option>
-				))}
-			</select>
+			<div className="select">
+				<select
+					id={id}
+					className="control"
+					value={chosen ?? ""}
+					onChange={(event) =>
+						onChange(
+							options.find((option) => option.id === event.target.value)?.value,
+						)
+					}
+				>
+					<option value="">{all}</option>
+					{options.map((option) => (
+						<option key={option.id} value={option.id}>
+							{option.name}
+						</option>
+					))}
+				</select>
+			</div>
 		</div>
 	);
 }
@@ -512,7 +514,7 @@ function BoundInput({
 	return (
 		<input
 			id={id}
-			className="control data"
+			className="control"
 			inputMode="decimal"
 			autoComplete="off"
 			placeholder={placeholder}

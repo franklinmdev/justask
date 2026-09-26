@@ -127,7 +127,7 @@ export function Calculator({
 							<input
 								id={`${id}-${field.name}`}
 								name={field.name}
-								className="control data"
+								className="control"
 								inputMode="numeric"
 								autoComplete="off"
 								value={field.value}

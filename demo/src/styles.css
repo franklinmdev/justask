@@ -683,8 +683,23 @@ h2 {
 	transition: border-color 120ms ease-out;
 }
 
-.box::placeholder {
+.box::placeholder,
+.control::placeholder {
 	color: var(--muted);
+	opacity: 1;
+}
+
+/*
+ * The box is a search input, whose clear glyph and rounding are the
+ * browser's, not the direction's; Escape still clears it.
+ */
+.box {
+	appearance: none;
+}
+
+.box::-webkit-search-decoration,
+.box::-webkit-search-cancel-button {
+	appearance: none;
 }
 
 /*
@@ -1392,6 +1407,38 @@ fieldset.table-filter[data-settle]::before {
 	transition: border-color 120ms ease-out;
 }
 
+/*
+ * A select keeps the native element, for the keyboard, screen readers and a
+ * phone's picker, with the browser's arrow swapped for the calendar's chevron
+ * turned down, drawn in the muted color at the text's inset from the right.
+ */
+.select {
+	position: relative;
+}
+
+.select .control {
+	appearance: none;
+	padding-right: 32px;
+	text-overflow: ellipsis;
+	cursor: pointer;
+}
+
+.select::after {
+	position: absolute;
+	top: 50%;
+	/* The path starts 3.5px inside its box, so its stroke sits at the text's 10px. */
+	right: 6.5px;
+	width: 16px;
+	height: 16px;
+	background: var(--muted);
+	content: "";
+	mask:
+		url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 6 8 10.5 12.5 6' fill='none' stroke='black' stroke-width='1.5'/%3E%3C/svg%3E")
+		center / 16px no-repeat;
+	pointer-events: none;
+	transform: translateY(-50%);
+}
+
 .tags {
 	display: contents;
 }
@@ -1422,9 +1469,48 @@ fieldset.table-filter[data-settle]::before {
 	background: var(--fill-wash);
 }
 
+/*
+ * The tag's box is drawn, not the browser's: a muted outline at 3:1 on the
+ * field, filled with the action step when checked, as a filled button is.
+ */
 .tag input {
+	display: grid;
+	flex: none;
+	place-items: center;
+	width: 16px;
+	height: 16px;
 	margin: 0;
-	accent-color: var(--primary);
+	border: 1px solid var(--muted);
+	border-radius: 4px;
+	background: var(--field);
+	appearance: none;
+	cursor: pointer;
+	transition:
+		background-color 120ms ease-out,
+		border-color 120ms ease-out;
+}
+
+.tag input:checked {
+	border-color: var(--action);
+	background:
+		var(--action)
+		url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5 6.75 11 12 5' fill='none' stroke='white' stroke-width='1.75'/%3E%3C/svg%3E")
+		center / 14px no-repeat;
+}
+
+/*
+ * Forced colors repaint backgrounds, so the drawn chevron and check would go;
+ * there the select and the checkbox keep the browser's own, which it repaints.
+ */
+@media (forced-colors: active) {
+	.select .control,
+	.tag input {
+		appearance: auto;
+	}
+
+	.select::after {
+		display: none;
+	}
 }
 
 .tag:has(:focus-visible) {
@@ -1613,8 +1699,6 @@ fieldset.table-filter[data-settle]::before {
 	left: 10px;
 	transform: translateY(-50%);
 	color: var(--muted);
-	font-family: var(--mono);
-	font-size: 0.8125rem;
 	pointer-events: none;
 }
 
@@ -2058,9 +2142,14 @@ fieldset.table-filter[data-settle]::before {
 	}
 
 	.control,
+	.day-trigger,
+	.amount-mark {
+		font-size: 1rem;
+	}
+
+	.control,
 	.day-trigger {
 		height: 44px;
-		font-size: 1rem;
 	}
 }
 
