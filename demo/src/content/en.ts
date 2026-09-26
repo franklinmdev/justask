@@ -252,6 +252,8 @@ export const english: Content = {
 			title: "New expense",
 			boxLabel: "Describe the expense",
 			placeholder: "Describe the expense in your own words",
+			fill: "Fill the card",
+			fillHint: "Press Enter to fill the card",
 			fields: {
 				vendor: "Vendor",
 				tags: "Tags",

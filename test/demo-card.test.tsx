@@ -735,6 +735,111 @@ describe("the demo's card page", () => {
 	});
 });
 
+describe("the demo's Fill button and its hint (#147)", () => {
+	const box = (name = "Describe the expense") =>
+		screen.getByRole("searchbox", { name }) as HTMLInputElement;
+	const fill = (name = "Fill the card") => screen.getByRole("button", { name });
+	/** The hint the box is described by, or "" with none. */
+	const hint = () =>
+		(box().getAttribute("aria-describedby") ?? "")
+			.split(" ")
+			.map((id) => document.getElementById(id)?.textContent ?? "")
+			.join("");
+
+	it("fills the card from the button, with one call", async () => {
+		const { user } = renderDemo();
+
+		await user.type(box(), "lunch with Larkspur yesterday, $86.40");
+		expect(byRequest.calls).toHaveLength(0);
+		await user.click(fill());
+
+		await waitFor(() => expect(vendor().value).toBe("larkspur"));
+		expect(byRequest.calls).toHaveLength(1);
+	});
+
+	it("does nothing on a blank box, and says it is off while still focusable", async () => {
+		const { user } = renderDemo();
+
+		expect(fill().getAttribute("aria-disabled")).toBe("true");
+		await user.type(box(), "   ");
+		expect(fill().getAttribute("aria-disabled")).toBe("true");
+		await user.click(fill());
+		fill().focus();
+		expect(document.activeElement).toBe(fill());
+		expect(byRequest.calls).toHaveLength(0);
+		expect(hint()).toBe("");
+		expect(fill().hasAttribute("data-next")).toBe(false);
+	});
+
+	it("hints Enter for a sentence not sent, drops it once sent, and brings it back on a change", async () => {
+		const { user } = renderDemo();
+		expect(hint()).toBe("");
+
+		await user.type(box(), "lunch with Larkspur yesterday, $86.40");
+		expect(hint()).toBe("Press Enter to fill the card");
+		expect(fill().getAttribute("aria-disabled")).toBe("false");
+		expect(fill().hasAttribute("data-next")).toBe(true);
+
+		await user.keyboard("{Enter}");
+		expect(hint()).toBe("");
+		expect(fill().hasAttribute("data-next")).toBe(false);
+		await waitFor(() => expect(vendor().value).toBe("larkspur"));
+		expect(hint()).toBe("");
+
+		await user.type(box(), " again");
+		expect(hint()).toBe("Press Enter to fill the card");
+		expect(fill().hasAttribute("data-next")).toBe(true);
+	});
+
+	it("is no live region, so a keystroke announces nothing", async () => {
+		const { user } = renderDemo();
+
+		await user.type(box(), "lunch");
+		const described = document.getElementById(
+			box().getAttribute("aria-describedby") ?? "",
+		);
+		expect(described?.closest("[role=status], [aria-live]")).toBeNull();
+	});
+
+	it("says nothing unsent once the saved expense is put back on Undo", async () => {
+		const { user } = renderDemo();
+
+		await suggest(user, "lunch with Larkspur yesterday, $86.40");
+		await user.click(save());
+		expect(hint()).toBe("");
+		await user.click(screen.getByRole("button", { name: "Undo" }));
+
+		expect(box().value).toBe("lunch with Larkspur yesterday, $86.40");
+		expect(hint()).toBe("");
+		expect(fill().hasAttribute("data-next")).toBe(false);
+	});
+
+	it("names the button and the hint in Spanish", async () => {
+		const { user } = renderDemo({ url: "/?case=form&lang=es" });
+		const caja = () => box("Describa el gasto");
+
+		await user.type(caja(), "almuerzo con Cazuela Azul ayer, $86.40");
+		expect(
+			document.getElementById(caja().getAttribute("aria-describedby") ?? "")
+				?.textContent,
+		).toBe("Presione Enter para completar la tarjeta");
+		await user.click(fill("Completar la tarjeta"));
+
+		await waitFor(() => expect(vendor("Proveedor").value).toBe("cazuela"));
+		expect(byRequest.calls).toHaveLength(1);
+		expect(
+			document.getElementById(caja().getAttribute("aria-describedby") ?? "")
+				?.textContent,
+		).toBe("");
+	});
+
+	it("names Go on a phone keyboard's key", () => {
+		renderDemo();
+
+		expect(box().getAttribute("enterkeyhint")).toBe("go");
+	});
+});
+
 describe("the demo's card page on Cloudflare's CPU limit", () => {
 	/**
 	 * The demo as the browser runs it, where Cloudflare answers the first

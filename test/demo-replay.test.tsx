@@ -488,6 +488,27 @@ describe("the Form case's recorded run", () => {
 		await expectNoAxeViolations(container);
 	});
 
+	it("shows Enter pressed on the Fill button, which then reads as sent (#147)", async () => {
+		renderDemo({ url: "/?case=form" });
+		const fill = () => screen.getByRole("button", { name: "Fill the card" });
+
+		await waitFor(
+			() => expect(fill().hasAttribute("data-pressed")).toBe(true),
+			REPLAY,
+		);
+		expect(fill().hasAttribute("data-next")).toBe(false);
+		await replayFilled();
+		await waitFor(() =>
+			expect(fill().hasAttribute("data-pressed")).toBe(false),
+		);
+		expect(fill().hasAttribute("data-next")).toBe(false);
+		expect(box().getAttribute("aria-describedby")).toBeTruthy();
+		expect(
+			document.getElementById(box().getAttribute("aria-describedby") ?? "")
+				?.textContent,
+		).toBe("");
+	});
+
 	it("replays in Spanish with no call", async () => {
 		const { provider } = renderDemo({ url: "/?case=form&lang=es" });
 

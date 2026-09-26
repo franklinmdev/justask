@@ -8,7 +8,7 @@ import {
 	type FilledBy,
 	useCard,
 } from "justask/react";
-import { type ReactNode, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { cardEndpoint, REQUEST_LIMIT } from "./api.ts";
 import { CardPanel, impliedByOf } from "./card-panel.tsx";
 import type { Content, ExpenseFields, ExpenseName } from "./content/types.ts";
@@ -30,6 +30,9 @@ import { CaseLayout } from "./showcase.tsx";
 import { useSuggest } from "./trace.ts";
 
 type Expense = CardValue<ExpenseFields> & { id: number };
+
+/** How long the Fill button shows a press that came from Enter or the replay. */
+const PRESS_MS = 150;
 
 /** The card's fields in the order they show, which an answer fills them in. */
 const fieldOrder: ExpenseName[] = ["vendor", "tags", "spent_on", "total"];
@@ -66,8 +69,29 @@ export function CardPage({
 		},
 		fetch: replay.fetch,
 	});
-	replay.follow(card);
-	const box = replay.stoppedBy(card);
+	// The sentence last sent, by Enter, the Fill button, a suggestion or the
+	// replay, so the page can tell one typed since and not yet sent (#147).
+	const [sent, setSent] = useState<string | null>(null);
+	const [pressed, setPressed] = useState(false);
+	const blank = card.request.trim() === "";
+	const unsent = !blank && card.request !== sent;
+	const sending: typeof card = {
+		...card,
+		submit: () => {
+			if (!blank) {
+				setSent(card.request);
+				setPressed(true);
+			}
+			card.submit();
+		},
+	};
+	useEffect(() => {
+		if (!pressed) return;
+		const timer = setTimeout(() => setPressed(false), PRESS_MS);
+		return () => clearTimeout(timer);
+	}, [pressed]);
+	replay.follow(sending);
+	const box = replay.stoppedBy(sending);
 	const suggest = useSuggest(box);
 	// A field the person sets ends the replay, so its answer never writes over their choice.
 	const fields: typeof card = {
@@ -133,16 +157,41 @@ export function CardPage({
 				recording={recording}
 				replay={replay}
 			/>
-			<CardBox
-				card={box}
-				id="card-box"
-				label={copy.card.boxLabel}
-				placeholder={copy.card.placeholder}
-				className="box"
-				autoComplete="off"
-				spellCheck={false}
-				maxLength={REQUEST_LIMIT}
-			/>
+			<div className="box-row">
+				<CardBox
+					card={box}
+					id="card-box"
+					label={copy.card.boxLabel}
+					placeholder={copy.card.placeholder}
+					className="box"
+					autoComplete="off"
+					spellCheck={false}
+					maxLength={REQUEST_LIMIT}
+					enterKeyHint="go"
+					aria-describedby="card-box-hint"
+				/>
+				{/* Sends what Enter sends; off while the box is blank, as Save is with nothing to save. */}
+				<button
+					type="button"
+					className="fill"
+					aria-disabled={blank}
+					data-next={unsent || undefined}
+					data-pressed={pressed || undefined}
+					onClick={() => {
+						if (blank) return;
+						replay.stop();
+						sending.submit();
+					}}
+				>
+					{copy.card.fill}
+					<span className="fill-key" aria-hidden="true">
+						↵
+					</span>
+				</button>
+			</div>
+			<p id="card-box-hint" className="hint fill-hint">
+				{unsent ? copy.card.fillHint : ""}
+			</p>
 			<Saved
 				content={content}
 				cost={costOf(formControls(card.result?.value ?? {}))}

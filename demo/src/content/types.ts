@@ -105,6 +105,10 @@ export type CardCopy = {
 	title: string;
 	boxLabel: string;
 	placeholder: string;
+	/** The button beside the box that sends the request, as Enter does (#147). */
+	fill: string;
+	/** Under the box while its sentence has not been sent. */
+	fillHint: string;
 	fields: Record<ExpenseName, string>;
 	tags: Record<Tag, string>;
 	chooseVendor: string;
