@@ -31,7 +31,7 @@ import { useSuggest } from "./trace.ts";
 
 type Expense = CardValue<ExpenseFields> & { id: number };
 
-/** How long the Fill button shows a press that came from Enter or the replay. */
+/** How long the Fill button shows a send made by Enter, a suggestion or the replay. */
 const PRESS_MS = 150;
 
 /** The card's fields in the order they show, which an answer fills them in. */

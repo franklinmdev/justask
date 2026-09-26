@@ -690,8 +690,8 @@ h2 {
 /*
  * The Form's box calls only on Enter, so Fill sits beside it and sends the
  * same (#147). It rests quiet, and reads as the next step, filled, while the
- * sentence in the box has not been sent; Enter and the replay show on it as
- * a press. Its key glyph teaches the shortcut, on a keyboard only.
+ * sentence in the box has not been sent; Enter, a suggestion and the replay
+ * show on it as a press. Its key glyph teaches the shortcut, on a keyboard only.
  */
 .box-row {
 	display: flex;
