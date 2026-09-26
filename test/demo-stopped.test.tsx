@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { APIError } from "@typesafe-ai/sdk";
 import type { Provider } from "justask";
@@ -112,7 +112,8 @@ describe("a live request past the day's budget", () => {
 			name: "The demo's budget for today is spent",
 		});
 		// Focus follows the page that replaced the box, so a keyboard is not left on nothing.
-		expect(document.activeElement).toBe(heading);
+		// The notice's effect moves it a moment after the heading shows (#153).
+		await waitFor(() => expect(document.activeElement).toBe(heading));
 		expect(
 			screen.getByRole("link", {
 				name: "Clone justask and run it with your own key",
@@ -306,7 +307,7 @@ describe("a live request past the visitor's own limit", () => {
 			await typeRequest(user, box, "the caterers");
 
 			const heading = await screen.findByRole("heading", { name: title });
-			expect(document.activeElement).toBe(heading);
+			await waitFor(() => expect(document.activeElement).toBe(heading));
 			const notice = heading.closest("section");
 			expect(notice?.textContent).toContain(resets);
 			// The visitor's limit, never the demo's budget for everyone.
