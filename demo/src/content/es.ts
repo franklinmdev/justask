@@ -136,7 +136,7 @@ export const spanish: Content = {
 				case "timeout":
 					return `El modelo no respondió en ${reason.timeoutMs} ms, así que no se muestra nada.`;
 				case "unreachable":
-					return `No se pudo contactar al servidor de búsqueda: ${reason.message}`;
+					return `No se pudo contactar al servidor: ${reason.message}`;
 			}
 		},
 		request: "Solicitud",

@@ -804,6 +804,45 @@ describe("the demo's Table case", () => {
 		await expectNoAxeViolations(container);
 	});
 
+	it.each([
+		{
+			lang: "en",
+			suggestion: "overdue invoices",
+			failed: "Failed",
+			reason: "The server could not be reached: offline",
+			line: "The request could not be read, so the table stays as it was. Try again.",
+		},
+		{
+			lang: "es",
+			suggestion: "facturas vencidas",
+			failed: "Falló",
+			reason: "No se pudo contactar al servidor: offline",
+			line: "No se pudo leer la solicitud, así que la tabla queda como estaba. Inténtelo de nuevo.",
+		},
+	])(
+		"names the server, not the search's, when it cannot be reached ($lang)",
+		async ({ lang, suggestion, failed, reason, line }) => {
+			history.replaceState(null, "", `/?case=table&lang=${lang}`);
+			const { container } = render(
+				<App
+					fetch={() => Promise.reject(new TypeError("offline"))}
+					recordings={null}
+				/>,
+			);
+			const user = userEvent.setup();
+
+			await user.click(screen.getByRole("button", { name: suggestion }));
+
+			const state = within(
+				screen.getByRole("region", { name: /^(What happened|Qué pasó)$/ }),
+			);
+			expect(await state.findByText(failed)).toBeDefined();
+			expect(state.getByText(reason)).toBeDefined();
+			expect(screen.getByText(line)).toBeDefined();
+			await expectNoAxeViolations(container);
+		},
+	);
+
 	it("keeps the request, the answer and the filters when the person leaves the case and comes back (#135)", async () => {
 		const { user } = renderDemo();
 		const box = screen.getByRole("searchbox", {
