@@ -2,6 +2,7 @@ import {
 	type AskError,
 	type AskInput,
 	ask,
+	checkTimeout,
 	type SearchResult,
 	type Spent,
 	spent,
@@ -163,6 +164,7 @@ function serve(
 		error: AskError | undefined;
 	}>,
 ): (httpRequest: Request) => Promise<Response> {
+	checkTimeout(timeoutMs);
 	if ("today" in facts) {
 		throw new TypeError(
 			'justask: the handler writes the "today" fact from the browser\'s time zone; leave it out of facts',

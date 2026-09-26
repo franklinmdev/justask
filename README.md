@@ -28,7 +28,7 @@ import { createSearchHandler, fuzzyShortlist } from "justask";
 
 export const handler = createSearchHandler({
   provider, // a provider adapter, built on the server
-  timeoutMs: 2_000, // no default: measure it
+  timeoutMs: 2_000, // no default: measure it; 1 to 2147483647 ms, checked when created
   facts: { local_currency: "USD" }, // the host app's configuration, written as facts
   search: {
     description: "the vendor the request means",

@@ -172,6 +172,7 @@ async function askSearch<T>({
 	signal,
 	search,
 }: AskInput<T>): Promise<AskResult<T>> {
+	checkTimeout(timeoutMs);
 	checkGate(search.gate, "the search's gate");
 	checkJoiners(search.joiners, "search");
 	const candidates = await search.shortlist(request);
@@ -227,6 +228,7 @@ async function askFilter<F extends Fields>({
 	signal,
 	filter,
 }: AskFilterInput<F>): Promise<AskFilterResult<F>> {
+	checkTimeout(timeoutMs);
 	checkJoiners(filter.joiners, "filter");
 	const names = Object.keys(filter.fields);
 	const field = (name: string) => filter.fields[name] as Field;
@@ -320,6 +322,7 @@ async function askCard<F extends CardFields>({
 	signal,
 	card,
 }: AskCardInput<F>): Promise<AskCardResult<F>> {
+	checkTimeout(timeoutMs);
 	checkGate(card.gate, "the card's gate");
 	checkCommands(card.commands);
 	checkJoiners(card.joiners, "card");
@@ -580,6 +583,21 @@ export async function answer(
 	} finally {
 		clearTimeout(timer);
 		if (stop) signal?.removeEventListener("abort", stop);
+	}
+}
+
+/** setTimeout's ceiling: a longer timeout, or none, would fire at once. */
+const MAX_TIMEOUT_MS = 2 ** 31 - 1;
+
+/**
+ * Throws unless the timeout is a number of milliseconds setTimeout keeps:
+ * any other, Infinity included, would end every call at once.
+ */
+export function checkTimeout(timeoutMs: number): void {
+	if (!(timeoutMs >= 1 && timeoutMs <= MAX_TIMEOUT_MS)) {
+		throw new TypeError(
+			`justask: the timeout must be a number of milliseconds from 1 to ${MAX_TIMEOUT_MS}, not ${timeoutMs}`,
+		);
 	}
 }
 

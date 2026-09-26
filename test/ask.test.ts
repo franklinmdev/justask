@@ -310,6 +310,33 @@ describe("ask: search", () => {
 		expect(provider.calls[0]?.signal.aborted).toBe(true);
 	});
 
+	it.each([Number.POSITIVE_INFINITY, Number.NaN, 0, -5, 2 ** 31])(
+		"refuses a timeout of %s, which would end every call at once",
+		async (timeoutMs) => {
+			const provider = fakeProvider({});
+
+			await expect(
+				ask({ ...base, timeoutMs, provider, search: vendorSearch() }),
+			).rejects.toThrow(
+				`justask: the timeout must be a number of milliseconds from 1 to 2147483647, not ${timeoutMs}`,
+			);
+			expect(provider.calls).toHaveLength(0);
+		},
+	);
+
+	it("takes a timeout of 2147483647 ms, setTimeout's ceiling", async () => {
+		const result = await ask({
+			...base,
+			timeoutMs: 2 ** 31 - 1,
+			provider: fakeProvider({
+				search: { acme: 0.9, northwind: 0.05, none: 0.05, several: 0 },
+			}),
+			search: vendorSearch(),
+		});
+
+		expect(result.search.item).toEqual(acme.value);
+	});
+
 	it("holds the item without a call for a blank request, whatever the shortlist finds", async () => {
 		const provider = fakeProvider({});
 

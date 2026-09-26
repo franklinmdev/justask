@@ -205,6 +205,13 @@ describe("createSearchHandler", () => {
 		);
 	});
 
+	it.each([Number.POSITIVE_INFINITY, Number.NaN, 0, 2 ** 31])(
+		"refuses a timeout of %s when it is created",
+		(timeoutMs) => {
+			expect(() => handler({ timeoutMs })).toThrow(/the timeout must be/);
+		},
+	);
+
 	it("holds everything and sends a typed error without the cause when the provider fails", async () => {
 		const secret = "sk-server-only-123";
 		const cause = Object.assign(new Error(`401 for key ${secret}`), {
