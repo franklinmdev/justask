@@ -173,6 +173,20 @@ describe("createCardHandler", () => {
 		expect(onError).toHaveBeenCalledOnce();
 	});
 
+	it.each([
+		["a gate outside 0 to 1", { ...card, gate: 1 }, /the card's gate/],
+		[
+			"a blank command",
+			{ ...card, commands: { verbs: [" "], references: ["it"] } },
+			/blank verb/,
+		],
+	])(
+		"refuses %s when it is created, not on each request",
+		(_, bad, message) => {
+			expect(() => handler({ card: bad })).toThrow(message);
+		},
+	);
+
 	it("refuses a body without a time zone, as the other handlers do", async () => {
 		const response = await handler()(post({ request: "lunch" }));
 

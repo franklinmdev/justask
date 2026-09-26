@@ -160,6 +160,54 @@ export function ask(
 }
 
 /**
+ * Throws on a search the flow cannot run: a gate outside 0 to 1, or a joiner
+ * that is not one word. `ask` checks on every call, a handler once, when
+ * created.
+ */
+export function checkSearch(search: Search<unknown>): void {
+	checkGate(search.gate, "the search's gate");
+	checkJoiners(search.joiners, "search");
+}
+
+/** Throws on a filter the flow cannot run, as `checkSearch` does, or two fields whose question ids clash. */
+export function checkFilter(filter: Filter<Fields>): void {
+	checkJoiners(filter.joiners, "filter");
+	const names = Object.keys(filter.fields);
+	const field = (name: string) => filter.fields[name] as Field;
+	for (const name of names) {
+		checkGate(field(name).gate, `the gate of field "${name}"`);
+		const ids = questionIds(name, field(name));
+		const clash = names.find((other) => other !== name && ids.test(other));
+		if (clash) {
+			throw new TypeError(
+				`justask: field "${clash}" takes the id of one of field "${name}"'s questions; rename one of them`,
+			);
+		}
+	}
+}
+
+/** Throws on a card the flow cannot run, as `checkFilter` does, or a blank command. */
+export function checkCard(card: Card<CardFields>): void {
+	checkGate(card.gate, "the card's gate");
+	checkCommands(card.commands);
+	checkJoiners(card.joiners, "card");
+	const names = Object.keys(card.fields);
+	const field = (name: string) => card.fields[name] as CardFields[string];
+	for (const name of names) {
+		checkGate(field(name).gate, `the gate of field "${name}"`);
+		const ids = cardQuestionIds(name, field(name));
+		const clash = [INTENT, ...names.filter((other) => other !== name)].find(
+			(other) => ids.test(other),
+		);
+		if (clash) {
+			throw new TypeError(
+				`justask: "${clash}" takes the id of one of field "${name}"'s questions; rename the field`,
+			);
+		}
+	}
+}
+
+/**
  * The item fills when a candidate wins outright and none and several stay
  * below the gate (ADR 0005, 0007), and the request names no pair of
  * candidates (ADR 0011).
@@ -173,8 +221,7 @@ async function askSearch<T>({
 	search,
 }: AskInput<T>): Promise<AskResult<T>> {
 	checkTimeout(timeoutMs);
-	checkGate(search.gate, "the search's gate");
-	checkJoiners(search.joiners, "search");
+	checkSearch(search);
 	const candidates = await search.shortlist(request);
 	checkShortlist(candidates, SEARCH_LABELS);
 	const pair = findPair(request, candidates, search.joiners, {
@@ -229,19 +276,9 @@ async function askFilter<F extends Fields>({
 	filter,
 }: AskFilterInput<F>): Promise<AskFilterResult<F>> {
 	checkTimeout(timeoutMs);
-	checkJoiners(filter.joiners, "filter");
+	checkFilter(filter);
 	const names = Object.keys(filter.fields);
 	const field = (name: string) => filter.fields[name] as Field;
-	for (const name of names) {
-		checkGate(field(name).gate, `the gate of field "${name}"`);
-		const ids = questionIds(name, field(name));
-		const clash = names.find((other) => other !== name && ids.test(other));
-		if (clash) {
-			throw new TypeError(
-				`justask: field "${clash}" takes the id of one of field "${name}"'s questions; rename one of them`,
-			);
-		}
-	}
 	const parsed = names.some((name) => field(name).kind !== "catalog")
 		? readCandidates(request, facts, filter.parsers ?? [], "past")
 		: NO_READINGS;
@@ -323,23 +360,9 @@ async function askCard<F extends CardFields>({
 	card,
 }: AskCardInput<F>): Promise<AskCardResult<F>> {
 	checkTimeout(timeoutMs);
-	checkGate(card.gate, "the card's gate");
-	checkCommands(card.commands);
-	checkJoiners(card.joiners, "card");
+	checkCard(card);
 	const names = Object.keys(card.fields);
 	const field = (name: string) => card.fields[name] as CardFields[string];
-	for (const name of names) {
-		checkGate(field(name).gate, `the gate of field "${name}"`);
-		const ids = cardQuestionIds(name, field(name));
-		const clash = [INTENT, ...names.filter((other) => other !== name)].find(
-			(other) => ids.test(other),
-		);
-		if (clash) {
-			throw new TypeError(
-				`justask: "${clash}" takes the id of one of field "${name}"'s questions; rename the field`,
-			);
-		}
-	}
 	const parsed = new Map<Reads, CandidateReadings>();
 	const readingsFor = (reads: Reads) => {
 		let readings = parsed.get(reads);

@@ -38,6 +38,8 @@ export const handler = createSearchHandler({
 });
 ```
 
+A handler checks its configuration when it is created, so a misconfigured app fails at boot, not on every request: a gate outside 0 to 1, a timeout outside 1 to 2147483647 ms, a joiner of more than one word, a blank card command, two fields whose question ids clash, or a `today` fact, which the handler writes itself.
+
 The browser posts JSON with the request and its own time zone, and the handler writes today in that time zone as a fact:
 
 ```ts

@@ -212,6 +212,20 @@ describe("createSearchHandler", () => {
 		},
 	);
 
+	it.each([
+		["a gate outside 0 to 1", { ...search, gate: 1.5 }, /gate/],
+		[
+			"a joiner of two words",
+			{ ...search, joiners: { or: ["or else"], and: ["and"] } },
+			/joiner/,
+		],
+	])(
+		"refuses %s when it is created, not on each request",
+		(_, bad, message) => {
+			expect(() => handler({ search: bad })).toThrow(message);
+		},
+	);
+
 	it("holds everything and sends a typed error without the cause when the provider fails", async () => {
 		const secret = "sk-server-only-123";
 		const cause = Object.assign(new Error(`401 for key ${secret}`), {

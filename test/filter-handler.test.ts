@@ -196,6 +196,36 @@ describe("createFilterHandler", () => {
 		});
 	});
 
+	it("refuses a field's gate outside 0 to 1 when it is created, not on each request", () => {
+		expect(() =>
+			handler({
+				filter: {
+					...filter,
+					fields: {
+						...filter.fields,
+						date: { ...filter.fields.date, gate: 0 },
+					},
+				},
+			}),
+		).toThrow(/gate of field "date"/);
+	});
+
+	it("refuses a field that takes another's question id when it is created", () => {
+		expect(() =>
+			createFilterHandler({
+				provider: fakeProvider(picks),
+				timeoutMs: 1_000,
+				filter: {
+					description: "invoices",
+					fields: {
+						date: filter.fields.date,
+						date_from: filter.fields.status,
+					},
+				},
+			}),
+		).toThrow(/takes the id/);
+	});
+
 	it("refuses a configured today fact, which the handler writes itself", () => {
 		expect(() => handler({ facts: { today: "2026-09-22" } })).toThrow(/today/);
 	});

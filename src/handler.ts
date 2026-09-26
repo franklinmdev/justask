@@ -2,6 +2,9 @@ import {
 	type AskError,
 	type AskInput,
 	ask,
+	checkCard,
+	checkFilter,
+	checkSearch,
 	checkTimeout,
 	type SearchResult,
 	type Spent,
@@ -89,6 +92,7 @@ export function createSearchHandler<T>(
 	config: SearchHandlerConfig<T>,
 ): (httpRequest: Request) => Promise<Response> {
 	const { search } = config;
+	checkSearch(search);
 	return serve(config, async (input) => {
 		const result = await ask({ ...input, search });
 		const response: SearchHandlerResponse<T> = {
@@ -108,6 +112,7 @@ export function createFilterHandler<F extends Fields>(
 	config: FilterHandlerConfig<F>,
 ): (httpRequest: Request) => Promise<Response> {
 	const { filter } = config;
+	checkFilter(filter);
 	return serve(config, async (input) => {
 		const result = await ask({ ...input, filter });
 		const response: FilterHandlerResponse<F> = {
@@ -127,6 +132,7 @@ export function createCardHandler<F extends CardFields>(
 	config: CardHandlerConfig<F>,
 ): (httpRequest: Request) => Promise<Response> {
 	const { card } = config;
+	checkCard(card);
 	return serve(config, async (input) => {
 		const result = await ask({ ...input, card });
 		const response: CardHandlerResponse<F> = {
