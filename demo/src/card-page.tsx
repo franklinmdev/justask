@@ -66,6 +66,8 @@ export function CardPage({
 	// Saving starts the next expense with nothing sent; Undo brings it back.
 	const [sent, setSent] = useState<string | null>(null);
 	const sentBeforeSave = useRef<string | null>(null);
+	// Counts Saves and Undos, so the amount box starts over on each (#160).
+	const [round, setRound] = useState(0);
 	const [pressed, setPressed] = useState(false);
 
 	const card = useCard<ExpenseFields>({
@@ -75,6 +77,7 @@ export function CardPage({
 			setExpenses((saved) => [{ ...value, id }, ...saved]);
 			sentBeforeSave.current = sent;
 			setSent(null);
+			setRound((last) => last + 1);
 		},
 		fetch: replay.fetch,
 	});
@@ -119,6 +122,7 @@ export function CardPage({
 		setExpenses((saved) => saved.slice(1));
 		card.restore();
 		setSent(sentBeforeSave.current);
+		setRound((last) => last + 1);
 		// The undo control is gone with the slot; the restored request takes the focus.
 		document.getElementById("card-box")?.focus();
 	}
@@ -312,7 +316,12 @@ export function CardPage({
 					{({ value, set, filledBy }) => (
 						<>
 							{head("total", filledBy, "card-total")}
-							<AmountInput id="card-total" value={value} onChange={set} />
+							<AmountInput
+								key={round}
+								id="card-total"
+								value={value}
+								onChange={set}
+							/>
 						</>
 					)}
 				</CardEntry>
@@ -411,7 +420,10 @@ function amountText(amount: Amount | undefined): string {
 /**
  * The amount's control: a text box that keeps what the person types, so
  * "86." stays on screen while it is being typed, and fills the field with
- * the number it reads. The currency the request gave stays with it.
+ * the number it reads. The currency the request gave stays with it, the box
+ * emptied too (#160): an empty box is no amount, whatever its mark shows,
+ * and the next number typed takes that currency. The page remounts it to
+ * start over, on a new answer, Save or Undo.
  */
 function AmountInput({
 	id,
@@ -423,7 +435,9 @@ function AmountInput({
 	onChange: (value: Amount | undefined) => void;
 }) {
 	const [text, type] = useTypedText(value, amountText);
-	const currency = value?.currency;
+	// The currency the box had before the person emptied it.
+	const [kept, keep] = useState(value?.currency);
+	const currency = value ? value.currency : kept;
 	const code = currency && currency !== LOCAL_CURRENCY ? currency : undefined;
 	return (
 		<div className="amount" data-mark={code ? "code" : undefined}>
@@ -444,6 +458,7 @@ function AmountInput({
 						number === undefined
 							? undefined
 							: { value: number, ...(currency && { currency }) };
+					if (amount === undefined) keep(currency);
 					type(next, amount);
 					onChange(amount);
 				}}
