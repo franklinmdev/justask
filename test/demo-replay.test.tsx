@@ -432,7 +432,10 @@ describe("the Form case's recorded run", () => {
 	const checkbox = (name: string) =>
 		screen.getByRole("checkbox", { name }) as HTMLInputElement;
 	const replayFilled = () =>
-		waitFor(() => expect(textbox("Amount").value).toBe("156.00"), REPLAY);
+		waitFor(
+			() => expect(textbox("Amount, US Dollar").value).toBe("156.00"),
+			REPLAY,
+		);
 
 	it("replays with no call and no click: the sentence, then the fields fill in order and the held vendor and day stay empty, the hood saying why", async () => {
 		const { container, provider } = renderDemo({ url: "/?case=form" });
@@ -514,7 +517,10 @@ describe("the Form case's recorded run", () => {
 		const { provider } = renderDemo({ url: "/?case=form&lang=es" });
 
 		expect(screen.getByText(label("es", formEs))).toBeDefined();
-		await waitFor(() => expect(textbox("Monto").value).toBe("156.00"), REPLAY);
+		await waitFor(
+			() => expect(textbox("Monto, dólar estadounidense").value).toBe("156.00"),
+			REPLAY,
+		);
 		expect(checkbox("Viajes").checked).toBe(true);
 		expect(control("Proveedor").value).toBe("");
 		expect(searchbox("Describa el gasto").value).toBe(formEs.request);
@@ -580,7 +586,7 @@ describe("the Form case's recorded run", () => {
 		await act(() => vi.advanceTimersByTimeAsync(2_500));
 
 		expect(control("Vendor").value).toBe("papergrove");
-		expect(textbox("Amount").value).toBe("");
+		expect(textbox("Amount, US Dollar").value).toBe("");
 		expect(screen.queryByText(label("en", form))).toBeNull();
 		expect(announced()).not.toContain("Replaying a recorded run");
 	});
@@ -594,7 +600,7 @@ describe("the Form case's recorded run", () => {
 
 		expect(box().value).toBe("x");
 		expect(screen.queryByText(label("en", form))).toBeNull();
-		expect(textbox("Amount").value).toBe("");
+		expect(textbox("Amount, US Dollar").value).toBe("");
 		expect(provider.calls).toHaveLength(0);
 	});
 });
@@ -681,7 +687,7 @@ describe("a replay plays once per browser tab (#135)", () => {
 		const { container, user } = renderDemo({ url });
 		await act(async () => {});
 		await act(async () => {});
-		await user.type(textbox("Amount"), "5");
+		await user.type(textbox("Amount, US Dollar"), "5");
 
 		// Settling in now would start on fields that were already on screen.
 		expect(container.querySelectorAll("[data-settle]")).toHaveLength(0);

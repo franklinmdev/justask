@@ -319,6 +319,8 @@ export function CardPage({
 							<AmountInput
 								key={round}
 								id="card-total"
+								label={copy.card.fields.total}
+								locale={content.locale}
 								value={value}
 								onChange={set}
 							/>
@@ -423,14 +425,19 @@ function amountText(amount: Amount | undefined): string {
  * the number it reads. The currency the request gave stays with it, the box
  * emptied too (#160): an empty box is no amount, whatever its mark shows,
  * and the next number typed takes that currency. The page remounts it to
- * start over, on a new answer, Save or Undo.
+ * start over, on a new answer, Save or Undo. The mark is hidden from a
+ * screen reader, so the box's name carries the currency instead (#164).
  */
 function AmountInput({
 	id,
+	label,
+	locale,
 	value,
 	onChange,
 }: {
 	id: string;
+	label: string;
+	locale: string;
 	value: Amount | undefined;
 	onChange: (value: Amount | undefined) => void;
 }) {
@@ -447,6 +454,7 @@ function AmountInput({
 			<input
 				id={id}
 				className="control amount-input"
+				aria-label={`${label}, ${formats(locale).currency(currency)}`}
 				inputMode="decimal"
 				autoComplete="off"
 				value={text}
