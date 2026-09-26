@@ -539,6 +539,23 @@ describe("a bare year is both a date and a number", () => {
 		]);
 		expect(read.amounts?.map((a) => a.value)).toEqual([2025]);
 	});
+
+	it.each([
+		["invoices of $2025", "$2025"],
+		["facturas de 2025 dólares", "2025 dólares"],
+		["paid 2026 dollars", "2026 dollars"],
+		["$1999", "$1999"],
+		["over US$2025", "US$2025"],
+		["2025 usd", "2025 usd"],
+		["€ 2025", "€ 2025"],
+	])(
+		"reads %s, a currency touching the number, as money alone (#184)",
+		(text, span) => {
+			const read = parse(text);
+			expect(read.dates).toEqual([]);
+			expect(read.amounts?.map((a) => a.text)).toEqual([span]);
+		},
+	);
 });
 
 describe("amounts", () => {

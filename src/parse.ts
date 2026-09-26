@@ -291,6 +291,27 @@ const SMALL = `(\\d{1,3}|${byLength(Object.keys(SMALL_NUMBERS).filter((w) => w !
 const small = (s: string | undefined) =>
 	SMALL_NUMBERS[s ?? ""] ?? Number(s ?? 0);
 
+/**
+ * Currency codes that also count in lowercase beside a number ("300 mxn"):
+ * the common ones that are no everyday word, so "a cad" or "top 10" never read
+ * as one.
+ */
+const LOWERCASE_CODES = [
+	"usd",
+	"eur",
+	"gbp",
+	"mxn",
+	"dop",
+	"jpy",
+	"cny",
+	"aud",
+	"chf",
+	"clp",
+	"brl",
+	"ars",
+];
+const CURRENCY_WORDS = "pesos|peso|dolares|dolar|dollars|dollar|euros|euro";
+
 const WEEKDAYS: Record<string, number> = {
 	lunes: 0,
 	martes: 1,
@@ -922,8 +943,11 @@ const DATE_RULES: DateRule[] = [
 			),
 	},
 	{
-		// A year alone
-		re: new RegExp(`${b}((?:19|20)\\d{2})${e}(?![.,]\\d)`, "g"),
+		// A year alone, unless a currency touches it: "$2025" and "2025 dólares" are money.
+		re: new RegExp(
+			`${b}(?<![$€£¥]\\s*)((?:19|20)\\d{2})${e}(?![.,]\\d|\\s*(?:${CURRENCY_WORDS}|${LOWERCASE_CODES.join("|")})(?![a-z]))`,
+			"g",
+		),
 		read: (m) => [
 			{
 				from: `${m[1]}-01-01`,
@@ -937,25 +961,6 @@ const DATE_RULES: DateRule[] = [
 
 // Amount rules
 
-/**
- * Currency codes that also count in lowercase beside a number ("300 mxn"):
- * the common ones that are no everyday word, so "a cad" or "top 10" never read
- * as one.
- */
-const LOWERCASE_CODES = [
-	"usd",
-	"eur",
-	"gbp",
-	"mxn",
-	"dop",
-	"jpy",
-	"cny",
-	"aud",
-	"chf",
-	"clp",
-	"brl",
-	"ars",
-];
 /** "RD$", "US$", "£", or a code: a mark touching the number, letters before a "$" included. */
 const PRE_MARK = `(us\\$|[a-z]{1,2}\\$|${LOWERCASE_CODES.join("|")}|\\$|€|£|¥)?\\s*`;
 /**
@@ -969,7 +974,6 @@ const NUMBER =
 /** "m" and "mm" are millions only beside a currency: "5m" alone may be minutes or meters. */
 const MULTIPLIER =
 	"(?:\\s*(k|mil|millones|millon|millions|million|thousand|mm|m)(?![a-z]))?";
-const CURRENCY_WORDS = "pesos|peso|dolares|dolar|dollars|dollar|euros|euro";
 const POST_MARK = `(?:\\s*(${CURRENCY_WORDS}|${LOWERCASE_CODES.join("|")}|us\\$|€)(?![a-z]))?`;
 const MILLIONS_MARK = new Set(["m", "mm"]);
 const DIGIT_AMOUNT = new RegExp(
