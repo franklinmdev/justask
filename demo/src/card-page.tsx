@@ -424,10 +424,11 @@ function AmountInput({
 }) {
 	const [text, type] = useTypedText(value, amountText);
 	const currency = value?.currency;
+	const code = currency && currency !== LOCAL_CURRENCY ? currency : undefined;
 	return (
-		<div className="amount">
+		<div className="amount" data-mark={code ? "code" : undefined}>
 			<span className="amount-mark" aria-hidden="true">
-				{currency && currency !== LOCAL_CURRENCY ? currency : "$"}
+				{code ?? "$"}
 			</span>
 			<input
 				id={id}
