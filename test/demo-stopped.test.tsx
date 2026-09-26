@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+// @module-tag page
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { APIError } from "@typesafe-ai/sdk";
