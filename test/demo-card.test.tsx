@@ -202,7 +202,8 @@ function panel(name = "What happened") {
 
 const vendor = (name = "Vendor") =>
 	screen.getByRole("combobox", { name }) as HTMLSelectElement;
-const amount = (name = "Amount") =>
+/** The amount box, by its name: its label and its currency (#164). */
+const amount = (name = "Amount, US Dollar") =>
 	screen.getByRole("textbox", { name }) as HTMLInputElement;
 const checkbox = (name: string) =>
 	screen.getByRole("checkbox", { name }) as HTMLInputElement;
@@ -731,7 +732,8 @@ describe("the demo's card page", () => {
 			url: "/?case=form",
 			box: "Describe the expense",
 			request: "airport taxi yesterday, 42 euros",
-			total: "Amount",
+			total: "Amount, EUR",
+			local: "Amount, US Dollar",
 			confirm: "Save expense",
 			list: "Saved expenses",
 			undo: "Undo",
@@ -740,21 +742,23 @@ describe("the demo's card page", () => {
 			url: "/?case=form&lang=es",
 			box: "Describa el gasto",
 			request: "taxi al aeropuerto ayer, 42 euros",
-			total: "Monto",
+			total: "Monto, EUR",
+			local: "Monto, dólar estadounidense",
 			confirm: "Guardar gasto",
 			list: "Gastos guardados",
 			undo: "Deshacer",
 		},
 	])(
-		"keeps the amount's currency while its box is emptied, until Save starts the card over ($url)",
-		async ({ url, box, request, total, confirm, list, undo }) => {
-			const { user } = renderDemo({ url });
+		"keeps the amount's currency, shown and in the box's name, while its box is emptied, until Save starts the card over ($url)",
+		async ({ url, box, request, total, local, confirm, list, undo }) => {
+			const { container, user } = renderDemo({ url });
 			await user.type(
 				screen.getByRole("searchbox", { name: box }),
 				`${request}{Enter}`,
 			);
 			await waitFor(() => expect(amount(total).value).toBe("42.00"));
 			expect(screen.getByText("EUR")).toBeDefined();
+			await expectNoAxeViolations(container);
 
 			// Emptied, the box holds no amount and still shows its currency.
 			await user.clear(amount(total));
@@ -766,7 +770,7 @@ describe("the demo's card page", () => {
 			expect(saved(list)).toEqual([expect.stringContaining("50 EUR")]);
 
 			// Saving starts the card over: the box is empty, in the local currency.
-			expect(amount(total).value).toBe("");
+			expect(amount(local).value).toBe("");
 			expect(screen.queryByText("EUR")).toBeNull();
 
 			// Undo brings the saved amount back, currency and all.
@@ -797,6 +801,7 @@ describe("the demo's card page", () => {
 		await user.click(save("Guardar gasto"));
 		expect(saved("Gastos guardados")).toHaveLength(1);
 		expect(screen.getByText("Gasto guardado.")).toBeDefined();
+		expect(amount("Monto, dólar estadounidense").value).toBe("");
 		await expectNoAxeViolations(container);
 	});
 

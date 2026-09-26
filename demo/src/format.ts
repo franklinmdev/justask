@@ -54,6 +54,7 @@ function build(locale: string) {
 		maximumFractionDigits: 2,
 	});
 	const count = new Intl.NumberFormat(locale);
+	const currencyName = new Intl.DisplayNames(locale, { type: "currency" });
 	return {
 		probability: (value: number) => probability.format(value),
 		cost: (usd: number) => cost.format(usd),
@@ -66,6 +67,11 @@ function build(locale: string) {
 			currency && currency !== LOCAL_CURRENCY
 				? `${value} ${currency}`
 				: amount.format(value),
+		/** How a screen reader hears an amount's currency: the local one by its name, since its mark is a bare "$", any other by its code, as its mark shows it. */
+		currency: (currency?: string | null) =>
+			currency && currency !== LOCAL_CURRENCY
+				? currency
+				: (currencyName.of(LOCAL_CURRENCY) ?? LOCAL_CURRENCY),
 		date: (iso: string) => date.format(new Date(`${iso}T00:00:00Z`)),
 		day: (iso: string) =>
 			(Number(iso.slice(0, 4)) === new Date().getFullYear()
