@@ -179,4 +179,23 @@ describe("createCardHandler", () => {
 		expect(response.status).toBe(400);
 		expect((await response.json()).error.kind).toBe("request");
 	});
+
+	it.each([
+		["empty", ""],
+		["only whitespace", "  \n\t "],
+	])(
+		"holds every field without a call for a request that is %s",
+		async (_, request) => {
+			const provider = fakeProvider(picks);
+
+			const response = await handler({ provider })(post({ ...asked, request }));
+
+			expect(response.status).toBe(200);
+			const body = await response.json();
+			expect(body.card.intent.passes).toBe(false);
+			expect(body.card.value).toEqual({});
+			expect(body).not.toHaveProperty("costUsd");
+			expect(provider.calls).toHaveLength(0);
+		},
+	);
 });

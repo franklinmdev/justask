@@ -199,4 +199,22 @@ describe("createFilterHandler", () => {
 	it("refuses a configured today fact, which the handler writes itself", () => {
 		expect(() => handler({ facts: { today: "2026-09-22" } })).toThrow(/today/);
 	});
+
+	it.each([
+		["empty", ""],
+		["only whitespace", "  \n\t "],
+	])(
+		"holds every field without a call for a request that is %s",
+		async (_, request) => {
+			const provider = fakeProvider(picks);
+
+			const response = await handler({ provider })(post({ ...asked, request }));
+
+			expect(response.status).toBe(200);
+			const body = await response.json();
+			expect(body.filter.value).toEqual({});
+			expect(body).not.toHaveProperty("costUsd");
+			expect(provider.calls).toHaveLength(0);
+		},
+	);
 });

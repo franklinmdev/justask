@@ -137,7 +137,7 @@ const SEARCH = "search";
 /**
  * Resolves a request through the host app's own state: code finds the
  * candidates, the provider picks in one call, code builds the result (ADR
- * 0002). A search resolves to one item or none; a filter to the filter object
+ * 0002). A blank request holds everything with no call. A search resolves to one item or none; a filter to the filter object
  * its table understands; a card to a new record, or to nothing when the
  * request asks for none. A failed or late provider holds everything; an
  * unavailable one is called once more within the same timeout (ADR 0013).
@@ -187,7 +187,7 @@ async function askSearch<T>({
 		gate: search.gate,
 		...(pair && { pair }),
 	};
-	if (candidates.length === 0) return { search: held };
+	if (candidates.length === 0 || isBlank(request)) return { search: held };
 
 	const questions = [searchQuestion(SEARCH, search, candidates)];
 	const outcome = await answer(
@@ -279,7 +279,7 @@ async function askFilter<F extends Fields>({
 		}) as FilterResult<F>;
 
 	const questions = names.flatMap((name) => planOf(name).questions);
-	if (questions.length === 0) return { filter: held() };
+	if (questions.length === 0 || isBlank(request)) return { filter: held() };
 
 	const outcome = await answer(
 		provider,
@@ -389,6 +389,7 @@ async function askCard<F extends CardFields>({
 			),
 		}) as CardResult<F>;
 
+	if (isBlank(request)) return { card: held() };
 	const questions = [
 		intentQuestion(card),
 		...names.flatMap((name) => planOf(name).questions),
@@ -425,6 +426,11 @@ async function askCard<F extends CardFields>({
 		card: { intent, value, fields } as CardResult<F>,
 		...spent(outcome),
 	};
+}
+
+/** A request with nothing in it asks for nothing, so it makes no call. */
+function isBlank(request: string): boolean {
+	return request.trim() === "";
 }
 
 /**

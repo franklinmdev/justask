@@ -310,6 +310,21 @@ describe("ask: search", () => {
 		expect(provider.calls[0]?.signal.aborted).toBe(true);
 	});
 
+	it("holds the item without a call for a blank request, whatever the shortlist finds", async () => {
+		const provider = fakeProvider({});
+
+		const result = await ask({
+			...base,
+			request: "   ",
+			provider,
+			search: vendorSearch(),
+		});
+
+		expect(result.search.item).toBeNull();
+		expect(result.search.candidates).toEqual([acme, northwind]);
+		expect(provider.calls).toHaveLength(0);
+	});
+
 	it("aborts the provider call when the caller's signal aborts, and rejects with its reason", async () => {
 		const provider = hangingProvider();
 		const caller = new AbortController();
