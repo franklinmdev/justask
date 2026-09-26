@@ -57,10 +57,11 @@ It answers:
 
 - `200` with `{ search, error? }`. A provider failure or timeout still answers `200`, with the item held and a typed `error` of kind `provider` or `timeout`. The provider's own message and cause never leave the server: the handler logs them with `console.error`, or hands them to `onError` when you pass one, so a missing or refused key shows in the server's log. A provider that was unavailable (the Jev adapter's 5xx, 529 included, or a lost connection; a custom adapter throws `ProviderUnavailableError`) is called once more within the same `timeoutMs`, and never a third time (ADR 0013). Its response then carries `retried: true`, and its cost and tokens are the second call's: the first threw and reported none. A request that is empty or only whitespace holds everything with no provider call.
 - `400` with `{ error: { kind: "request", message } }` when the body is not JSON, has no `request` string or no valid `timeZone`, or its request is over 1,000 characters (as JavaScript counts them, `request.length`).
+- `405` for anything but `POST`.
 - `413` with the same body when the body is over 16 KiB (16,384 bytes). The handler refuses a larger declared `content-length` before reading, and stops reading any other body at the cap.
 - `415` with the same body when the body is not sent as `application/json`. Another site's page can make a visitor's browser post a form or plain text with no preflight; a JSON post from another origin needs a CORS preflight, which the handler never answers. The handler checks no origin itself: a host that sends CORS headers for this route checks it there.
-- `405` for anything but `POST`.
 - `499` with no body when the browser goes away mid call: the request's `signal` aborts the provider call, so an answer nobody reads is not paid for to the end. `ask` takes the same `signal` and rejects with its reason.
+- A rejection, not a response, when the host's own code throws: a shortlist that fails, such as a database that is down. The host's server answers it as it answers its own errors, so its message stays on the server. An `onError` that throws is logged and the held `200` still goes out.
 
 A date, time or amount field weighs at most 10 readings of its kind: a request with more, such as a pasted list of numbers, gives that kind none, and its fields are held without a question.
 
@@ -110,7 +111,8 @@ import { createServer } from "node:http";
 
 const mount = toNode(handler);
 createServer((req, res) => {
-  mount(req, res).catch(() => {
+  mount(req, res).catch((error) => {
+    console.error(error);
     res.statusCode = 500;
     res.end();
   });

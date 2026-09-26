@@ -283,6 +283,43 @@ describe("createSearchHandler", () => {
 		log.mockRestore();
 	});
 
+	it("still answers the held result when onError throws, and logs what it threw", async () => {
+		const log = vi.spyOn(console, "error").mockImplementation(() => {});
+		const broke = new Error("logger broke");
+
+		const response = await handler({
+			provider: failingProvider(new Error("down")),
+			onError: () => {
+				throw broke;
+			},
+		})(post(asked));
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({
+			search: { item: null },
+			error: { kind: "provider", message: "The provider failed" },
+		});
+		expect(log).toHaveBeenCalledWith("justask: onError threw", broke);
+		log.mockRestore();
+	});
+
+	it("rejects when the host's shortlist throws, for the host's server to answer as its own error", async () => {
+		const provider = fakeProvider(picksAcme);
+
+		await expect(
+			handler({
+				provider,
+				search: {
+					...search,
+					shortlist: () => {
+						throw new Error("db down");
+					},
+				},
+			})(post(asked)),
+		).rejects.toThrow("db down");
+		expect(provider.calls).toHaveLength(0);
+	});
+
 	it("leaves the console alone when onError is passed", async () => {
 		const log = vi.spyOn(console, "error").mockImplementation(() => {});
 

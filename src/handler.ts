@@ -215,7 +215,12 @@ function serve(
 		}
 		const { response, error } = answered;
 		if (error) {
-			onError(error);
+			try {
+				onError(error);
+			} catch (thrown) {
+				// A broken logger must not cost the person a perfectly good held answer.
+				console.error("justask: onError threw", thrown);
+			}
 			response.error = forBrowser(error);
 		}
 		return Response.json(response);
