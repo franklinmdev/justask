@@ -113,6 +113,20 @@ describe("createSearchHandler", () => {
 		expect(body).not.toHaveProperty("retried");
 	});
 
+	it("leaves out a cost or token count that is not a finite number, as an unknown one", async () => {
+		const response = await handler({
+			provider: fakeProvider(picksAcme, {
+				costUsd: Number.NaN,
+				inputTokens: Number.POSITIVE_INFINITY,
+			}),
+		})(post(asked));
+
+		const body = await response.json();
+		expect(body.search.item).not.toBeNull();
+		expect(body).not.toHaveProperty("costUsd");
+		expect(body).not.toHaveProperty("inputTokens");
+	});
+
 	it("says when ask called the provider twice, with the cost of the call that answered (ADR 0013)", async () => {
 		const response = await handler({
 			provider: unavailableFirstProvider(
