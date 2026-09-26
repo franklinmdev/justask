@@ -1,4 +1,4 @@
-import type { Candidate } from "justask";
+import type { Candidate, SearchResult } from "justask";
 import { SearchBox, SearchEmpty, SearchItem, useSearch } from "justask/react";
 import { useState } from "react";
 import { flushSync } from "react-dom";
@@ -58,7 +58,7 @@ export function SearchPage({
 	const suggest = useSuggest(box);
 	// The vendor the person picked from the offer, for the answer it was offered on.
 	const [chosen, setChosen] = useState<{
-		result: object;
+		result: SearchResult<Vendor>;
 		vendor: Vendor;
 	} | null>(null);
 	const offer = search.answered ? offerOf(search.result) : null;

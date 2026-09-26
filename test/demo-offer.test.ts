@@ -90,28 +90,12 @@ describe("what the Search case offers when the item is held", () => {
 		expect(ids(offer)).toEqual(["papergrove", "larkspur", "brightmop"]);
 	});
 
-	it("offers the tied vendors as choices on a tie for first place", () => {
-		const offer = offerOf(
-			held({ brightmop: 0.45, glasswell: 0.45, none: 0.1 }, { pick: null }),
-		);
-		expect(offer?.kind).toBe("choices");
-		expect(ids(offer)).toEqual(["brightmop", "glasswell"]);
-	});
-
 	it("offers the three closest vendors when none held the item", () => {
 		const offer = offerOf(
 			held({ none: 0.61, papergrove: 0.2, larkspur: 0.19, fixbright: 0.1 }),
 		);
 		expect(offer?.kind).toBe("closest");
 		expect(ids(offer)).toEqual(["papergrove", "larkspur", "fixbright"]);
-	});
-
-	it("offers the closest vendors when a tie held none against one vendor", () => {
-		const offer = offerOf(
-			held({ none: 0.45, larkspur: 0.45, papergrove: 0.1 }, { pick: null }),
-		);
-		expect(offer?.kind).toBe("closest");
-		expect(ids(offer)).toEqual(["larkspur", "papergrove"]);
 	});
 
 	it("reads none before several, as the state panel does", () => {
@@ -150,6 +134,7 @@ describe("what held the item, as the hood says it and the page offers it", () =>
 		);
 		expect(heldBy(result)).toBe("tie");
 		expect(offerOf(result)?.kind).toBe("choices");
+		expect(ids(offerOf(result))).toEqual(["brightmop", "glasswell"]);
 	});
 
 	it("reads a vendor tied with none by the gate: none reached it, so the closest show", () => {
@@ -159,6 +144,7 @@ describe("what held the item, as the hood says it and the page offers it", () =>
 		);
 		expect(heldBy(result)).toBe("none-reached-gate");
 		expect(offerOf(result)?.kind).toBe("closest");
+		expect(ids(offerOf(result))).toEqual(["larkspur", "papergrove"]);
 	});
 
 	it("says none tied for first place when it tied below the gate, and offers the closest", () => {
