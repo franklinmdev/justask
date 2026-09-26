@@ -729,6 +729,25 @@ describe("the demo's card page", () => {
 		},
 	);
 
+	it("drops an emptied box's currency on the next answer, one with no amount or one in the local currency (#160, #164)", async () => {
+		const { user } = renderDemo();
+		await user.type(
+			screen.getByRole("searchbox", { name: "Describe the expense" }),
+			"airport taxi yesterday, 42 euros{Enter}",
+		);
+		await waitFor(() => expect(amount("Amount, EUR").value).toBe("42.00"));
+		await user.clear(amount("Amount, EUR"));
+
+		await suggest(user, "delete yesterday's taxi");
+		await waitFor(() => expect(amount().value).toBe(""));
+		expect(screen.queryByText("EUR")).toBeNull();
+
+		await suggest(user, "lunch with Larkspur yesterday, $86.40");
+
+		await waitFor(() => expect(amount().value).toBe("86.40"));
+		expect(screen.queryByText("EUR")).toBeNull();
+	});
+
 	it("fills the Spanish card from a Spanish request", async () => {
 		const { container, user } = renderDemo({ url: "/?case=form&lang=es" });
 
