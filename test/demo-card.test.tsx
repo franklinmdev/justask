@@ -207,6 +207,8 @@ const amount = (name = "Amount, US Dollar") =>
 	screen.getByRole("textbox", { name }) as HTMLInputElement;
 const checkbox = (name: string) =>
 	screen.getByRole("checkbox", { name }) as HTMLInputElement;
+/** The calendar day the focus is on, by its full name. */
+const focusedDay = () => document.activeElement?.getAttribute("aria-label");
 const save = (name = "Save expense") => screen.getByRole("button", { name });
 
 /** The expenses saved in memory, as the page lists them. */
@@ -447,74 +449,15 @@ describe("the demo's card page", () => {
 		await suggest(user, "Papergrove toner last week, $120");
 		await user.click(screen.getByRole("button", { name: "Day Pick a day" }));
 		// With no day chosen, the calendar opens on today.
-		expect(document.activeElement?.getAttribute("aria-label")).toBe(
-			"Tuesday, September 22, 2026",
-		);
+		expect(focusedDay()).toBe("Tuesday, September 22, 2026");
 		await user.keyboard("{ArrowLeft}{ArrowUp}");
-		expect(document.activeElement?.getAttribute("aria-label")).toBe(
-			"Monday, September 14, 2026",
-		);
+		expect(focusedDay()).toBe("Monday, September 14, 2026");
 		await user.keyboard("{Escape}");
 
 		expect(screen.queryByRole("dialog")).toBeNull();
 		expect(document.activeElement).toBe(
 			screen.getByRole("button", { name: "Day Pick a day" }),
 		);
-	});
-
-	it("moves the focus with a key that lands before another render's effects run (#153)", async () => {
-		let setNote: (note: string) => void = () => {};
-		function Field() {
-			const [note, set] = useState("");
-			setNote = set;
-			return (
-				<>
-					<span id="day-label">Day{note}</span>
-					<DayPicker
-						labelId="day-label"
-						value={undefined}
-						onChange={() => {}}
-						copy={english.copy.card}
-						locale="en-US"
-						format={(iso) => iso}
-					/>
-				</>
-			);
-		}
-		render(<Field />);
-		const user = userEvent.setup();
-		await user.click(screen.getByRole("button", { name: "Day Pick a day" }));
-		await user.keyboard("{ArrowLeft}");
-		expect(document.activeElement?.getAttribute("aria-label")).toBe(
-			"Monday, September 21, 2026",
-		);
-
-		// A render the keys did not ask for commits, as a person's page does
-		// when an answer arrives, and a key lands before that render's effects
-		// run. Outside act, so React schedules the render as a browser would.
-		const acting = Reflect.get(globalThis, "IS_REACT_ACT_ENVIRONMENT");
-		Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", false);
-		try {
-			const observer = new MutationObserver(() => {
-				observer.disconnect();
-				document.activeElement?.dispatchEvent(
-					new KeyboardEvent("keydown", { key: "ArrowUp", bubbles: true }),
-				);
-			});
-			observer.observe(document.body, {
-				subtree: true,
-				childList: true,
-				characterData: true,
-			});
-			setNote(" (edited)");
-			await waitFor(() =>
-				expect(document.activeElement?.getAttribute("aria-label")).toBe(
-					"Monday, September 14, 2026",
-				),
-			);
-		} finally {
-			Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", acting);
-		}
 	});
 
 	it("fills nothing from a request that is not a new expense, and says why", async () => {
@@ -855,6 +798,63 @@ describe("the demo's card page", () => {
 		await user.type(amount(), "86.4");
 		await user.click(save());
 		expect(saved()).toEqual(["Larkspur Catering$86.40"]);
+	});
+});
+
+describe("the demo's day picker, alone", () => {
+	it("moves the focus with a key that lands before another render's effects run (#153)", async () => {
+		let setNote: (note: string) => void = () => {};
+		function Field() {
+			const [note, changeNote] = useState("");
+			// Leaked out of render: act would flush the effects this test must outrun.
+			setNote = changeNote;
+			return (
+				<>
+					<span id="day-label">Day{note}</span>
+					<DayPicker
+						labelId="day-label"
+						value={undefined}
+						onChange={() => {}}
+						copy={english.copy.card}
+						locale="en-US"
+						format={(iso) => iso}
+					/>
+				</>
+			);
+		}
+		render(<Field />);
+		const user = userEvent.setup();
+		await user.click(screen.getByRole("button", { name: "Day Pick a day" }));
+		await user.keyboard("{ArrowLeft}");
+		expect(focusedDay()).toBe("Monday, September 21, 2026");
+
+		// A render the keys did not ask for commits, as a person's page does
+		// when an answer arrives, and a key lands before that render's effects
+		// run. Outside act, so React schedules the render as a browser would.
+		const wasActEnvironment = Reflect.get(
+			globalThis,
+			"IS_REACT_ACT_ENVIRONMENT",
+		);
+		Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", false);
+		try {
+			const observer = new MutationObserver(() => {
+				observer.disconnect();
+				document.activeElement?.dispatchEvent(
+					new KeyboardEvent("keydown", { key: "ArrowUp", bubbles: true }),
+				);
+			});
+			observer.observe(document.body, {
+				subtree: true,
+				childList: true,
+				characterData: true,
+			});
+			setNote(" (edited)");
+			await waitFor(() =>
+				expect(focusedDay()).toBe("Monday, September 14, 2026"),
+			);
+		} finally {
+			Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", wasActEnvironment);
+		}
 	});
 });
 

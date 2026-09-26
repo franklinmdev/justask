@@ -67,7 +67,7 @@ export function CardPage({
 	const [sent, setSent] = useState<string | null>(null);
 	const sentBeforeSave = useRef<string | null>(null);
 	// Counts Saves and Undos, so the amount box starts over on each (#160).
-	const [round, setRound] = useState(0);
+	const [amountResets, setAmountResets] = useState(0);
 	const [pressed, setPressed] = useState(false);
 
 	const card = useCard<ExpenseFields>({
@@ -77,14 +77,14 @@ export function CardPage({
 			setExpenses((saved) => [{ ...value, id }, ...saved]);
 			sentBeforeSave.current = sent;
 			setSent(null);
-			setRound((last) => last + 1);
+			setAmountResets((last) => last + 1);
 		},
 		fetch: replay.fetch,
 	});
 	const blank = card.request.trim() === "";
 	// An end state opened still was sent by the replay, and shows no press (#139).
 	const unsent = !blank && card.request !== sent && !replay.still;
-	const sending: typeof card = {
+	const markingSends: typeof card = {
 		...card,
 		submit: () => {
 			if (!blank) {
@@ -99,8 +99,8 @@ export function CardPage({
 		const timer = setTimeout(() => setPressed(false), PRESS_MS);
 		return () => clearTimeout(timer);
 	}, [pressed]);
-	replay.follow(sending);
-	const box = replay.stoppedBy(sending);
+	replay.follow(markingSends);
+	const box = replay.stoppedBy(markingSends);
 	const suggest = useSuggest(box);
 	// A field the person sets ends the replay, so its answer never writes over their choice.
 	const fields: typeof card = {
@@ -122,7 +122,7 @@ export function CardPage({
 		setExpenses((saved) => saved.slice(1));
 		card.restore();
 		setSent(sentBeforeSave.current);
-		setRound((last) => last + 1);
+		setAmountResets((last) => last + 1);
 		// The undo control is gone with the slot; the restored request takes the focus.
 		document.getElementById("card-box")?.focus();
 	}
@@ -156,7 +156,7 @@ export function CardPage({
 	return (
 		<CaseLayout
 			content={content}
-			shownCase="form"
+			caseName="form"
 			call={{ trace, result: card.result, loading: card.loading }}
 			labelledBy="card-title"
 			hood={<CardPanel content={content} card={card} trace={trace} />}
@@ -191,7 +191,7 @@ export function CardPage({
 					onClick={() => {
 						if (blank) return;
 						replay.stop();
-						sending.submit();
+						markingSends.submit();
 					}}
 				>
 					{copy.card.fill}
@@ -317,7 +317,7 @@ export function CardPage({
 						<>
 							{head("total", filledBy, "card-total")}
 							<AmountInput
-								key={round}
+								key={amountResets}
 								id="card-total"
 								label={copy.card.fields.total}
 								locale={content.locale}

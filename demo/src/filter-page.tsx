@@ -42,13 +42,13 @@ const PAGE_ROWS = 10;
 
 /**
  * The page the table is on, for the controls it was turned under: any change
- * to them goes back to the first. `turned` counts the steps, so a turn
+ * to them goes back to the first. `turns` counts the steps, so a turn
  * swaps the rows at once, with no row motion.
  */
-type Paging = { for: Applied; page: number; turned: number };
+type Paging = { controls: Applied; page: number; turns: number };
 
-/** The controls one answer set, in field order; the round restarts their motion. */
-type Settling = { round: number; names: FieldName[] };
+/** The controls one answer set, in field order; `answers` counts the answers, so each restarts their motion. */
+type Settling = { answers: number; names: FieldName[] };
 
 /** One field's filter in the page's own words, as a screen reader hears what an answer set. */
 function fieldWords(content: Content) {
@@ -131,7 +131,7 @@ export function FilterPage({
 	const { applied } = table;
 	// Clear filters renews the controls, so text in a box that set no bound goes too.
 	const [cleared, setCleared] = useState(0);
-	const [settling, setSettling] = useState<Settling>({ round: 0, names: [] });
+	const [settling, setSettling] = useState<Settling>({ answers: 0, names: [] });
 	// What the answer set and held, for a screen reader.
 	const [appliedWords, setAppliedWords] = useState("");
 	const replay = useReplay({ recording, fetch: fetchImpl });
@@ -145,8 +145,8 @@ export function FilterPage({
 			const names = fieldOrder.filter((name) => value[name] !== undefined);
 			// An end state opened with nothing typed shows its controls still. Set
 			// once per answer, so the person taking over never settles them late.
-			setSettling(({ round }) => ({
-				round: round + 1,
+			setSettling(({ answers }) => ({
+				answers: answers + 1,
 				names: replay.still ? [] : names,
 			}));
 			const held = fieldOrder.filter(
@@ -184,19 +184,24 @@ export function FilterPage({
 	);
 	const rows = transactions.filter((row) => matches(row, applied));
 	const [paging, setPaging] = useState<Paging>({
-		for: applied,
+		controls: applied,
 		page: 0,
-		turned: 0,
+		turns: 0,
 	});
 	const pages = Math.max(1, Math.ceil(rows.length / PAGE_ROWS));
-	const page = paging.for === applied ? Math.min(paging.page, pages - 1) : 0;
+	const page =
+		paging.controls === applied ? Math.min(paging.page, pages - 1) : 0;
 	const turn = (to: number) =>
-		setPaging(({ turned }) => ({ for: applied, page: to, turned: turned + 1 }));
+		setPaging(({ turns }) => ({
+			controls: applied,
+			page: to,
+			turns: turns + 1,
+		}));
 
 	return (
 		<CaseLayout
 			content={content}
-			shownCase="table"
+			caseName="table"
 			call={{ trace, result: filter.result, loading: filter.loading }}
 			labelledBy="transactions-title"
 			hood={<FilterPanel content={content} filter={filter} trace={trace} />}
@@ -274,7 +279,7 @@ export function FilterPage({
 					settling={settling}
 				/>
 				<Transactions
-					key={`page-${paging.turned}`}
+					key={`page-${paging.turns}`}
 					content={content}
 					rows={rows.slice(page * PAGE_ROWS, (page + 1) * PAGE_ROWS)}
 					still={replay.still}
@@ -344,7 +349,7 @@ function TableFilters({
 	// A control an answer just set remounts, so it settles in again, after the ones before it.
 	const at = (name: FieldName) => settling.names.indexOf(name);
 	const keyOf = (name: FieldName) =>
-		at(name) === -1 ? name : `${name}-${settling.round}`;
+		at(name) === -1 ? name : `${name}-${settling.answers}`;
 	const settle = (name: FieldName) => settleAt(at(name));
 
 	return (

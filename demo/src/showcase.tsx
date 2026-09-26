@@ -109,14 +109,14 @@ export function nextTab<T>(
  */
 export function CaseLayout({
 	content,
-	shownCase,
+	caseName,
 	call,
 	labelledBy,
 	hood,
 	children,
 }: {
 	content: Content;
-	shownCase: Case;
+	caseName: Case;
 	call: ShownCall;
 	labelledBy: string;
 	hood: ReactNode;
@@ -124,8 +124,8 @@ export function CaseLayout({
 }) {
 	const { copy } = content;
 	const snippet = useMemo(
-		() => snippetOf(shownCase, content),
-		[shownCase, content],
+		() => snippetOf(caseName, content),
+		[caseName, content],
 	);
 	const place = useContext(HoodPlaceContext);
 	if (!place) throw new Error("A case needs the page's hood place");
@@ -142,7 +142,7 @@ export function CaseLayout({
 							type="button"
 							className="hood-toggle"
 							aria-expanded={place.open}
-							aria-controls={`${shownCase}-hood`}
+							aria-controls={`${caseName}-hood`}
 							onClick={() => place.setOpen(!place.open)}
 						>
 							{copy.hood}
@@ -170,7 +170,7 @@ export function CaseLayout({
 					{children}
 				</section>
 				<aside
-					id={`${shownCase}-hood`}
+					id={`${caseName}-hood`}
 					className="hood"
 					aria-label={copy.hood}
 					hidden={hoodHidden}
@@ -182,9 +182,9 @@ export function CaseLayout({
 								key={view}
 								type="button"
 								role="tab"
-								id={`${shownCase}-hood-tab-${view}`}
+								id={`${caseName}-hood-tab-${view}`}
 								aria-selected={view === place.view}
-								aria-controls={`${shownCase}-hood-${view}`}
+								aria-controls={`${caseName}-hood-${view}`}
 								tabIndex={view === place.view ? 0 : -1}
 								onClick={() => place.setView(view)}
 								onKeyDown={(event) => {
@@ -193,7 +193,7 @@ export function CaseLayout({
 									event.preventDefault();
 									place.setView(next);
 									document
-										.getElementById(`${shownCase}-hood-tab-${next}`)
+										.getElementById(`${caseName}-hood-tab-${next}`)
 										?.focus();
 								}}
 							>
@@ -201,14 +201,14 @@ export function CaseLayout({
 							</button>
 						))}
 					</div>
-					<HoodPanel shownCase={shownCase} view="trace" shown={place.view}>
+					<HoodPanel caseName={caseName} view="trace" shown={place.view}>
 						{hood}
 					</HoodPanel>
-					<HoodPanel shownCase={shownCase} view="json" shown={place.view}>
+					<HoodPanel caseName={caseName} view="json" shown={place.view}>
 						{call.trace ? (
 							<CodeFile
 								file={{
-									name: hookResult[shownCase],
+									name: hookResult[caseName],
 									code: JSON.stringify(call.result, null, 2),
 								}}
 								stale={call.loading}
@@ -217,7 +217,7 @@ export function CaseLayout({
 							<p className="muted">{copy.jsonIdle}</p>
 						)}
 					</HoodPanel>
-					<HoodPanel shownCase={shownCase} view="code" shown={place.view}>
+					<HoodPanel caseName={caseName} view="code" shown={place.view}>
 						<CodeFile file={snippet.server} />
 						<CodeFile file={snippet.client} />
 					</HoodPanel>
@@ -230,13 +230,13 @@ export function CaseLayout({
 
 /** One of the hood's tab panels, hidden while another tab is chosen. */
 function HoodPanel({
-	shownCase,
+	caseName,
 	view,
 	shown,
 	children,
 }: {
 	/** The case the hood is in: every case stays mounted, so its ids name it. */
-	shownCase: Case;
+	caseName: Case;
 	view: HoodView;
 	shown: HoodView;
 	children: ReactNode;
@@ -244,8 +244,8 @@ function HoodPanel({
 	return (
 		<div
 			role="tabpanel"
-			id={`${shownCase}-hood-${view}`}
-			aria-labelledby={`${shownCase}-hood-tab-${view}`}
+			id={`${caseName}-hood-${view}`}
+			aria-labelledby={`${caseName}-hood-tab-${view}`}
 			className="hood-panel"
 			// biome-ignore lint/a11y/noNoninteractiveTabindex: a tab panel is a tab stop, so keys reach it when nothing inside takes the focus (ARIA tabs pattern).
 			tabIndex={0}

@@ -148,7 +148,7 @@ export function App({
 	 * notice unmounts the case it replaces, so the case opens again on its
 	 * recorded run.
 	 */
-	const caseOf = (option: Case, page: ReactNode) =>
+	const mountedCase = (option: Case, page: ReactNode) =>
 		option === shownCase
 			? !stopped && <Activity key={`${option}-${language}`}>{page}</Activity>
 			: opened.cases.includes(option) && (
@@ -236,21 +236,21 @@ export function App({
 								}
 							/>
 						)}
-						{caseOf(
+						{mountedCase(
 							"table",
 							<FilterPage
 								recording={recordings?.table[language] ?? null}
 								{...shared}
 							/>,
 						)}
-						{caseOf(
+						{mountedCase(
 							"form",
 							<CardPage
 								recording={recordings?.form[language] ?? null}
 								{...shared}
 							/>,
 						)}
-						{caseOf(
+						{mountedCase(
 							"search",
 							<SearchPage
 								recording={recordings?.search[language] ?? null}
