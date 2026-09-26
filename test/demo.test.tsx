@@ -206,7 +206,7 @@ describe("the demo's Search case", () => {
 		const state = panel("This call");
 		expect(await figure(state, "Input tokens")).toBe("120");
 		expect(await figure(state, "Cost")).toBe("$0.000005");
-		expect(await figure(state, "Latency")).toMatch(/^\d+ ms$/);
+		expect(await figure(state, "Latency")).toMatch(/^\d+\u00a0ms$/);
 		// One call, so the strip has no figure for calls.
 		expect(state.queryByText("Calls")).toBeNull();
 		await expectNoAxeViolations(container);
@@ -228,7 +228,7 @@ describe("the demo's Search case", () => {
 		const state = panel("This call");
 		expect(await figure(state, "Calls")).toBe("2 (retried)");
 		expect(await figure(state, "Cost")).toBe("$0.000005");
-		expect(await figure(state, "Latency")).toMatch(/^\d+ ms$/);
+		expect(await figure(state, "Latency")).toMatch(/^\d+\u00a0ms$/);
 		// The second call answered, so the search filled.
 		expect(
 			await screen.findByRole("button", { name: /Larkspur Catering/ }),
@@ -244,7 +244,7 @@ describe("the demo's Search case", () => {
 		);
 
 		const state = panel("This call");
-		expect(await figure(state, "Latency")).toMatch(/^\d+ ms$/);
+		expect(await figure(state, "Latency")).toMatch(/^\d+\u00a0ms$/);
 		expect(await figure(state, "Input tokens")).toBe("Not reported");
 		expect(await figure(state, "Cost")).toBe("Not reported");
 	});
@@ -325,7 +325,7 @@ describe("the demo's Search case", () => {
 		);
 
 		const state = panel("This call");
-		expect(await figure(state, "Latency")).toMatch(/^\d+ ms$/);
+		expect(await figure(state, "Latency")).toMatch(/^\d+\u00a0ms$/);
 		expect(await figure(state, "Input tokens")).toBe("Not reported");
 		const json = await hoodView(user, "JSON");
 		expect(

@@ -350,7 +350,7 @@ describe("the demo's card page", () => {
 		await suggest(user, "lunch with Larkspur yesterday, $86.40");
 
 		const state = panel("This call");
-		expect(await figure(state, "Latency")).toMatch(/^\d+ ms$/);
+		expect(await figure(state, "Latency")).toMatch(/^\d+\u00a0ms$/);
 		expect(await figure(state, "Input tokens")).toBe("Not reported");
 		expect(await figure(state, "Cost")).toBe("Not reported");
 	});

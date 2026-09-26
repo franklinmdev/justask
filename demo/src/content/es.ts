@@ -107,7 +107,7 @@ export const spanish: Content = {
 		statuses: { paid: "Pagada", open: "Pendiente", overdue: "Vencida" },
 		panel: "Qué pasó",
 		idle: "Escriba una solicitud o pruebe una de las sugerencias.",
-		waiting: "Esperando la respuesta",
+		waiting: "Esperando la respuesta…",
 		filled: "Completado",
 		held: "Retenido",
 		failed: "Falló",
@@ -136,7 +136,7 @@ export const spanish: Content = {
 				case "provider":
 					return "El modelo falló, así que no se muestra nada. El registro del servidor tiene los detalles.";
 				case "timeout":
-					return `El modelo no respondió en ${reason.timeoutMs} ms, así que no se muestra nada.`;
+					return `El modelo no respondió en ${reason.timeoutMs}\u00a0ms, así que no se muestra nada.`;
 				case "unreachable":
 					return `No se pudo contactar al servidor: ${reason.message}`;
 			}

@@ -275,7 +275,7 @@ function Strip({ content, call }: { content: Content; call: ShownCall }) {
 				<dl className="strip-figures">
 					<div>
 						<dt>{copy.latency}</dt>
-						<dd className="data">{trace.ms} ms</dd>
+						<dd className="data">{`${trace.ms}\u00a0ms`}</dd>
 					</div>
 					{trace.retried && (
 						<div>

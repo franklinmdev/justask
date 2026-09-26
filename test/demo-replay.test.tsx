@@ -231,7 +231,7 @@ describe("the Table case's recorded run", () => {
 			["Amount", "2"],
 		]);
 
-		expect(figure("Latency")).toBe(`${table.latencyMs} ms`);
+		expect(figure("Latency")).toBe(`${table.latencyMs}\u00a0ms`);
 		expect(figure("Input tokens")).toBe(
 			formats("en").count(table.response.inputTokens ?? Number.NaN),
 		);
@@ -400,7 +400,9 @@ describe("the Search case's recorded run", () => {
 		expect(screen.getByText(/^1 frase /).textContent).toBe(
 			"1 frase frente a 2 clics en 1 menú",
 		);
-		expect(figure("Latencia", "Esta llamada")).toBe(`${search.latencyMs} ms`);
+		expect(figure("Latencia", "Esta llamada")).toBe(
+			`${search.latencyMs}\u00a0ms`,
+		);
 		expect(provider.calls).toHaveLength(0);
 		await expectNoAxeViolations(container);
 	});
@@ -486,7 +488,7 @@ describe("the Form case's recorded run", () => {
 				"The code found no candidates, so the provider was not asked.",
 			),
 		).toBeDefined();
-		expect(figure("Latency")).toBe(`${form.latencyMs} ms`);
+		expect(figure("Latency")).toBe(`${form.latencyMs}\u00a0ms`);
 		expect(figure("Cost")).toBe(
 			formats("en").cost(form.response.costUsd ?? Number.NaN),
 		);
@@ -620,7 +622,7 @@ describe("a replay plays once per browser tab (#135)", () => {
 		expect(control("Vendor").value).toBe("fixbright");
 		expect(screen.getByText(label("en", table))).toBeDefined();
 		expect(announced()).not.toContain("Replaying a recorded run");
-		expect(figure("Latency")).toBe(`${table.latencyMs} ms`);
+		expect(figure("Latency")).toBe(`${table.latencyMs}\u00a0ms`);
 		expect(provider.calls).toHaveLength(0);
 	});
 
