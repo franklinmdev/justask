@@ -331,6 +331,20 @@ describe("createSearchHandler", () => {
 		expect(provider.calls).toHaveLength(0);
 	});
 
+	it("names a short time zone it refuses, and does not echo a long one", async () => {
+		const short = await handler()(post({ ...asked, timeZone: "Mars/Olympus" }));
+		const long = await handler()(
+			post({ ...asked, timeZone: "A".repeat(5_000) }),
+		);
+
+		expect((await short.json()).error.message).toBe(
+			'"Mars/Olympus" is not a time zone',
+		);
+		expect((await long.json()).error.message).toBe(
+			'"timeZone" is not a time zone',
+		);
+	});
+
 	it("answers 400 without calling the provider for a request over 1000 characters", async () => {
 		const provider = fakeProvider(picksAcme);
 

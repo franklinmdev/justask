@@ -159,6 +159,9 @@ const MAX_REQUEST_LENGTH = 1_000;
  */
 const MAX_BODY_BYTES = 16 * 1024;
 
+/** The longest refused time zone a 400 names, twice as long as any IANA name. */
+const MAX_TIME_ZONE_ECHO = 64;
+
 /** The status for a request the browser dropped before its answer, as nginx names it. */
 const CLIENT_CLOSED = 499;
 
@@ -239,7 +242,9 @@ async function readBody(
 	try {
 		new Intl.DateTimeFormat("en", { timeZone });
 	} catch {
-		return { error: `"${timeZone}" is not a time zone` };
+		// Named when it could be one, so a long value is not sent back in full.
+		const named = timeZone.length <= MAX_TIME_ZONE_ECHO ? timeZone : "timeZone";
+		return { error: `"${named}" is not a time zone` };
 	}
 	return { body: { request, timeZone } };
 }
