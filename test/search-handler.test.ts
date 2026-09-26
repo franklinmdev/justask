@@ -378,6 +378,28 @@ describe("createSearchHandler", () => {
 		);
 	});
 
+	it("replaces a lone surrogate, which the provider refuses, before the call", async () => {
+		const provider = fakeProvider(picksAcme);
+
+		await handler({ provider })(
+			post({ ...asked, request: "invoices from Acme \ud800 and \udc00 12" }),
+		);
+
+		expect(provider.calls[0]?.request).toBe(
+			"invoices from Acme \ufffd and \ufffd 12",
+		);
+	});
+
+	it("keeps a pair of surrogates, an emoji, as it is", async () => {
+		const provider = fakeProvider(picksAcme);
+
+		await handler({ provider })(
+			post({ ...asked, request: "invoices from Acme 🧾" }),
+		);
+
+		expect(provider.calls[0]?.request).toBe("invoices from Acme 🧾");
+	});
+
 	it("answers 400 without calling the provider for a request over 1000 characters", async () => {
 		const provider = fakeProvider(picksAcme);
 

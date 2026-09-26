@@ -251,7 +251,18 @@ async function readBody(
 		const named = timeZone.length <= MAX_TIME_ZONE_ECHO ? timeZone : "timeZone";
 		return { error: `"${named}" is not a time zone` };
 	}
-	return { body: { request, timeZone } };
+	return { body: { request: wellFormed(request), timeZone } };
+}
+
+/**
+ * The text with each lone surrogate, which the provider refuses as invalid
+ * Unicode, replaced by U+FFFD, as `String.prototype.toWellFormed` does.
+ */
+function wellFormed(text: string): string {
+	return text.replace(
+		/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g,
+		"\uFFFD",
+	);
 }
 
 /**

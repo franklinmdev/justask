@@ -68,7 +68,7 @@ A date, time or amount field weighs at most 10 readings of its kind: a request w
 
 The handler sends data to two places:
 
-- **To the provider**, in one call: the request text, the facts (today plus every fact you configure), one question built from the search's `description` (a fixed instruction around it, and `none` and `several` labels beside the candidates), and the `id` and `description` of every shortlist candidate. The provider adapter adds what its service needs to authenticate, such as the key. A candidate's `value` is never sent to the provider, so write each `description` knowing a third party reads it.
+- **To the provider**, in one call: the request text (any lone surrogate replaced by U+FFFD, since the provider refuses invalid Unicode), the facts (today plus every fact you configure), one question built from the search's `description` (a fixed instruction around it, and `none` and `several` labels beside the candidates), and the `id` and `description` of every shortlist candidate. The provider adapter adds what its service needs to authenticate, such as the key. A candidate's `value` is never sent to the provider, so write each `description` knowing a third party reads it.
 - **To the browser**, in the response: every shortlist candidate in full (`id`, `description` and `value`, not only the picked one), the pick, every label's probability and the gate. Candidate values travel as JSON, so keep them plain data, and leave out of `value` anything the person may not see.
 
 The provider's key, the provider's own error messages and the error's cause never reach the browser.
