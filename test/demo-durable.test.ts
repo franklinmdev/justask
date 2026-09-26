@@ -4,6 +4,7 @@ import {
 	type TestHarness,
 	unstable_readConfig,
 } from "wrangler";
+import { utcMinute } from "../demo/server/visitors.ts";
 import {
 	BUDGET_EXCEEDED,
 	DEMO_PAUSED,
@@ -92,9 +93,11 @@ describe("the Worker's ledger, a Durable Object with SQLite", () => {
 	});
 });
 
-// Room for a wait past a minute's edge (clearOfMinuteEdge).
+// Room for inOneMinute's second try. At load average 33 (#166) a test's calls
+// took up to 12.6 s and a reset up to 5.6 s: two tries and the reset between
+// them, 31 s, and half again for a machine loaded past that, 47 s.
 describe("the Worker's per-visitor limits, in the same Durable Object", {
-	timeout: 20_000,
+	timeout: 47_000,
 }, () => {
 	// Free calls, so only the visitor's limits refuse.
 	const server = createTestHarness({
@@ -107,12 +110,20 @@ describe("the Worker's per-visitor limits, in the same Durable Object", {
 
 	/**
 	 * The Worker reads the real clock, and a UTC minute's edge between a
-	 * test's calls would start the minute's count over: in a minute's last
-	 * 10 s, waits for the next. The calls take well under that.
+	 * test's calls would start the minute's count over. Makes `calls` and
+	 * answers what they answered when no edge fell between their start and
+	 * their end; otherwise makes them once more on fresh storage, from just
+	 * past that edge. A wait for a minute's last seconds cannot rule the edge
+	 * out: under load the calls outlast any fixed margin (#166).
 	 */
-	async function clearOfMinuteEdge() {
-		const left = 60_000 - (Date.now() % 60_000);
-		if (left < 10_000) await new Promise((done) => setTimeout(done, left));
+	async function inOneMinute<T>(calls: () => Promise<T>): Promise<T> {
+		for (let tries = 1; ; tries++) {
+			const minute = utcMinute(new Date());
+			const answered = await calls();
+			if (utcMinute(new Date()) === minute) return answered;
+			if (tries === 2) throw new Error("Both tries crossed a minute's edge");
+			await server.reset();
+		}
 	}
 
 	/** Sends `times` searches from `address` and answers each status. */
@@ -125,27 +136,34 @@ describe("the Worker's per-visitor limits, in the same Durable Object", {
 	}
 
 	it(`answers one IP's ${VISITOR_MINUTE_LIMIT + 1}st call in a minute 402, naming the visitor, and another IP 200`, async () => {
-		await clearOfMinuteEdge();
-		expect(await statuses(VISITOR_MINUTE_LIMIT, "203.0.113.7")).toEqual(
-			Array(VISITOR_MINUTE_LIMIT).fill(200),
+		const { allowed, refused, refusedBody, other } = await inOneMinute(
+			async () => {
+				const allowed = await statuses(VISITOR_MINUTE_LIMIT, "203.0.113.7");
+				const refused = await search(server, "203.0.113.7");
+				const refusedBody = await refused.json();
+				const other = (await search(server, "203.0.113.8")).status;
+				return { allowed, refused: refused.status, refusedBody, other };
+			},
 		);
 
-		const refused = await search(server, "203.0.113.7");
-
-		expect(refused.status).toBe(402);
-		expect(await refused.json()).toEqual(VISITOR_MINUTE_USED);
-		expect((await search(server, "203.0.113.8")).status).toBe(200);
+		expect(allowed).toEqual(Array(VISITOR_MINUTE_LIMIT).fill(200));
+		expect(refused).toBe(402);
+		expect(refusedBody).toEqual(VISITOR_MINUTE_USED);
+		expect(other).toBe(200);
 	});
 
 	it("counts two IPv6 addresses in one /64 as one visitor, and keeps the count when the object is evicted", async () => {
-		await clearOfMinuteEdge();
-		await statuses(VISITOR_MINUTE_LIMIT, "2001:db8:1:2::a");
+		const afterEviction = await inOneMinute(async () => {
+			await statuses(VISITOR_MINUTE_LIMIT, "2001:db8:1:2::a");
 
-		await server.getWorker().evictDurableObject("DemoLedger", {
-			name: "budget",
+			await server.getWorker().evictDurableObject("DemoLedger", {
+				name: "budget",
+			});
+
+			return (await search(server, "2001:db8:1:2:ffff::b")).status;
 		});
 
-		expect((await search(server, "2001:db8:1:2:ffff::b")).status).toBe(402);
+		expect(afterEviction).toBe(402);
 	});
 });
 
