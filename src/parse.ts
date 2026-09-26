@@ -937,7 +937,27 @@ const DATE_RULES: DateRule[] = [
 
 // Amount rules
 
-const PRE_MARK = "(us\\$|usd|\\$|€)?\\s*";
+/**
+ * Currency codes that also count in lowercase beside a number ("300 mxn"):
+ * the common ones that are no everyday word, so "a cad" or "top 10" never read
+ * as one.
+ */
+const LOWERCASE_CODES = [
+	"usd",
+	"eur",
+	"gbp",
+	"mxn",
+	"dop",
+	"jpy",
+	"cny",
+	"aud",
+	"chf",
+	"clp",
+	"brl",
+	"ars",
+];
+/** "RD$", "US$", "£", or a code: a mark touching the number, letters before a "$" included. */
+const PRE_MARK = `(us\\$|[a-z]{1,2}\\$|${LOWERCASE_CODES.join("|")}|\\$|€|£|¥)?\\s*`;
 /**
  * Thousands with commas ("1,500.50"), thousands with dots ("1.500,50"), or a
  * plain number with an optional decimal part. A single separator followed by
@@ -949,7 +969,7 @@ const NUMBER =
 const MULTIPLIER =
 	"(?:\\s*(k|mil|millones|millon|millions|million|thousand)(?![a-z]))?";
 const CURRENCY_WORDS = "pesos|peso|dolares|dolar|dollars|dollar|euros|euro";
-const POST_MARK = `(?:\\s*(${CURRENCY_WORDS}|usd|eur|us\\$|€)(?![a-z]))?`;
+const POST_MARK = `(?:\\s*(${CURRENCY_WORDS}|${LOWERCASE_CODES.join("|")}|us\\$|€)(?![a-z]))?`;
 const DIGIT_AMOUNT = new RegExp(
 	`${b}${PRE_MARK}${NUMBER}${MULTIPLIER}${POST_MARK}`,
 	"g",
@@ -978,9 +998,9 @@ const WORD_NUMBERS: Record<string, number> = {
 	hundred: 100,
 };
 const WORDS = byLength(Object.keys(WORD_NUMBERS));
-/** "mil", "diez mil", "un millón", "a thousand". */
+/** "mil", "diez mil", "un millón", "a thousand", "mil pesos", "un millón de pesos". */
 const WORD_MULTIPLIED = new RegExp(
-	`${b}(?:(${WORDS})\\s+)?(mil|millones|millon|thousand|million)${e}`,
+	`${b}(?:(${WORDS})\\s+)?(mil|millones|millon|thousand|million)(?:\\s+(?:de\\s+)?(${CURRENCY_WORDS}))?${e}`,
 	"g",
 );
 /** Number words without a multiplier count only with a currency after them: "dos" alone is not money. */
@@ -1043,6 +1063,27 @@ function localCurrency(facts: Facts): string | undefined {
 }
 
 /**
+ * The currencies a mark other than a bare "$" can name: the local one when it
+ * is among them, the only one when there is one, else the request does not
+ * say which. "C$" is a Canadian dollar or a córdoba, "¥" a yen or a yuan.
+ */
+const MARKS: Record<string, string[]> = {
+	"€": ["EUR"],
+	"£": ["GBP"],
+	"¥": ["JPY", "CNY"],
+	us$: ["USD"],
+	rd$: ["DOP"],
+	a$: ["AUD"],
+	au$: ["AUD"],
+	ca$: ["CAD"],
+	c$: ["CAD", "NIO"],
+	mx$: ["MXN"],
+	nz$: ["NZD"],
+	hk$: ["HKD"],
+	r$: ["BRL"],
+};
+
+/**
  * The currency a mark names. A bare "$" and "pesos" name the local currency
  * when it is written that way; otherwise the request does not say which.
  * "dollars" with no local dollar means US dollars.
@@ -1054,8 +1095,13 @@ function currencyOf(
 	if (mark === null) return null;
 	if (isCode(mark)) return mark;
 	const m = fold(mark);
-	if (m === "us$" || m === "usd") return "USD";
-	if (m === "€" || m.startsWith("eur")) return "EUR";
+	if (LOWERCASE_CODES.includes(m)) return m.toUpperCase();
+	if (m.startsWith("eur")) return "EUR";
+	const named = MARKS[m];
+	if (named) {
+		if (local && named.includes(local)) return local;
+		return named.length === 1 ? (named[0] ?? null) : null;
+	}
 	if (m === "$") return local && symbolOf(local) === "$" ? local : null;
 	if (m.startsWith("peso")) {
 		return local && nameOf(local, "es").includes("peso") ? local : null;
@@ -1324,7 +1370,14 @@ function readSpans(
 		m = WORD_MULTIPLIED.exec(folded)
 	) {
 		const value = (WORD_NUMBERS[m[1] ?? ""] ?? 1) * (MULTIPLY[m[2] ?? ""] ?? 1);
-		claim(m.index, m.index + m[0].length, value, null);
+		const t = m.index + m[0].length;
+		const written = m[3];
+		claim(
+			m.index,
+			t,
+			value,
+			written ? text.slice(t - written.length, t) : null,
+		);
 	}
 	WORD_WITH_CURRENCY.lastIndex = 0;
 	for (

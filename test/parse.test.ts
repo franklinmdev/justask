@@ -553,7 +553,6 @@ describe("amounts", () => {
 		["10mil", "10mil", 10000],
 		["5k", "5k", 5000],
 		["2.5 millones", "2.5 millones", 2500000],
-		["mil pesos", "mil", 1000],
 		["diez mil", "diez mil", 10000],
 		["un millón", "un millón", 1000000],
 		["a thousand", "a thousand", 1000],
@@ -593,6 +592,57 @@ describe("amounts", () => {
 	it("does not read an everyday word of three letters as a currency code", () => {
 		expect(amounts("the top 10 invoices")).toEqual([["10", 10, null]]);
 		expect(amounts("500 for rent")).toEqual([["500", 500, null]]);
+	});
+
+	describe("a currency the request names beside the number (#181)", () => {
+		it.each([
+			["over RD$300", "RD$300", 300, "DOP"],
+			["menos de RD$ 2,000", "RD$ 2,000", 2000, "DOP"],
+			["£299", "£299", 299, "GBP"],
+			["A$20", "A$20", 20, "AUD"],
+			["300 mxn", "300 mxn", 300, "MXN"],
+			["Pieveloz 300 dop", "300 dop", 300, "DOP"],
+			["eur 12", "eur 12", 12, "EUR"],
+			["EUR12", "EUR12", 12, "EUR"],
+			["gbp 40", "gbp 40", 40, "GBP"],
+		])("reads %s in the currency it names", (text, span, value, currency) => {
+			expect(parse(text, { local_currency: "USD" }).amounts).toEqual([
+				{ text: span, value, currency },
+			]);
+		});
+
+		it.each([
+			["over ¥1000", "¥1000", 1000, "¥"],
+			["over C$500", "C$500", 500, "C$"],
+			["mil pesos", "mil pesos", 1000, "pesos"],
+			["un millón de pesos", "un millón de pesos", 1000000, "pesos"],
+			["a thousand pesos", "a thousand pesos", 1000, "pesos"],
+		])(
+			"holds %s, whose mark names no one currency the local one fits, unresolved",
+			(text, span, value, mark) => {
+				expect(parse(text, { local_currency: "USD" }).amounts).toEqual([
+					{ text: span, value, currency: null, unresolved: mark },
+				]);
+			},
+		);
+
+		it("reads an ambiguous mark as the local currency when that is how the local one is written", () => {
+			expect(amounts("¥500", { local_currency: "JPY" })).toEqual([
+				["¥500", 500, "JPY"],
+			]);
+			expect(amounts("mil pesos", { local_currency: "DOP" })).toEqual([
+				["mil pesos", 1000, "DOP"],
+			]);
+		});
+
+		it("still leaves a lowercase word of three letters that is not a common code alone", () => {
+			expect(amounts("the top 10 invoices", { local_currency: "USD" })).toEqual(
+				[["10", 10, null]],
+			);
+			expect(amounts("10 all told", { local_currency: "USD" })).toEqual([
+				["10", 10, null],
+			]);
+		});
 	});
 
 	describe("the local currency fact", () => {
