@@ -13,7 +13,7 @@ import { cardEndpoint, REQUEST_LIMIT } from "./api.ts";
 import { CardPanel, impliedByOf } from "./card-panel.tsx";
 import type { Content, ExpenseFields, ExpenseName } from "./content/types.ts";
 import { DayPicker } from "./day-picker.tsx";
-import { formats, LOCAL_CURRENCY, parseAmount } from "./format.ts";
+import { foreignCurrency, formats, parseAmount } from "./format.ts";
 import {
 	answerKey,
 	CaseHead,
@@ -445,7 +445,7 @@ function AmountInput({
 	// The currency the box had before the person emptied it.
 	const [kept, keep] = useState(value?.currency);
 	const currency = value ? value.currency : kept;
-	const code = currency && currency !== LOCAL_CURRENCY ? currency : undefined;
+	const code = foreignCurrency(currency);
 	return (
 		<div className="amount" data-mark={code ? "code" : undefined}>
 			<span className="amount-mark" aria-hidden="true">

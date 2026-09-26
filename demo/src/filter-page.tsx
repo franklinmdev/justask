@@ -10,7 +10,7 @@ import type {
 } from "./content/types.ts";
 import { DayPicker } from "./day-picker.tsx";
 import { FilterPanel } from "./filter-panel.tsx";
-import { formats, LOCAL_CURRENCY, parseAmount } from "./format.ts";
+import { foreignCurrency, formats, parseAmount } from "./format.ts";
 import {
 	CaseHead,
 	DEBOUNCE_MS,
@@ -417,7 +417,7 @@ function TableFilters({
 				<legend className="entry-label">
 					{fields.amount}
 					{/* Another currency keeps no row, so the controls say which one the request named. */}
-					{currency && currency !== LOCAL_CURRENCY && (
+					{foreignCurrency(currency) && (
 						<span className="entry-source"> {currency}</span>
 					)}
 				</legend>

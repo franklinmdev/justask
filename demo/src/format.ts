@@ -1,6 +1,11 @@
 /** The currency the demo's amounts are in, and the one the server resolves "$" to. */
 export const LOCAL_CURRENCY = "USD";
 
+/** The currency's code when it names one other than the local currency, which shows as a bare "$". */
+export function foreignCurrency(currency?: string | null): string | undefined {
+	return currency && currency !== LOCAL_CURRENCY ? currency : undefined;
+}
+
 /** Each locale's formatters, built once: nine Intl constructors on every render were the demo's heaviest code in the page tests' profile (#120). */
 const byLocale = new Map<string, ReturnType<typeof build>>();
 
@@ -63,15 +68,15 @@ function build(locale: string) {
 			usd >= 0.01 || usd === 0 ? cents.format(usd) : cost.format(usd),
 		count: (value: number) => count.format(value),
 		/** In the local currency, or as the bare number and its code when another one is named. */
-		amount: (value: number, currency?: string | null) =>
-			currency && currency !== LOCAL_CURRENCY
-				? `${value} ${currency}`
-				: amount.format(value),
+		amount: (value: number, currency?: string | null) => {
+			const code = foreignCurrency(currency);
+			return code ? `${value} ${code}` : amount.format(value);
+		},
 		/** How a screen reader hears an amount's currency: the local one by its name, since its mark is a bare "$", any other by its code, as its mark shows it. */
 		currency: (currency?: string | null) =>
-			currency && currency !== LOCAL_CURRENCY
-				? currency
-				: (currencyName.of(LOCAL_CURRENCY) ?? LOCAL_CURRENCY),
+			foreignCurrency(currency) ??
+			currencyName.of(LOCAL_CURRENCY) ??
+			LOCAL_CURRENCY,
 		date: (iso: string) => date.format(new Date(`${iso}T00:00:00Z`)),
 		day: (iso: string) =>
 			(Number(iso.slice(0, 4)) === new Date().getFullYear()

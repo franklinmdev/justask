@@ -4,7 +4,7 @@ import type {
 	Transaction,
 	TransactionFields,
 } from "./content/types.ts";
-import { LOCAL_CURRENCY } from "./format.ts";
+import { foreignCurrency } from "./format.ts";
 
 export type Applied = FilterValue<TransactionFields>;
 
@@ -54,7 +54,7 @@ export function matches(row: Transaction, filter: Applied): boolean {
 	if (date?.from && row.date < date.from) return false;
 	if (date?.to && row.date > date.to) return false;
 	if (amount) {
-		if (amount.currency && amount.currency !== LOCAL_CURRENCY) return false;
+		if (foreignCurrency(amount.currency)) return false;
 		if (amount.min !== undefined && row.amount < amount.min) return false;
 		if (amount.max !== undefined && row.amount > amount.max) return false;
 	}
