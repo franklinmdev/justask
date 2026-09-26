@@ -608,7 +608,7 @@ function Transactions({
 }: {
 	content: Content;
 	rows: Transaction[];
-	/** True while the replay's end state opened with nothing typed, so no row fades in. */
+	/** True from an end state opened with nothing typed until the person takes over or a live call answers, so no row fades in. */
 	still: boolean;
 }) {
 	const { copy } = content;
