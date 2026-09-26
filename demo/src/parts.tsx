@@ -119,6 +119,17 @@ export function answerKey(result: object | null): number {
 }
 
 /**
+ * True for an answer a replay's end state opened with nothing typed in, so
+ * what it filled shows still (#139). It stays still once the person takes
+ * over, so nothing on screen settles in late; the next answer settles in.
+ */
+export function useStillAnswer(answer: number, still: boolean): boolean {
+	const [stillAnswer, setStillAnswer] = useState(0);
+	if (still && answer !== 0 && answer !== stillAnswer) setStillAnswer(answer);
+	return answer !== 0 && (still || answer === stillAnswer);
+}
+
+/**
  * A case's heading, labelled with the day its recorded run ran while the
  * display is the recording's, then the live region that says the replay
  * started. `said` goes first when the page has something newer to say.

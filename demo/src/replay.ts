@@ -83,6 +83,12 @@ export type Replay = {
 	recorded: boolean;
 	/** True from the sentence's first character until the person takes over, so the replay is announced. */
 	started: boolean;
+	/**
+	 * True while the display is an end state opened with nothing typed in, so
+	 * what its answer filled shows still: it settles in only when the replay
+	 * types in (#139).
+	 */
+	still: boolean;
 };
 
 /**
@@ -100,6 +106,8 @@ export type Replay = {
  * another case is on screen: a hidden <Activity> runs this hook's effect
  * again when it shows, so whether the replay started lives in a ref, never
  * in the effect, and a replay left halfway ends on its end state too.
+ * Either end state opens still, until the person takes over or a live call
+ * replaces it.
  */
 export function useReplay({
 	recording,
@@ -113,6 +121,7 @@ export function useReplay({
 	const [trace, setTrace] = useState<Trace | null>(null);
 	const [recorded, setRecorded] = useState(recording !== null);
 	const [started, setStarted] = useState(false);
+	const [still, setStill] = useState(false);
 	// Set once the person takes over, and once the recorded response is served.
 	const stopped = useRef(recording === null);
 	const served = useRef(false);
@@ -131,6 +140,7 @@ export function useReplay({
 			// The end state at once: the sentence, then its call, on the next render.
 			latest.current?.setRequest(request);
 			ending.current = true;
+			setStill(true);
 			return;
 		}
 		later(timers, START_MS, () => {
@@ -174,6 +184,7 @@ export function useReplay({
 	function stop() {
 		setRecorded(false);
 		setStarted(false);
+		setStill(false);
 		if (stopped.current) return;
 		stopped.current = true;
 		ending.current = false;
@@ -183,6 +194,7 @@ export function useReplay({
 	const live = timed(fetchImpl, (next) => {
 		setTrace(next);
 		setRecorded(false);
+		setStill(false);
 	});
 
 	return {
@@ -216,5 +228,6 @@ export function useReplay({
 		trace,
 		recorded,
 		started,
+		still,
 	};
 }
