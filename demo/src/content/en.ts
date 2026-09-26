@@ -87,6 +87,8 @@ export const english: Content = {
 		ambiguous: "Could mean two",
 		nothing: "Nothing to find",
 		empty: "No vendor matches",
+		unanswered:
+			"The request could not be read, so no vendor is shown. Try again.",
 		choices: "Which one?",
 		severalFit: "More than one vendor could fit",
 		closest: "Closest",

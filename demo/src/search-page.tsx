@@ -28,9 +28,10 @@ import { transactionsOn } from "./transactions.ts";
  * what a host app would write; the panel reads the same hook. A held answer
  * never ends empty (#134): a request that could mean more than one vendor
  * offers them as choices, and one that matched none says so, then offers the
- * closest; the person's click shows that vendor's transactions, as a
- * confident pick does, and nothing is picked for them. With a recording, the
- * case opens on it replayed: the sentence, then the vendor.
+ * closest. A failed call says only that it failed (#138). The person's
+ * click shows that vendor's transactions, as a confident pick does, and
+ * nothing is picked for them. With a recording, the case opens on it
+ * replayed: the sentence, then the vendor.
  */
 export function SearchPage({
 	content,
@@ -125,7 +126,10 @@ export function SearchPage({
 				)}
 			</SearchItem>
 			<SearchEmpty search={search} className="result">
-				{offer?.kind === "choices" && offer.candidates.length === 0 ? (
+				{/* A failed call measured no vendor, so it never says none matched (#138). */}
+				{search.error ? (
+					<p className="empty">{copy.unanswered}</p>
+				) : offer?.kind === "choices" && offer.candidates.length === 0 ? (
 					<p className="empty">{copy.severalFit}</p>
 				) : offer?.kind === "choices" ? (
 					<OfferList
