@@ -275,15 +275,20 @@ export const english: Content = {
 			chooseVendor: "Choose a vendor",
 			fromRequest: "from the request",
 			fromVendor: "from the vendor",
-			announce: (filled, waiting) => {
+			announce: (filled, waiting, kept) => {
 				const list = (names: string[]) =>
 					listFormat.format(names.map((name) => name.toLowerCase()));
-				if (filled.length === 0) {
-					return `Nothing filled. For you to fill: ${list(waiting)}.`;
-				}
-				return waiting.length === 0
-					? `Filled: ${list(filled)}. Nothing left to fill.`
-					: `Filled: ${list(filled)}. For you to fill: ${list(waiting)}.`;
+				return [
+					filled.length > 0
+						? `Filled: ${list(filled)}.`
+						: kept.length === 0 && "Nothing filled.",
+					kept.length > 0 && `Kept your changes: ${list(kept)}.`,
+					waiting.length > 0
+						? `For you to fill: ${list(waiting)}.`
+						: "Nothing left to fill.",
+				]
+					.filter(Boolean)
+					.join(" ");
 			},
 			unanswered:
 				"The request could not be read, so the card stays as it was. Fill it in by hand.",

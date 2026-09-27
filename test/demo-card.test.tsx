@@ -815,6 +815,50 @@ describe("the demo's card page", () => {
 		expect(counter()).toBe("1 frase frente a 6 clics en 2 menús");
 	});
 
+	it.each([
+		{
+			lang: "en",
+			suggestion: "lunch with Larkspur yesterday, $86.40",
+			amountName: "Amount, US Dollar",
+			status:
+				"Filled: vendor, tags, and day. Kept your changes: amount. Nothing left to fill.",
+		},
+		{
+			lang: "es",
+			suggestion: "almuerzo con Cazuela Azul ayer, $86.40",
+			amountName: "Monto, dólar estadounidense",
+			status:
+				"Completado: proveedor, etiquetas y día. Se mantuvieron sus cambios: monto. Nada por completar.",
+		},
+	])(
+		"names a field the person set during the call, which the answer kept ($lang, #233)",
+		async ({ lang, suggestion, amountName, status }) => {
+			let release = () => {};
+			const held = new Promise<void>((resolve) => {
+				release = resolve;
+			});
+			let asked = 0;
+			const { user } = renderDemo({
+				url: `/?case=form&lang=${lang}`,
+				provider: {
+					async answer(input) {
+						asked++;
+						await held;
+						return byRequest.answer(input);
+					},
+				},
+			});
+
+			await user.click(screen.getByRole("button", { name: suggestion }));
+			await waitFor(() => expect(asked).toBe(1));
+			await user.type(amount(amountName), "90");
+			release();
+
+			expect(await screen.findByText(status)).toBeDefined();
+			expect(amount(amountName).value).toBe("90.00");
+		},
+	);
+
 	it("claims nothing on the card comes from a request that failed, though the card stays as it was (#218)", async () => {
 		const { user } = renderDemo();
 		await suggest(user, "lunch with Larkspur yesterday, $86.40");

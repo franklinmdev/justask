@@ -276,15 +276,20 @@ export const spanish: Content = {
 			chooseVendor: "Elija un proveedor",
 			fromRequest: "de la solicitud",
 			fromVendor: "del proveedor",
-			announce: (filled, waiting) => {
+			announce: (filled, waiting, kept) => {
 				const list = (names: string[]) =>
 					listFormat.format(names.map((name) => name.toLowerCase()));
-				if (filled.length === 0) {
-					return `Nada completado. Por completar: ${list(waiting)}.`;
-				}
-				return waiting.length === 0
-					? `Completado: ${list(filled)}. Nada por completar.`
-					: `Completado: ${list(filled)}. Por completar: ${list(waiting)}.`;
+				return [
+					filled.length > 0
+						? `Completado: ${list(filled)}.`
+						: kept.length === 0 && "Nada completado.",
+					kept.length > 0 && `Se mantuvieron sus cambios: ${list(kept)}.`,
+					waiting.length > 0
+						? `Por completar: ${list(waiting)}.`
+						: "Nada por completar.",
+				]
+					.filter(Boolean)
+					.join(" ");
 			},
 			unanswered:
 				"No se pudo leer la solicitud, así que la tarjeta queda como estaba. Complétela a mano.",

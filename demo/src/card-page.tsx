@@ -212,10 +212,11 @@ export function CardPage({
 			<CardStatus
 				card={card}
 				className="hint card-status"
-				announce={({ filled, waiting }) =>
+				announce={({ filled, waiting, kept }) =>
 					copy.card.announce(
 						filled.map((name) => copy.card.fields[name]),
 						waiting.map((name) => copy.card.fields[name]),
+						kept.map((name) => copy.card.fields[name]),
 					)
 				}
 				unanswered={copy.card.unanswered}
