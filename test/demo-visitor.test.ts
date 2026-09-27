@@ -15,7 +15,7 @@ import {
 	VISITOR_MINUTE_LIMIT,
 } from "../demo/src/api.ts";
 import { english } from "../demo/src/content/en.ts";
-import { fakeProvider } from "./fake-provider.ts";
+import { fakeProvider, unavailableFirstProvider } from "./fake-provider.ts";
 
 const DEMO = "http://localhost:5173";
 
@@ -294,23 +294,16 @@ describe("the demo's per-visitor limits", () => {
 		vi.setSystemTime(new Date("2026-09-25T12:00:00Z"));
 		const ledger = memoryLedger();
 		const visit = vi.spyOn(ledger, "visit");
-		const answering = fakeProvider(answers, { costUsd: 0 });
-		let calls = 0;
-		const handler = createDemoHandler(
-			{
-				answer(input) {
-					calls++;
-					return calls === 1
-						? Promise.reject(new ProviderUnavailableError("reset"))
-						: answering.answer(input);
-				},
-			},
-			{ ledger },
+		const provider = unavailableFirstProvider(
+			[new ProviderUnavailableError("reset")],
+			answers,
+			{ costUsd: 0 },
 		);
+		const handler = createDemoHandler(provider, { ledger });
 
 		expect((await search(handler)).status).toBe(200);
 
-		expect(calls).toBe(2);
+		expect(provider.calls).toHaveLength(2);
 		expect(visit).toHaveBeenCalledTimes(1);
 	});
 

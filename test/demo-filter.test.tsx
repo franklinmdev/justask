@@ -844,64 +844,80 @@ describe("the demo's Table case", () => {
 		},
 	);
 
+	/** The host's own server, or a proxy before it, answers `status`: the handler never answers a 429 or a 5xx. */
+	const hostAnswers =
+		(status: number, headers: Record<string, string> = {}) =>
+		async () =>
+			Response.json({ error: { message: "busy" } }, { status, headers });
+	/** The real handler, after `rewrite` changed the request on its way, as a proxy would. */
+	const rewritten =
+		(rewrite: (body: string) => { body: string; type?: string }) =>
+		async (input: RequestInfo | URL, init?: RequestInit) => {
+			const { body, type = "application/json" } = rewrite(String(init?.body));
+			return createDemoHandler(byRequest)(
+				new Request(new URL(String(input), location.href), {
+					method: "POST",
+					headers: { "content-type": type },
+					body,
+				}),
+			);
+		};
+
 	it.each([
 		{
-			status: 429,
-			headers: { "retry-after": "30" },
+			name: "a 429 with Retry-After in seconds",
+			fetch: hostAnswers(429, { "retry-after": "30" }),
 			en: "The server is taking too many requests. Try again in 30 seconds.",
 			es: "El servidor está recibiendo demasiadas solicitudes. Inténtelo de nuevo en 30 segundos.",
 		},
 		{
-			status: 429,
-			headers: { "retry-after": "90" },
+			name: "a 429 with Retry-After past a minute",
+			fetch: hostAnswers(429, { "retry-after": "90" }),
 			en: "The server is taking too many requests. Try again in 2 minutes.",
 			es: "El servidor está recibiendo demasiadas solicitudes. Inténtelo de nuevo en 2 minutos.",
 		},
 		{
-			status: 429,
-			headers: {},
+			name: "a 429 with no Retry-After",
+			fetch: hostAnswers(429),
 			en: "The server is taking too many requests. Try again in a moment.",
 			es: "El servidor está recibiendo demasiadas solicitudes. Inténtelo de nuevo en un momento.",
 		},
 		{
-			status: 500,
-			headers: {},
+			name: "a 500",
+			fetch: hostAnswers(500),
 			en: "The server failed (500), so nothing is shown. Try again.",
 			es: "El servidor falló (500), así que no se muestra nada. Inténtelo de nuevo.",
 		},
 		{
-			status: 413,
-			headers: {},
+			name: "the handler's 413 for a body a proxy padded",
+			fetch: rewritten((body) => ({
+				body: JSON.stringify({ ...JSON.parse(body), pad: "x".repeat(16_384) }),
+			})),
 			en: "The request was too large for the server, so nothing is shown.",
 			es: "La solicitud era demasiado grande para el servidor, así que no se muestra nada.",
 		},
 		{
-			status: 415,
-			headers: {},
+			name: "the handler's 415 for a type a proxy rewrote",
+			fetch: rewritten((body) => ({ body, type: "text/plain" })),
 			en: "The server did not take the request as JSON, so nothing is shown.",
 			es: "El servidor no aceptó la solicitud como JSON, así que no se muestra nada.",
 		},
 		{
-			status: 400,
-			headers: {},
-			en: "The server refused the request: too long",
-			es: "El servidor rechazó la solicitud: too long",
+			name: "the handler's 400 for a body a proxy broke",
+			fetch: rewritten(() => ({ body: "not json" })),
+			en: "The server refused the request: The body is not JSON",
+			es: "El servidor rechazó la solicitud: The body is not JSON",
 		},
 	])(
-		"gives the host's $status answer its own line in both languages (#233)",
-		async ({ status, headers, en, es }) => {
+		"gives $name its own line in both languages (#233)",
+		async ({ fetch, en, es }) => {
 			for (const [lang, suggestion, hood, reason] of [
 				["en", "overdue invoices", "What happened", en],
 				["es", "facturas vencidas", "Qué pasó", es],
 			] as const) {
 				const { user } = renderDemo({
 					url: `/?case=table&lang=${lang}`,
-					// The host's own server, or a proxy before it, answers; never the handler.
-					fetch: async () =>
-						Response.json(
-							{ error: { kind: "request", message: "too long" } },
-							{ status, headers },
-						),
+					fetch,
 				});
 
 				await user.click(screen.getByRole("button", { name: suggestion }));
