@@ -87,11 +87,14 @@ export function useRequest<R>({
 	// biome-ignore lint/correctness/useExhaustiveDependencies: runs on mount and when a hidden <Activity> shows again, never per render; `call` reads the latest options from `latest`.
 	useEffect(() => {
 		// A hidden <Activity> shown again runs this: the call it cut short is
-		// made, unless an earlier effect already started a newer one.
-		if (pending.current !== null && due() === null) {
-			call(pending.current);
-		}
+		// made, unless an earlier effect already started a newer one. It waits a
+		// pause of 0, so StrictMode's cleanup and second run, straight after
+		// this one, cancel it and make it once (#215).
+		const cut = pending.current;
 		pending.current = null;
+		if (cut !== null && due() === null) {
+			pause(cut, 0, () => call(cut));
+		}
 		return () => {
 			pending.current = due();
 			stopPause();
@@ -129,16 +132,23 @@ export function useRequest<R>({
 		if (isBlank(text)) {
 			call(text);
 		} else if (timing.on === "type") {
-			clearTimeout(timer.current);
-			paused.current = text;
-			setLoading(true);
-			timer.current = setTimeout(() => {
-				paused.current = null;
+			pause(text, timing.debounceMs, () => {
 				// A host that turned to Enter during the pause wants no call now.
 				if (latest.current.timing.on === "type") call(text);
 				else setLoading(due() !== null);
-			}, timing.debounceMs);
+			});
 		}
+	}
+
+	/** Waits `ms` for `text`, replacing any running pause, then runs `end`. */
+	function pause(text: string, ms: number, end: () => void) {
+		clearTimeout(timer.current);
+		paused.current = text;
+		setLoading(true);
+		timer.current = setTimeout(() => {
+			paused.current = null;
+			end();
+		}, ms);
 	}
 
 	/** Puts `text` in the box with no call, dropping any pending one; the last answer stays. */

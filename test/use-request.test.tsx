@@ -74,7 +74,10 @@ function renderSearch(props: {
 }
 
 /** The hook inside an <Activity> the test hides and shows, as a host's tabs would. */
-function renderInActivity(fetchImpl: typeof fetch, timing = typing) {
+function renderInActivity(
+	fetchImpl: typeof fetch,
+	{ timing = typing, strict = false } = {},
+) {
 	const host = { setMode: (_mode: "visible" | "hidden") => {} };
 	function Tabs({ children }: { children: ReactNode }) {
 		const [mode, setMode] = useState<"visible" | "hidden">("visible");
@@ -89,7 +92,7 @@ function renderInActivity(fetchImpl: typeof fetch, timing = typing) {
 				onChoose: () => {},
 				fetch: fetchImpl,
 			}),
-		{ wrapper: Tabs },
+		{ wrapper: Tabs, reactStrictMode: strict },
 	);
 	return {
 		...rendered,
@@ -173,5 +176,25 @@ describe("the hooks' request timing", () => {
 		await waitFor(() => expect(calls).toHaveLength(2));
 		expect(calls[1]?.request).toBe("acme toner");
 		expect(result.current.loading).toBe(true);
+	});
+
+	it("makes the call a hidden tab cut short once again under StrictMode (#215)", async () => {
+		const { calls, fetchImpl } = gatedFetch();
+		const { result, hide, show } = renderInActivity(fetchImpl, {
+			timing: enter,
+			strict: true,
+		});
+
+		act(() => result.current.setRequest("acme"));
+		act(() => result.current.submit());
+		await waitFor(() => expect(calls).toHaveLength(1));
+		hide();
+		show();
+		await waitFor(() => expect(calls).toHaveLength(2));
+		await act(() => pause(DEBOUNCE_MS));
+
+		expect(calls.map((call) => call.request)).toEqual(["acme", "acme"]);
+		calls[1]?.open();
+		await waitFor(() => expect(result.current.answered).toBe(true));
 	});
 });
