@@ -101,6 +101,36 @@ describe("the demo's server policy", () => {
 			error: { kind: "request", message: "The body is not JSON" },
 		});
 	});
+
+	it("stops reading a body that never ends once it passes the handler's 16 KiB, as the dev server streams it", async () => {
+		let pulled = 0;
+		let cancelled = false;
+		const endless = new ReadableStream<Uint8Array>({
+			pull(controller) {
+				pulled += 1024;
+				// A policy that reads it all errors here, rather than holding the test forever.
+				if (pulled > 1024 * 1024) controller.error(new Error("read it all"));
+				else controller.enqueue(new Uint8Array(1024).fill(0x20));
+			},
+			cancel() {
+				cancelled = true;
+			},
+		});
+
+		const response = await handler(
+			new Request(new URL(searchEndpoint("en"), DEMO), {
+				method: "POST",
+				headers: { "content-type": "application/json", origin: DEMO },
+				body: endless,
+				duplex: "half",
+			} as RequestInit),
+		);
+
+		expect(response.status).toBe(413);
+		expect(cancelled).toBe(true);
+		expect(pulled).toBeLessThanOrEqual(40 * 1024);
+		expect(provider.calls).toHaveLength(0);
+	});
 });
 
 describe.each([

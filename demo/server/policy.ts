@@ -30,10 +30,35 @@ export async function refusal(request: Request): Promise<Response | undefined> {
 	return undefined;
 }
 
-/** The posted request's text, or undefined when the body is not one; the core handler answers that. */
+/**
+ * The core handler's cap on a body, 16 KiB (README): the policy reads no
+ * further, so a body that never ends holds no memory here either.
+ */
+const BODY_LIMIT = 16 * 1024;
+
+/**
+ * The posted request's text, or undefined when the body is not one or is
+ * over the core handler's cap; the core handler answers those.
+ */
 async function requestText(request: Request): Promise<string | undefined> {
+	const reader = request.clone().body?.getReader();
+	if (!reader) return undefined;
+	const decoder = new TextDecoder();
+	let size = 0;
+	let json = "";
 	try {
-		const body: unknown = await request.clone().json();
+		for (;;) {
+			const { done, value } = await reader.read();
+			if (done) break;
+			size += value.byteLength;
+			if (size > BODY_LIMIT) {
+				// A clone's cancel settles only once the handler's copy is cancelled too, so it is not awaited.
+				reader.cancel().catch(() => {});
+				return undefined;
+			}
+			json += decoder.decode(value, { stream: true });
+		}
+		const body: unknown = JSON.parse(json + decoder.decode());
 		const text = (body as { request?: unknown } | null)?.request;
 		return typeof text === "string" ? text : undefined;
 	} catch {

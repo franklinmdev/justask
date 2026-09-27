@@ -1,4 +1,4 @@
-import { buffer } from "node:stream/consumers";
+import { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
 import {
@@ -51,6 +51,9 @@ function justaskHandler(): Plugin {
 			server.middlewares.use("/api", async (req, res, next) => {
 				try {
 					const { handle } = await devModule();
+					// Aborts the provider call when the browser goes away, as the README's toNode does.
+					const browser = new AbortController();
+					res.on("close", () => browser.abort());
 					const response = await handle(
 						new Request(`http://${req.headers.host}${req.originalUrl}`, {
 							method: req.method ?? "GET",
@@ -59,8 +62,15 @@ function justaskHandler(): Plugin {
 								// Who the visitor's limits count, as Cloudflare names them on the Worker (#110).
 								"cf-connecting-ip": req.socket.remoteAddress ?? "",
 							},
-							body: req.method === "POST" ? await buffer(req) : null,
-						}),
+							// Streamed, so the handler stops reading a body past its 16 KiB cap.
+							body:
+								req.method === "POST"
+									? (Readable.toWeb(req) as ReadableStream)
+									: null,
+							signal: browser.signal,
+							// A streamed body needs it; the DOM's own types do not know it yet.
+							duplex: "half",
+						} as RequestInit),
 					);
 					res.writeHead(response.status, Object.fromEntries(response.headers));
 					res.end(Buffer.from(await response.arrayBuffer()));
