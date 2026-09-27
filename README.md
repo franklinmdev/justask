@@ -45,6 +45,8 @@ Set `TYPESAFE_API_KEY` to your TypeSafe API key in the server's environment, nev
 
 There is one handler per flow, each at its own route: the browser never chooses the flow, and each route owns its facts and limits. `createFilterHandler` and `createCardHandler` serve a filter and a card the same way (see [Filter](#filter) and [Card](#card)).
 
+The files below import each other without an extension, as a bundler such as Vite or Next.js takes them; a plain Node project writes `./catalog.js` when it compiles with `nodenext`, or `./catalog.ts` when Node strips the types itself.
+
 The candidates come from the host app's own catalog. Each row's `id` is the label the provider picks, its `description` is what the provider reads, and its `value` is what the app gets back:
 
 ```ts
