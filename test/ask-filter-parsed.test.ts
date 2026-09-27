@@ -551,9 +551,10 @@ describe("ask: parsers the host app registers", () => {
 			filter: invoiceFilter({ parsers: [secondPrice] }),
 		});
 
+		// The host's two readings are one value in one currency, so one candidate (#201); the built-in reads neither 500.
 		expect(
 			result.filter.fields.total.candidates.map(({ value }) => value.currency),
-		).toEqual(["DOP", "DOP"]);
+		).toEqual(["DOP"]);
 	});
 
 	it.each(["d0", "d1"])(

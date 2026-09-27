@@ -152,7 +152,7 @@ const { filter } = await ask({
 
 - **catalog** fields take their candidates from the host app's `shortlist`, one question each.
 - **date** fields take theirs from the parsers, read backward as a filter looks at what already happened, and fill as `{ from?, to? }` in days. Two questions: where the period starts and where it ends.
-- **amount** fields take theirs from the parsers and fill as `{ min?, max?, exact?, currency? }`, one question per number found. The `local_currency` fact, an ISO 4217 code, decides what a bare "$" and "pesos" mean. Without it, the currency is left out. When the request names a currency that does not resolve against it, such as "500 pesos" with `local_currency: "USD"`, the whole amount field is held without a question, so the number never fills alone.
+- **amount** fields take theirs from the parsers and fill as `{ min?, max?, exact?, currency? }`, one question per number found. The `local_currency` fact, an ISO 4217 code, decides what a bare "$" and "pesos" mean, and a mark shared by two currencies, such as "¥" or "C$". Without it, the currency is left out. A mark that names one currency reads as it: "RD$", "£", "EUR12", "300 mxn". When the request names a currency that does not resolve against it, such as "500 pesos" with `local_currency: "USD"`, the whole amount field is held without a question, so the number never fills alone.
 
 ### Over HTTP and in React
 
@@ -195,7 +195,7 @@ The proposed filters sit in a polite live region that reads only what is added, 
 
 The built-in parser reads English and general Spanish; no regional formats ship. A host app adds its own in `filter.parsers`: each is a function from the request and `{ today, reads, facts }` to `{ dates?, times?, amounts? }`, runs before the built-in one, and wins where their text overlaps. `reads` is `"past"` or `"future"`: which way a date that does not say its year or week should read.
 
-A reading the request itself leaves open is marked `ambiguous` by the parser, and a field whose pick lands on one is held whatever its probability: "a las 2 y pico", and "next Friday" or "last Friday" when the closest Friday that way and the Friday of the week after or before this one (weeks start on Monday) are different days. Said on a Saturday, "last Friday" is held; said on a Wednesday, both readings are the Friday five days back, and it fills. The same request on the same day always holds the same field. A part of the day reads as its day: "this morning", "tonight" and "esta tarde" are today, "last night", "last evening" and "anoche" yesterday.
+A reading the request itself leaves open is marked `ambiguous` by the parser, and a field whose pick lands on one is held whatever its probability: "a las 2 y pico", and "next Friday" or "last Friday" when the closest Friday that way and the Friday of the week after or before this one (weeks start on Monday) are different days. Said on a Saturday, "last Friday" is held; said on a Wednesday, both readings are the Friday five days back, and it fills. The same request on the same day always holds the same field. A part of the day reads as its day: "this morning", "tonight" and "esta tarde" are today, "last night", "last evening" and "anoche" yesterday. "before" and "after" leave out the day or period they name, so "after May 5" reads May 6 and "antes de mayo" April 30; "since" and "until" keep it. A day, a time or an amount in a currency said twice is one candidate, so the two mentions never split its probability.
 
 ## Card
 

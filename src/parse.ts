@@ -80,12 +80,44 @@ export type Parser = (request: string, input: ParserInput) => Readings;
  */
 export const builtInParser: Parser = (request, input) => {
 	const { dates, times, amounts } = readSpans(request, input, []);
-	return {
+	return distinct({
 		dates: dates.map(({ reading }) => reading),
 		times: times.map(({ reading }) => reading),
 		amounts: amounts.map(({ reading }) => reading),
-	};
+	});
 };
+
+/**
+ * One reading per value, the first one said: "yesterday, yes yesterday" is
+ * one candidate, so the provider never splits its probability between two
+ * copies of one day (#201). A number with no currency is kept each time it
+ * is said: in "500 invoices over 500" one is a count and the other money.
+ */
+function distinct(readings: {
+	dates: DateReading[];
+	times: TimeReading[];
+	amounts: AmountReading[];
+}) {
+	const once = <R>(list: R[], key: (reading: R) => string | null) => {
+		const seen = new Set<string>();
+		return list.filter((reading) => {
+			const k = key(reading);
+			if (k === null) return true;
+			if (seen.has(k)) return false;
+			seen.add(k);
+			return true;
+		});
+	};
+	return {
+		dates: once(readings.dates, (d) => `${d.from} ${d.to} ${!!d.ambiguous}`),
+		times: once(readings.times, (t) => `${t.time} ${!!t.ambiguous}`),
+		amounts: once(readings.amounts, (a) =>
+			a.currency === null && a.unresolved === undefined
+				? null
+				: `${a.value} ${a.currency} ${a.unresolved ?? ""}`,
+		),
+	};
+}
 
 type Span = [number, number];
 type Placed<R> = { at: Span; reading: R };
@@ -119,11 +151,11 @@ export function parseRequest(
 	const own = readSpans(request, input, claimed);
 	const inOrder = <R>(placed: Placed<R>[]) =>
 		placed.sort((x, y) => x.at[0] - y.at[0]).map(({ reading }) => reading);
-	return {
+	return distinct({
 		dates: inOrder([...dates, ...own.dates]),
 		times: inOrder([...times, ...own.times]),
 		amounts: inOrder([...amounts, ...own.amounts]),
-	};
+	});
 }
 
 /** The first unclaimed place a host parser's text sits, claimed; a text not found sorts last and claims nothing. */
@@ -287,9 +319,47 @@ const SMALL_NUMBERS: Record<string, number> = {
 	nine: 9,
 	ten: 10,
 };
-const SMALL = `(\\d{1,3}|${byLength(Object.keys(SMALL_NUMBERS).filter((w) => w !== "a" && w !== "an"))})`;
+const SMALL_WORDS = byLength(
+	Object.keys(SMALL_NUMBERS).filter((w) => w !== "a" && w !== "an"),
+);
+const SMALL = `(\\d{1,3}|${SMALL_WORDS})`;
 const small = (s: string | undefined) =>
 	SMALL_NUMBERS[s ?? ""] ?? Number(s ?? 0);
+
+/**
+ * Currency codes that also count in lowercase beside a number ("300 mxn"):
+ * the common ones that are no everyday word, so "a cad" or "top 10" never read
+ * as one.
+ */
+const LOWERCASE_CODES = [
+	"usd",
+	"eur",
+	"gbp",
+	"mxn",
+	"dop",
+	"jpy",
+	"cny",
+	"aud",
+	"chf",
+	"clp",
+	"brl",
+	"ars",
+];
+/** "cañas" is Dominican for pesos; folded, it reads "canas". "3 cañas de cerveza" are drinks. */
+const CURRENCY_WORDS =
+	"pesos|peso|canas(?!\\s+de\\s)|dolares|dolar|dollars|dollar|euros|euro";
+
+/** What may follow a day of the month said with no month: an end, a time or an amount. "Monday 2 lattes" is a count. */
+const DAY_ENDS = "$|[,.;:!?)]|a\\s+las?\\s|at\\s|@|[$€£¥]|\\d";
+
+/** Not money: "martes 15 dólares" is a weekday and an amount. */
+const NOT_MONEY = `(?![.,]\\d|\\s*(?:${CURRENCY_WORDS}|${LOWERCASE_CODES.join("|")}|%|k(?![a-z])|mil(?![a-z])))`;
+
+/** A count before a unit of time: a number, "un par de" or "a couple of", "a" or "an". */
+const COUNT_ES = `(un\\s+par\\s+de|\\d{1,3}|${SMALL_WORDS})`;
+const COUNT_EN = `(a\\s+couple(?:\\s+of)?|an?|\\d{1,3}|${SMALL_WORDS})`;
+const count = (s: string | undefined) =>
+	/par|couple/.test(s ?? "") ? 2 : /^an?$/.test(s ?? "") ? 1 : small(s);
 
 const WEEKDAYS: Record<string, number> = {
 	lunes: 0,
@@ -347,7 +417,7 @@ type Hit = { from: string; to: string; note?: string; ambiguous?: boolean };
 
 type DateRule = {
 	re: RegExp;
-	/** Returns the readings of one match, or null to reject it. */
+	/** Returns the readings of one match, or null to reject it; none claims the span, as "31/02" is no day and no amount. */
 	read: (m: RegExpExecArray, today: string, reads: Reads) => Hit[] | null;
 	/** Soft spans stay available to the amount rules ("2025" can be a year or a number). */
 	soft?: boolean;
@@ -509,7 +579,7 @@ const DATE_RULES: DateRule[] = [
 	{
 		// ISO
 		re: new RegExp(`${b}(\\d{4})-(\\d{1,2})-(\\d{1,2})${e}`, "g"),
-		read: (m) => point(ymd(Number(m[1]), Number(m[2]), Number(m[3]))),
+		read: (m) => point(ymd(Number(m[1]), Number(m[2]), Number(m[3]))) ?? [],
 	},
 	{
 		// Numeric with a year
@@ -520,14 +590,14 @@ const DATE_RULES: DateRule[] = [
 		read: (m, today, reads) => {
 			const raw = m[4] ?? "";
 			const y = raw.length === 2 ? 2000 + Number(raw) : Number(raw);
-			return numericReadings(Number(m[1]), Number(m[3]), y, today, reads);
+			return numericReadings(Number(m[1]), Number(m[3]), y, today, reads) ?? [];
 		},
 	},
 	{
 		// Numeric without a year
 		re: new RegExp(`${b}(\\d{1,2})/(\\d{1,2})${e}(?!/)`, "g"),
 		read: (m, today, reads) =>
-			numericReadings(Number(m[1]), Number(m[2]), null, today, reads),
+			numericReadings(Number(m[1]), Number(m[2]), null, today, reads) ?? [],
 	},
 	{
 		// A day range in one month, Spanish
@@ -594,14 +664,14 @@ const DATE_RULES: DateRule[] = [
 		},
 	},
 	{
-		// N days, weeks or months ago
+		// N days, weeks or months ago: "hace un par de días", "dos días atrás", "a couple of days ago".
 		re: new RegExp(
-			`${b}(?:hace\\s+${SMALL}\\s+(dias?|semanas?|mes(?:es)?)|${SMALL}\\s+(days?|weeks?|months?)\\s+ago)${e}`,
+			`${b}(?:hace\\s+${COUNT_ES}\\s+(dias?|semanas?|mes(?:es)?)|${COUNT_ES}\\s+(dias?|semanas?|mes(?:es)?)\\s+atras|${COUNT_EN}\\s+(days?|weeks?|months?)\\s+ago)${e}`,
 			"g",
 		),
 		read: (m, today) => {
-			const n = small(m[1] ?? m[3]);
-			const unit = m[2] ?? m[4] ?? "";
+			const n = count(m[1] ?? m[3] ?? m[5]);
+			const unit = m[2] ?? m[4] ?? m[6] ?? "";
 			if (unitIsMonths(unit)) {
 				return point(
 					fmt(Date.UTC(yearOf(today), monthOf(today) - 1 - n, dayOf(today))),
@@ -706,6 +776,16 @@ const DATE_RULES: DateRule[] = [
 		read: (m, today, reads) => {
 			// "may" is a month only after a preposition or with a year: "you may see" is not May.
 			if (m[2] === "may" && !m[1] && !m[3]) return null;
+			// "we march on": the verb, after its subject.
+			if (
+				m[2] === "march" &&
+				!m[1] &&
+				/(?<![a-z])(?:we|they|i|you|to|will|lets|let's|us)\s+$/.test(
+					m.input.slice(0, m.index),
+				)
+			) {
+				return null;
+			}
 			const y = resolveYear(m[3], today);
 			return [
 				y === null
@@ -793,15 +873,25 @@ const DATE_RULES: DateRule[] = [
 		},
 	},
 	{
-		// This or last month
+		// This, last or next month
 		re: new RegExp(
-			`${b}(?:(este)\\s+mes|(?:el\\s+)?mes\\s+(pasado|anterior|actual)|(this|last|previous|current)\\s+month)${e}`,
+			`${b}(?:(este|proximo)\\s+mes|(?:el\\s+)?mes\\s+(pasado|anterior|actual|que\\s+viene|proximo|siguiente)|(this|last|previous|current|next)\\s+month)${e}`,
 			"g",
 		),
 		read: (m, today) => {
 			const word = m[1] ?? m[2] ?? m[3] ?? "";
 			const y = yearOf(today);
 			const mo = monthOf(today);
+			if (/proximo|viene|siguiente|next/.test(word)) {
+				const ny = mo === 12 ? y + 1 : y;
+				const nm = mo === 12 ? 1 : mo + 1;
+				return [
+					{
+						...monthRange(ny, nm),
+						note: `${MONTH_EN[nm - 1]} ${ny}, next month`,
+					},
+				];
+			}
 			if (/este|actual|this|current/.test(word)) {
 				return [
 					{
@@ -893,8 +983,44 @@ const DATE_RULES: DateRule[] = [
 		read: (_m, today) => point(today),
 	},
 	{
-		re: new RegExp(`${b}(?:ayer|yesterday)${e}`, "g"),
+		re: new RegExp(`${b}(?:ayer|yesterday|yday)${e}`, "g"),
 		read: (_m, today) => point(addDays(today, -1)),
+	},
+	{
+		// A weekday and its day of the month: "el martes 15", "Tuesday the 15th". Held when they disagree.
+		re: new RegExp(
+			`${b}(?:el\\s+)?${WEEKDAY_ANY}\\s+(the\\s+)?(\\d{1,2})(st|nd|rd|th)?${e}${NOT_MONEY}`,
+			"g",
+		),
+		read: (m, today, reads) => {
+			const w = WEEKDAYS[m[1] ?? ""] ?? 0;
+			// "Tuesday the 22nd" is a date whatever follows; "Monday 2 lattes" is a count.
+			const said = !!(m[2] || m[4]);
+			const after = m.input.slice(m.index + m[0].length);
+			if (!said && !new RegExp(`^\\s*(?:${DAY_ENDS})`).test(after)) return null;
+			const day = undatedDayOfMonth(Number(m[3]), today, reads);
+			if (!day) return null;
+			if (weekday(day) === w) return point(day);
+			const step =
+				reads === "past"
+					? -((weekday(today) - w + 7) % 7 || 7)
+					: (w - weekday(today) + 7) % 7 || 7;
+			const note = "the weekday and the day of the month name different days";
+			return [
+				{
+					from: addDays(today, step),
+					to: addDays(today, step),
+					note: `${note}; reading the weekday`,
+					ambiguous: true,
+				},
+				{
+					from: day,
+					to: day,
+					note: `${note}; reading the day of the month`,
+					ambiguous: true,
+				},
+			].sort((x, y) => x.from.localeCompare(y.from));
+		},
 	},
 	{
 		// A weekday: the nearest one that way, never today, so on a Monday "el lunes" is a week away.
@@ -910,20 +1036,24 @@ const DATE_RULES: DateRule[] = [
 		},
 	},
 	{
-		// A day of the month alone: "el día 28", "on the 3rd", "el 28 a las 3". Not "the 3rd largest".
+		// A day of the month alone: "el día 28", "on the 3rd for $5", "el 28 a las 3", "el 3 5 dólares".
+		// Not "the 3rd largest", "the 3 for $12" nor "el 5 por ciento": without "día" or an ordinal, only an end, a time or an amount may follow.
 		re: new RegExp(
-			`${b}(?:(?:el\\s+)?dia\\s+(\\d{1,2})|(?:el|the|on\\s+the)\\s+(\\d{1,2})(?:st|nd|rd|th)?)${e}(?=\\s*(?:$|[,.;:!?)]|a\\s+las?\\s|at\\s|@))`,
+			`${b}(?:(?:el\\s+)?dia\\s+(\\d{1,2})${e}|(?:the|on\\s+the)\\s+(\\d{1,2})(?:st|nd|rd|th)${e}(?=\\s*(?:${DAY_ENDS}|(?:for|por|para)\\s))|(?:el|the|on\\s+the)\\s+(\\d{1,2})${e}(?=\\s*(?:${DAY_ENDS})))`,
 			"g",
 		),
 		read: (m, today, reads) =>
 			point(
-				undatedDayOfMonth(Number(m[1] ?? m[2]), today, reads),
+				undatedDayOfMonth(Number(m[1] ?? m[2] ?? m[3]), today, reads),
 				`the ${reads === "past" ? "latest such day up to" : "first such day from"} today`,
 			),
 	},
 	{
-		// A year alone
-		re: new RegExp(`${b}((?:19|20)\\d{2})${e}(?![.,]\\d)`, "g"),
+		// A year alone, unless a currency touches it: "$2025" and "2025 dólares" are money.
+		re: new RegExp(
+			`${b}(?<![$€£¥]\\s*)((?:19|20)\\d{2})${e}(?![.,]\\d|\\s*(?:${CURRENCY_WORDS}|${LOWERCASE_CODES.join("|")})(?![a-z]))`,
+			"g",
+		),
 		read: (m) => [
 			{
 				from: `${m[1]}-01-01`,
@@ -935,71 +1065,234 @@ const DATE_RULES: DateRule[] = [
 	},
 ];
 
+/**
+ * "before X" and "after X" leave X out, so a filter's bound is the day next
+ * to it: "after May 5" starts on May 6, "antes de mayo" ends on April 30.
+ * "since", "until", "desde", "hasta", "on or before" and "not after" keep X,
+ * and stay the period itself.
+ */
+const BOUND =
+	/(?<![a-z0-9])(?<!(?:on\s+or|or\s+on|not|no)\s+)(before|after|antes\s+del?|despues\s+del?|luego\s+del?|posteriores?\s+al?|previ[oa]s?\s+al?|anteriores?\s+al?|older\s+than|earlier\s+than|later\s+than|prior\s+to)\s+$/;
+/** "after May 5 inclusive" keeps May 5. */
+const INCLUDED = /^\s*,?\s*(?:inclusive|included|incluido|incluida)(?![a-z])/;
+
+function beyond(
+	hit: Hit,
+	bound: RegExpExecArray,
+	said: string,
+	typed: string,
+): Hit {
+	const after = /^(after|despues|luego|posterior|later)/.test(bound[1] ?? "");
+	const day = after ? addDays(hit.to, 1) : addDays(hit.from, -1);
+	const word = typed.trim().replace(/\s+/g, " ");
+	return {
+		from: day,
+		to: day,
+		note: `the ${after ? "first day after" : "last day before"} ${said}, which '${word}' leaves out${hit.note ? `; ${said} read as ${hit.note}` : ""}`,
+		...(hit.ambiguous && { ambiguous: true }),
+	};
+}
+
 // Amount rules
 
-const PRE_MARK = "(us\\$|usd|\\$|€)?\\s*";
+/** "RD$", "US$", "£", or a code: a mark touching the number, letters before a "$" included. */
+const PRE_MARK = `(us\\$|[a-z]{1,2}\\$|${LOWERCASE_CODES.join("|")}|\\$|€|£|¥)?\\s*`;
 /**
- * Thousands with commas ("1,500.50"), thousands with dots ("1.500,50"), or a
- * plain number with an optional decimal part. A single separator followed by
- * exactly three digits is always thousands: nobody types a money amount to
- * three decimals.
+ * Thousands with spaces ("1 234,56"), with commas ("1,500.50") or with dots
+ * ("1.500,50"), or a plain number with an optional decimal part. A single
+ * separator followed by exactly three digits is always thousands: nobody
+ * types a money amount to three decimals.
  */
-const NUMBER =
-	"(\\d{1,3}(?:,\\d{3})+(?:\\.\\d+)?|\\d{1,3}(?:\\.\\d{3})+(?:,\\d+)?|\\d+(?:[.,]\\d+)?)";
+const PLAIN_NUMBER =
+	"\\d{1,3}(?:,\\d{3})+(?:\\.\\d+)?|\\d{1,3}(?:\\.\\d{3})+(?:,\\d+)?|\\d+(?:[.,]\\d+)?";
+const NUMBER = `(\\d{1,3}(?:[ \\u00a0]\\d{3})+(?:[.,]\\d{1,2})?(?!\\d)|${PLAIN_NUMBER})`;
+/**
+ * A space is a thousands separator only when something else says so: round
+ * thousands ("10 000"), a decimal part ("1 234,56") or a mark before
+ * ("RD$ 12 500"). In "2 300 dollar tickets" it keeps a count apart.
+ */
+const SPACED_THOUSANDS = (number: string, marked: boolean) =>
+	marked ||
+	/[.,]\d{1,2}$/.test(number) ||
+	/^\d{1,3}(?:[ \u00a0]000)+$/.test(number);
+/** "m" and "mm" are millions only beside a currency: "5m" alone may be minutes or meters. */
 const MULTIPLIER =
-	"(?:\\s*(k|mil|millones|millon|millions|million|thousand)(?![a-z]))?";
-const CURRENCY_WORDS = "pesos|peso|dolares|dolar|dollars|dollar|euros|euro";
-const POST_MARK = `(?:\\s*(${CURRENCY_WORDS}|usd|eur|us\\$|€)(?![a-z]))?`;
+	"(?:\\s*(k|mil|millones|millon|millions|million|thousand|mm|m)(?![a-z]))?";
+const POST_MARK = `(?:\\s*(${CURRENCY_WORDS}|${LOWERCASE_CODES.join("|")}|us\\$|€)(?![a-z]))?`;
+const MILLIONS_MARK = new Set(["m", "mm"]);
 const DIGIT_AMOUNT = new RegExp(
 	`${b}${PRE_MARK}${NUMBER}${MULTIPLIER}${POST_MARK}`,
 	"g",
 );
+/** The same amount with no space inside the number, read where a spaced one was refused. */
+const PLAIN_DIGIT_AMOUNT = new RegExp(
+	`${b}${PRE_MARK}(${PLAIN_NUMBER})${MULTIPLIER}${POST_MARK}`,
+	"y",
+);
 
-const WORD_NUMBERS: Record<string, number> = {
-	...SMALL_NUMBERS,
-	veinte: 20,
-	treinta: 30,
-	cuarenta: 40,
-	cincuenta: 50,
-	cien: 100,
-	ciento: 100,
-	doscientos: 200,
-	trescientos: 300,
-	cuatrocientos: 400,
-	quinientos: 500,
-	seiscientos: 600,
-	setecientos: 700,
-	ochocientos: 800,
-	novecientos: 900,
-	twenty: 20,
-	thirty: 30,
-	forty: 40,
-	fifty: 50,
-	hundred: 100,
+/** What a number word does: adds itself, multiplies what came before, or starts a group of thousands or millions. */
+type NumberWord =
+	| { kind: "unit" | "teen" | "tens" | "hundreds"; value: number }
+	| { kind: "hundred" | "thousand" | "million" | "article" };
+
+const NUMBER_WORDS: Record<string, NumberWord> = {};
+const words = (kind: "unit" | "teen" | "tens" | "hundreds", list: string) => {
+	for (const pair of list.split(" ")) {
+		const [word = "", value] = pair.split("=");
+		NUMBER_WORDS[word] = { kind, value: Number(value) };
+	}
 };
-const WORDS = byLength(Object.keys(WORD_NUMBERS));
-/** "mil", "diez mil", "un millón", "a thousand". */
-const WORD_MULTIPLIED = new RegExp(
-	`${b}(?:(${WORDS})\\s+)?(mil|millones|millon|thousand|million)${e}`,
-	"g",
+words(
+	"unit",
+	"un=1 uno=1 una=1 dos=2 tres=3 cuatro=4 cinco=5 seis=6 siete=7 ocho=8 nueve=9 one=1 two=2 three=3 four=4 five=5 six=6 seven=7 eight=8 nine=9",
 );
-/** Number words without a multiplier count only with a currency after them: "dos" alone is not money. */
-const WORD_WITH_CURRENCY = new RegExp(
-	`${b}(${byLength(Object.keys(WORD_NUMBERS).filter((w) => w !== "a" && w !== "an"))})\\s+(${CURRENCY_WORDS})${e}`,
-	"g",
+words(
+	"teen",
+	"diez=10 once=11 doce=12 trece=13 catorce=14 quince=15 dieciseis=16 diecisiete=17 dieciocho=18 diecinueve=19 veintiun=21 veintiuno=21 veintiuna=21 veintidos=22 veintitres=23 veinticuatro=24 veinticinco=25 veintiseis=26 veintisiete=27 veintiocho=28 veintinueve=29 ten=10 eleven=11 twelve=12 thirteen=13 fourteen=14 fifteen=15 sixteen=16 seventeen=17 eighteen=18 nineteen=19",
 );
+words(
+	"tens",
+	"veinte=20 treinta=30 cuarenta=40 cincuenta=50 sesenta=60 setenta=70 ochenta=80 noventa=90 twenty=20 thirty=30 forty=40 fifty=50 sixty=60 seventy=70 eighty=80 ninety=90",
+);
+words(
+	"hundreds",
+	"cien=100 ciento=100 doscientos=200 doscientas=200 trescientos=300 trescientas=300 cuatrocientos=400 cuatrocientas=400 quinientos=500 quinientas=500 seiscientos=600 seiscientas=600 setecientos=700 setecientas=700 ochocientos=800 ochocientas=800 novecientos=900 novecientas=900",
+);
+for (const word of ["hundred", "hundreds"])
+	NUMBER_WORDS[word] = { kind: "hundred" };
+for (const word of ["mil", "thousand", "thousands"])
+	NUMBER_WORDS[word] = { kind: "thousand" };
+for (const word of ["millon", "millones", "million", "millions"])
+	NUMBER_WORDS[word] = { kind: "million" };
+for (const word of ["a", "an"]) NUMBER_WORDS[word] = { kind: "article" };
+
+type Words = { value: number; start: number; end: number; multiplied: boolean };
+
+/**
+ * The longest number written in words from the token at `first`: "twenty-five",
+ * "two hundred and fifty", "doscientos noventa y nueve", "mil quinientos". It
+ * stops before the first word that cannot follow, so "once twenty" is 11.
+ */
+function readWords(
+	folded: string,
+	tokens: RegExpExecArray[],
+	first: number,
+): Words | null {
+	let total = 0;
+	let group = 0;
+	let multiplied = false;
+	let last = -1;
+	for (let j = first; j < tokens.length; j++) {
+		const token = tokens[j] as RegExpExecArray;
+		if (j > first) {
+			const previous = tokens[j - 1] as RegExpExecArray;
+			const gap = folded.slice(
+				previous.index + previous[0].length,
+				token.index,
+			);
+			if (!/^[\s-]+$/.test(gap)) break;
+		}
+		const word = token[0];
+		if ((word === "y" || word === "and") && last === j - 1 && last >= first) {
+			continue;
+		}
+		const number = NUMBER_WORDS[word];
+		if (!number) break;
+		const unitsOpen =
+			group % 10 === 0 && (group % 100 === 0 || group % 100 >= 20);
+		if (number.kind === "article") {
+			// "a thousand", never the Spanish "a" in "de 500 a mil".
+			const next = tokens[j + 1]?.[0] ?? "";
+			if (j !== first || !/^(?:hundred|thousand|million)$/.test(next)) break;
+			group = 1;
+		} else if (number.kind === "unit") {
+			if (!unitsOpen) break;
+			group += number.value;
+		} else if (number.kind === "teen" || number.kind === "tens") {
+			if (group % 100 !== 0) break;
+			group += number.value;
+		} else if (number.kind === "hundreds") {
+			if (group !== 0) break;
+			group = number.value;
+		} else if (number.kind === "hundred") {
+			if (group >= 100) break;
+			group = (group || 1) * 100;
+		} else if (number.kind === "thousand") {
+			if (total % 1e6 !== 0 || group >= 1000) break;
+			total += (group || 1) * 1e3;
+			group = 0;
+			multiplied = true;
+		} else {
+			if (total !== 0) break;
+			total = (group || 1) * 1e6;
+			group = 0;
+			multiplied = true;
+		}
+		last = j;
+	}
+	if (last < first) return null;
+	const end = tokens[last] as RegExpExecArray;
+	return {
+		value: total + group,
+		start: (tokens[first] as RegExpExecArray).index,
+		end: end.index + end[0].length,
+		multiplied,
+	};
+}
+
+/** A currency word right after a number written in words: "pesos", "de pesos", "dólares". */
+const WORDS_CURRENCY = new RegExp(
+	`^\\s+(?:de\\s+)?(${CURRENCY_WORDS}|${LOWERCASE_CODES.join("|")})${e}`,
+);
+
+/**
+ * Cents said after a currency word: "con cincuenta", "con 50", "and fifty
+ * cents", "y 50 centavos". After "and" or "y" the cents word must be said, so
+ * "10 dollars and 5 coffees" is not 10.05.
+ */
+function centsAfter(
+	folded: string,
+	at: number,
+	tokens: RegExpExecArray[],
+): { cents: number; end: number } | null {
+	const lead = /^\s+(con|and|y)\s+/.exec(folded.slice(at));
+	if (!lead) return null;
+	const from = at + lead[0].length;
+	let cents: number;
+	let end: number;
+	const digits = /^\d{1,2}(?![\d.,])/.exec(folded.slice(from));
+	if (digits) {
+		cents = Number(digits[0]);
+		end = from + digits[0].length;
+	} else {
+		const first = tokens.findIndex((token) => token.index === from);
+		const said = first < 0 ? null : readWords(folded, tokens, first);
+		if (!said || said.multiplied || said.value >= 100) return null;
+		cents = said.value;
+		end = said.end;
+	}
+	const unit = /^\s+(?:centavos?|centimos?|cents?)(?![a-z])/.exec(
+		folded.slice(end),
+	);
+	if (unit) end += unit[0].length;
+	else if (lead[1] !== "con") return null;
+	return { cents: cents / 100, end };
+}
 
 const MULTIPLY: Record<string, number> = {
 	k: 1e3,
 	mil: 1e3,
 	thousand: 1e3,
+	m: 1e6,
+	mm: 1e6,
 	millon: 1e6,
 	millones: 1e6,
 	million: 1e6,
 	millions: 1e6,
 };
 
-function parseNumber(raw: string): number {
+function parseNumber(spaced: string): number {
+	const raw = spaced.replace(/[ \u00a0]/g, "");
 	if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(raw)) {
 		return Number(raw.replace(/,/g, ""));
 	}
@@ -1043,6 +1336,27 @@ function localCurrency(facts: Facts): string | undefined {
 }
 
 /**
+ * The currencies a mark other than a bare "$" can name: the local one when it
+ * is among them, the only one when there is one, else the request does not
+ * say which. "C$" is a Canadian dollar or a córdoba, "¥" a yen or a yuan.
+ */
+const MARKS: Record<string, string[]> = {
+	"€": ["EUR"],
+	"£": ["GBP"],
+	"¥": ["JPY", "CNY"],
+	us$: ["USD"],
+	rd$: ["DOP"],
+	a$: ["AUD"],
+	au$: ["AUD"],
+	ca$: ["CAD"],
+	c$: ["CAD", "NIO"],
+	mx$: ["MXN"],
+	nz$: ["NZD"],
+	hk$: ["HKD"],
+	r$: ["BRL"],
+};
+
+/**
  * The currency a mark names. A bare "$" and "pesos" name the local currency
  * when it is written that way; otherwise the request does not say which.
  * "dollars" with no local dollar means US dollars.
@@ -1054,9 +1368,15 @@ function currencyOf(
 	if (mark === null) return null;
 	if (isCode(mark)) return mark;
 	const m = fold(mark);
-	if (m === "us$" || m === "usd") return "USD";
-	if (m === "€" || m.startsWith("eur")) return "EUR";
+	if (LOWERCASE_CODES.includes(m)) return m.toUpperCase();
+	if (m.startsWith("eur")) return "EUR";
+	const named = MARKS[m];
+	if (named) {
+		if (local && named.includes(local)) return local;
+		return named.length === 1 ? (named[0] ?? null) : null;
+	}
 	if (m === "$") return local && symbolOf(local) === "$" ? local : null;
+	if (m.startsWith("cana")) return local === "DOP" ? local : null;
 	if (m.startsWith("peso")) {
 		return local && nameOf(local, "es").includes("peso") ? local : null;
 	}
@@ -1183,18 +1503,29 @@ const TIME_RULES: TimeRule[] = [
 		read: (m) => readClock(m, 1),
 	},
 	{
-		// "las 10 de la mañana", "la una y media": after "las" alone only with minutes or a part of the day, so "las 3 facturas" is a count.
+		// "las 10 de la mañana", "la una y media", "las 12.": after "las" alone only with minutes, a part of the day or nothing after, so "las 3 facturas" is a count.
 		re: new RegExp(
 			`${b}las?\\s+${HOUR}${MINUTES}${MERIDIEM}${e}${NOT_A_TIME}`,
 			"g",
 		),
 		read: (m) =>
-			m.slice(2).some((group) => group !== undefined) ? readClock(m, 1) : null,
+			m.slice(2).some((group) => group !== undefined) ||
+			/^\s*(?:$|[,.;:!?)])/.test(m.input.slice(m.index + m[0].length))
+				? readClock(m, 1)
+				: null,
 	},
 	{
-		// "4pm", "9:30 a.m."
+		// "8 de la mañana", "9 en la noche": an hour and its part of the day, with no "a las".
 		re: new RegExp(
-			`${b}(\\d{1,2})(?::(\\d{2}))?()()\\s*(a\\.?\\s?m\\.?|p\\.?\\s?m\\.?)(?![a-z])()`,
+			`${b}(\\d{1,2})()()()()\\s+(?:de|en|por)\\s+la\\s+(manana|tarde|noche)${e}`,
+			"g",
+		),
+		read: (m) => readClock(m, 1),
+	},
+	{
+		// "4pm", "9:30 a.m.", "8.30am"
+		re: new RegExp(
+			`${b}(\\d{1,2})(?:[:.](\\d{2}))?()()\\s*(a\\.?\\s?m\\.?|p\\.?\\s?m\\.?)(?![a-z])()`,
 			"g",
 		),
 		read: (m) => readClock(m, 1),
@@ -1260,11 +1591,23 @@ function readSpans(
 	for (const rule of DATE_RULES) {
 		rule.re.lastIndex = 0;
 		for (let m = rule.re.exec(folded); m; m = rule.re.exec(folded)) {
-			const s = m.index + (rule.lead?.(m) ?? 0);
+			let s = m.index + (rule.lead?.(m) ?? 0);
 			const t = m.index + m[0].length;
 			if (!free(s, t, true)) continue;
-			const hits = rule.read(m, today, reads);
+			let hits = rule.read(m, today, reads);
 			if (!hits) continue;
+			// "after Friday's game" is an event on that Friday, not a bound.
+			const bound =
+				/^['’]s(?![a-z])/.test(folded.slice(t)) ||
+				INCLUDED.test(folded.slice(t))
+					? null
+					: BOUND.exec(folded.slice(0, s));
+			if (bound && free(bound.index, s, true)) {
+				hits = hits.map((hit) =>
+					beyond(hit, bound, text.slice(s, t), text.slice(bound.index, s)),
+				);
+				s = bound.index;
+			}
 			(rule.soft ? soft : hard).fill(true, s, t);
 			for (const hit of hits) {
 				dates.push({ at: [s, t], reading: { text: text.slice(s, t), ...hit } });
@@ -1290,10 +1633,25 @@ function readSpans(
 			},
 		});
 	};
+	const tokens = [...folded.matchAll(/[a-z]+/g)];
 	DIGIT_AMOUNT.lastIndex = 0;
 	for (let m = DIGIT_AMOUNT.exec(folded); m; m = DIGIT_AMOUNT.exec(folded)) {
+		if (/\s/.test(m[2] ?? "") && !SPACED_THOUSANDS(m[2] ?? "", !!m[1])) {
+			PLAIN_DIGIT_AMOUNT.lastIndex = m.index;
+			const plain = PLAIN_DIGIT_AMOUNT.exec(folded);
+			if (!plain) continue;
+			m = plain;
+			DIGIT_AMOUNT.lastIndex = PLAIN_DIGIT_AMOUNT.lastIndex;
+		}
 		let s = m.index + (m[0].length - m[0].trimStart().length);
 		let t = m.index + m[0].trimEnd().length;
+		// A minus touching the number ("$-50", "-50") or a form's number ("W-2"), and an exponent ("1e3"), are no amount.
+		// "5-10" is a range, and "Uber - $23" or "Acme -$50" a dash that separates.
+		const numberAt = folded.indexOf(m[2] ?? "", s);
+		if (/(?<!\d)-$/.test(folded.slice(0, numberAt))) {
+			continue;
+		}
+		if (/^e\d/.test(folded.slice(t))) continue;
 		// A word after the number says more than a "$" before it: "$500 pesos".
 		const written = m[4] ?? m[1];
 		let mark: string | null = null;
@@ -1314,32 +1672,36 @@ function readSpans(
 				t += after[0].length;
 			}
 		}
-		const value = parseNumber(m[2] ?? "") * (MULTIPLY[m[3] ?? ""] ?? 1);
+		if (MILLIONS_MARK.has(m[3] ?? "") && mark === null) continue;
+		let value = parseNumber(m[2] ?? "") * (MULTIPLY[m[3] ?? ""] ?? 1);
+		if (m[4] && new RegExp(`^(?:${CURRENCY_WORDS})$`).test(m[4])) {
+			const said = centsAfter(folded, t, tokens);
+			if (said) {
+				value += said.cents;
+				t = said.end;
+			}
+		}
 		claim(s, t, value, mark);
 	}
-	WORD_MULTIPLIED.lastIndex = 0;
-	for (
-		let m = WORD_MULTIPLIED.exec(folded);
-		m;
-		m = WORD_MULTIPLIED.exec(folded)
-	) {
-		const value = (WORD_NUMBERS[m[1] ?? ""] ?? 1) * (MULTIPLY[m[2] ?? ""] ?? 1);
-		claim(m.index, m.index + m[0].length, value, null);
-	}
-	WORD_WITH_CURRENCY.lastIndex = 0;
-	for (
-		let m = WORD_WITH_CURRENCY.exec(folded);
-		m;
-		m = WORD_WITH_CURRENCY.exec(folded)
-	) {
-		const t = m.index + m[0].length;
-		const written = m[2] ?? "";
-		claim(
-			m.index,
-			t,
-			WORD_NUMBERS[m[1] ?? ""] ?? 0,
-			text.slice(t - written.length, t),
-		);
+	// Numbers in words count with a currency after them or a multiplier in them: "dos" alone is not money.
+	for (let i = 0; i < tokens.length; i++) {
+		const said = readWords(folded, tokens, i);
+		if (!said) continue;
+		const currency = WORDS_CURRENCY.exec(folded.slice(said.end));
+		if (!currency && !said.multiplied) continue;
+		let { value, end } = said;
+		let mark: string | null = null;
+		if (currency) {
+			end += currency[0].length;
+			mark = text.slice(end - (currency[1] ?? "").length, end);
+			const cents = centsAfter(folded, end, tokens);
+			if (cents) {
+				value += cents.cents;
+				end = cents.end;
+			}
+		}
+		claim(said.start, end, value, mark);
+		while (i + 1 < tokens.length && (tokens[i + 1]?.index ?? 0) < end) i++;
 	}
 
 	const inOrder = <R>(placed: Placed<R>[]) =>

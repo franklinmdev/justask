@@ -48,6 +48,27 @@ const HELD_BEFORE_140 = new Set(
 	),
 );
 
+/**
+ * Rows frozen before #232 whose candidates its parser readings change, each
+ * with the span the parser reads now and did not then, or the one it no
+ * longer reads. Their expected values stay as frozen and scored; a log saves
+ * each field's candidates and picks, so it rescores as it ran
+ * (docs/card-eval.md, Parser readings (#232)).
+ */
+const MOVED_BY_232: Record<string, { now: string } | { gone: string }> = {
+	// A nothing row: "before Friday" is now the Thursday before it, not that Friday (#183).
+	"en-r8-163": { now: "before Friday" },
+	"es-r8-163": { now: "antes del viernes" },
+	// A weekday and its day of the month are one day, not two candidates (#193).
+	"en-r7-092": { now: "Monday the 14th" },
+	"en-r8-062": { now: "Thursday the 10th" },
+	"en-r9-165": { now: "Friday the 11th" },
+	// The number of a form's name after its dash is no amount (#193).
+	"en-r5-33": { gone: "2" },
+	"en-r9-049": { gone: "9" },
+	"en-r9-134": { gone: "2" },
+};
+
 describe.each([english, spanish])("the card sets in $language", (content) => {
 	const sets = Object.fromEntries(
 		CARD_SET_NAMES.map((set) => [
@@ -214,6 +235,26 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 				dates.filter((d) => !d.ambiguous && d.from === d.to),
 				row.id,
 			).toHaveLength(1);
+		}
+	});
+
+	it("read every row #232 moves with the span it reads now, so the list names no row it need not", () => {
+		const moved = allSets.filter(({ id }) => id in MOVED_BY_232);
+		expect(moved.map(({ id }) => id).sort()).toEqual(
+			Object.keys(MOVED_BY_232)
+				.filter((id) => id.startsWith(content === english ? "en-" : "es-"))
+				.sort(),
+		);
+		for (const row of moved) {
+			const { dates = [], amounts = [] } = builtInParser(row.request, {
+				today: TODAY,
+				facts: FACTS,
+				reads: "past",
+			});
+			const texts = [...dates, ...amounts].map(({ text }) => text);
+			const change = MOVED_BY_232[row.id] ?? { now: "" };
+			if ("now" in change) expect(texts, row.id).toContain(change.now);
+			else expect(texts, row.id).not.toContain(change.gone);
 		}
 	});
 
