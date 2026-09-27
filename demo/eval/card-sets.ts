@@ -51,6 +51,8 @@ export const CARD_SETS = {
 	copy: { verdict: false },
 	/** #99's records with the copy verbs or a charge in them, the Spanish list's false holds. */
 	copyrec: { verdict: false },
+	/** #244's probes: records whose amount is a number with no currency, counts beside them, and commands with one (#191). */
+	bare: { verdict: false },
 } satisfies Record<string, CardSetInfo>;
 
 export type CardSet = keyof typeof CARD_SETS;

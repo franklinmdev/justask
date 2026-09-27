@@ -337,6 +337,8 @@ export type CandidateReadings = {
 	dates: Candidate<CardDateReading>[];
 	times: Candidate<TimeReading>[];
 	amounts: Candidate<AmountReading>[];
+	/** A number with no currency is in the local one: the `local_currency` fact is set (#191). */
+	bareIsLocal?: true;
 };
 
 export const NO_READINGS: CandidateReadings = {
@@ -434,7 +436,7 @@ export function cardPlan(
 				name,
 				ask(
 					readings.dates,
-					" Each candidate is a date or period the code already read from the request; never compute a date yourself. When one piece of text has two readings, pick the reading the language of the request uses.",
+					` Each candidate is a date or period the code already read from the request; never compute a date yourself. When one piece of text has two readings, pick the reading the language of the request uses. A weekday named alone, with no "last" or "next" ("Friday", "el viernes"), means ${field.reads === "past" ? "the most recent one before today" : "the first one after today"}, so its candidate is the day the request names.`,
 				),
 				readings.dates,
 				field.gate,
@@ -461,7 +463,15 @@ export function cardPlan(
 				name,
 				ask(
 					readings.amounts,
-					" Each candidate is a number the code already read from the request, its value and currency already read.",
+					` Each candidate is a number the code already read from the request, its value and currency already read.${
+						readings.bareIsLocal &&
+						readings.amounts.some(
+							({ value }) =>
+								value.currency === null && value.unresolved === undefined,
+						)
+							? " When a number with no currency written is money, it is in the local currency."
+							: ""
+					}`,
 				),
 				readings.amounts,
 				field.gate,
