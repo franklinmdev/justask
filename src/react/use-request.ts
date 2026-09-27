@@ -22,7 +22,8 @@ export type RequestTiming =
  * `Retry-After` in ms when it sends one) or failing (`server`, a 5xx), or a
  * handler that could not be reached or answered something else (`network`).
  * `rate-limited` and `server` carry the host's own message when its body has
- * one, as `{ error: { message } }`, `{ message }` or plain text.
+ * one, as `{ error: { message } }`, `{ error: "..." }`, `{ message }`, or a
+ * `text/plain` body.
  */
 export type RequestError =
 	| HandlerError
@@ -72,7 +73,8 @@ export function useRequest<R>({
 	} | null>(null);
 	// The request whose pause or call a hidden <Activity> cut short.
 	const pending = useRef<string | null>(null);
-	// The request `answer` is for, read by a `setRequest` in the same event.
+	// The request a successful `answer` is for, read by a `setRequest` in the
+	// same event; a failed one, or a box replaced, asks again.
 	const answered = useRef<string | null>(null);
 	// How many calls have gone out.
 	const sent = useRef(0);
@@ -134,15 +136,15 @@ export function useRequest<R>({
 		const controller = new AbortController();
 		inFlight.current = { controller, text };
 		sent.current += 1;
-		const number = sent.current;
+		const callNumber = sent.current;
 		setLoading(true);
 		const { endpoint, fetchImpl, flow } = latest.current;
 		post<R>(fetchImpl ?? fetch, endpoint, flow, text, controller.signal).then(
 			(next) => {
 				if (controller.signal.aborted) return;
 				inFlight.current = null;
-				answered.current = text;
-				setAnswer({ ...next, request: text, call: number });
+				answered.current = next.error ? null : text;
+				setAnswer({ ...next, request: text, call: callNumber });
 				setLoading(due() !== null);
 			},
 		);
@@ -187,6 +189,7 @@ export function useRequest<R>({
 	function replaceRequest(text: string) {
 		stopPause();
 		abortCall();
+		answered.current = null;
 		setRequestState(text);
 		setLoading(false);
 	}
@@ -198,8 +201,11 @@ export function useRequest<R>({
 		submit: () => call(request),
 		loading,
 		answer,
-		/** How many calls have gone out, for an event to stamp a change with. */
-		sent: () => sent.current,
+		/**
+		 * The number of the latest call, counting the one a running pause will
+		 * make, for an event to stamp a change with.
+		 */
+		latestCall: () => sent.current + (paused.current === null ? 0 : 1),
 		/** True when `answer` is for the request in the box, surrounding spaces aside. */
 		current: answer !== null && sameRequest(answer.request, request),
 	};
@@ -226,10 +232,10 @@ async function post<R>(
 		timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
 	};
 	const failed = (error: RequestError): Outcome<R> => ({ result: null, error });
-	const answered = `The ${flow} handler answered`;
+	const handlerAnswered = `The ${flow} handler answered`;
 	const somethingElse = failed({
 		kind: "network",
-		message: `${answered} something else`,
+		message: `${handlerAnswered} something else`,
 	});
 	try {
 		const response = await fetchImpl(endpoint, {
@@ -263,7 +269,7 @@ async function post<R>(
 		if (status === 429) {
 			return failed({
 				kind: "rate-limited",
-				message: (await hostMessage(response)) ?? `${answered} 429`,
+				message: (await hostMessage(response)) ?? `${handlerAnswered} 429`,
 				retryAfterMs: retryAfterMs(response.headers.get("retry-after")),
 			});
 		}
@@ -271,10 +277,11 @@ async function post<R>(
 			return failed({
 				kind: "server",
 				status,
-				message: (await hostMessage(response)) ?? `${answered} ${status}`,
+				message:
+					(await hostMessage(response)) ?? `${handlerAnswered} ${status}`,
 			});
 		}
-		return failed({ kind: "network", message: `${answered} ${status}` });
+		return failed({ kind: "network", message: `${handlerAnswered} ${status}` });
 	} catch (cause) {
 		return failed({
 			kind: "network",

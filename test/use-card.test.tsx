@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import {
 	type Candidate,
@@ -401,6 +401,36 @@ describe("useCard and its pieces", () => {
 		expect(screen.getByText(/^Filled:/).textContent).toBe(
 			"Filled: tags. Waiting for you: spent_on.",
 		);
+	});
+
+	it("keeps a field the person set during the pause on type timing (#213)", async () => {
+		const { seen, user } = renderCard({
+			provider: fakeProvider(fills),
+			timing: { on: "type", debounceMs: 200 },
+		});
+
+		await user.type(box(), lunch);
+		await user.selectOptions(vendor(), "acme");
+		await screen.findByText(/^Filled:/);
+
+		expect(vendor().value).toBe("acme");
+		expect(seen.card?.landed.kept).toEqual(["vendor"]);
+	});
+
+	it("fills a new card when the same words are typed again after Confirm (#216)", async () => {
+		const provider = fakeProvider(fills);
+		const { seen, user } = renderCard({
+			provider,
+			timing: { on: "type", debounceMs: 200 },
+		});
+		await user.type(box(), lunch);
+		await screen.findByText(/^Filled:/);
+		await user.click(confirmButton());
+
+		await user.type(box(), lunch);
+		await waitFor(() => expect(provider.calls).toHaveLength(2));
+		await waitFor(() => expect(vendor().value).toBe("northwind"));
+		expect(seen.card?.ready).toBe(true);
 	});
 
 	it("starts over a field the person set before Enter (#213)", async () => {

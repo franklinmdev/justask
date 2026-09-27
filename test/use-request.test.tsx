@@ -231,6 +231,24 @@ describe("the hooks' request timing", () => {
 		expect(result.current.item?.name).toBe("Acme Supplies");
 		expect(result.current.loading).toBe(false);
 	});
+
+	it("retries a failed answer when the same words are typed again (#216)", async () => {
+		let failing = true;
+		const { result } = renderSearch({
+			fetch: async (input, init) =>
+				failing
+					? new Response(null, { status: 503 })
+					: handler(new Request(new URL(String(input), location.href), init)),
+		});
+		act(() => result.current.setRequest("acme"));
+		await waitFor(() => expect(result.current.error?.kind).toBe("server"));
+
+		failing = false;
+		act(() => result.current.setRequest("acme "));
+		await waitFor(() =>
+			expect(result.current.item?.name).toBe("Acme Supplies"),
+		);
+	});
 });
 
 /** A `fetch` that hands each request to `serve`, as the host's server. */

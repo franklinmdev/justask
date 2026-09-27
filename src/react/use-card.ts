@@ -68,7 +68,8 @@ export type UseCard<F extends CardFields> = {
 	 * The card as it stands: what the last successful answer filled, with the
 	 * person's changes since. A held field's key is left out, exactly as one
 	 * the request never mentioned. A successful answer starts the card over,
-	 * but for the fields the person set or emptied after its call went out,
+	 * but for the fields the person set or emptied after its request was sent
+	 * or its pause began,
 	 * which keep what the person gave them; a failed one leaves the card as it
 	 * was, the person's changes included, and says why in `error`.
 	 */
@@ -77,8 +78,8 @@ export type UseCard<F extends CardFields> = {
 	filledBy: (name: keyof F & string) => FilledBy | null;
 	/**
 	 * What the last successful answer did to the card as it landed: the
-	 * fields it filled, and the fields holding a value the person set after
-	 * its call went out, which it left as they were (#213); each in the order
+	 * fields it filled, and the fields holding a value the person set since
+	 * its pause or call began, which it left as they were (#213); each in the order
 	 * they are declared. Both empty before an answer. Later changes by the
 	 * person leave it as it was.
 	 */
@@ -121,6 +122,7 @@ type Draft = {
 	value: Record<string, unknown>;
 	by: Record<string, FilledBy>;
 	touched: Record<string, number>;
+	// Kept, not derived: the person's later changes must not alter it.
 	landed: { filled: string[]; kept: string[] };
 };
 
@@ -134,7 +136,7 @@ const EMPTY: Draft = {
 
 /**
  * The card once `answer` lands: a new card from its filled fields, with the
- * person's own word on any field they set or emptied after its call went out
+ * person's own word on any field they set or emptied since its pause or call began
  * (#213), or, when it failed, the card as it was.
  */
 function draftOf(
@@ -223,7 +225,7 @@ export function useCard<F extends CardFields>({
 		landed: draft.landed as UseCard<F>["landed"],
 		set: (name, next) => {
 			setSaved(null);
-			const sent = flow.sent();
+			const sent = flow.latestCall();
 			// From the latest card, so two sets in one event both apply (#212).
 			setKept((latest) => {
 				const nextValue = { ...latest.value };
