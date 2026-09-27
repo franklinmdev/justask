@@ -4,7 +4,7 @@ Extends ADR 0010 to the other two flows, as its Consequences left open. The tick
 
 1. **A search may declare `joiners`**, the card's shape. A request that names two of its candidates with an `or` or an `and` word between them, and no third, holds the item whatever the pick: the search takes one item, so "and" holds it as "or" does. The result names the pair's ids and words, and the provider is still asked, so the pick is reported.
 2. **A filter may declare `joiners`**, and a pair holds any of its catalog fields by the same rule. Every filter catalog field takes one item, so both joiners hold. The demo's filter has two: the vendor, which the ticket names, and the status, whose ids (`paid`, `open`, `overdue`) the rule reads exactly. So "paid or overdue invoices" holds the status in English. From #75 the Spanish statuses declare `names` (`pagadas`, `pendientes`, `vencidas`), so "pagadas o vencidas" holds it too; plural, since `pagada` would also read `pasada`, as in "la semana pasada". The status half of this point is superseded by the Amendment (#80) below: the status opts out of the hold, and its Spanish names are gone.
-3. **The matcher, the typo rule and the third item are ADR 0010's, unchanged.** Its known limits hold here too.
+3. **The matcher, the typo rule and the third item are ADR 0010's, unchanged.** Its known limits hold here too. From #185 (ADR 0010, Amendment) a slash, "y/o" and a comma alone join a pair on the search and the filter as on the card, since the three share `findPair`; a comma holds the search's one item and a filter's catalog field, which each take one item.
 
 The demo's three flows share one list of joiners per language (`joiners` in `demo/src/content/`, which was `cardJoiners`).
 

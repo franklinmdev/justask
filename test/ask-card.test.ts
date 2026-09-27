@@ -502,7 +502,7 @@ describe("ask: card", () => {
 	});
 
 	describe("a named pair (ADR 0010)", () => {
-		const joiners = { or: ["or", "o", "u"], and: ["and", "y"] };
+		const joiners = { or: ["or", "o", "u", "vs"], and: ["and", "y"] };
 		const fill = (
 			request: string,
 			declared: { or: string[]; and: string[] } | null = joiners,
@@ -552,7 +552,15 @@ describe("ask: card", () => {
 				"Northwind lunch and Acme pens, $42",
 			],
 			['with "y"', "almuerzo de Northwind y bolígrafos de Acme, $42"],
-		])("holds on a pair named %s", async (_, request) => {
+			["with a slash", "Northwind/Acme lunch, $42"],
+			["with a slash and spaces", "Northwind / Acme lunch, $42"],
+			['with "y/o"', "Northwind y/o Acme, $42"],
+			['with "and/or"', "Northwind and/or Acme, $42"],
+			['with a host\'s own word, "vs"', "Northwind vs Acme lunch, $42"],
+			["with a comma alone between them", "Northwind, Acme, $42 yesterday"],
+			['with a comma beside "or"', "Northwind, or Acme, $42"],
+			['with a slash beside "or"', "Northwind / or Acme, $42"],
+		])("holds on a pair named %s (ADR 0010, #185)", async (_, request) => {
 			const { card } = await fill(request);
 
 			expect(card.fields.vendor.pair?.ids).toHaveLength(2);
@@ -571,6 +579,11 @@ describe("ask: card", () => {
 			expect(choice.card.value.vendor).toEqual({ name: "Northwind" });
 			expect(both.card.fields.tags).not.toHaveProperty("pair");
 			expect(both.card.value.tags).toEqual(["meals"]);
+			// A slash offers a choice, as "or" does; a comma lists both, as "and" does (#185).
+			const slash = await fill("meals/travel, Northwind, $42");
+			const comma = await fill("meals, travel, Northwind, $42");
+			expect(slash.card.fields.tags.pair?.text).toBe("meals/travel");
+			expect(comma.card.fields.tags).not.toHaveProperty("pair");
 		});
 
 		it("fills when the request names a third item of the field beside the pair, the one it is most likely about", async () => {
@@ -626,6 +639,9 @@ describe("ask: card", () => {
 			["a typo of an id, which is read exactly", "Northwind or meels, $42"],
 			["a joiner inside another word", "Northwind ordered Acme paper, $42"],
 			["a joiner in a hyphenated word", "Northwind either-or Acme, $42"],
+			["a comma with other words beside it", "Northwind lunch, Acme pens, $42"],
+			["two commas, a correction", "Northwind, no wait, Acme, $42"],
+			["a slash between words no list holds", "Northwind w/ Acme, $42"],
 		])("fills on %s", async (_, request) => {
 			const { card } = await fill(request);
 

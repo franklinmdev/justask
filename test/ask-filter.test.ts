@@ -451,6 +451,19 @@ describe("ask: filter with catalog fields", () => {
 			expect(filter.value).toEqual({ account: "rent" });
 		});
 
+		it.each([
+			["a slash", "posted rent/bank entries"],
+			["a comma alone", "posted rent, bank entries"],
+		])(
+			"holds on %s between two candidates, as on a card (#185)",
+			async (_, request) => {
+				const { filter } = await find(request);
+
+				expect(filter.fields.account.pair?.ids).toEqual(["rent", "bank"]);
+				expect(filter.value).toEqual({ status: "posted" });
+			},
+		);
+
 		it("never holds a field that opts out of the hold, which fills on its pick (#80)", async () => {
 			const filter = ledgerFilter();
 			const { filter: result } = await ask({

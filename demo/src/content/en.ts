@@ -571,7 +571,7 @@ export const english: Content = {
 			"the invoices",
 		],
 	},
-	joiners: { or: ["or"], and: ["and"] },
+	joiners: { or: ["or", "vs", "versus"], and: ["and"] },
 
 	cardSuggestions: {
 		fills: [

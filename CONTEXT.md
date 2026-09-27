@@ -141,7 +141,7 @@ Text in a request that speaks as the system, an admin or the request's wrapper r
 _Avoid_: Injection guard, jailbreak filter
 
 **Named pair**:
-Two items of one catalog field that a request names with a joiner between them, and no third item of that field: "Tallyroot or Cloudberth", "Lindero y Serena". An "or" word holds any catalog field, an "and" word only a field that takes one item. The search holds its item, and the filter and the card that field, before the gate, whatever the pick (ADR 0010, 0011). A filter's catalog field may opt out with `heldByPair: false` (ADR 0011).
+Two items of one catalog field that a request names with a joiner between them, and no third item of that field: "Tallyroot or Cloudberth", "Lindero y Serena", "Larkspur/Beanhaven", "Cazuela, Cafetal". An "or" word or a slash holds any catalog field; an "and" word, or a comma with nothing else between the names, only a field that takes one item. The search holds its item, and the filter and the card that field, before the gate, whatever the pick (ADR 0010, 0011). A filter's catalog field may opt out with `heldByPair: false` (ADR 0011).
 _Avoid_: Choice, either-or
 
 **Implied value**:
