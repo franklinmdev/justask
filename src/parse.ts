@@ -345,9 +345,9 @@ const LOWERCASE_CODES = [
 	"brl",
 	"ars",
 ];
-/** "cañas" is Dominican for pesos; folded, it reads "canas". */
+/** "cañas" is Dominican for pesos; folded, it reads "canas". "3 cañas de cerveza" are drinks. */
 const CURRENCY_WORDS =
-	"pesos|peso|canas|cana|dolares|dolar|dollars|dollar|euros|euro";
+	"pesos|peso|canas(?!\\s+de\\s)|dolares|dolar|dollars|dollar|euros|euro";
 
 /** What may follow a day of the month said with no month: an end, a time or an amount. "Monday 2 lattes" is a count. */
 const DAY_ENDS = "$|[,.;:!?)]|a\\s+las?\\s|at\\s|@|[$€£¥]|\\d";
@@ -1068,10 +1068,13 @@ const DATE_RULES: DateRule[] = [
 /**
  * "before X" and "after X" leave X out, so a filter's bound is the day next
  * to it: "after May 5" starts on May 6, "antes de mayo" ends on April 30.
- * "since", "until", "desde" and "hasta" keep X, and stay the period itself.
+ * "since", "until", "desde", "hasta", "on or before" and "not after" keep X,
+ * and stay the period itself.
  */
 const BOUND =
-	/(?<![a-z0-9])(before|after|antes\s+del?|despues\s+del?|luego\s+del?)\s+$/;
+	/(?<![a-z0-9])(?<!(?:on\s+or|or\s+on|not|no)\s+)(before|after|antes\s+del?|despues\s+del?|luego\s+del?|posteriores?\s+al?|previ[oa]s?\s+al?|anteriores?\s+al?|older\s+than|earlier\s+than|later\s+than|prior\s+to)\s+$/;
+/** "after May 5 inclusive" keeps May 5. */
+const INCLUDED = /^\s*,?\s*(?:inclusive|included|incluido|incluida)(?![a-z])/;
 
 function beyond(
 	hit: Hit,
@@ -1079,7 +1082,7 @@ function beyond(
 	said: string,
 	typed: string,
 ): Hit {
-	const after = /^(after|despues|luego)/.test(bound[1] ?? "");
+	const after = /^(after|despues|luego|posterior|later)/.test(bound[1] ?? "");
 	const day = after ? addDays(hit.to, 1) : addDays(hit.from, -1);
 	const word = typed.trim().replace(/\s+/g, " ");
 	return {
@@ -1100,8 +1103,18 @@ const PRE_MARK = `(us\\$|[a-z]{1,2}\\$|${LOWERCASE_CODES.join("|")}|\\$|€|£|�
  * separator followed by exactly three digits is always thousands: nobody
  * types a money amount to three decimals.
  */
-const NUMBER =
-	"(\\d{1,3}(?:[ \\u00a0]\\d{3})+(?:[.,]\\d{1,2})?(?!\\d)|\\d{1,3}(?:,\\d{3})+(?:\\.\\d+)?|\\d{1,3}(?:\\.\\d{3})+(?:,\\d+)?|\\d+(?:[.,]\\d+)?)";
+const PLAIN_NUMBER =
+	"\\d{1,3}(?:,\\d{3})+(?:\\.\\d+)?|\\d{1,3}(?:\\.\\d{3})+(?:,\\d+)?|\\d+(?:[.,]\\d+)?";
+const NUMBER = `(\\d{1,3}(?:[ \\u00a0]\\d{3})+(?:[.,]\\d{1,2})?(?!\\d)|${PLAIN_NUMBER})`;
+/**
+ * A space is a thousands separator only when something else says so: round
+ * thousands ("10 000"), a decimal part ("1 234,56") or a mark before
+ * ("RD$ 12 500"). In "2 300 dollar tickets" it keeps a count apart.
+ */
+const SPACED_THOUSANDS = (number: string, marked: boolean) =>
+	marked ||
+	/[.,]\d{1,2}$/.test(number) ||
+	/^\d{1,3}(?:[ \u00a0]000)+$/.test(number);
 /** "m" and "mm" are millions only beside a currency: "5m" alone may be minutes or meters. */
 const MULTIPLIER =
 	"(?:\\s*(k|mil|millones|millon|millions|million|thousand|mm|m)(?![a-z]))?";
@@ -1110,6 +1123,11 @@ const MILLIONS_MARK = new Set(["m", "mm"]);
 const DIGIT_AMOUNT = new RegExp(
 	`${b}${PRE_MARK}${NUMBER}${MULTIPLIER}${POST_MARK}`,
 	"g",
+);
+/** The same amount with no space inside the number, read where a spaced one was refused. */
+const PLAIN_DIGIT_AMOUNT = new RegExp(
+	`${b}${PRE_MARK}(${PLAIN_NUMBER})${MULTIPLIER}${POST_MARK}`,
+	"y",
 );
 
 /** What a number word does: adds itself, multiplies what came before, or starts a group of thousands or millions. */
@@ -1580,7 +1598,8 @@ function readSpans(
 			if (!hits) continue;
 			// "after Friday's game" is an event on that Friday, not a bound.
 			const bound =
-				rule.soft || /^['’]s(?![a-z])/.test(folded.slice(t))
+				/^['’]s(?![a-z])/.test(folded.slice(t)) ||
+				INCLUDED.test(folded.slice(t))
 					? null
 					: BOUND.exec(folded.slice(0, s));
 			if (bound && free(bound.index, s, true)) {
@@ -1617,6 +1636,13 @@ function readSpans(
 	const tokens = [...folded.matchAll(/[a-z]+/g)];
 	DIGIT_AMOUNT.lastIndex = 0;
 	for (let m = DIGIT_AMOUNT.exec(folded); m; m = DIGIT_AMOUNT.exec(folded)) {
+		if (/\s/.test(m[2] ?? "") && !SPACED_THOUSANDS(m[2] ?? "", !!m[1])) {
+			PLAIN_DIGIT_AMOUNT.lastIndex = m.index;
+			const plain = PLAIN_DIGIT_AMOUNT.exec(folded);
+			if (!plain) continue;
+			m = plain;
+			DIGIT_AMOUNT.lastIndex = PLAIN_DIGIT_AMOUNT.lastIndex;
+		}
 		let s = m.index + (m[0].length - m[0].trimStart().length);
 		let t = m.index + m[0].trimEnd().length;
 		// A minus touching the number ("$-50", "-50") or a form's number ("W-2"), and an exponent ("1e3"), are no amount.

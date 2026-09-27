@@ -553,6 +553,17 @@ describe("before and after leave the day they name out (#183)", () => {
 			"2026-09-21",
 		],
 		["gastos luego del 5 de agosto", "luego del 5 de agosto", "2026-08-06"],
+		[
+			"facturas posteriores al 5 de mayo",
+			"posteriores al 5 de mayo",
+			"2026-05-06",
+		],
+		["facturas anteriores a julio", "anteriores a julio", "2026-06-30"],
+		["facturas previas a julio", "previas a julio", "2026-06-30"],
+		["invoices older than June", "older than June", "2026-05-31"],
+		["invoices later than July", "later than July", "2026-08-01"],
+		["invoices prior to May 5", "prior to May 5", "2026-05-04"],
+		["invoices before 2025", "before 2025", "2024-12-31"],
 	])("%s", (text, span, day) => {
 		expect(dates(text)).toEqual([[span, day, day]]);
 	});
@@ -581,6 +592,15 @@ describe("before and after leave the day they name out (#183)", () => {
 				d.ambiguous,
 			]),
 		);
+	});
+
+	it.each([
+		["invoices on or after May 5", "May 5", "2026-05-05"],
+		["invoices on or before May 5", "May 5", "2026-05-05"],
+		["invoices not before May 5", "May 5", "2026-05-05"],
+		["after May 5th inclusive", "May 5th", "2026-05-05"],
+	])("keeps the day a bound says it includes: %s", (text, span, day) => {
+		expect(dates(text)).toEqual([[span, day, day]]);
 	});
 
 	it.each([
@@ -798,7 +818,8 @@ describe("amounts", () => {
 			["1 234,56", 1234.56, null],
 			["$ 1 234,56", 1234.56, null],
 			["1 000 pesos", 1000, null],
-			["12 500", 12500, null],
+			["12 000", 12000, null],
+			["RD$ 12 500", 12500, "DOP"],
 		])(
 			"reads %s with a space between thousands as one number",
 			(text, value, currency) => {
@@ -806,6 +827,19 @@ describe("amounts", () => {
 			},
 		);
 	});
+
+	it.each([
+		["2 300 dollar tickets", [2, 300]],
+		["compré 2 200 pesos de pan", [2, 200]],
+		["room 12 300 dollars", [12, 300]],
+		["el 3 500 pesos", [500]],
+		["el martes 22 500 pesos", [500]],
+	])(
+		"keeps a count before an amount apart, since only round thousands, decimals or a mark say a space is a separator: %s",
+		(text, values) => {
+			expect(amounts(text).map(([, v]) => v)).toEqual(values);
+		},
+	);
 
 	describe("a currency the request names beside the number (#181)", () => {
 		it.each([
@@ -1084,6 +1118,11 @@ describe("small misreads (#193)", () => {
 		]);
 		expect(amounts("Cafetal, 500 cañas", { local_currency: "DOP" })).toEqual([
 			["500 cañas", 500, "DOP"],
+		]);
+		// A caña of beer is a drink, not money.
+		expect(amounts("3 cañas de cerveza 150 pesos")).toEqual([
+			["3", 3, null],
+			["150 pesos", 150, null],
 		]);
 	});
 });
