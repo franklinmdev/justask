@@ -36,12 +36,9 @@ function justaskHandler(): Plugin {
 			if (process.env.TYPESAFE_API_KEY) {
 				// One discarded call once the server listens, so a visitor's first request is not the cold start.
 				server.httpServer?.once("listening", async () => {
-					const started = performance.now();
 					try {
-						await (await devModule()).warmOnStart();
-						server.config.logger.info(
-							`justask: provider warmed up in ${Math.round(performance.now() - started)} ms`,
-						);
+						const { level, message } = await (await devModule()).warmStart();
+						server.config.logger[level](message);
 					} catch (error) {
 						server.config.logger.warn(`justask: warm-up failed: ${error}`);
 					}

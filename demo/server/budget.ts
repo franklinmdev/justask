@@ -101,7 +101,7 @@ export function counted(
  * TypeSafe uses for being out of credit (unverified, #29). A 429 is a pace,
  * and a 5xx or a lost connection is the service, both left to the usual error.
  */
-function keyRefused(error: unknown): boolean {
+export function keyRefused(error: unknown): boolean {
 	return (
 		error instanceof APIError &&
 		error.status >= 400 &&
