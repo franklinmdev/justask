@@ -338,7 +338,7 @@ The demo's gate (0.15) was fixed by the owner before round 2 and measured on tha
 
 ## Development
 
-Requires Node 24 and pnpm 12 (the version is pinned in `package.json`; `corepack enable` picks it up).
+Developing it requires Node 24 and pnpm 12 (the version is pinned in `package.json`; `corepack enable` picks it up). The published package runs on Node 22 or later (`engines`), and CI runs the suite on both.
 
 ```sh
 pnpm install
