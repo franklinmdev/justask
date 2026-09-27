@@ -143,7 +143,8 @@ export function CardPage({
 					{copy.card.fields[name]}
 				</span>
 			)}
-			{filledBy === "answer" && (
+			{/* After a failed call the card stays as it was, but its fill came from no request in the box (#218). */}
+			{filledBy === "answer" && !card.error && (
 				<span className="entry-source">
 					{card.result && impliedByOf(name, card.result)
 						? copy.card.fromVendor

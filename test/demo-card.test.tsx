@@ -815,6 +815,27 @@ describe("the demo's card page", () => {
 		expect(counter()).toBe("1 frase frente a 6 clics en 2 menús");
 	});
 
+	it("claims nothing on the card comes from a request that failed, though the card stays as it was (#218)", async () => {
+		const { user } = renderDemo();
+		await suggest(user, "lunch with Larkspur yesterday, $86.40");
+		expect(screen.getAllByText("from the request")).toHaveLength(4);
+
+		const box = screen.getByRole("searchbox", { name: "Describe the expense" });
+		await user.clear(box);
+		// No fixture answers it, so the provider fails.
+		await user.type(box, "Beanhaven coffee today, $18.50{Enter}");
+
+		expect(
+			await screen.findByText(
+				"The request could not be read, so the card stays as it was. Fill it in by hand.",
+			),
+		).toBeDefined();
+		expect(vendor().value).toBe("larkspur");
+		expect(amount().value).toBe("86.40");
+		expect(screen.queryAllByText("from the request")).toHaveLength(0);
+		expect(screen.queryAllByText("from the vendor")).toHaveLength(0);
+	});
+
 	it("keeps working when the provider fails: the person fills the card by hand", async () => {
 		const { container, user } = renderDemo({
 			provider: failingProvider(new Error("no key")),
