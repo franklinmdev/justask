@@ -68,10 +68,9 @@ export type UseCard<F extends CardFields> = {
 	 * The card as it stands: what the last successful answer filled, with the
 	 * person's changes since. A held field's key is left out, exactly as one
 	 * the request never mentioned. A successful answer starts the card over,
-	 * but for the fields the person set or emptied after its request was sent
-	 * or its pause began,
-	 * which keep what the person gave them; a failed one leaves the card as it
-	 * was, the person's changes included, and says why in `error`.
+	 * but for the fields the person set or emptied since its pause or call
+	 * began, which keep what the person gave them; a failed one leaves the
+	 * card as it was, the person's changes included, and says why in `error`.
 	 */
 	value: CardValue<F>;
 	/** Who filled a field, or null while it is empty. */
@@ -136,8 +135,8 @@ const EMPTY: Draft = {
 
 /**
  * The card once `answer` lands: a new card from its filled fields, with the
- * person's own word on any field they set or emptied since its pause or call began
- * (#213), or, when it failed, the card as it was.
+ * person's own word on any field they set or emptied since its pause or call
+ * began (#213), or, when it failed, the card as it was.
  */
 function draftOf(
 	answer: Answered<CardResult<CardFields>>,
