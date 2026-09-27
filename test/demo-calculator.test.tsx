@@ -138,6 +138,37 @@ describe("the showcase's cost calculator", () => {
 		await expectNoAxeViolations(container);
 	});
 
+	it("shows the cost per call with every digit the month uses, so the formula multiplies out to the month (#220)", async () => {
+		const { user } = renderDemo({
+			provider: fakeProvider(fixtureFor, { costUsd: 0.000031701 }),
+		});
+
+		await user.click(
+			screen.getByRole("button", { name: "the catering people" }),
+		);
+
+		await calculator().findByRole("status");
+		expect(figure("Cost per call")).toBe("$0.000031701");
+		// 1,000 × 10 × 0.000031701 × 30 = 9.5103.
+		expect(month()).toBe("$9.51");
+		expect(
+			calculator().getByText("1,000 × 10 × $0.000031701 × 30 days"),
+		).toBeDefined();
+	});
+
+	it("keeps a float's noise out of the cost per call's digits", async () => {
+		const { user } = renderDemo({
+			provider: fakeProvider(fixtureFor, { costUsd: 0.1 + 0.2 }),
+		});
+
+		await user.click(
+			screen.getByRole("button", { name: "the catering people" }),
+		);
+
+		await calculator().findByRole("status");
+		expect(figure("Cost per call")).toBe("$0.3");
+	});
+
 	it("takes users and actions from the person, never the cost per call", () => {
 		renderDemo();
 

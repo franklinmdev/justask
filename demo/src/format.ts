@@ -56,6 +56,12 @@ function build(locale: string) {
 		currency: "USD",
 		maximumSignificantDigits: 2,
 	});
+	// The calculator's cost per call, with every digit its month multiplies (#220); 15 keeps a double's noise out.
+	const exactCost = new Intl.NumberFormat(locale, {
+		style: "currency",
+		currency: "USD",
+		maximumSignificantDigits: 15,
+	});
 	// A month runs to cents; below a cent it reads like a call.
 	const cents = new Intl.NumberFormat(locale, {
 		style: "currency",
@@ -85,6 +91,8 @@ function build(locale: string) {
 	return {
 		probability: (value: number) => probability.format(value),
 		cost: (usd: number) => cost.format(usd),
+		/** A call's cost as measured, not rounded, so a sum shown with it multiplies out. */
+		exactCost: (usd: number) => exactCost.format(usd),
 		/** To the cent, as a month's cost shows; below a cent, as a call's. */
 		cents: (usd: number) =>
 			usd >= 0.01 || usd === 0 ? cents.format(usd) : cost.format(usd),
