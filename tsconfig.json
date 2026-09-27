@@ -5,7 +5,7 @@
 		"lib": ["es2023", "dom", "dom.iterable"],
 		"module": "nodenext",
 		"moduleResolution": "nodenext",
-		"customConditions": ["source"],
+		"customConditions": ["justask-source"],
 		"types": ["node"],
 		"strict": true,
 		"noUncheckedIndexedAccess": true,

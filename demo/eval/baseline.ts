@@ -1,7 +1,7 @@
 // The probes' median over saved run logs of any flow, with no call: the
 // baseline to write into demo/eval/probe.ts before the next verdict run.
 //
-//   node --conditions=source demo/eval/baseline.ts <run log>...
+//   node --conditions=justask-source demo/eval/baseline.ts <run log>...
 //
 // Name the most recent normal runs, by path from the repo root.
 

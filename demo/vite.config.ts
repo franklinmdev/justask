@@ -85,10 +85,10 @@ function justaskHandler(): Plugin {
 export default defineConfig({
 	root: fileURLToPath(new URL(".", import.meta.url)),
 	plugins: [react(), justaskHandler()],
-	// `source` points justask's entry points at src/, as in the tests.
-	resolve: { conditions: ["source", ...defaultClientConditions] },
+	// `justask-source` points justask's entry points at src/, as in the tests.
+	resolve: { conditions: ["justask-source", ...defaultClientConditions] },
 	ssr: {
 		noExternal: ["justask"],
-		resolve: { conditions: ["source", ...defaultServerConditions] },
+		resolve: { conditions: ["justask-source", ...defaultServerConditions] },
 	},
 });

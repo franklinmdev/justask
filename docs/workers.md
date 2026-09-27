@@ -17,7 +17,7 @@ One Worker on the free plan, `justask-demo` (`wrangler.jsonc`):
 - Workers Logs is on (`observability`), which is where each request's CPU time is read. A failed request logs its error and, for a provider error, the SDK's error object, as on the dev server. That object holds TypeSafe's response (status, body, response headers), never the request's `Authorization` header, and the SDK redacts request headers even in its debug log (read in `@typesafe-ai/sdk` 0.6.0's `dist/index.mjs` on 2026-09-24). The Access service token's secret never reaches the Worker: in the measure's trace events on 2026-09-24, the request headers had no `cf-access-client-id` or `cf-access-client-secret`, and `cf-access-jwt-assertion` and `cookie` read `REDACTED`. Delete the token once it is no longer needed.
 - `pnpm demo` stays the Vite dev server with the handler as middleware, the key from `.env`. It streams each request's body to the handler, as the README's `toNode` does, so the handler's 16 KiB cap holds there too, and aborts the call when the browser goes away. It names each request's socket address in `CF-Connecting-IP`, so the visitor's limits count there as on the Worker; the ledger is in memory, so the counts start over with the server. A request with no `CF-Connecting-IP` counts against no visitor: only the recording script and the tests call the handler directly.
 
-wrangler bundles `justask` from `src/` through the `source` export condition, set by `WRANGLER_BUILD_CONDITIONS` in the package scripts, as the tests and the dev server do.
+wrangler bundles `justask` from `src/` through the `justask-source` export condition, set by `WRANGLER_BUILD_CONDITIONS` in the package scripts, as the tests and the dev server do.
 
 ## Running the Worker locally
 
@@ -49,10 +49,11 @@ Cloudflare Workers Builds builds and deploys `justask-demo` on every push to `ma
 | Build command | `pnpm demo:build` |
 | Deploy command | `pnpm exec wrangler deploy`, the wrangler pinned in `package.json` |
 | Root directory | empty, the repo root |
-| Build variables | `NODE_VERSION=24.18.0`, `PNPM_VERSION=12.5.1`, `WRANGLER_BUILD_CONDITIONS=source,workerd,worker,browser` |
+| Build variables | `NODE_VERSION=24.18.0`, `PNPM_VERSION=12.5.1`, `WRANGLER_BUILD_CONDITIONS=justask-source,workerd,worker,browser` |
 | Branch control | Enable Preview Builds off, so no other branch deploys anything |
 
 - `NODE_VERSION` names a Node the build image preinstalls. A version it has to install leaves no `pnpm` on the path ("No preset version installed for command pnpm"). Its default pnpm is older than `packageManager`, hence `PNPM_VERSION`.
+- The condition was `source` until #197 renamed it, since a host app's own `source` condition reached justask's unshipped `src/`. A build variable still naming `source` resolves justask to a `dist/` the build never made.
 - Build variables exist only during the build. `TYPESAFE_API_KEY` and `DEMO_KILL_SWITCH` are the Worker's runtime secrets, set with `wrangler secret put`; a build never sees or changes them.
 - Workers Builds does not wait for GitHub's checks (its docs say nothing of it, read 2026-09-26), so a merge with red CI deploys too. Merge only on green.
 - The first connection picked the wrong repository, and the build ran `uv sync` on it: when a build log installs anything but pnpm packages, check the connected repository first.
@@ -69,7 +70,7 @@ The free plan allows 10 ms of CPU per request; waiting on `fetch`, such as the J
 ### Procedure
 
 1. Deploy, then send nothing else for a while, so the first measured request lands on a fresh isolate if Cloudflare evicted it (unverified how long that takes). Start `pnpm exec wrangler tail justask-demo --format json > <file>` before the first request, so the tail catches it.
-2. `node --conditions=source demo/worker/measure.ts <workers.dev URL> 3`: every dev row of the search, filter and card eval sets, both languages (12, 20 and 28 rows per language), three times over, one at a time: 360 real Jev calls on the owner's key. One request at a time is not how a visitor types, but CPU is per request, so the pace does not change it. It prints each request's status and wall time, and the run's window, and stops at the first request Access refuses.
+2. `node --conditions=justask-source demo/worker/measure.ts <workers.dev URL> 3`: every dev row of the search, filter and card eval sets, both languages (12, 20 and 28 rows per language), three times over, one at a time: 360 real Jev calls on the owner's key. One request at a time is not how a visitor types, but CPU is per request, so the pace does not change it. It prints each request's status and wall time, and the run's window, and stops at the first request Access refuses.
 3. Stop the tail. Each request's trace event carries `cpuTime` and `wallTime` in ms and `event.request.url`; group by the URL's path, and take the count, median, p99 (linear between ranks) and max of `cpuTime`. Match the events to the measure's lines in time order to tell the rows and rounds apart. The dashboard's Observability Query Builder has the same numbers (`$workers.cpuTimeMs`, grouped by `$workers.event.request.path`). Its REST API (`POST /accounts/{account_id}/workers/observability/telemetry/query`) refused wrangler's login token with an authentication error on 2026-09-24; it needs an API token with Workers Observability permission.
 4. Write the table below, with the date, and the verdict.
 

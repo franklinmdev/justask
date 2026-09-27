@@ -1,11 +1,11 @@
 // The demo's filter eval, by hand with the key in .env, never in CI: every
 // row is a real Jev call.
 //
-//   node --conditions=source demo/eval/filter.ts run <en|es> <eval|round2|round3|dev|pair> <n>
-//   node --conditions=source demo/eval/filter.ts compare <en|es> <eval|round2|round3> <first n> <second n>
-//   node --conditions=source demo/eval/filter.ts remeasure <en|es> <eval|round2|round3> <first n> <n>...
-//   node --conditions=source demo/eval/filter.ts merge <en|es> <eval|round2|round3> <first n> <n>...
-//   node --conditions=source demo/eval/filter.ts gates <dev n>
+//   node --conditions=justask-source demo/eval/filter.ts run <en|es> <eval|round2|round3|dev|pair> <n>
+//   node --conditions=justask-source demo/eval/filter.ts compare <en|es> <eval|round2|round3> <first n> <second n>
+//   node --conditions=justask-source demo/eval/filter.ts remeasure <en|es> <eval|round2|round3> <first n> <n>...
+//   node --conditions=justask-source demo/eval/filter.ts merge <en|es> <eval|round2|round3> <first n> <n>...
+//   node --conditions=justask-source demo/eval/filter.ts gates <dev n>
 //
 // `run` writes demo/eval/runs/filter-<language>[-round2|-round3|-dev|-pair]-<n>.jsonl,
 // which it never overwrites, and prints its report. `eval` is round 1's set,
