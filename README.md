@@ -56,7 +56,7 @@ await fetch("/api/justask", {
 It answers:
 
 - `200` with `{ search, error? }`. A provider failure or timeout still answers `200`, with the item held and a typed `error` of kind `provider` or `timeout`. The provider's own message and cause never leave the server: the handler logs them with `console.error`, or hands them to `onError` when you pass one, so a missing or refused key shows in the server's log. A provider that was unavailable (the Jev adapter's 5xx, 529 included, or a lost connection; a custom adapter throws `ProviderUnavailableError`) is called once more within the same `timeoutMs`, and never a third time (ADR 0013). Its response then carries `retried: true`, and its cost and tokens are the second call's: the first threw and reported none. A request that is empty or only whitespace holds everything with no provider call.
-- `400` with `{ error: { kind: "request", message } }` when the body is not JSON, has no `request` string or no valid `timeZone`, or its request is over 1,000 characters (as JavaScript counts them, `request.length`).
+- `400` with `{ error: { kind: "request", message } }` when the body is empty (most often read before the handler, by a body parser such as `express.json()` mounted first), is not JSON, has no `request` string or no valid `timeZone`, or its request is over 1,000 characters (as JavaScript counts them, `request.length`).
 - `405` for anything but `POST`.
 - `413` with the same body when the body is over 16 KiB (16,384 bytes). The handler refuses a larger declared `content-length` before reading, and stops reading any other body at the cap.
 - `415` with the same body when the body is not sent as `application/json`. Another site's page can make a visitor's browser post a form or plain text with no preflight; a JSON post from another origin needs a CORS preflight, which the handler never answers. The handler checks no origin itself: a host that sends CORS headers for this route checks it there.
@@ -101,7 +101,11 @@ export function toNode(handler: (request: Request) => Promise<Response>) {
         method: req.method ?? "GET",
         headers: req.headers as Record<string, string>,
         // Streamed, so the handler stops reading a body past its 16 KiB cap.
-        body: req.method === "POST" ? (Readable.toWeb(req) as ReadableStream) : null,
+        // A body something already read, such as express.json(), goes as none.
+        body:
+          req.method === "POST" && !req.readableEnded
+            ? (Readable.toWeb(req) as ReadableStream)
+            : null,
         signal: browser.signal,
         // A streamed body needs it; the DOM's own types do not know it yet.
         duplex: "half",

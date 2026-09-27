@@ -134,6 +134,29 @@ describe("the README's toNode", () => {
 		expect(status).toBe(400);
 	});
 
+	it("says the body is empty when a body parser read it first, as express.json() does", async () => {
+		const mount = toNode(
+			createSearchHandler({ provider, timeoutMs: 1_000, search }),
+		);
+		const server = createServer(async (req, res) => {
+			for await (const _ of req); // what express.json() does before the route
+			mount(req, res).catch(() => {
+				res.statusCode = 500;
+				res.end();
+			});
+		});
+		servers.push(server);
+		await new Promise<void>((resolve) => server.listen(0, resolve));
+		const { port } = server.address() as AddressInfo;
+
+		const { status, text } = await post(port, asked).done;
+
+		expect(status).toBe(400);
+		expect(JSON.parse(text).error.message).toBe(
+			"The body is empty: was it read before the handler, as express.json() does?",
+		);
+	});
+
 	it("aborts the provider call when the browser hangs up", async () => {
 		const port = await serve(
 			createSearchHandler({ provider, timeoutMs: 5_000, search }),
