@@ -143,6 +143,11 @@ export type FieldResult<F extends Field> =
 export type FilterResult<F extends Fields> = {
 	value: FilterValue<F>;
 	fields: { [K in keyof F]: FieldResult<F[K]> };
+	/**
+	 * The role marker that held every field whatever its pick, as the request
+	 * writes it (ADR 0015). The picks are still reported.
+	 */
+	marker?: string;
 };
 
 /**

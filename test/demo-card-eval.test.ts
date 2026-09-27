@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
-import { builtInParser } from "justask";
+import { ask, builtInParser } from "justask";
 import {
 	type CardEvalKind,
 	type CardEvalRow,
@@ -19,10 +19,16 @@ import {
 } from "../demo/eval/card-sets.ts";
 import { fixGate, poolFields } from "../demo/eval/gates.ts";
 import { CARD_KILL_LINES } from "../demo/eval/kill-lines.ts";
-import { CARD_GATES, demoCard, FACTS } from "../demo/server/handler.ts";
+import {
+	CARD_GATES,
+	demoCard,
+	demoFilter,
+	FACTS,
+} from "../demo/server/handler.ts";
 import { english } from "../demo/src/content/en.ts";
 import { spanish } from "../demo/src/content/es.ts";
 import type { ExpenseName } from "../demo/src/content/types.ts";
+import { failingProvider } from "./fake-provider.ts";
 
 const evalFile = (name: string) =>
 	new URL(`../demo/eval/${name}`, import.meta.url);
@@ -256,6 +262,36 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 			if ("now" in change) expect(texts, row.id).toContain(change.now);
 			else expect(texts, row.id).not.toContain(change.gone);
 		}
+	});
+
+	it("hold no frozen row on a role marker, a negated vendor or a day after today, the holds #235 added (ADR 0015, 0016, 0008)", async () => {
+		// The code finds each before any answer, so a failing provider still
+		// reports them; the marker is the request's, read here by the filter.
+		const base = {
+			facts: { today: TODAY, ...FACTS },
+			provider: failingProvider(new Error("no call")),
+			timeoutMs: 1_000,
+		};
+		const filter = demoFilter(content);
+		const held: string[] = [];
+		for (const row of allSets) {
+			const [asked, filtered] = await Promise.all([
+				ask({ ...base, request: row.request, card }),
+				ask({ ...base, request: row.request, filter }),
+			]);
+			const { vendor, spent_on } = asked.card.fields;
+			if (
+				filtered.filter.marker ||
+				vendor.negated ||
+				// A period after today ("next week", two nothing rows) was held already.
+				spent_on.candidates.some(
+					({ value }) => value.afterToday && value.from === value.to,
+				)
+			) {
+				held.push(row.id);
+			}
+		}
+		expect(held).toEqual([]);
 	});
 
 	it("offer a held day among the suggestions that holds on every day of the week", () => {

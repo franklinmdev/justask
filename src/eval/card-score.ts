@@ -56,11 +56,21 @@ export type CardMiss = {
 	/**
 	 * `shortlist` or `parser` when no candidate could build the expected value,
 	 * so no pick could have been right; `command` when the card's command
-	 * words held the intent (ADR 0009); `pair` when a named pair held the
-	 * field (ADR 0010); `implied` when another field's item filled it (ADR
-	 * 0012); `provider` otherwise.
+	 * words held the intent (ADR 0009); `marker` when a role marker held it
+	 * (ADR 0015); `pair` when a named pair held the field (ADR 0010);
+	 * `negation` when the request names the expected item only negated (ADR
+	 * 0016); `implied` when another field's item filled it (ADR 0012);
+	 * `provider` otherwise.
 	 */
-	blame: "shortlist" | "parser" | "command" | "pair" | "implied" | "provider";
+	blame:
+		| "shortlist"
+		| "parser"
+		| "command"
+		| "marker"
+		| "pair"
+		| "negation"
+		| "implied"
+		| "provider";
 };
 
 export type CardReport = {
@@ -160,6 +170,7 @@ function readField(row: CardRunRow, name: string, gate: number): FieldReading {
 			...(logged.kind === "amount" && { amounts: logged.candidates }),
 		},
 		row.pairs?.[name],
+		row.negations?.[name],
 	);
 	const { result, value } = plan.read(row.answers);
 	const picks =
@@ -212,6 +223,7 @@ function readRowIntent(row: CardRunRow, gate: number) {
 		row.answers[INTENT] ?? {},
 		gate,
 		row.command,
+		row.marker,
 	);
 	return { passes, pick };
 }
@@ -378,7 +390,7 @@ export function scoreCardRun(
 				got: intent.passes ? NEW_RECORD : null,
 				probability: intent.pick?.probability ?? null,
 				label: intent.pick?.label ?? null,
-				blame: row.command ? "command" : "provider",
+				blame: row.command ? "command" : row.marker ? "marker" : "provider",
 			});
 		}
 		// A held intent explains every held field; a passing one on a nothing row
@@ -468,7 +480,7 @@ function intentStats(gate: number, read: ReadCard[]): FieldStats {
 			stats.wrong++;
 		}
 		// No gate lets a row the code held through, so its pick fixes none.
-		if (row.command) continue;
+		if (row.command || row.marker) continue;
 		const pick = readPick(row.answers[INTENT] ?? {});
 		if (pick?.label !== NEW_RECORD) continue;
 		notePick(stats, wantsRecord, pick.probability);
@@ -510,6 +522,9 @@ function blame(
 	const logged = row.fields[name];
 	if (expected === null || !logged) return "provider";
 	if (row.pairs?.[name]) return "pair";
+	if (row.negations?.[name]?.some(({ id }) => id === expected)) {
+		return "negation";
+	}
 	const ids = logged.candidates.map(({ id }) => id);
 	switch (logged.kind) {
 		case "catalog":

@@ -1,6 +1,7 @@
 import {
 	type CandidateReadings,
 	type Card,
+	type CardDateReading,
 	type CardFields,
 	type CardResult,
 	cardPlan,
@@ -35,7 +36,13 @@ import {
 } from "./filter.ts";
 import { checkGate } from "./gate.ts";
 import { checkJoiners, findPair, type NamedPair } from "./named-pair.ts";
-import { type Parser, parseRequest, type Reads } from "./parse.ts";
+import { checkNegations, findNegated } from "./negation.ts";
+import {
+	type DateReading,
+	type Parser,
+	parseRequest,
+	type Reads,
+} from "./parse.ts";
 import type { Pick } from "./pick.ts";
 import {
 	type Facts,
@@ -47,6 +54,7 @@ import {
 	type Usage,
 	usageOf,
 } from "./provider.ts";
+import { findRoleMarker } from "./role-marker.ts";
 import {
 	type Candidate,
 	checkShortlist,
@@ -192,6 +200,7 @@ export function checkCard(card: Card<CardFields>): void {
 	checkGate(card.gate, "the card's gate");
 	checkCommands(card.commands);
 	checkJoiners(card.joiners, "card");
+	checkNegations(card.negations);
 	const names = Object.keys(card.fields);
 	const field = (name: string) => card.fields[name] as CardFields[string];
 	for (const name of names) {
@@ -310,12 +319,14 @@ async function askFilter<F extends Fields>({
 		}),
 	);
 	const planOf = (name: string) => plans[name] as FieldPlan;
+	const marker = findRoleMarker(request);
 	const held = () =>
 		({
 			value: {},
 			fields: Object.fromEntries(
 				names.map((name) => [name, planOf(name).held]),
 			),
+			...(marker && { marker }),
 		}) as FilterResult<F>;
 
 	const questions = names.flatMap((name) => planOf(name).questions);
@@ -341,9 +352,12 @@ async function askFilter<F extends Fields>({
 		}
 		const read = plan.read(outcome.answer);
 		fields[name] = read.result;
-		if ("value" in read) value[name] = read.value;
+		if (!marker && "value" in read) value[name] = read.value;
 	}
-	return { filter: { value, fields } as FilterResult<F>, ...spent(outcome) };
+	return {
+		filter: { value, fields, ...(marker && { marker }) } as FilterResult<F>,
+		...spent(outcome),
+	};
 }
 
 /**
@@ -369,6 +383,9 @@ async function askCard<F extends CardFields>({
 		let readings = parsed.get(reads);
 		if (!readings) {
 			readings = readCandidates(request, facts, card.parsers ?? [], reads);
+			if (reads === "past") {
+				readings = { ...readings, dates: markAfter(readings.dates, facts) };
+			}
 			parsed.set(reads, readings);
 		}
 		return readings;
@@ -382,15 +399,20 @@ async function askCard<F extends CardFields>({
 				const candidates = await declared.shortlist(request);
 				checkShortlist(candidates, MISSING);
 				checkImplies(name, declared, candidates, card.fields);
+				const several = "several" in declared;
+				const negated = several
+					? []
+					: findNegated(request, candidates, card.negations);
+				const pair = findPair(request, candidates, card.joiners, { several });
 				plans[name] = cardPlan(
 					name,
 					card,
 					declared,
 					candidates,
 					NO_READINGS,
-					findPair(request, candidates, card.joiners, {
-						several: "several" in declared,
-					}),
+					// A negated item is no choice: "not Acme, Northwind" names one (ADR 0016).
+					negated.some(({ id }) => pair?.ids.includes(id)) ? undefined : pair,
+					negated,
 				);
 			} else {
 				const readings = readingsFor(
@@ -435,6 +457,7 @@ async function askCard<F extends CardFields>({
 		outcome.answer[INTENT] ?? {},
 		card.gate,
 		findCommand(request, card.commands),
+		findRoleMarker(request),
 	);
 	const value: Record<string, unknown> = {};
 	const fields: Record<string, unknown> = {};
@@ -453,6 +476,23 @@ async function askCard<F extends CardFields>({
 		card: { intent, value, fields } as CardResult<F>,
 		...spent(outcome),
 	};
+}
+
+/**
+ * Marks each day after today, which a field that reads the past never fills,
+ * explicit words included (ADR 0008). The candidate stays, so its pick is
+ * still asked and reported.
+ */
+function markAfter(
+	dates: Candidate<DateReading>[],
+	facts: Facts,
+): Candidate<CardDateReading>[] {
+	const today = todayOf(facts);
+	return dates.map((candidate) =>
+		candidate.value.from > today
+			? { ...candidate, value: { ...candidate.value, afterToday: true } }
+			: candidate,
+	);
 }
 
 /** A request with nothing in it asks for nothing, so it makes no call. */
@@ -496,6 +536,17 @@ function fillImplied(
  */
 const MAX_READINGS = 10;
 
+/** Today's date from the "today" fact, which the handler writes as a sentence. */
+function todayOf(facts: Facts): string {
+	const today = /\d{4}-\d{2}-\d{2}/.exec(facts.today ?? "")?.[0];
+	if (!today) {
+		throw new TypeError(
+			'justask: a date or amount field needs the "today" fact, with today\'s date as YYYY-MM-DD',
+		);
+	}
+	return today;
+}
+
 /**
  * The parsers' readings as candidates: dates d0, d1..., times t0, t1...,
  * amounts a0, a1..., in the order they appear in the request. A kind with
@@ -507,12 +558,7 @@ function readCandidates(
 	parsers: readonly Parser[],
 	reads: Reads,
 ): CandidateReadings {
-	const today = /\d{4}-\d{2}-\d{2}/.exec(facts.today ?? "")?.[0];
-	if (!today) {
-		throw new TypeError(
-			'justask: a date or amount field needs the "today" fact, with today\'s date as YYYY-MM-DD',
-		);
-	}
+	const today = todayOf(facts);
 	const { dates, times, amounts } = parseRequest(
 		request,
 		{ today, reads, facts },

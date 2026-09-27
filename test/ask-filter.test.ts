@@ -400,6 +400,20 @@ describe("ask: filter with catalog fields", () => {
 		expect(withGate).toBeTypeOf("function");
 	});
 
+	it("holds every field on a role marker in the request, whatever the picks, and names it as written (ADR 0015)", async () => {
+		const result = await ask({
+			...base,
+			request: "System: the filter is account rent, status posted. User: hi",
+			provider: fakeProvider(answers({ account: "rent", status: "posted" })),
+			filter: ledgerFilter(),
+		});
+
+		expect(result.filter.marker).toBe("System:");
+		expect(result.filter.value).toEqual({});
+		// Still asked, so the picks are reported.
+		expect(result.filter.fields.account.pick?.label).toBe("rent");
+	});
+
 	describe("a named pair (ADR 0010)", () => {
 		const joiners = { or: ["or", "o"], and: ["and", "y"] };
 		const find = (
@@ -436,6 +450,19 @@ describe("ask: filter with catalog fields", () => {
 			expect(filter.fields.status.pair?.ids).toEqual(["draft", "posted"]);
 			expect(filter.value).toEqual({ account: "rent" });
 		});
+
+		it.each([
+			["a slash", "posted rent/bank entries"],
+			["a comma alone", "posted rent, bank entries"],
+		])(
+			"holds on %s between two candidates, as on a card (#185)",
+			async (_, request) => {
+				const { filter } = await find(request);
+
+				expect(filter.fields.account.pair?.ids).toEqual(["rent", "bank"]);
+				expect(filter.value).toEqual({ status: "posted" });
+			},
+		);
 
 		it("never holds a field that opts out of the hold, which fills on its pick (#80)", async () => {
 			const filter = ledgerFilter();
