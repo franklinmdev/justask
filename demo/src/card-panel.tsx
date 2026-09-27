@@ -42,8 +42,8 @@ function intentReasonOf(
  * Why a card field is held, read the way the code holds it: no candidates,
  * a request that asks for no new expense, a named pair, no answer, a tie, a
  * missing label, then a picked reading the code refuses (two ways to read
- * it, a currency that is not the local one, a period), and last a pick below
- * the gate.
+ * it, a currency that is not the local one, a period, a day after today),
+ * and last a pick below the gate.
  */
 function heldReasonOf(
 	name: ExpenseName,
@@ -87,6 +87,7 @@ function heldReasonOf(
 		const day = result.fields.spent_on.candidates.find(picked)?.value;
 		if (day?.ambiguous) return { kind: "ambiguous", text: day.text };
 		if (day && day.from !== day.to) return { kind: "period", text: day.text };
+		if (day?.afterToday) return { kind: "after-today", text: day.text };
 	}
 	if (name === "total") {
 		const amount = result.fields.total.candidates.find(picked)?.value;

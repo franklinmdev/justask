@@ -629,6 +629,46 @@ describe("runCardEval", () => {
 		expect(fields.vendor).toMatchObject({ wrong: 0, highestWrong: null });
 	});
 
+	it("logs a day after today on a field that reads the past, and holds it at every gate, as ask does (ADR 0008)", async () => {
+		const request = "acme toner tomorrow, $18";
+		const run = await runCardEval({
+			...input(
+				join(dir, "run-1.jsonl"),
+				fakeProvider(() => ({
+					intent: answer(intentLabels, "new_record", 0.97),
+					vendor: answer(vendorLabels, "acme", 0.95),
+					...mealsOnly(),
+					spent_on: answer(dateLabels, "d0", 0.99),
+					total: answer(amountLabels, "a0", 0.99),
+				})),
+			),
+			set: set([
+				{
+					id: "ahead",
+					request,
+					kind: "ambiguous",
+					expected: { vendor: "acme", spent_on: "held" },
+				},
+			]),
+		});
+
+		const logged = (await readCardRun(join(dir, "run-1.jsonl"))).rows[0]?.fields
+			.spent_on;
+		expect(logged?.candidates).toEqual([
+			expect.objectContaining({
+				value: expect.objectContaining({
+					from: "2026-09-24",
+					afterToday: true,
+				}),
+			}),
+		]);
+		const { leaked, fields } = scoreCardRun(run, {
+			gates: { spent_on: 0.5 },
+		});
+		expect(leaked).toEqual([]);
+		expect(fields.spent_on).toMatchObject({ wrong: 0, highestWrong: null });
+	});
+
 	it("blames the pair for a record the code held, a false hold", async () => {
 		const request = "Northwind lunch for the Acme or Northwind team, $42";
 		const run = await runCardEval({

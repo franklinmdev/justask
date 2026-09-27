@@ -80,7 +80,8 @@ export type CardHeldReason =
 	| { kind: "not-a-record" }
 	| { kind: "foreign-currency"; mark: string }
 	| { kind: "ambiguous"; text: string }
-	| { kind: "period"; text: string };
+	| { kind: "period"; text: string }
+	| { kind: "after-today"; text: string };
 
 /** Why the intent question let the fields fill, or held them all. */
 export type IntentReason =

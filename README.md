@@ -220,7 +220,7 @@ const { card } = await ask({
 // card.value: { vendor, tags: ["meals", "client"], spent_on: "2026-09-21", at: "13:00", total: { value: 42, currency: "USD" } }
 ```
 
-- **date** fields fill with one day, `YYYY-MM-DD`, and declare which way they read: `"past"` for the day an expense was spent, `"future"` for a due date. A picked period ("next week") is held.
+- **date** fields fill with one day, `YYYY-MM-DD`, and declare which way they read: `"past"` for the day an expense was spent, `"future"` for a due date. A picked period ("next week") is held, and so is a day after today on a field that reads the past, explicit words included ("tomorrow"); its candidate says `afterToday: true`.
 - **time** fields fill with `HH:MM`. A bare hour offers its morning and evening readings, and the provider picks from the words around it.
 - **amount** fields fill with `{ value, currency? }`, one question over every number found.
 - **catalog** fields with `several: true` ask one yes-or-no question per shortlisted item, so combinations are never enumerated, and fill with the items asked for. The field is held when any item's pick is below the gate, or says a word could be this item or another.

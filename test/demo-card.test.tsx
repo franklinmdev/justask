@@ -108,6 +108,13 @@ const answers: Record<string, FakeAnswers> = {
 		day: "d0",
 		amount: "a0",
 	}),
+	// A day after today on the expense's day, which reads the past: the code holds it (#187).
+	"Papergrove toner tomorrow, $120": answer({
+		vendor: question(vendors, "papergrove"),
+		tagged: ["office"],
+		day: "d0",
+		amount: "a0",
+	}),
 	"delete yesterday's taxi": answer({ intent: "not_available" }),
 	// A command on a recorded expense, read as a new one: the code holds it.
 	"quite el gasto de $58 del Cafetal": answer({
@@ -422,6 +429,26 @@ describe("the demo's card page", () => {
 		expect(
 			day.getByText(
 				"“last week” is a period, not one day, so the code held the field.",
+			),
+		).toBeDefined();
+	});
+
+	it("holds a day after today, since an expense's day has happened, whatever its probability (#187)", async () => {
+		const { user } = renderDemo();
+
+		await user.type(
+			screen.getByRole("searchbox", { name: "Describe the expense" }),
+			"Papergrove toner tomorrow, $120{Enter}",
+		);
+		await screen.findByText(/^Filled:/);
+
+		expect(
+			screen.getByRole("button", { name: "Day Pick a day" }),
+		).toBeDefined();
+		const day = within(panel().getByRole("region", { name: "Day" }));
+		expect(
+			day.getByText(
+				"“tomorrow” is after today, and an expense’s day has already happened, so the code held the field.",
 			),
 		).toBeDefined();
 	});

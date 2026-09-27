@@ -58,6 +58,13 @@ export type CardDateField = {
 	gate: number;
 };
 
+/**
+ * A date field's candidate on a card: the parsers' reading, marked when it
+ * lies after today on a field that reads the past, which never fills with it
+ * (ADR 0008).
+ */
+export type CardDateReading = DateReading & { afterToday?: true };
+
 /** A card's time field: a time of day, read from the parsers. */
 export type TimeField = {
 	kind: "time";
@@ -156,7 +163,7 @@ export type CardFieldResult<F extends CardField> =
 		: F extends CatalogField<infer T>
 			? CatalogFieldResult<T> & Paired
 			: F extends CardDateField
-				? CatalogFieldResult<DateReading>
+				? CatalogFieldResult<CardDateReading>
 				: F extends TimeField
 					? CatalogFieldResult<TimeReading>
 					: CatalogFieldResult<AmountReading>;
@@ -302,7 +309,7 @@ export function intentQuestion(card: Card<CardFields>): Question {
 
 /** The parsers' readings of one request, as candidates. */
 export type CandidateReadings = {
-	dates: Candidate<DateReading>[];
+	dates: Candidate<CardDateReading>[];
 	times: Candidate<TimeReading>[];
 	amounts: Candidate<AmountReading>[];
 };
@@ -316,7 +323,8 @@ export const NO_READINGS: CandidateReadings = {
 /**
  * A field that one question fills: a single catalog row, a day, a time or an
  * amount. The pick's candidate holds the field when a parser marked it
- * ambiguous, whatever its probability, before the gate is read. `fill` holds
+ * ambiguous, or it is a day after today on a field that reads the past,
+ * whatever its probability, before the gate is read. `fill` holds
  * it too, by returning undefined, for a candidate that cannot be the field's
  * value (a period for a day).
  */
@@ -391,7 +399,10 @@ export function cardPlan(
 				readings.dates,
 				field.gate,
 				({ from, to }) => (from === to ? from : undefined),
-				{ ambiguous: ({ ambiguous }) => ambiguous === true },
+				{
+					ambiguous: ({ ambiguous, afterToday }) =>
+						ambiguous === true || afterToday === true,
+				},
 			);
 		case "time":
 			return choicePlan(

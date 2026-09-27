@@ -337,6 +337,8 @@ export const english: Content = {
 						return `“${reason.text}” reads two ways, so the code held the field whatever its probability.`;
 					case "period":
 						return `“${reason.text}” is a period, not one day, so the code held the field.`;
+					case "after-today":
+						return `“${reason.text}” is after today, and an expense’s day has already happened, so the code held the field.`;
 					default:
 						return fieldHeldBecause(reason);
 				}

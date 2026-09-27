@@ -1,6 +1,7 @@
 import {
 	type CandidateReadings,
 	type Card,
+	type CardDateReading,
 	type CardFields,
 	type CardResult,
 	cardPlan,
@@ -35,7 +36,12 @@ import {
 } from "./filter.ts";
 import { checkGate } from "./gate.ts";
 import { checkJoiners, findPair, type NamedPair } from "./named-pair.ts";
-import { type Parser, parseRequest, type Reads } from "./parse.ts";
+import {
+	type DateReading,
+	type Parser,
+	parseRequest,
+	type Reads,
+} from "./parse.ts";
 import type { Pick } from "./pick.ts";
 import {
 	type Facts,
@@ -369,6 +375,9 @@ async function askCard<F extends CardFields>({
 		let readings = parsed.get(reads);
 		if (!readings) {
 			readings = readCandidates(request, facts, card.parsers ?? [], reads);
+			if (reads === "past") {
+				readings = { ...readings, dates: markAfter(readings.dates, facts) };
+			}
 			parsed.set(reads, readings);
 		}
 		return readings;
@@ -455,6 +464,23 @@ async function askCard<F extends CardFields>({
 	};
 }
 
+/**
+ * Marks each day after today, which a field that reads the past never fills,
+ * explicit words included (ADR 0008). The candidate stays, so its pick is
+ * still asked and reported.
+ */
+function markAfter(
+	dates: Candidate<DateReading>[],
+	facts: Facts,
+): Candidate<CardDateReading>[] {
+	const today = todayOf(facts);
+	return dates.map((candidate) =>
+		candidate.value.from > today
+			? { ...candidate, value: { ...candidate.value, afterToday: true } }
+			: candidate,
+	);
+}
+
 /** A request with nothing in it asks for nothing, so it makes no call. */
 function isBlank(request: string): boolean {
 	return request.trim() === "";
@@ -496,6 +522,17 @@ function fillImplied(
  */
 const MAX_READINGS = 10;
 
+/** Today's date from the "today" fact, which the handler writes as a sentence. */
+function todayOf(facts: Facts): string {
+	const today = /\d{4}-\d{2}-\d{2}/.exec(facts.today ?? "")?.[0];
+	if (!today) {
+		throw new TypeError(
+			'justask: a date or amount field needs the "today" fact, with today\'s date as YYYY-MM-DD',
+		);
+	}
+	return today;
+}
+
 /**
  * The parsers' readings as candidates: dates d0, d1..., times t0, t1...,
  * amounts a0, a1..., in the order they appear in the request. A kind with
@@ -507,12 +544,7 @@ function readCandidates(
 	parsers: readonly Parser[],
 	reads: Reads,
 ): CandidateReadings {
-	const today = /\d{4}-\d{2}-\d{2}/.exec(facts.today ?? "")?.[0];
-	if (!today) {
-		throw new TypeError(
-			'justask: a date or amount field needs the "today" fact, with today\'s date as YYYY-MM-DD',
-		);
-	}
+	const today = todayOf(facts);
 	const { dates, times, amounts } = parseRequest(
 		request,
 		{ today, reads, facts },

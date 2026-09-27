@@ -337,6 +337,8 @@ export const spanish: Content = {
 						return `“${reason.text}” se lee de dos maneras, así que el código retuvo el campo sin importar su probabilidad.`;
 					case "period":
 						return `“${reason.text}” es un período, no un día, así que el código retuvo el campo.`;
+					case "after-today":
+						return `“${reason.text}” es después de hoy, y el día de un gasto ya pasó, así que el código retuvo el campo.`;
 					default:
 						return fieldHeldBecause(reason);
 				}

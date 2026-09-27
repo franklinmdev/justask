@@ -971,6 +971,68 @@ describe("ask: card", () => {
 			});
 		});
 
+		it.each([
+			["tomorrow", "Acme lunch tomorrow, $6", "2026-09-23"],
+			["next Monday, one reading", "Acme lunch next Monday, $6", "2026-09-28"],
+		])(
+			"holds a day after today on a field that reads the past, explicit words included (%s), and says so on its candidate (ADR 0008)",
+			async (_, request, day) => {
+				const result = await ask({
+					...base,
+					request,
+					provider: fakeProvider({
+						intent: answer(INTENT, "new_record", 0.97),
+						spent_on: answer(["d0", ...MISSING], "d0", 0.99),
+					}),
+					card: {
+						...expenseCard(),
+						fields: { spent_on: expenseCard().fields.spent_on },
+					},
+				});
+
+				expect(result.card.value).toEqual({});
+				expect(result.card.fields.spent_on.candidates).toEqual([
+					expect.objectContaining({
+						value: expect.objectContaining({ from: day, afterToday: true }),
+					}),
+				]);
+				// Still asked, so the pick is reported.
+				expect(result.card.fields.spent_on.pick?.label).toBe("d0");
+			},
+		);
+
+		it("fills today and the days before it on a field that reads the past, and a day after today on one that reads the future", async () => {
+			const result = await ask({
+				...base,
+				request: "Acme bill from today, due tomorrow",
+				provider: fakeProvider({
+					intent: answer(INTENT, "new_record", 0.97),
+					issued_on: answer(["d0", "d1", ...MISSING], "d0"),
+					due_on: answer(["d0", "d1", ...MISSING], "d1"),
+				}),
+				card: {
+					...billCard(),
+					fields: {
+						issued_on: {
+							kind: "date" as const,
+							reads: "past" as const,
+							description: "the day the bill was issued",
+							gate: 0.8,
+						},
+						...billCard().fields,
+					},
+				},
+			});
+
+			expect(result.card.value).toEqual({
+				issued_on: "2026-09-22",
+				due_on: "2026-09-23",
+			});
+			expect(
+				result.card.fields.due_on.candidates.map(({ value }) => value),
+			).not.toContainEqual(expect.objectContaining({ afterToday: true }));
+		});
+
 		it("holds a date field whose pick is a period, not a day", async () => {
 			const result = await ask({
 				...base,

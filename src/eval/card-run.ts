@@ -2,12 +2,13 @@ import { ask } from "../ask.ts";
 import {
 	type Card,
 	type CardCommand,
+	type CardDateReading,
 	type CardField,
 	type CardFields,
 	INTENT,
 } from "../card.ts";
 import type { NamedPair } from "../named-pair.ts";
-import type { AmountReading, DateReading, TimeReading } from "../parse.ts";
+import type { AmountReading, TimeReading } from "../parse.ts";
 import type { Facts, Provider, ProviderAnswer } from "../provider.ts";
 import { type CardEvalRow, isAmount, isIds } from "./card-set.ts";
 import { ISO_DAY } from "./filter-set.ts";
@@ -30,7 +31,7 @@ type LoggedItem = Described & { implies?: Record<string, string[]> };
 export type LoggedCardField =
 	| { kind: "catalog"; candidates: LoggedItem[] }
 	| { kind: "several"; candidates: Described[] }
-	| { kind: "date"; candidates: (Described & { value: DateReading })[] }
+	| { kind: "date"; candidates: (Described & { value: CardDateReading })[] }
 	| { kind: "time"; candidates: (Described & { value: TimeReading })[] }
 	| { kind: "amount"; candidates: (Described & { value: AmountReading })[] };
 
