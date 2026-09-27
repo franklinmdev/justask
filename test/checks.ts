@@ -23,6 +23,19 @@ export function counter() {
 	return screen.queryByText(/^1 (sentence|frase) /)?.textContent ?? null;
 }
 
+/**
+ * A text matcher for the element whose whole text is the sentence, inline
+ * markup included, such as a label set in code; not its ancestors.
+ */
+export function sentence(text: string | RegExp) {
+	const matches = (content: string | null) =>
+		typeof text === "string" ? content === text : text.test(content ?? "");
+	return (_: string, element: Element | null) =>
+		element !== null &&
+		matches(element.textContent) &&
+		![...element.children].some((child) => matches(child.textContent));
+}
+
 /** The text an element is described by, or "" with none. */
 export function description(element: Element) {
 	return (element.getAttribute("aria-describedby") ?? "")

@@ -58,7 +58,7 @@ export const english: Content = {
 			},
 			minute: {
 				title: "You have used your 20 live requests this minute",
-				body: "Each visitor gets 20 live requests a minute and 200 a day on the demo's key, counted by IP address. They come back in about a minute. Until then every case's recorded run still plays, and a clone of justask runs on your own key.",
+				body: "Each visitor gets 20 live requests a minute and 200 a day on the demo's key, counted by IP address. They come back within a minute. Until then every case's recorded run still plays, and a clone of justask runs on your own key.",
 			},
 			day: {
 				title: "You have used your 200 live requests today",
@@ -94,8 +94,7 @@ export const english: Content = {
 		ambiguous: "Could mean two",
 		nothing: "Nothing to find",
 		empty: "No vendor matches",
-		unanswered:
-			"The request could not be read, so no vendor is shown. Try again.",
+		unanswered: "No answer came back, so no vendor is shown. Try again.",
 		choices: "Which one?",
 		severalFit: "More than one vendor could fit",
 		closest: "Closest",
@@ -195,7 +194,7 @@ export const english: Content = {
 			},
 			empty: "Nothing in that request filters the transactions.",
 			unanswered:
-				"The request could not be read, so the table stays as it was. Try again.",
+				"No answer came back, so the table stays as it was. Try again.",
 			applied: "Applied",
 			appliedFields: (set, held) =>
 				[
@@ -315,7 +314,7 @@ export const english: Content = {
 					.join(" ");
 			},
 			unanswered:
-				"The request could not be read, so the card stays as it was. Fill it in by hand.",
+				"No answer came back, so the card stays as it was. Fill it in by hand.",
 			pickDay: "Pick a day",
 			calendar: {
 				label: "Choose the day",
@@ -377,7 +376,7 @@ export const english: Content = {
 				}
 			},
 			impliedBecause: (vendor, tags) =>
-				`Filled from the vendor: every sale at ${vendor} is tagged ${tags.toLowerCase()}, and no tag's answer said otherwise.`,
+				`Filled from the vendor: every purchase from ${vendor} is tagged ${tags.toLowerCase()}, and no tag's answer said otherwise.`,
 			tagQuestion: (name) => `Tagged ${name.toLowerCase()}?`,
 			yes: "the request asks for it",
 			unresolved: (mark) => `“${mark}” is not the local currency`,

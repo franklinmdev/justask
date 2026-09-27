@@ -175,7 +175,7 @@ describe("a live request past the day's budget", () => {
 
 		expect(
 			await screen.findByRole("heading", {
-				name: "Se agotó el presupuesto de hoy de la demostración",
+				name: "La demo agotó su presupuesto de hoy",
 			}),
 		).toBeDefined();
 		expect(
@@ -228,7 +228,7 @@ describe("a live request while the kill switch is on", () => {
 		{
 			language: "es",
 			box: "Buscar un proveedor",
-			title: "La demostración en vivo está en pausa",
+			title: "La demo en vivo está en pausa",
 			clone: "Clonar justask y usarlo con su propia clave",
 		},
 	])(
@@ -270,7 +270,7 @@ describe("a live request past the visitor's own limit", () => {
 			language: "en",
 			box: english.copy.boxLabel,
 			title: "You have used your 20 live requests this minute",
-			resets: "They come back in about a minute.",
+			resets: "They come back within a minute.",
 			clone: "Clone justask and run it with your own key",
 		},
 		{
@@ -286,7 +286,7 @@ describe("a live request past the visitor's own limit", () => {
 			language: "es",
 			box: "Buscar un proveedor",
 			title: "Usó sus 20 solicitudes en vivo de este minuto",
-			resets: "Vuelven en alrededor de un minuto.",
+			resets: "Vuelven a estar disponibles en menos de un minuto.",
 			clone: "Clonar justask y usarlo con su propia clave",
 		},
 		{

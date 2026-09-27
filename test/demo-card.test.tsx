@@ -246,7 +246,7 @@ function saved(name = "Saved expenses") {
 async function suggest(user: ReturnType<typeof userEvent.setup>, name: string) {
 	await user.click(screen.getByRole("button", { name }));
 	await screen.findByText(
-		/^(Filled:|Nothing filled\.|The request could not|Completado:|Nada completado\.|No se pudo leer)/,
+		/^(Filled:|Nothing filled\.|No answer came back, so the card|Completado:|Nada completado\.|No llegó ninguna respuesta, así que la tarjeta)/,
 	);
 }
 
@@ -642,7 +642,7 @@ describe("the demo's card page", () => {
 			hood: "What happened",
 			tags: "Tags",
 			reason:
-				"Filled from the vendor: every sale at Brightmop Cleaning is tagged office, and no tag's answer said otherwise.",
+				"Filled from the vendor: every purchase from Brightmop Cleaning is tagged office, and no tag's answer said otherwise.",
 			source: "from the vendor",
 			fromRequest: "from the request",
 		},
@@ -654,7 +654,7 @@ describe("the demo's card page", () => {
 			hood: "Qué pasó",
 			tags: "Etiquetas",
 			reason:
-				"Completado desde el proveedor: toda venta de Limpiezas Brisamar lleva la etiqueta oficina, y ninguna respuesta de las etiquetas decía otra cosa.",
+				"Completado desde el proveedor: toda compra a Limpiezas Brisamar lleva la etiqueta oficina, y ninguna respuesta de las etiquetas decía otra cosa.",
 			source: "del proveedor",
 			fromRequest: "de la solicitud",
 		},
@@ -942,7 +942,7 @@ describe("the demo's card page", () => {
 
 		expect(
 			await screen.findByText(
-				"The request could not be read, so the card stays as it was. Fill it in by hand.",
+				"No answer came back, so the card stays as it was. Fill it in by hand.",
 			),
 		).toBeDefined();
 		expect(vendor().value).toBe("larkspur");
@@ -966,7 +966,7 @@ describe("the demo's card page", () => {
 		).toBeDefined();
 		expect(
 			screen.getByText(
-				"The request could not be read, so the card stays as it was. Fill it in by hand.",
+				"No answer came back, so the card stays as it was. Fill it in by hand.",
 			),
 		).toBeDefined();
 		await expectNoAxeViolations(container);
@@ -1192,7 +1192,7 @@ describe("the demo's card page on Cloudflare's CPU limit", () => {
 
 		expect(
 			screen.getByText(
-				"The request could not be read, so the card stays as it was. Fill it in by hand.",
+				"No answer came back, so the card stays as it was. Fill it in by hand.",
 			),
 		).toBeDefined();
 		expect(sent).toHaveLength(2);

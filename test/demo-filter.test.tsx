@@ -803,7 +803,7 @@ describe("the demo's Table case", () => {
 		).toBeDefined();
 		expect(
 			screen.getByText(
-				"The request could not be read, so the table stays as it was. Try again.",
+				"No answer came back, so the table stays as it was. Try again.",
 			),
 		).toBeDefined();
 		expect(
@@ -814,7 +814,7 @@ describe("the demo's Table case", () => {
 		await expectNoAxeViolations(container);
 	});
 
-	it("says the request could not be read in Spanish, not that nothing filters", async () => {
+	it("says no answer came back in Spanish, not that nothing filters", async () => {
 		const { container, user } = renderDemo({
 			provider: failingProvider(new Error("no key")),
 			url: "/?case=table&lang=es",
@@ -824,7 +824,7 @@ describe("the demo's Table case", () => {
 
 		expect(
 			await screen.findByText(
-				"No se pudo leer la solicitud, así que la tabla queda como estaba. Inténtelo de nuevo.",
+				"No llegó ninguna respuesta, así que la tabla queda como estaba. Inténtelo de nuevo.",
 			),
 		).toBeDefined();
 		expect(
@@ -841,7 +841,7 @@ describe("the demo's Table case", () => {
 			hood: "What happened",
 			failed: "Failed",
 			reason: "The server could not be reached: offline",
-			line: "The request could not be read, so the table stays as it was. Try again.",
+			line: "No answer came back, so the table stays as it was. Try again.",
 		},
 		{
 			lang: "es",
@@ -849,7 +849,7 @@ describe("the demo's Table case", () => {
 			hood: "Qué pasó",
 			failed: "Falló",
 			reason: "No se pudo contactar al servidor: offline",
-			line: "No se pudo leer la solicitud, así que la tabla queda como estaba. Inténtelo de nuevo.",
+			line: "No llegó ninguna respuesta, así que la tabla queda como estaba. Inténtelo de nuevo.",
 		},
 	])(
 		"names the server, not the search's, when it cannot be reached ($lang)",

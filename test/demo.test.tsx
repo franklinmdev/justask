@@ -14,7 +14,13 @@ import { createDemoHandler } from "../demo/server/handler.ts";
 import { App } from "../demo/src/app.tsx";
 import { english } from "../demo/src/content/en.ts";
 import { spanish } from "../demo/src/content/es.ts";
-import { counter, expectNoAxeViolations, figure, warmUp } from "./checks.ts";
+import {
+	counter,
+	expectNoAxeViolations,
+	figure,
+	sentence,
+	warmUp,
+} from "./checks.ts";
 import {
 	type FakeAnswers,
 	failingProvider,
@@ -184,7 +190,9 @@ describe("the demo's Search case", () => {
 		expect(state.getByText("Filled")).toBeDefined();
 		expect(
 			state.getByText(
-				"Larkspur Catering won, and none (0.01) and several (0.00) stayed below the gate (0.15).",
+				sentence(
+					"Larkspur Catering won, and none (0.01) and several (0.00) stayed below the gate (0.15).",
+				),
 			),
 		).toBeDefined();
 		const row = state.getByRole("row", { name: /Larkspur Catering/ });
@@ -348,7 +356,9 @@ describe("the demo's Search case", () => {
 		expect(state.getByText("Held")).toBeDefined();
 		expect(
 			state.getByText(
-				"several (0.43) reached the gate (0.15), so nothing is shown.",
+				sentence(
+					"several (0.43) reached the gate (0.15), so nothing is shown.",
+				),
 			),
 		).toBeDefined();
 		await expectNoAxeViolations(container);
@@ -414,7 +424,7 @@ describe("the demo's Search case", () => {
 		expectNothingChosen("Closest");
 		expect(
 			panel().getByText(
-				"none (0.61) reached the gate (0.15), so nothing is shown.",
+				sentence("none (0.61) reached the gate (0.15), so nothing is shown."),
 			),
 		).toBeDefined();
 	});
@@ -431,7 +441,9 @@ describe("the demo's Search case", () => {
 		expect(screen.queryByRole("list", { name: "Which one?" })).toBeNull();
 		expect(
 			panel().getByText(
-				"several (0.99) reached the gate (0.15), so nothing is shown.",
+				sentence(
+					"several (0.99) reached the gate (0.15), so nothing is shown.",
+				),
 			),
 		).toBeDefined();
 	});
@@ -448,7 +460,7 @@ describe("the demo's Search case", () => {
 		expect(screen.queryByRole("list", { name: "Which one?" })).toBeNull();
 		expect(
 			panel().getByText(
-				"none (0.12) tied for first place, so nothing is shown.",
+				sentence("none (0.12) tied for first place, so nothing is shown."),
 			),
 		).toBeDefined();
 	});
@@ -501,7 +513,7 @@ describe("the demo's Search case", () => {
 		expect(await choiceNames("Which one?")).toHaveLength(7);
 		expect(
 			panel().getByText(
-				"The provider picked several (0.13), so nothing is shown.",
+				sentence("The provider picked several (0.13), so nothing is shown."),
 			),
 		).toBeDefined();
 	});
@@ -518,7 +530,9 @@ describe("the demo's Search case", () => {
 		const state = panel();
 		expect(state.getByText("Held")).toBeDefined();
 		expect(
-			state.getByText("The provider picked none (0.13), so nothing is shown."),
+			state.getByText(
+				sentence("The provider picked none (0.13), so nothing is shown."),
+			),
 		).toBeDefined();
 	});
 
@@ -656,7 +670,7 @@ describe("the demo's Search case", () => {
 		await waitFor(() =>
 			expect(
 				screen.getByText(
-					"The request could not be read, so no vendor is shown. Try again.",
+					"No answer came back, so no vendor is shown. Try again.",
 				),
 			).toBeDefined(),
 		);
@@ -666,7 +680,25 @@ describe("the demo's Search case", () => {
 		await expectNoAxeViolations(container);
 	});
 
-	it("says the request could not be read in Spanish, not that no vendor matches", async () => {
+	it("sets the labels none and several apart as code in a Spanish sentence", async () => {
+		const { user } = renderDemo({ url: "/?case=search&lang=es" });
+
+		await user.click(screen.getByRole("button", { name: "los del catering" }));
+
+		const reason = await panel("Qué pasó").findByText(
+			sentence(
+				/^Ganó .+; las etiquetas none \(0\.02\) y several \(0\.00\) quedaron por debajo del umbral \(0\.15\)\.$/,
+			),
+		);
+		expect(
+			[...reason.querySelectorAll("code")].map((code) => code.textContent),
+		).toEqual(["none", "several"]);
+		expect(
+			panel("Qué pasó").getByText(sentence("Umbral sobre none y several")),
+		).toBeDefined();
+	});
+
+	it("says no answer came back in Spanish, not that no vendor matches", async () => {
 		const { container, user } = renderDemo({
 			provider: failingProvider(new Error("no key")),
 			url: "/?case=search&lang=es",
@@ -676,7 +708,7 @@ describe("the demo's Search case", () => {
 
 		expect(
 			await screen.findByText(
-				"No se pudo leer la solicitud, así que no se muestra ningún proveedor. Inténtelo de nuevo.",
+				"No llegó ninguna respuesta, así que no se muestra ningún proveedor. Inténtelo de nuevo.",
 			),
 		).toBeDefined();
 		expect(screen.queryByText("Ningún proveedor coincide")).toBeNull();
