@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import {
 	type Candidate,
@@ -341,6 +341,22 @@ describe("useCard and its pieces", () => {
 			spent_on: "2026-09-21",
 			total: { value: 42, currency: "USD" },
 		});
+	});
+
+	it("keeps both fields when two are set in one event (#212)", async () => {
+		const { seen } = renderCard({ provider: fakeProvider(fills) });
+
+		act(() => {
+			seen.card?.set("vendor", vendors[1]?.value);
+			seen.card?.set("total", { value: 12, currency: "USD" });
+		});
+
+		expect(seen.card?.value).toEqual({
+			vendor: { id: "acme", name: "Acme" },
+			total: { value: 12, currency: "USD" },
+		});
+		expect(seen.card?.filledBy("vendor")).toBe("person");
+		expect(seen.card?.filledBy("total")).toBe("person");
 	});
 
 	it("tells what the answer filled from what the person filled, for the host's styling", async () => {

@@ -177,16 +177,19 @@ export function useCard<F extends CardFields>({
 		filledBy: (name) => (name in draft.value ? (draft.by[name] ?? null) : null),
 		set: (name, next) => {
 			setSaved(null);
-			const nextValue = { ...draft.value };
-			const by = { ...draft.by };
-			if (next === undefined) {
-				delete nextValue[name];
-				delete by[name];
-			} else {
-				nextValue[name] = next;
-				by[name] = "person";
-			}
-			setKept({ answer, value: nextValue, by });
+			// From the latest card, so two sets in one event both apply (#212).
+			setKept((latest) => {
+				const nextValue = { ...latest.value };
+				const by = { ...latest.by };
+				if (next === undefined) {
+					delete nextValue[name];
+					delete by[name];
+				} else {
+					nextValue[name] = next;
+					by[name] = "person";
+				}
+				return { ...latest, value: nextValue, by };
+			});
 		},
 		ready,
 		confirm: () => {

@@ -108,7 +108,12 @@ export function useFilter<F extends Fields>({
 		value,
 		error: answer?.error ?? null,
 		answered: current,
-		remove: (name) => setRemoved({ answer, names: [...dropped, name] }),
+		// From the latest removals, so two in one event both apply (#212).
+		remove: (name) =>
+			setRemoved((latest) => ({
+				answer,
+				names: [...(latest.answer === answer ? latest.names : []), name],
+			})),
 		ready,
 		confirm: () => {
 			if (!ready) return;

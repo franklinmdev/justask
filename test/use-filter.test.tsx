@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import {
 	type AmountRange,
@@ -225,6 +225,20 @@ describe("useFilter and its pieces", () => {
 			vendor: acme.value,
 			amount: { min: 500, currency: "USD" },
 		});
+	});
+
+	it("drops both filters when two are removed in one event (#212)", async () => {
+		const { seen, user } = renderFilter({ provider: fakeProvider(fills) });
+
+		await user.type(screen.getByRole("searchbox"), "acme invoices over $500");
+		await screen.findByText("Vendor: Acme Supplies");
+		act(() => {
+			seen.filter?.remove("vendor");
+			seen.filter?.remove("amount");
+		});
+
+		expect(seen.filter?.value).toEqual({});
+		expect(seen.filter?.ready).toBe(false);
 	});
 
 	it("leaves a held field out, exactly as one the request never mentioned", async () => {
