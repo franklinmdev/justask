@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type {
 	HandlerBadRequest,
 	HandlerError,
@@ -56,15 +56,19 @@ export function useRequest<R>({
 	const pending = useRef<string | null>(null);
 	// The request of the pause or call now pending, for the cleanup to keep.
 	const due = useRef<string | null>(null);
+	// The latest render's options, for a call a pause or an effect makes later.
+	// A ref rather than `useEffectEvent`, which React 19.0 and 19.1 lack (#175).
+	const latest = useRef({ endpoint, timing, fetchImpl, flow });
+	useLayoutEffect(() => {
+		latest.current = { endpoint, timing, fetchImpl, flow };
+	});
 
-	// This render's `call`, with its `fetch` and endpoint, for the effect below.
-	const resend = useEffectEvent((text: string) => call(text));
-
+	// biome-ignore lint/correctness/useExhaustiveDependencies: runs on mount and when a hidden <Activity> shows again, never per render; `call` reads the latest options from `latest`.
 	useEffect(() => {
 		// A hidden <Activity> shown again runs this: the call it cut short is
 		// made, unless an earlier effect already started a newer one.
 		if (pending.current !== null && due.current === null) {
-			resend(pending.current);
+			call(pending.current);
 		}
 		pending.current = null;
 		return () => {
@@ -92,6 +96,7 @@ export function useRequest<R>({
 		inFlight.current = controller;
 		due.current = text;
 		setLoading(true);
+		const { endpoint, fetchImpl, flow } = latest.current;
 		post<R>(fetchImpl ?? fetch, endpoint, flow, text, controller.signal).then(
 			(next) => {
 				if (controller.signal.aborted) return;
@@ -111,7 +116,11 @@ export function useRequest<R>({
 			clearTimeout(timer.current);
 			due.current = text;
 			setLoading(true);
-			timer.current = setTimeout(() => call(text), timing.debounceMs);
+			timer.current = setTimeout(() => {
+				// A host that turned to Enter during the pause wants no call now.
+				if (latest.current.timing.on === "type") call(text);
+				else replaceRequest(text);
+			}, timing.debounceMs);
 		}
 	}
 
