@@ -22,3 +22,5 @@ Decided by the owner on 2026-09-24, after card round 8 (#97) met no transport fa
 3. **Its mechanics are covered by the stand-in provider tests** (`test/ask.test.ts`, "when the provider is unavailable (ADR 0013)"; `test/transport.test.ts`), which fail a first call on purpose and so cover what a verdict run cannot choose to meet.
 
 This replaces "the next verdict round measures it" above.
+
+Amended for #176: a caller's `signal` that aborts, such as a browser that went away, also stops the second call, and `ask` rejects with its reason. Nobody waits for that answer, so it is not paid for.

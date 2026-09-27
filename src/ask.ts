@@ -137,10 +137,11 @@ const SEARCH = "search";
 /**
  * Resolves a request through the host app's own state: code finds the
  * candidates, the provider picks in one call, code builds the result (ADR
- * 0002). A blank request holds everything with no call. A search resolves to one item or none; a filter to the filter object
- * its table understands; a card to a new record, or to nothing when the
- * request asks for none. A failed or late provider holds everything; an
- * unavailable one is called once more within the same timeout (ADR 0013).
+ * 0002). A search resolves to one item or none; a filter to the filter
+ * object its table understands; a card to a new record, or to nothing when
+ * the request asks for none. A blank request holds everything with no call.
+ * A failed or late provider holds everything; an unavailable one is called
+ * once more within the same timeout (ADR 0013).
  */
 export function ask<T>(input: AskInput<T>): Promise<AskResult<T>>;
 // The filter's overload stays last: a call that matches none reports against it.

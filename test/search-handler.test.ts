@@ -57,9 +57,11 @@ function post(body: unknown) {
 const asked = { request: "invoices from Acme", timeZone: "UTC" };
 
 // The clock is the one stub beside the provider: today must be fixed to test
-// midnight. setSystemTime alone fakes Date and leaves the timers real.
+// midnight. setSystemTime alone fakes Date and leaves the timers real. The
+// default log's tests also spy on console.error, restored here even when one fails.
 afterEach(() => {
 	vi.useRealTimers();
+	vi.restoreAllMocks();
 });
 
 describe("createSearchHandler", () => {
@@ -280,7 +282,6 @@ describe("createSearchHandler", () => {
 
 		expect((await response.json()).error.kind).toBe("provider");
 		expect(log).toHaveBeenCalledWith("justask: No API key was provided", cause);
-		log.mockRestore();
 	});
 
 	it("still answers the held result when onError throws, and logs what it threw", async () => {
@@ -300,7 +301,6 @@ describe("createSearchHandler", () => {
 			error: { kind: "provider", message: "The provider failed" },
 		});
 		expect(log).toHaveBeenCalledWith("justask: onError threw", broke);
-		log.mockRestore();
 	});
 
 	it("rejects when the host's shortlist throws, for the host's server to answer as its own error", async () => {
@@ -329,7 +329,6 @@ describe("createSearchHandler", () => {
 		})(post(asked));
 
 		expect(log).not.toHaveBeenCalled();
-		log.mockRestore();
 	});
 
 	it("holds everything and sends a timeout error when the provider outlasts the timeout", async () => {
