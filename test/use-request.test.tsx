@@ -197,4 +197,29 @@ describe("the hooks' request timing", () => {
 		calls[1]?.open();
 		await waitFor(() => expect(result.current.answered).toBe(true));
 	});
+
+	it("keeps the item and makes no call when only surrounding spaces change (#216)", async () => {
+		const { calls, fetchImpl } = gatedFetch();
+		const { result } = renderSearch({ fetch: fetchImpl });
+		act(() => result.current.setRequest("acme"));
+		await waitFor(() => expect(calls).toHaveLength(1));
+		calls[0]?.open();
+		await waitFor(() =>
+			expect(result.current.item?.name).toBe("Acme Supplies"),
+		);
+
+		act(() => result.current.setRequest("acme "));
+		expect(result.current.item?.name).toBe("Acme Supplies");
+		expect(result.current.loading).toBe(false);
+		await act(() => pause(DEBOUNCE_MS * 2));
+		expect(calls).toHaveLength(1);
+
+		// Back to the answered text mid pause: the pause is dropped.
+		act(() => result.current.setRequest("acme t"));
+		act(() => result.current.setRequest(" acme"));
+		await act(() => pause(DEBOUNCE_MS * 2));
+		expect(calls).toHaveLength(1);
+		expect(result.current.item?.name).toBe("Acme Supplies");
+		expect(result.current.loading).toBe(false);
+	});
 });

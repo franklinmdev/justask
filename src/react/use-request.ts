@@ -59,6 +59,8 @@ export function useRequest<R>({
 	} | null>(null);
 	// The request whose pause or call a hidden <Activity> cut short.
 	const pending = useRef<string | null>(null);
+	// The request `answer` is for, read by a `setRequest` in the same event.
+	const answered = useRef<string | null>(null);
 	// The latest render's options, for a call a pause or an effect makes later.
 	// A ref rather than `useEffectEvent`, which React 19.0 and 19.1 lack (#175).
 	const latest = useRef({ endpoint, timing, fetchImpl, flow });
@@ -109,6 +111,7 @@ export function useRequest<R>({
 		stopPause();
 		abortCall();
 		if (isBlank(text)) {
+			answered.current = null;
 			setAnswer(null);
 			setLoading(false);
 			return;
@@ -121,6 +124,7 @@ export function useRequest<R>({
 			(next) => {
 				if (controller.signal.aborted) return;
 				inFlight.current = null;
+				answered.current = text;
 				setAnswer({ ...next, request: text });
 				setLoading(due() !== null);
 			},
@@ -132,6 +136,17 @@ export function useRequest<R>({
 		if (isBlank(text)) {
 			call(text);
 		} else if (timing.on === "type") {
+			// Surrounding spaces ask nothing new (#216): the pause or call already
+			// due for the same words goes on, and back at the answered words no
+			// call is needed.
+			const asked = due() ?? answered.current;
+			if (asked !== null && sameRequest(asked, text)) return;
+			if (answered.current !== null && sameRequest(answered.current, text)) {
+				stopPause();
+				abortCall();
+				setLoading(false);
+				return;
+			}
 			pause(text, timing.debounceMs, () => {
 				// A host that turned to Enter during the pause wants no call now.
 				if (latest.current.timing.on === "type") call(text);
@@ -166,13 +181,18 @@ export function useRequest<R>({
 		submit: () => call(request),
 		loading,
 		answer,
-		/** True when `answer` is for the request in the box. */
-		current: answer !== null && answer.request === request,
+		/** True when `answer` is for the request in the box, surrounding spaces aside. */
+		current: answer !== null && sameRequest(answer.request, request),
 	};
 }
 
 function isBlank(text: string): boolean {
 	return text.trim() === "";
+}
+
+/** Two requests that differ only in surrounding spaces ask the same. */
+function sameRequest(a: string, b: string): boolean {
+	return a.trim() === b.trim();
 }
 
 async function post<R>(
