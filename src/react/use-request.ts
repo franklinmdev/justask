@@ -51,11 +51,14 @@ export function useRequest<R>({
 	const [answer, setAnswer] = useState<Answered<R> | null>(null);
 	const [loading, setLoading] = useState(false);
 	const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-	const inFlight = useRef<AbortController | null>(null);
+	// The request the running pause will call for, or null.
+	const paused = useRef<string | null>(null);
+	const inFlight = useRef<{
+		controller: AbortController;
+		text: string;
+	} | null>(null);
 	// The request whose pause or call a hidden <Activity> cut short.
 	const pending = useRef<string | null>(null);
-	// The request of the pause or call now pending, for the cleanup to keep.
-	const due = useRef<string | null>(null);
 	// The latest render's options, for a call a pause or an effect makes later.
 	// A ref rather than `useEffectEvent`, which React 19.0 and 19.1 lack (#175).
 	const latest = useRef({ endpoint, timing, fetchImpl, flow });
@@ -63,19 +66,36 @@ export function useRequest<R>({
 		latest.current = { endpoint, timing, fetchImpl, flow };
 	});
 
+	/**
+	 * The newest request still waiting for its answer: the running pause's,
+	 * else the call's on its way. A stale answer landing leaves a pause due.
+	 */
+	function due(): string | null {
+		return paused.current ?? inFlight.current?.text ?? null;
+	}
+
+	function stopPause() {
+		clearTimeout(timer.current);
+		paused.current = null;
+	}
+
+	function abortCall() {
+		inFlight.current?.controller.abort();
+		inFlight.current = null;
+	}
+
 	// biome-ignore lint/correctness/useExhaustiveDependencies: runs on mount and when a hidden <Activity> shows again, never per render; `call` reads the latest options from `latest`.
 	useEffect(() => {
 		// A hidden <Activity> shown again runs this: the call it cut short is
 		// made, unless an earlier effect already started a newer one.
-		if (pending.current !== null && due.current === null) {
+		if (pending.current !== null && due() === null) {
 			call(pending.current);
 		}
 		pending.current = null;
 		return () => {
-			pending.current = due.current;
-			due.current = null;
-			clearTimeout(timer.current);
-			inFlight.current?.abort();
+			pending.current = due();
+			stopPause();
+			abortCall();
 			// A hidden <Activity> keeps this state, and its aborted call never lands.
 			setLoading(false);
 		};
@@ -83,27 +103,23 @@ export function useRequest<R>({
 
 	/** Starts a call for `text`, dropping any pending or earlier one. */
 	function call(text: string) {
-		clearTimeout(timer.current);
-		inFlight.current?.abort();
-		inFlight.current = null;
-		due.current = null;
+		stopPause();
+		abortCall();
 		if (isBlank(text)) {
 			setAnswer(null);
 			setLoading(false);
 			return;
 		}
 		const controller = new AbortController();
-		inFlight.current = controller;
-		due.current = text;
+		inFlight.current = { controller, text };
 		setLoading(true);
 		const { endpoint, fetchImpl, flow } = latest.current;
 		post<R>(fetchImpl ?? fetch, endpoint, flow, text, controller.signal).then(
 			(next) => {
 				if (controller.signal.aborted) return;
 				inFlight.current = null;
-				due.current = null;
 				setAnswer({ ...next, request: text });
-				setLoading(false);
+				setLoading(due() !== null);
 			},
 		);
 	}
@@ -114,22 +130,21 @@ export function useRequest<R>({
 			call(text);
 		} else if (timing.on === "type") {
 			clearTimeout(timer.current);
-			due.current = text;
+			paused.current = text;
 			setLoading(true);
 			timer.current = setTimeout(() => {
+				paused.current = null;
 				// A host that turned to Enter during the pause wants no call now.
 				if (latest.current.timing.on === "type") call(text);
-				else replaceRequest(text);
+				else setLoading(due() !== null);
 			}, timing.debounceMs);
 		}
 	}
 
 	/** Puts `text` in the box with no call, dropping any pending one; the last answer stays. */
 	function replaceRequest(text: string) {
-		clearTimeout(timer.current);
-		inFlight.current?.abort();
-		inFlight.current = null;
-		due.current = null;
+		stopPause();
+		abortCall();
 		setRequestState(text);
 		setLoading(false);
 	}
