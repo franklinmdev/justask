@@ -65,15 +65,20 @@ export type CardStatusProps<F extends CardFields> = Omit<
 	ComponentPropsWithoutRef<"p">,
 	"role" | "children"
 > & {
-	card: Pick<UseCard<F>, "answered" | "error" | "loading" | "result">;
+	card: Pick<
+		UseCard<F>,
+		"answered" | "error" | "loading" | "result" | "landed"
+	>;
 	/**
 	 * What is announced once an answer comes back, in the host app's own
-	 * words: the fields it filled and the fields that wait for the person, each
+	 * words: the fields it filled, the fields that wait for the person, and
+	 * the fields it left as the person set them while it was on its way, each
 	 * in the order they are declared.
 	 */
 	announce: (fields: {
 		filled: (keyof F & string)[];
 		waiting: (keyof F & string)[];
+		kept: (keyof F & string)[];
 	}) => string;
 	/**
 	 * What is announced when the answer failed: the provider failed or ran out
@@ -102,10 +107,13 @@ export function CardStatus<F extends CardFields>({
 		text = unanswered;
 	} else if (card.answered && result) {
 		const names = Object.keys(result.fields) as (keyof F & string)[];
-		const filled = names.filter((name) => name in result.value);
+		const { filled, kept } = card.landed;
 		text = announce({
 			filled,
-			waiting: names.filter((name) => !filled.includes(name)),
+			waiting: names.filter(
+				(name) => !filled.includes(name) && !kept.includes(name),
+			),
+			kept,
 		});
 	}
 	return (

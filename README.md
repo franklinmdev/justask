@@ -63,6 +63,8 @@ It answers:
 - `499` with no body when the browser goes away mid call: the request's `signal` aborts the provider call, so an answer nobody reads is not paid for to the end. `ask` takes the same `signal` and rejects with its reason. On Cloudflare Workers the incoming request's `signal` fires only with the `enable_request_signal` compatibility flag.
 - A rejection, not a response, when the host's own code throws: a shortlist that fails, such as a database that is down. The host's server answers it as it answers its own errors, so its message stays on the server. An `onError` that throws is logged and the held `200` still goes out.
 
+In React, each hook's `error` tells these apart by `kind`, so the host can word each one: `provider` and `timeout` from a `200`, `request` for a `400`, `too-large` for a `413`, `unsupported` for a `415`, and for statuses the host's own server gives, `rate-limited` for a `429`, with `retryAfterMs` read from its `Retry-After` (seconds or a date; null without one), and `server` for a `5xx`, with its `status`. Those two carry the host's own message when its body has one (`{ error: { message } }`, `{ error: "..." }`, `{ message }`, or a `text/plain` body), and a fixed one otherwise. A handler that cannot be reached, answers any other status, or answers a body that is not its flow's (another flow's handler, a sign-in page) gives `network`. A host that serves the handler from another origin lists `Retry-After` in `Access-Control-Expose-Headers`, or the browser hides it.
+
 A date, time or amount field weighs at most 10 readings of its kind: a request with more, such as a pasted list of numbers, gives that kind none, and its fields are held without a question.
 
 ### What leaves the server on each call
@@ -236,7 +238,7 @@ const { card } = await ask({
 
 `createCardHandler` takes the same `provider`, `timeoutMs`, `facts` and `onError` as the other handlers, plus the `card` declaration, and answers `200` with `{ card, error? }`: the record in `card.value`, the intent question's pick, its gate and whether it passes in `card.intent`, and every field's candidates, picks and gate in `card.fields`.
 
-`useCard` from `justask/react` drives it from the host app's markup. It calls when the person presses Enter, unless `timing` says `{ on: "type", debounceMs }`. A successful answer starts the card over: the fields it filled, the held ones empty. A failed one leaves the card as it was, the person's changes included, and says why in `card.error`. The person fills or changes any field through `set`, and `onConfirm` receives the card only on Confirm. Saving and undo are the host app's: after Confirm the box and the card empty for the next record and the undo slot opens, and the host's undo control takes the record back its own way, then calls `card.restore()` to put the card back as it was.
+`useCard` from `justask/react` drives it from the host app's markup. It calls when the person presses Enter, unless `timing` says `{ on: "type", debounceMs }`. A successful answer starts the card over: the fields it filled, the held ones empty. A field the person set or emptied after the call went out, pressing Enter and then picking the vendor by hand, or during the pause on `type` timing, keeps what the person gave it. A field set before that is the answer's to fill, since the person asked again after setting it. A failed one leaves the card as it was, the person's changes included, and says why in `card.error`. The person fills or changes any field through `set`, and `onConfirm` receives the card only on Confirm. Saving and undo are the host app's: after Confirm the box and the card empty for the next record and the undo slot opens, and the host's undo control takes the record back its own way, then calls `card.restore()` to put the card back as it was.
 
 ```tsx
 const card = useCard<typeof expense.fields>({
@@ -260,7 +262,7 @@ const card = useCard<typeof expense.fields>({
 </CardUndo>
 ```
 
-The pieces are unstyled. `CardEntry` wraps the host's own control for one field and passes it `{ value, set, filledBy }`. It sets `data-empty` on an empty field, held or never mentioned alike, and `data-filled-by="answer"` or `"person"` on a filled one. `CardStatus` is a polite live region that says once per answer which fields were filled and which wait for the person, in the words `announce` gives, or says `unanswered` when the answer failed (the provider failed or ran out of time, or the handler could not be reached or refused the request). Filling the card does not change it. `CardConfirm` stays focusable with `aria-disabled` while there is nothing to confirm or an answer is on its way. `CardUndo` is a polite live region that shows its children from Confirm until the person types or fills a field again. Place them in this order, box, status, entries, Confirm, undo, so Tab follows the card. When the undo control disappears after `restore`, the host moves the focus, for example back to the box.
+The pieces are unstyled. `CardEntry` wraps the host's own control for one field and passes it `{ value, set, filledBy }`. It sets `data-empty` on an empty field, held or never mentioned alike, and `data-filled-by="answer"` or `"person"` on a filled one. `CardStatus` is a polite live region that says once per answer which fields were filled, which wait for the person, and which it kept as the person set them while it was on its way, in the words `announce` gives (`card.landed` holds the same), or says `unanswered` when the answer failed (the provider failed or ran out of time, or the handler could not be reached or refused the request). Filling the card does not change it. `CardConfirm` stays focusable with `aria-disabled` while there is nothing to confirm or an answer is on its way. `CardUndo` is a polite live region that shows its children from Confirm until the person types or fills a field again. Place them in this order, box, status, entries, Confirm, undo, so Tab follows the card. When the undo control disappears after `restore`, the host moves the focus, for example back to the box.
 
 A failed provider fills nothing and takes nothing away, and the card keeps working by hand.
 
@@ -354,6 +356,14 @@ To make one real Jev call by hand and see its latency and cost:
 ```sh
 node --conditions=source scripts/jev-call.ts "invoices from Acme"
 ```
+
+`justask/react` takes any React 19 (`"react": "^19.0.0"`), but the tests run on the lockfile's React only. To run the packed package on another one, as CI does for 19.0.0 and the newest 19.1, build first:
+
+```sh
+pnpm build && scripts/react-peer.sh 19.0.0
+```
+
+It packs the package, installs it in a temporary project with that React, renders every piece on the server and makes one call per hook in jsdom, with no real provider.
 
 ## License
 
