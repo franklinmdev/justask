@@ -44,6 +44,8 @@ export type FilterRunRow = FilterEvalRow & {
 	answers: ProviderAnswer;
 	/** Per field, the named pair that held it whatever its pick (ADR 0011); absent when none did, and from logs written before it. */
 	pairs?: Record<string, NamedPair>;
+	/** The role marker that held every field whatever its pick (ADR 0015); absent when none did, and from logs written before it. */
+	marker?: string;
 	/** The whole pipeline, parsing and shortlists included. */
 	latencyMs: number;
 	/** False when no field had a candidate, so the provider was never asked. */
@@ -183,6 +185,7 @@ async function runRow<F extends Fields>(
 		fields,
 		answers: error ? {} : calls.answers(),
 		...(Object.keys(pairs).length > 0 && { pairs }),
+		...(result.marker && { marker: result.marker }),
 		latencyMs,
 		...calls.logged({ costUsd, error }),
 	};

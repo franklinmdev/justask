@@ -554,6 +554,19 @@ describe("ask: search", () => {
 			expect(search.pair?.ids).toEqual(["acme", "northwind"]);
 		});
 
+		it.each([
+			["a slash", "the Acme/Northwind invoice"],
+			["a comma alone", "the Acme, Northwind invoice"],
+		])(
+			"holds on %s between two candidates, as on a card (#185)",
+			async (_, request) => {
+				const { search } = await find(request);
+
+				expect(search.item).toBeNull();
+				expect(search.pair?.ids).toEqual(["acme", "northwind"]);
+			},
+		);
+
 		it("fills as before when the request names one candidate, or the search declares no joiners", async () => {
 			const one = await find("the Acme or the other invoice");
 			const undeclared = await find("the Acme or Northwind invoice", null);

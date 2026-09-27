@@ -32,6 +32,8 @@ function fieldHeldBecause(reason: FieldHeldReason): string {
 			return "Las elecciones no forman un solo filtro, así que el código retuvo el campo.";
 		case "pair":
 			return `La solicitud nombra dos candidatos (“${reason.text}”), así que el código retuvo el campo sin importar la elección.`;
+		case "marker":
+			return `La solicitud habla como el sistema o un administrador (“${reason.text}”), no como la persona, así que el código retuvo el campo sin importar la elección.`;
 	}
 }
 
@@ -353,6 +355,8 @@ export const spanish: Content = {
 						return "No llegó respuesta, así que todos los campos quedan retenidos.";
 					case "command":
 						return `La solicitud actúa sobre un gasto ya registrado (“${reason.verb}”, “${reason.reference}”), así que el código retuvo todos los campos sin importar la elección.`;
+					case "marker":
+						return `La solicitud habla como el sistema o un administrador (“${reason.text}”), no como la persona, así que el código retuvo todos los campos sin importar la elección.`;
 				}
 			},
 			heldBecause: (reason) => {
@@ -365,6 +369,10 @@ export const spanish: Content = {
 						return `“${reason.text}” se lee de dos maneras, así que el código retuvo el campo sin importar su probabilidad.`;
 					case "period":
 						return `“${reason.text}” es un período, no un día, así que el código retuvo el campo.`;
+					case "negated":
+						return `La solicitud dice que no fue este proveedor (“${reason.text}”), así que el código retuvo el campo sin importar la elección.`;
+					case "after-today":
+						return `“${reason.text}” es después de hoy, y el día de un gasto ya pasó, así que el código retuvo el campo.`;
 					default:
 						return fieldHeldBecause(reason);
 				}
@@ -630,7 +638,11 @@ export const spanish: Content = {
 			"las facturas",
 		],
 	},
-	joiners: { or: ["o", "u"], and: ["y", "e"] },
+	joiners: { or: ["o", "u", "vs", "versus"], and: ["y", "e"] },
+	cardNegations: {
+		before: ["no", "no fue", "no era", "no es", "nunca", "ni"],
+		after: ["no fue", "no era", "no es"],
+	},
 
 	cardSuggestions: {
 		fills: [

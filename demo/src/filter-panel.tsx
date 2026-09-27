@@ -64,17 +64,19 @@ function unresolvedOf(
 }
 
 /**
- * Why a field is held, read the way the code holds it: no candidates, a named
- * pair, no answer, a tie, a missing label, a pick below the gate, and last the
- * picks that do not make one filter, such as two numbers both claiming the
- * minimum.
+ * Why a field is held, read the way the code holds it: no candidates, a role
+ * marker in the request, a named pair, no answer, a tie, a missing label, a
+ * pick below the gate, and last the picks that do not make one filter, such
+ * as two numbers both claiming the minimum.
  */
 function heldReasonOf(
 	result: FieldResult<CatalogField<unknown>> | ParsedFieldResult<unknown>,
 	unresolved: string | undefined,
+	marker: string | undefined,
 	format: Format,
 ): FieldHeldReason {
 	if (result.candidates.length === 0) return { kind: "no-candidates" };
+	if (marker) return { kind: "marker", text: marker };
 	if ("pair" in result && result.pair) {
 		return { kind: "pair", text: result.pair.text };
 	}
@@ -300,7 +302,12 @@ function FieldReadout({
 					: copy.filter.heldBecause(
 							failed
 								? { kind: "failed" }
-								: heldReasonOf(field, unresolvedOf(name, result), format),
+								: heldReasonOf(
+										field,
+										unresolvedOf(name, result),
+										result.marker,
+										format,
+									),
 						)}
 			</p>
 			{readouts.map((readout) => (

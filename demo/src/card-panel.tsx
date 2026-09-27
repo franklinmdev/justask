@@ -21,11 +21,12 @@ function intentReasonOf(
 	failed: boolean,
 	format: Format,
 ): IntentReason {
-	const { pick, probabilities, gate, command } = result.intent;
+	const { pick, probabilities, gate, command, marker } = result.intent;
 	if (failed || Object.keys(probabilities).length === 0) {
 		return { kind: "failed" };
 	}
 	if (command) return { kind: "command", ...command };
+	if (marker) return { kind: "marker", text: marker };
 	if (!pick) return { kind: "tie" };
 	if (pick.label === "not_mentioned") return { kind: "not-mentioned" };
 	if (pick.label === "not_available") return { kind: "not-available" };
@@ -40,10 +41,10 @@ function intentReasonOf(
 
 /**
  * Why a card field is held, read the way the code holds it: no candidates,
- * a request that asks for no new expense, a named pair, no answer, a tie, a
- * missing label, then a picked reading the code refuses (two ways to read
- * it, a currency that is not the local one, a period), and last a pick below
- * the gate.
+ * a request that asks for no new expense, a named pair, a pick the request
+ * names only negated, no answer, a tie, a missing label, then a picked
+ * reading the code refuses (two ways to read it, a currency that is not the
+ * local one, a period, a day after today), and last a pick below the gate.
  */
 function heldReasonOf(
 	name: ExpenseName,
@@ -55,6 +56,10 @@ function heldReasonOf(
 	if (!result.intent.passes) return { kind: "not-a-record" };
 	if ("pair" in field && field.pair) {
 		return { kind: "pair", text: field.pair.text };
+	}
+	if ("negated" in field) {
+		const negated = field.negated?.find(({ id }) => id === field.pick?.label);
+		if (negated) return { kind: "negated", text: negated.text };
 	}
 	const belowGate = (probability: number) => ({
 		kind: "below-gate" as const,
@@ -87,6 +92,7 @@ function heldReasonOf(
 		const day = result.fields.spent_on.candidates.find(picked)?.value;
 		if (day?.ambiguous) return { kind: "ambiguous", text: day.text };
 		if (day && day.from !== day.to) return { kind: "period", text: day.text };
+		if (day?.afterToday) return { kind: "after-today", text: day.text };
 	}
 	if (name === "total") {
 		const amount = result.fields.total.candidates.find(picked)?.value;

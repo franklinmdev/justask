@@ -32,6 +32,8 @@ function fieldHeldBecause(reason: FieldHeldReason): string {
 			return "The picks do not add up to one filter, so the code held the field.";
 		case "pair":
 			return `The request names two candidates (“${reason.text}”), so the code held the field whatever the pick.`;
+		case "marker":
+			return `The request speaks as the system or an admin (“${reason.text}”), not as the person, so the code held the field whatever the pick.`;
 	}
 }
 
@@ -352,6 +354,8 @@ export const english: Content = {
 						return "No answer came back, so every field is held.";
 					case "command":
 						return `The request acts on an expense already recorded (“${reason.verb}”, “${reason.reference}”), so the code held every field whatever the pick.`;
+					case "marker":
+						return `The request speaks as the system or an admin (“${reason.text}”), not as the person, so the code held every field whatever the pick.`;
 				}
 			},
 			heldBecause: (reason) => {
@@ -364,6 +368,10 @@ export const english: Content = {
 						return `“${reason.text}” reads two ways, so the code held the field whatever its probability.`;
 					case "period":
 						return `“${reason.text}” is a period, not one day, so the code held the field.`;
+					case "negated":
+						return `The request says it was not this vendor (“${reason.text}”), so the code held the field whatever the pick.`;
+					case "after-today":
+						return `“${reason.text}” is after today, and an expense’s day has already happened, so the code held the field.`;
 					default:
 						return fieldHeldBecause(reason);
 				}
@@ -592,7 +600,24 @@ export const english: Content = {
 			"the invoices",
 		],
 	},
-	joiners: { or: ["or"], and: ["and"] },
+	joiners: { or: ["or", "vs", "versus"], and: ["and"] },
+	cardNegations: {
+		before: [
+			"not",
+			"never",
+			"no",
+			"wasn't",
+			"wasnt",
+			"was not",
+			"isn't",
+			"isnt",
+			"is not",
+			"didn't",
+			"didnt",
+			"did not",
+		],
+		after: ["wasn't", "wasnt", "was not", "isn't", "isnt", "is not"],
+	},
 
 	cardSuggestions: {
 		fills: [

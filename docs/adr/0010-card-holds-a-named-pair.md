@@ -32,9 +32,29 @@ Found in review after round 4, and left as they are: round 4 judged this rule, a
 - **A choice of three is not held.** "Tallyroot, Cloudberth or Paydale" names a third item, and a comma is not a joiner; the provider decides it as before.
 - **A self-correction is held.** "Tallyroot, or rather Cloudberth" and "Cazuela Azul o mejor dicho Nubalia" name one vendor, but the two other words the rule allows cover "rather" and "mejor dicho".
 - **A brand that is an ordinary word reads as the vendor.** `Serena` (calm) and `Relucir` (to shine) are words: "una tarde serena y Lindero" is held, and such a word can count as a third item and cancel a real pair.
-- **A hyphen or slash joins the names into one word**, so "Tallyroot/Cloudberth" and "Cazuela-Azul o Nubalia" are not held.
+- **A hyphen joins the names into one word**, so "Cazuela-Azul o Nubalia" is not held. A slash no longer does: see the Amendment (#185).
 - **The matcher is not the search's.** The fuzzy shortlist scores a request against descriptions; the pair hold reads ids and `names` with its own typo rule, so a name the shortlist matches by a prefix or an initial is not a mention here.
 - **A saved log keeps the pairs it was run with.** The scorer rebuilds a held field from the logged `pairs`, never by running the matcher again, so a rule change never reaches an old log.
+
+## Amendment (#185): a slash, "y/o" and a comma join a pair too
+
+The pre-launch QA (#172, finding F5) found two vendors the rule above never read as a pair, since `findPair` needed a joiner word between them: "Larkspur/Beanhaven lunch $40" filled `larkspur` at 0.71 over the 0.7 gate in one run and held at 0.66 in the other; "Larkspur, Beanhaven, $40 yesterday", "Larkspur vs Beanhaven lunch $40" and "Cazuela, Cafetal, 10 dólares" held at 0.39 to 0.47, the pick flipping between the two vendors across runs. The owner decided on 2026-09-26 to hold these too: "/", "vs", "y/o" and two catalog names separated by a comma form a named pair, as "or" and "and" do.
+
+1. **A slash offers a choice, as "or" does**: "Larkspur/Beanhaven", "Larkspur / Beanhaven". So does a slash between two joiner words, read as one: "y/o", "and/or". It holds any catalog field, a field where several items may apply included ("meals/travel"). A slash that closes a word ("w/", with) is part of that word, not a joiner.
+2. **A comma alone lists both, as "and" does**: "Larkspur, Beanhaven" and "Cazuela, Cafetal" hold a field that takes one item, and never a field where several may apply ("meals, travel" asks for both). Only a comma with nothing else between the names joins them, so "Larkspur lunch, Beanhaven coffee" and a correction ("Larkspur, no wait, Beanhaven") are not pairs.
+3. **A joiner word decides as before.** With one joiner word between the names, a slash or a comma beside it changes nothing ("Larkspur, or Beanhaven" is a pair); a slash or a comma counts only where no joiner word does.
+4. **"vs" is the host's word, not the package's.** The package ships no words (point 1 above); the demo adds "vs" and "versus" to its `or` words in both languages.
+5. **The third item still cancels a pair**, and a slash or a comma counts as one joiner in the two-word gap, as a joiner word does.
+
+"facturas de la gente de limpieza", which the QA filed with these, names neither vendor: it is no named pair and stays the provider's call, as the owner decided.
+
+### Evidence before any call
+
+Checked with no call over all 2,494 rows of every set in `demo/eval/` (card, filter and search) and every string of the demo's copy in both languages, with each flow's own shortlists: the new rule holds exactly the rows the old one held, and no other. No frozen row moves and no gate is refixed.
+
+### Known cost
+
+A negated name beside a comma reads as a pair: "not Larkspur, Beanhaven coffee" names Beanhaven, but has two names with a comma between them. On the card the negation hold (ADR 0016) drops a pair one of whose items the request names negated, so it fills Beanhaven there. The filter and the search hold it, as they declare no negations: held, never filled wrong.
 
 ## Considered Options
 
