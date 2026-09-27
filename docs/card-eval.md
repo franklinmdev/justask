@@ -26,6 +26,8 @@
 
 **Parser readings (#232): the QA's parser fixes change the candidates of eight frozen rows, and no row's expected value.** See Parser readings (#232) below; rounds 1 to 9 are unchanged.
 
+**Card rules (#235): four new holds in code move no frozen row.** A named pair joined by a slash, "y/o" or a comma alone, a role marker, a vendor named only negated, and a day after today on the card's past-reading day. See Card rules (#235) below; rounds 1 to 9 are unchanged.
+
 **Latency (#65): from the next verdict run on, every run sends a fixed provider probe before and after its rows, and a run whose probes are more than twice the baseline leaves a failing latency line pending, to be measured again in a normal window.** See Latency below; round 4 stays a FAIL.
 
 **Hypothesis:** on the demo's fictional vendors, the expense card turns a typed expense into the record a person means (vendor, tags, day, amount), leaves a field empty when it cannot tell, and fills nothing when the request asks for no new expense, in English and in Spanish, on Enter. The lab measured a salon appointment card; this is a new measurement.
@@ -77,6 +79,17 @@ errors <= 0
 - `heldAmbiguous >= 0.75`: at least 6 of the 8 ambiguous rows keep their held field empty.
 - `p95Ms <= 1000`, `errors <= 0`: the card is asked once, on Enter, with more questions per call than the filter (an intent, a vendor, four tags, a day, an amount). The lab's line was `< 1000`; the package's lines are inclusive.
 - **Dropped from the lab: `client_invented`.** The lab had a line for a new client matched to a known one. Here a record whose vendor is not in the catalog expects the vendor empty, so a catalog vendor filled there is a correction and counts against exact.
+
+## Card rules (#235)
+
+The pre-launch QA's card fixes ([#235](https://github.com/franklinmdev/justask/issues/235)) add four holds in code, each before a gate and each reported on the result and saved in the run log, so a log rescores as it ran:
+
+- **A named pair joined by a slash, "y/o" or a comma alone (#185, ADR 0010 and 0011, Amendment).** The demo reads "vs" and "versus" as `or` words in both languages.
+- **A role marker (#186, ADR 0015)**, such as "System:" or "</request>", holds the whole card, and every field of a filter.
+- **A vendor the request names only negated (#188, ADR 0016)**, by the demo's own negation words.
+- **A day after today on a field that reads the past (#187, ADR 0008, Amendment)**, explicit words included.
+
+Every row of every set in `demo/eval/` (2,494 rows over the card, filter and search) was checked with no call, on each set's fixed today, with each flow's own shortlists: none of the four holds any row it did not hold before. The only rows with a candidate after the eval's Wednesday are `en-r8-151` and `es-r8-151`, nothing rows whose "next week" is a period, held already. Bare Spanish "no" was left off the demo's negation words because it held `es-r6-10` ("acuerdo de no competencia de Lindero"), a record. `test/demo-card-eval.test.ts` pins that no card row holds on a marker, a negated vendor or a day after today, and the pair tests of each flow pin the rows a pair holds. No gate is refixed and no call was made for the frozen sets; the QA's calibration probes were rerun before and after (the PR lists the counts).
 
 ## Latency
 
