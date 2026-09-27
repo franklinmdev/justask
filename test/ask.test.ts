@@ -233,6 +233,23 @@ describe("ask: search", () => {
 			expect(result.retried).toBe(true);
 		});
 
+		it("marks no transport failure when the second call fails another way (ADR 0013, #228)", async () => {
+			const refused = new Error("400 bad request");
+			const provider = unavailableFirstProvider(
+				[unavailable(), refused],
+				answers,
+			);
+			const result = await ask({ ...base, provider, search: vendorSearch() });
+
+			expect(provider.calls).toHaveLength(2);
+			expect(result.error).toEqual({
+				kind: "provider",
+				message: "400 bad request",
+				cause: refused,
+			});
+			expect(result.retried).toBe(true);
+		});
+
 		it("keeps one timeout over both calls", async () => {
 			const provider = unavailableFirstProvider([unavailable()], "hang", {
 				delayMs: 10,

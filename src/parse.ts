@@ -73,9 +73,10 @@ export type ParserInput = {
 export type Parser = (request: string, input: ParserInput) => Readings;
 
 /**
- * The built-in English and general Spanish parser, ported from the lab. It
- * reads dates backward, as a filter looks at what already happened, and
- * resolves a bare "$" and currency words through the `local_currency` fact.
+ * The built-in English and general Spanish parser, ported from the lab. A
+ * date that does not say its year or week reads the way `reads` says: back
+ * for a filter or a spent day, forward for a due date (ADR 0008). It resolves
+ * a bare "$" and currency words through the `local_currency` fact.
  * An ambiguous reading is never guessed: "03/04" becomes two readings.
  */
 export const builtInParser: Parser = (request, input) => {

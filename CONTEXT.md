@@ -45,7 +45,7 @@ One named slot of a filter or card, declared by the developer with its kind, a d
 _Avoid_: Property, attribute, slot
 
 **Field kind**:
-Where a field's candidates come from: date, time, amount (from parsers), catalog (from the host app), or yes-or-no.
+Where a field's candidates come from, as its `kind` declares it: `date`, `time`, `amount` (from parsers) or `catalog` (from the host app). Yes-or-no is not a kind: it is how a catalog field with `several: true` asks, one question per shortlisted item.
 _Avoid_: Type, field type
 
 **Gate**:
