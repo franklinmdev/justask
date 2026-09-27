@@ -140,3 +140,9 @@ export function today(): string {
 		.toISOString()
 		.slice(0, 10);
 }
+
+/** When to try again after a rate limit, rounded up: seconds under a minute, minutes past it. */
+export function waitOf(ms: number): { seconds: number } | { minutes: number } {
+	const seconds = Math.max(1, Math.ceil(ms / 1_000));
+	return seconds < 60 ? { seconds } : { minutes: Math.ceil(seconds / 60) };
+}

@@ -233,6 +233,11 @@ export type HeldReason =
 	| { kind: "no-candidates" }
 	| { kind: "provider" }
 	| { kind: "timeout"; timeoutMs: number }
+	| { kind: "refused"; message: string }
+	| { kind: "too-large" }
+	| { kind: "unsupported" }
+	| { kind: "rate-limited"; retryAfterMs: number | null }
+	| { kind: "server"; status: number }
 	| { kind: "unreachable"; message: string };
 
 /**

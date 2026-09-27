@@ -1,3 +1,4 @@
+import { waitOf } from "../format.ts";
 import {
 	type Content,
 	type FieldHeldReason,
@@ -134,6 +135,25 @@ export const english: Content = {
 					return "The provider failed, so nothing is shown. The server log has the details.";
 				case "timeout":
 					return `The provider did not answer within ${reason.timeoutMs}\u00a0ms, so nothing is shown.`;
+				case "refused":
+					return `The server refused the request: ${reason.message}`;
+				case "too-large":
+					return "The request was too large for the server, so nothing is shown.";
+				case "unsupported":
+					return "The server did not take the request as JSON, so nothing is shown.";
+				case "rate-limited": {
+					if (reason.retryAfterMs === null) {
+						return "The server is taking too many requests. Try again in a moment.";
+					}
+					const wait = waitOf(reason.retryAfterMs);
+					const after =
+						"seconds" in wait
+							? `${wait.seconds} ${wait.seconds === 1 ? "second" : "seconds"}`
+							: `${wait.minutes} ${wait.minutes === 1 ? "minute" : "minutes"}`;
+					return `The server is taking too many requests. Try again in ${after}.`;
+				}
+				case "server":
+					return `The server failed (${reason.status}), so nothing is shown. Try again.`;
 				case "unreachable":
 					return `The server could not be reached: ${reason.message}`;
 			}

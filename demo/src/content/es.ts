@@ -1,3 +1,4 @@
+import { waitOf } from "../format.ts";
 import {
 	type Content,
 	type FieldHeldReason,
@@ -138,6 +139,25 @@ export const spanish: Content = {
 					return "El modelo falló, así que no se muestra nada. El registro del servidor tiene los detalles.";
 				case "timeout":
 					return `El modelo no respondió en ${reason.timeoutMs}\u00a0ms, así que no se muestra nada.`;
+				case "refused":
+					return `El servidor rechazó la solicitud: ${reason.message}`;
+				case "too-large":
+					return "La solicitud era demasiado grande para el servidor, así que no se muestra nada.";
+				case "unsupported":
+					return "El servidor no aceptó la solicitud como JSON, así que no se muestra nada.";
+				case "rate-limited": {
+					if (reason.retryAfterMs === null) {
+						return "El servidor está recibiendo demasiadas solicitudes. Inténtelo de nuevo en un momento.";
+					}
+					const wait = waitOf(reason.retryAfterMs);
+					const after =
+						"seconds" in wait
+							? `${wait.seconds} ${wait.seconds === 1 ? "segundo" : "segundos"}`
+							: `${wait.minutes} ${wait.minutes === 1 ? "minuto" : "minutos"}`;
+					return `El servidor está recibiendo demasiadas solicitudes. Inténtelo de nuevo en ${after}.`;
+				}
+				case "server":
+					return `El servidor falló (${reason.status}), así que no se muestra nada. Inténtelo de nuevo.`;
 				case "unreachable":
 					return `No se pudo contactar al servidor: ${reason.message}`;
 			}

@@ -26,7 +26,16 @@ export function failureOf(error: SearchError): HeldReason {
 			return { kind: "provider" };
 		case "timeout":
 			return { kind: "timeout", timeoutMs: error.timeoutMs };
-		default:
+		case "request":
+			return { kind: "refused", message: error.message };
+		case "too-large":
+		case "unsupported":
+			return { kind: error.kind };
+		case "rate-limited":
+			return { kind: "rate-limited", retryAfterMs: error.retryAfterMs };
+		case "server":
+			return { kind: "server", status: error.status };
+		case "network":
 			return { kind: "unreachable", message: error.message };
 	}
 }

@@ -844,6 +844,74 @@ describe("the demo's Table case", () => {
 		},
 	);
 
+	it.each([
+		{
+			status: 429,
+			headers: { "retry-after": "30" },
+			en: "The server is taking too many requests. Try again in 30 seconds.",
+			es: "El servidor está recibiendo demasiadas solicitudes. Inténtelo de nuevo en 30 segundos.",
+		},
+		{
+			status: 429,
+			headers: { "retry-after": "90" },
+			en: "The server is taking too many requests. Try again in 2 minutes.",
+			es: "El servidor está recibiendo demasiadas solicitudes. Inténtelo de nuevo en 2 minutos.",
+		},
+		{
+			status: 429,
+			headers: {},
+			en: "The server is taking too many requests. Try again in a moment.",
+			es: "El servidor está recibiendo demasiadas solicitudes. Inténtelo de nuevo en un momento.",
+		},
+		{
+			status: 500,
+			headers: {},
+			en: "The server failed (500), so nothing is shown. Try again.",
+			es: "El servidor falló (500), así que no se muestra nada. Inténtelo de nuevo.",
+		},
+		{
+			status: 413,
+			headers: {},
+			en: "The request was too large for the server, so nothing is shown.",
+			es: "La solicitud era demasiado grande para el servidor, así que no se muestra nada.",
+		},
+		{
+			status: 415,
+			headers: {},
+			en: "The server did not take the request as JSON, so nothing is shown.",
+			es: "El servidor no aceptó la solicitud como JSON, así que no se muestra nada.",
+		},
+		{
+			status: 400,
+			headers: {},
+			en: "The server refused the request: too long",
+			es: "El servidor rechazó la solicitud: too long",
+		},
+	])(
+		"gives the host's $status answer its own line in both languages (#233)",
+		async ({ status, headers, en, es }) => {
+			for (const [lang, suggestion, hood, reason] of [
+				["en", "overdue invoices", "What happened", en],
+				["es", "facturas vencidas", "Qué pasó", es],
+			] as const) {
+				const { user } = renderDemo({
+					url: `/?case=table&lang=${lang}`,
+					// The host's own server, or a proxy before it, answers; never the handler.
+					fetch: async () =>
+						Response.json(
+							{ error: { kind: "request", message: "too long" } },
+							{ status, headers },
+						),
+				});
+
+				await user.click(screen.getByRole("button", { name: suggestion }));
+
+				expect(await panel(hood).findByText(reason)).toBeDefined();
+				cleanup();
+			}
+		},
+	);
+
 	it("keeps the request, the answer and the filters when the person leaves the case and comes back (#135)", async () => {
 		const { user } = renderDemo();
 		const box = screen.getByRole("searchbox", {
