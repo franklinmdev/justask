@@ -28,7 +28,7 @@
 
 **Card rules (#235): four new holds in code move no frozen row.** A named pair joined by a slash, "y/o" or a comma alone, a role marker, a vendor named only negated, and a day after today on the card's past-reading day. See Card rules (#235) below; rounds 1 to 9 are unchanged.
 
-**Round 10 (#244): a bare weekday and a number with no currency, approved by the owner on 2026-09-26 before any call.** Two wording changes on the card's questions for #190 and #191, measured on round 9's frozen rows again and on a new probe set of bare amounts. See Round 10 below; rounds 1 to 9 are unchanged.
+**Round 10 (#244): a bare weekday and a number with no currency fails three of its six lines, as run; the owner has not ruled yet.** Round 9's rows pass every kill line in both languages, bare weekdays fill their day on 65 of 76 English and 68 of 77 Spanish rows (39 of 77 before), and no confident-wrong pair rose. The bare amounts fill 11 and 9 of 14 cards against a line of 12, most misses the unchanged intent's; four frozen `last Thursday` and `last Friday` rows, held before #140, filled the day #140 now reads; and one suggestion, said on a Friday, held its day at 0.79. See Round 10: result below; rounds 1 to 9 are unchanged. Two wording changes on the card's questions for #190 and #191, measured on round 9's frozen rows again and on a new probe set of bare amounts. See Round 10 below; rounds 1 to 9 are unchanged.
 
 **Latency (#65): from the next verdict run on, every run sends a fixed provider probe before and after its rows, and a run whose probes are more than twice the baseline leaves a failing latency line pending, to be measured again in a normal window.** See Latency below; round 4 stays a FAIL.
 
@@ -1527,4 +1527,70 @@ The deciding runs are round 9's run 3 and `bare`'s run 2, in both languages; rou
 ### Cost
 
 About 336 calls for runs 3 and 4, 144 for `bare`'s three runs, 42 for the suggestions, and about 1,860 for the calibration probes before and after (#243's count): some 2,400 calls, about US$0.25 at round 9's cost per call.
+
+## Round 10: result
+
+**Verdict: FAIL, on lines 3, 4 and 6, as the approved rule reads ("any line failing is a FAIL, recorded as it ran").** Runs of 2026-09-26 with `jev-1.13.0`: round 9's rows and `bare` runs 2 and 3 on branch `fix/244-card-round` at `426e225`, `bare` run 1 on `origin/main` (`4092785`) with the set added and nothing else, round 9's gates, kill lines and `PROBE_BASELINE_MS` of 235, today fixed at Wednesday 2026-09-23. Every run's probes were normal (median 235 to 270 ms), and no row errored or retried in any run.
+
+| Line | English | Spanish | |
+|---|---|---|---|
+| 1. Round 9's rows pass every kill line (run 3) | PASS | PASS | |
+| 2. Bare-weekday rows fill their day, at least 62 | 65 of 76 | 68 of 77 | pass |
+| 3. `bare`'s amounts fill the total on the card, at least 12 of 14 | 11 | 9 | **fail** |
+| 4. Nothing filled wrong from the change | 2 days | 2 days | **fail** |
+| 5. Calibration: confident-wrong does not rise | 35 before, 34 after, none new | | pass |
+| 6. "Fills the card", 42 calls | 20 of 21 | 21 of 21 | **fail** |
+
+### Round 9's rows, runs 3 and 4
+
+| Measure | Kill line | English | Spanish |
+|---|---|---|---|
+| exact | at least 0.9 | 0.942 (129 of 137 cards) | 0.934 (128 of 137) |
+| coverage | at least 0.7 | 0.892 (437 of 490 fields) | 0.859 (421 of 490) |
+| invented | at most 0 | 0 | 0 |
+| held ambiguous | at least 0.75 | 0.906 (29 of 32) | 0.813 (26 of 32) |
+| p95 | at most 1000 ms | 344 ms | 349 ms |
+| errors | at most 0 | 0 | 0 |
+| probes, median against 235 ms | | 243 ms, normal | 235 ms, normal |
+
+Round 9's run 1 on the same rows: coverage 0.843 and 0.8, exact 0.956 and 0.941, held ambiguous 0.969 and 0.875. `compare <en|es> round9 1 3` lists 40 English and 41 Spanish flips: 26 and 29 are a bare weekday's day held in run 1 and filled in run 3, two per language are line 4's days below, three are a day filled in run 1 and held in run 3 (`en-r9-017`, `en-r9-023`, `es-r9-165`), and the rest (10 English, 9 Spanish) are vendors, tags, one amount and one card whose intent crossed its gate (`en-r9-001`), either way, where round 9's runs 1 and 2 differed by 9 and 7 flips. Run 4 repeats it: 63 of 76 and 70 of 77 bare-weekday days, the same four rows of line 4, and no other day filled wrong.
+
+- **Line 2** counts the day field at its gate, as the 39 of 77 before it did; with the intent's gate as well, the card fills 62 of 76 English and 66 of 77 Spanish. English has 76 rows, not 77: #232 read `en-r9-165` (`Friday the 11th`) as one day of the month, so it no longer carries a bare weekday.
+- **Line 4's four days are rows frozen before #140** (`HELD_BEFORE_140`): `en-r9-076` `Papergrove label tape last Thursday, $31`, `en-r9-161` `Inkhollow flyers last Friday, $57` and their Spanish twins. They expect the day held, and #140 reads them one way on the Wednesday: the provider filled exactly that day (2026-09-17 and 2026-09-18, 0.86 to 0.93), where round 9 held them under the gate. By the frozen rows they are filled wrong; by the parser's reading since #140 they are right. They are all of held ambiguous's drop beside round 9's run 1, in both languages. No other day filled wrong on any row in runs 3 or 4.
+- **Held ambiguous's other misses** are round 9's: Beanhaven and Cafetal drawing `meals` where the tags should hold (one English row, four Spanish).
+
+### `bare`, before and after
+
+| Run | Code | English total filled on the card | Spanish | Total filled wrong | Nothing rows filled |
+|---|---|---|---|---|---|
+| 1 | `origin/main` | 6 of 14 | 4 of 14 | 0 | 0 |
+| 2 (decides) | branch | 11 of 14 | 9 of 14 | 0 | 0 |
+| 3 (flips) | branch | 11 of 14 | 10 of 14 | 0 | 0 |
+
+- **Line 3 fails on the intent more than on the amount.** Read at the total's own gate, with no intent gate, the total fills 11 of 14 English and 12 of 14 Spanish in run 2 (13 in run 3), against 6 and 5 before. The intent held the whole card on `en-b-03` (`taxi to the airport on September 17, 52`, `not_mentioned` 0.85) and `en-b-11` in every run, and on `es-b-01`, `es-b-06` and `es-b-11` in runs 2 and 3 (`es-b-06` and `es-b-11` in run 1 too). The intent question is unchanged; with no currency mark the request reads less like an expense, and the round's line counts the card.
+- **The amount misses left:** `en-b-14` and `es-b-13`, a count beside the amount (`not_mentioned` 0.85; `a1` 0.88 under the 0.9 gate), and `es-b-08` (`180`, 0.81).
+- **Line 4 holds on `bare`:** no count-only record filled a total, both "or" rows held their total, and no nothing row filled anything, in any of the three runs.
+
+### Calibration probes
+
+The QA's harness (#172) and its three probe files, twice each, `origin/main` and the branch side by side in the same window: 3,850 rows a side, no failure, about US$0.13 in all. Distinct confident-wrong (request, field): 35 before, 34 after; none is new, and the one gone is `Pieveloz £20`'s total, which is not the change's. The probes the change is for: bare-weekday days right on 18 of 32 before and 29 of 32 after, bare amounts on 8 of 32 and 25 of 32, none wrong on either side.
+
+### "Fills the card" over a week
+
+The three suggestions per language, through `ask` with the demo's card and today written as the handler writes it, Monday 2026-09-21 to Sunday 2026-09-27: 41 of 42 calls filled every field with the expected value, the Friday taxi's day being 2026-09-18 from Monday to Friday and 2026-09-25 on the weekend. The miss is `Farwander taxi with a client on Friday, $64` said on Friday 2026-09-25: its one candidate is the Friday a week back, picked at 0.79 against the gate of 0.8, and the day held. The Spanish twin filled at 0.84. Friday said on a Friday is the one day the words and ADR 0008's "never today" part.
+
+### What the owner decides
+
+- **Line 3:** the wording did what it was for on the amount (6 and 5 of 14 to 11 and 12 at the field), and the line as written also counts the intent, which the round did not change.
+- **Line 4:** the four `HELD_BEFORE_140` rows fill the day #140 reads now.
+- **Line 6:** one call of 42, 0.01 under the gate, on the day a bare weekday is most in doubt.
+
+Whether the wording lands, and whether #190 and #191 close, is the owner's ruling on these.
+
+### Run logs
+
+- Round 9's rows: `demo/eval/runs/card-<en|es>-round9-3.jsonl` (decides), `-4.jsonl` (flips)
+- `bare`: `demo/eval/runs/card-<en|es>-bare-1.jsonl` (before, `origin/main`), `-2.jsonl` (decides), `-3.jsonl` (flips)
+
+Each rescores with `scoreCardRun(await readCardRun(path), { gates })` and no call.
 
