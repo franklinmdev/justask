@@ -4,6 +4,7 @@ import {
 	type ClipboardEvent,
 	type CSSProperties,
 	createContext,
+	type InputEvent,
 	type KeyboardEvent,
 	use,
 	useEffect,
@@ -185,6 +186,12 @@ export function useRequestLimit(request: string, id: string) {
 				const typed =
 					event.key.length === 1 && !event.ctrlKey && !event.metaKey;
 				if (typed && kept(event.currentTarget) >= REQUEST_LIMIT) {
+					setCutAt(request);
+				}
+			},
+			// A phone's keyboard names no key ("Unidentified"), so its text is caught as it goes in.
+			onBeforeInput: (event: InputEvent<HTMLInputElement>) => {
+				if (event.data && kept(event.currentTarget) >= REQUEST_LIMIT) {
 					setCutAt(request);
 				}
 			},
