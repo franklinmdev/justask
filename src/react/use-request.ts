@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type {
 	HandlerBadRequest,
 	HandlerError,
@@ -15,21 +15,38 @@ export type RequestTiming =
 
 /**
  * Why the last answer has nothing beyond the flow's own result: the
- * provider's error as the handler sends it, a request the handler refused, or
- * a handler that could not be reached or answered something else.
+ * provider's error as the handler sends it (`provider`, `timeout`), a request
+ * the handler refused (`request`, its 400), a body over its 16 KiB
+ * (`too-large`, its 413) or not sent as JSON (`unsupported`, its 415), the
+ * host's server pacing the browser (`rate-limited`, a 429, with its
+ * `Retry-After` in ms when it sends one) or failing (`server`, a 5xx), or a
+ * handler that could not be reached or answered something else (`network`).
+ * `rate-limited` and `server` carry the host's own message when its body has
+ * one, as `{ error: { message } }`, `{ error: "..." }`, `{ message }`, or a
+ * `text/plain` body.
  */
 export type RequestError =
 	| HandlerError
 	| HandlerBadRequest["error"]
+	| { kind: "too-large"; message: string }
+	| { kind: "unsupported"; message: string }
+	| { kind: "rate-limited"; message: string; retryAfterMs: number | null }
+	| { kind: "server"; status: number; message: string }
 	| { kind: "network"; message: string };
+
+/** A request waiting for its answer, with the number of its pause or call. */
+type Asked = { text: string; number: number };
 
 /** The key of the handler's 200 body that holds the result. */
 type Flow = "search" | "filter" | "card";
 
 type Outcome<R> = { result: R | null; error: RequestError | null };
 
-/** An outcome with the request it answers, so an edit in the box retires it. */
-export type Answered<R> = Outcome<R> & { request: string };
+/**
+ * An outcome with the request it answers, so an edit in the box retires it,
+ * and its call's number, counted from 1 as calls go out.
+ */
+export type Answered<R> = Outcome<R> & { request: string; call: number };
 
 /**
  * What every flow's hook shares: the box's text, the pause, one call
@@ -51,76 +68,150 @@ export function useRequest<R>({
 	const [answer, setAnswer] = useState<Answered<R> | null>(null);
 	const [loading, setLoading] = useState(false);
 	const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-	const inFlight = useRef<AbortController | null>(null);
+	// The request the running pause will call for, or null.
+	const paused = useRef<Asked | null>(null);
+	const inFlight = useRef<(Asked & { controller: AbortController }) | null>(
+		null,
+	);
 	// The request whose pause or call a hidden <Activity> cut short.
-	const pending = useRef<string | null>(null);
-	// The request of the pause or call now pending, for the cleanup to keep.
-	const due = useRef<string | null>(null);
+	const pending = useRef<Asked | null>(null);
+	// The request a successful `answer` is for, read by a `setRequest` in the
+	// same event; a failed one, or a box replaced, asks again.
+	const answered = useRef<string | null>(null);
+	// True once the host spent the answer (a filter's Confirm): other words in
+	// the box then forget it, so the same words typed back call again.
+	const retired = useRef(false);
+	// The number of the latest pause or call begun; a resend keeps its own.
+	const begun = useRef(0);
+	// The latest render's options, for a call a pause or an effect makes later.
+	// A ref rather than `useEffectEvent`, which React 19.0 and 19.1 lack (#175).
+	const latest = useRef({ endpoint, timing, fetchImpl, flow });
+	useLayoutEffect(() => {
+		latest.current = { endpoint, timing, fetchImpl, flow };
+	});
 
-	// This render's `call`, with its `fetch` and endpoint, for the effect below.
-	const resend = useEffectEvent((text: string) => call(text));
+	/**
+	 * The newest request still waiting for its answer: the running pause's,
+	 * else the call's on its way. A stale answer landing leaves a pause due.
+	 */
+	function due(): Asked | null {
+		return paused.current ?? inFlight.current;
+	}
 
+	function stopPause() {
+		clearTimeout(timer.current);
+		paused.current = null;
+	}
+
+	function abortCall() {
+		inFlight.current?.controller.abort();
+		inFlight.current = null;
+	}
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: runs on mount and when a hidden <Activity> shows again, never per render; `call` reads the latest options from `latest`.
 	useEffect(() => {
 		// A hidden <Activity> shown again runs this: the call it cut short is
-		// made, unless an earlier effect already started a newer one.
-		if (pending.current !== null && due.current === null) {
-			resend(pending.current);
-		}
+		// made, under its own number, unless an earlier effect already started
+		// a newer one. It waits a pause of 0, so StrictMode's cleanup and second
+		// run, straight after this one, cancel it and make it once (#215).
+		const cut = pending.current;
 		pending.current = null;
+		if (cut !== null && due() === null) {
+			pause(cut, 0, () => call(cut.text, cut.number));
+		}
 		return () => {
-			pending.current = due.current;
-			due.current = null;
-			clearTimeout(timer.current);
-			inFlight.current?.abort();
+			const cutShort = due();
+			pending.current = cutShort && {
+				text: cutShort.text,
+				number: cutShort.number,
+			};
+			stopPause();
+			abortCall();
 			// A hidden <Activity> keeps this state, and its aborted call never lands.
 			setLoading(false);
 		};
 	}, []);
 
-	/** Starts a call for `text`, dropping any pending or earlier one. */
-	function call(text: string) {
-		clearTimeout(timer.current);
-		inFlight.current?.abort();
-		inFlight.current = null;
-		due.current = null;
+	/**
+	 * Starts a call for `text`, dropping any pending or earlier one, under the
+	 * number of the pause that led to it, or a new one.
+	 */
+	function call(text: string, number = ++begun.current) {
+		stopPause();
+		abortCall();
 		if (isBlank(text)) {
+			answered.current = null;
 			setAnswer(null);
 			setLoading(false);
 			return;
 		}
 		const controller = new AbortController();
-		inFlight.current = controller;
-		due.current = text;
+		inFlight.current = { controller, text, number };
 		setLoading(true);
+		const { endpoint, fetchImpl, flow } = latest.current;
 		post<R>(fetchImpl ?? fetch, endpoint, flow, text, controller.signal).then(
 			(next) => {
 				if (controller.signal.aborted) return;
 				inFlight.current = null;
-				due.current = null;
-				setAnswer({ ...next, request: text });
-				setLoading(false);
+				answered.current = next.error ? null : text;
+				retired.current = false;
+				setAnswer({ ...next, request: text, call: number });
+				setLoading(due() !== null);
 			},
 		);
 	}
 
 	function setRequest(text: string) {
 		setRequestState(text);
+		if (
+			retired.current &&
+			answered.current !== null &&
+			!sameRequest(answered.current, text)
+		) {
+			answered.current = null;
+			retired.current = false;
+		}
 		if (isBlank(text)) {
 			call(text);
 		} else if (timing.on === "type") {
-			clearTimeout(timer.current);
-			due.current = text;
-			setLoading(true);
-			timer.current = setTimeout(() => call(text), timing.debounceMs);
+			// Surrounding spaces ask nothing new (#216): the pause or call already
+			// due for the same words goes on, and back at the answered words no
+			// call is needed.
+			if (paused.current && sameRequest(paused.current.text, text)) return;
+			if (inFlight.current && sameRequest(inFlight.current.text, text)) {
+				stopPause();
+				return;
+			}
+			if (answered.current !== null && sameRequest(answered.current, text)) {
+				stopPause();
+				abortCall();
+				setLoading(false);
+				return;
+			}
+			pause({ text, number: ++begun.current }, timing.debounceMs, (asked) => {
+				// A host that turned to Enter during the pause wants no call now.
+				if (latest.current.timing.on === "type") call(asked.text, asked.number);
+				else setLoading(due() !== null);
+			});
 		}
+	}
+
+	/** Waits `ms` for `asked`, replacing any running pause, then runs `end`. */
+	function pause(asked: Asked, ms: number, end: (asked: Asked) => void) {
+		clearTimeout(timer.current);
+		paused.current = asked;
+		setLoading(true);
+		timer.current = setTimeout(() => {
+			paused.current = null;
+			end(asked);
+		}, ms);
 	}
 
 	/** Puts `text` in the box with no call, dropping any pending one; the last answer stays. */
 	function replaceRequest(text: string) {
-		clearTimeout(timer.current);
-		inFlight.current?.abort();
-		inFlight.current = null;
-		due.current = null;
+		stopPause();
+		abortCall();
+		answered.current = null;
 		setRequestState(text);
 		setLoading(false);
 	}
@@ -130,15 +221,29 @@ export function useRequest<R>({
 		setRequest,
 		replaceRequest,
 		submit: () => call(request),
+		/** Spends the answer: other words in the box forget it, and the same words typed back call again. */
+		retire: () => {
+			retired.current = true;
+		},
 		loading,
 		answer,
-		/** True when `answer` is for the request in the box. */
-		current: answer !== null && answer.request === request,
+		/**
+		 * The number of the latest pause or call begun, the one whose answer a
+		 * change made now comes after, for an event to stamp the change with.
+		 */
+		latestCall: () => begun.current,
+		/** True when `answer` is for the request in the box, surrounding spaces aside. */
+		current: answer !== null && sameRequest(answer.request, request),
 	};
 }
 
 function isBlank(text: string): boolean {
 	return text.trim() === "";
+}
+
+/** Two requests that differ only in surrounding spaces ask the same. */
+function sameRequest(a: string, b: string): boolean {
+	return a.trim() === b.trim();
 }
 
 async function post<R>(
@@ -152,6 +257,12 @@ async function post<R>(
 		request,
 		timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
 	};
+	const failed = (error: RequestError): Outcome<R> => ({ result: null, error });
+	const handlerAnswered = `The ${flow} handler answered`;
+	const somethingElse = failed({
+		kind: "network",
+		message: `${handlerAnswered} something else`,
+	});
 	try {
 		const response = await fetchImpl(endpoint, {
 			method: "POST",
@@ -159,30 +270,105 @@ async function post<R>(
 			body: JSON.stringify(body),
 			signal,
 		});
-		if (response.status === 200) {
-			const answer = (await response.json()) as Record<string, unknown> & {
-				error?: HandlerError;
+		const { status } = response;
+		if (status === 200) {
+			const answer = await readJson(response);
+			// Another flow's handler, or a page, answers 200 too (#214).
+			if (!isRecord(answer) || !isRecord(answer[flow])) return somethingElse;
+			return {
+				result: answer[flow] as R,
+				error: (answer.error as HandlerError | undefined) ?? null,
 			};
-			return { result: answer[flow] as R, error: answer.error ?? null };
 		}
-		if (response.status === 400) {
-			const { error } = (await response.json()) as HandlerBadRequest;
-			return { result: null, error };
+		if (status === 400 || status === 413 || status === 415) {
+			const answer = await readJson(response);
+			if (!isRecord(answer) || !isRecord(answer.error)) return somethingElse;
+			const { message } = answer.error as HandlerBadRequest["error"];
+			const kind =
+				status === 413
+					? "too-large"
+					: status === 415
+						? "unsupported"
+						: "request";
+			return failed({ kind, message: String(message) });
 		}
-		return {
-			result: null,
-			error: {
-				kind: "network",
-				message: `The ${flow} handler answered ${response.status}`,
-			},
-		};
+		if (status === 429) {
+			return failed({
+				kind: "rate-limited",
+				message: (await hostMessage(response)) ?? `${handlerAnswered} 429`,
+				retryAfterMs: retryAfterMs(response.headers.get("retry-after")),
+			});
+		}
+		if (status >= 500 && status < 600) {
+			return failed({
+				kind: "server",
+				status,
+				message:
+					(await hostMessage(response)) ?? `${handlerAnswered} ${status}`,
+			});
+		}
+		return failed({ kind: "network", message: `${handlerAnswered} ${status}` });
 	} catch (cause) {
-		return {
-			result: null,
-			error: {
-				kind: "network",
-				message: cause instanceof Error ? cause.message : String(cause),
-			},
-		};
+		return failed({
+			kind: "network",
+			message: cause instanceof Error ? cause.message : String(cause),
+		});
 	}
+}
+
+/** The body as JSON, or undefined when it is not JSON. */
+async function readJson(response: Response): Promise<unknown> {
+	try {
+		return await response.json();
+	} catch {
+		return undefined;
+	}
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * The host server's own words for a failure: `{ error: { message } }`,
+ * `{ error: "..." }` or `{ message }` in JSON, or a plain text body. Null for
+ * anything else, such as an HTML error page.
+ */
+async function hostMessage(response: Response): Promise<string | null> {
+	let text: string;
+	try {
+		text = (await response.text()).trim();
+	} catch {
+		return null;
+	}
+	if (text === "") return null;
+	if (response.headers.get("content-type")?.startsWith("text/plain")) {
+		return text;
+	}
+	let body: unknown;
+	try {
+		body = JSON.parse(text);
+	} catch {
+		return null;
+	}
+	if (!isRecord(body)) return null;
+	const message = isRecord(body.error)
+		? body.error.message
+		: (body.error ?? body.message);
+	return typeof message === "string" && message.trim() !== ""
+		? message.trim()
+		: null;
+}
+
+/**
+ * A `Retry-After` header in ms: whole seconds, or an HTTP date from now. Null
+ * when there is none or it is neither. A cross-origin host exposes the header
+ * with `Access-Control-Expose-Headers`, or the browser hides it.
+ */
+function retryAfterMs(header: string | null): number | null {
+	if (header === null) return null;
+	const value = header.trim();
+	if (/^\d+$/.test(value)) return Number(value) * 1_000;
+	const at = Date.parse(value);
+	return Number.isNaN(at) ? null : Math.max(0, at - Date.now());
 }
