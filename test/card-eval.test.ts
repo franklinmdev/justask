@@ -733,7 +733,7 @@ describe("runCardEval", () => {
 				},
 				{
 					id: "false-hold",
-					request: "lunch $42, wasn't cheap at Northwind",
+					request: "lunch $42, Northwind wasn't cheap",
 					kind: "record",
 					expected: {
 						vendor: "northwind",

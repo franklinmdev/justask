@@ -716,9 +716,9 @@ describe("ask: card", () => {
 			["after its name", "lunch $30, Northwind wasn't it", "Northwind wasn't"],
 			["right before it", "coffee, wasn't Northwind, $5", "wasn't Northwind"],
 			[
-				"two words before it",
-				"lunch $30, didn't go to Northwind",
-				"didn't go to Northwind",
+				"with a curly apostrophe",
+				"lunch $30, Northwind wasn’t it",
+				"Northwind wasn’t",
 			],
 			[
 				"in Spanish",
@@ -739,21 +739,34 @@ describe("ask: card", () => {
 			},
 		);
 
-		it("fills the item the request names beside another it negates", async () => {
-			const { card } = await fill("not Acme, Northwind coffee today, $12");
+		it("fills the item the request names beside another it negates, with no pair across the comma (#185)", async () => {
+			const request = "not Acme, Northwind coffee today, $12";
+			const { card } = await fill(request);
+			const joined = await ask({
+				...base,
+				request,
+				provider: fakeProvider({
+					intent: answer(INTENT, "new_record", 0.99),
+					...confident,
+				}),
+				card: {
+					...expenseCard(),
+					negations,
+					joiners: { or: ["or"], and: ["and"] },
+				},
+			});
 
 			expect(card.fields.vendor.negated).toEqual([
 				{ id: "acme", text: "not Acme" },
 			]);
 			expect(card.value.vendor).toEqual({ name: "Northwind" });
+			expect(joined.card.fields.vendor).not.toHaveProperty("pair");
+			expect(joined.card.value.vendor).toEqual({ name: "Northwind" });
 		});
 
 		it.each([
 			["a negation across a comma", "Northwind lunch, no tip, $42"],
-			[
-				"a negation three words away",
-				"not sure about the Northwind lunch, $42",
-			],
+			["a negation a word away", "no receipt Northwind lunch, $42"],
 			["an after-word before the name", "isn't it Northwind, $42"],
 			[
 				"the item named again without one",

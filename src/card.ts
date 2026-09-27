@@ -114,11 +114,12 @@ export type Card<F extends CardFields> = {
 	joiners?: Joiners;
 	/**
 	 * Words that negate an item's name, in the card's language, each a word
-	 * or a phrase: `before` words sit before the name, with up to two other
-	 * words between ("not", "didn't"; "no fue"), `after` words straight after
-	 * it ("wasn't"; "no fue"), in one clause. A field that takes one item is
-	 * held when its pick is an item the request names only negated, whatever
-	 * its probability (ADR 0016).
+	 * or a phrase, right beside the name with no clause mark between:
+	 * `before` words straight before it ("wasn't", "not"; "no fue"), `after`
+	 * words straight after it ("wasn't"; "no fue"). A field that takes one
+	 * item is held when its pick is an item the request names only negated,
+	 * whatever its probability, and a pair with a negated item is no pair
+	 * (ADR 0016).
 	 */
 	negations?: Negations;
 };
@@ -346,9 +347,9 @@ export const NO_READINGS: CandidateReadings = {
 
 /**
  * A field that one question fills: a single catalog row, a day, a time or an
- * amount. The pick's candidate holds the field when a parser marked it
- * ambiguous, or it is a day after today on a field that reads the past,
- * whatever its probability, before the gate is read. `fill` holds
+ * amount. The pick's candidate holds the field when `refuses` says so (a
+ * reading a parser marked ambiguous, or a day after today on a field that
+ * reads the past), whatever its probability, before the gate is read. `fill` holds
  * it too, by returning undefined, for a candidate that cannot be the field's
  * value (a period for a day).
  */
@@ -359,11 +360,11 @@ function choicePlan<T>(
 	gate: number,
 	fill: (value: T) => unknown,
 	{
-		ambiguous = () => false,
+		refuses = () => false,
 		pair,
 		negated = [],
 	}: {
-		ambiguous?: (value: T) => boolean;
+		refuses?: (value: T) => boolean;
 		pair?: NamedPair | undefined;
 		negated?: NegatedItem[];
 	} = {},
@@ -388,7 +389,7 @@ function choicePlan<T>(
 				pair ||
 				!winner ||
 				!pick ||
-				ambiguous(winner.value) ||
+				refuses(winner.value) ||
 				negated.some(({ id }) => id === winner.id)
 			) {
 				return { result };
@@ -439,7 +440,7 @@ export function cardPlan(
 				field.gate,
 				({ from, to }) => (from === to ? from : undefined),
 				{
-					ambiguous: ({ ambiguous, afterToday }) =>
+					refuses: ({ ambiguous, afterToday }) =>
 						ambiguous === true || afterToday === true,
 				},
 			);
@@ -453,7 +454,7 @@ export function cardPlan(
 				readings.times,
 				field.gate,
 				({ time }) => time,
-				{ ambiguous: ({ ambiguous }) => ambiguous === true },
+				{ refuses: ({ ambiguous }) => ambiguous === true },
 			);
 		case "amount":
 			return choicePlan(

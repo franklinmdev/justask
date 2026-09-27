@@ -6,22 +6,22 @@ The pre-launch QA (#172, finding F9, serious) found the card's vendor filled wit
 
 ## Decision
 
-1. **A card may declare `negations`, per language: `before` phrases that sit before an item's name, with up to two other words between ("not", "didn't", "no fue"), and `after` phrases straight after it ("wasn't", "no fue").** Each is a word or a phrase. A mention is negated only when the phrase and the name share one clause, with no comma, colon, period, bracket or question mark between them, and no other item of the field is named between them.
-2. **A field that takes one item is held when its pick is an item the request names only negated**, whatever its probability. An item named once without a negation is not negated: "never Northwind before, but a Northwind lunch today" fills. The hold reads the pick, so "not Acme, Northwind coffee" fills Northwind: only a pick on the negated item is held.
+1. **A card may declare `negations`, per language: `before` phrases straight before an item's name ("wasn't", "not", "no fue") and `after` phrases straight after it ("wasn't", "no fue").** Each is a word or a phrase, right beside the name, as the owner chose: no other word between, and no comma, colon, period, bracket or question mark. A curly apostrophe reads as a straight one, so "wasn’t" is "wasn't".
+2. **A field that takes one item is held when its pick is an item the request names only negated**, whatever its probability. An item named once without a negation is not negated: "never Northwind before, but a Northwind lunch today" fills. The hold reads the pick, so "not Acme, Northwind coffee" fills Northwind: only a pick on the negated item is held. A negated item is no choice either, so the comma that joins a named pair from #185 (ADR 0010, Amendment) joins none there: a pair one of whose items the request names negated is dropped on the card.
 3. **The provider is still asked**, so every pick is reported, and the field's result names the negated items and the words (`negated: [{ id, text }]`). The package ships no words; a card with no `negations` behaves as before. A blank phrase is refused when the card is asked, as a blank command is.
 4. **Only a field that takes one item.** A field where several items may apply asks one question per item, and "Northwind lunch, not travel" is the provider's to read there, as it read every tag negation in the QA.
 
-The demo declares English `before` "not", "never", "no", "wasn't", "isn't", "didn't" (with "was not", "is not", "did not" and the forms with no apostrophe), `after` "wasn't", "isn't", "was not", "is not"; Spanish `before` "no fue", "no era", "no es", "nunca", "ni", `after` "no fue", "no era", "no es". Bare Spanish "no" is left out: it also modifies a noun, and "un acuerdo de no competencia de Lindero" (round 6, `es-r6-10`) is Lindero's record.
+The demo declares English `before` "not", "never", "no", "wasn't", "isn't", "didn't" (with "was not", "is not", "did not" and the forms with no apostrophe), `after` "wasn't", "isn't", "was not", "is not"; Spanish `before` "no", "no fue", "no era", "no es", "nunca", "ni", `after` "no fue", "no era", "no es". The owner's list, with the other forms of the same verbs.
 
 ## Evidence before any call
 
-Checked with no call over all 1,838 rows of every card set in `demo/eval/` and every string of the demo's copy, with the demo's lists: no row and no string names a vendor only negated, so no frozen row moves and no gate is refixed. With bare Spanish "no" on the list, `es-r6-10` was the one row held, a record; that is why it is off.
+Checked with no call over all 1,838 rows of every card set in `demo/eval/` and every string of the demo's copy, with the demo's lists: no row and no string names a vendor only negated, so no frozen row moves and no gate is refixed. A first cut allowed up to two words between a `before` phrase and the name; it held one record, "un acuerdo de no competencia de Lindero" (`es-r6-10`), and "no receipt Larkspur" too, so the phrase now sits right beside the name.
 
 ## Consequences
 
 - **The eval log saves each field's negated items** (`negations` per field on a card row). The scorer holds a pick on one at every gate, blames the negation for a record whose expected item it held, and the gate rule reads no such pick, as it reads no pick a pair held.
 - **The demo's state panel says the code held the vendor**, naming the words.
-- **It is a word list, with a word list's limits.** A negation more than two words away ("que no fue en el Cafetal") or phrased around the list ("anywhere but Larkspur") is the provider's, as before; the provider held those in the QA. A phrase on the list that negates something else two words on ("wasn't cheap at Northwind") holds a field falsely: held, never filled wrong.
+- **It is a word list, with a word list's limits.** A negation a word away ("not from Beanhaven", "didn't go to Larkspur", "que no fue en el Cafetal") or phrased around the list ("anywhere but Larkspur") is the provider's, as before; the provider held those in the QA. An `after` phrase that negates the next word, not the name ("Larkspur wasn't cheap"), holds the field falsely: held, never filled wrong.
 - **The filter and the search do not adopt it**: their negations held on their own labels in the QA. Either can adopt it with a round of its own.
 
 ## Considered Options

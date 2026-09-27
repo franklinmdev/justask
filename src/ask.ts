@@ -399,18 +399,20 @@ async function askCard<F extends CardFields>({
 				const candidates = await declared.shortlist(request);
 				checkShortlist(candidates, MISSING);
 				checkImplies(name, declared, candidates, card.fields);
+				const several = "several" in declared;
+				const negated = several
+					? []
+					: findNegated(request, candidates, card.negations);
+				const pair = findPair(request, candidates, card.joiners, { several });
 				plans[name] = cardPlan(
 					name,
 					card,
 					declared,
 					candidates,
 					NO_READINGS,
-					findPair(request, candidates, card.joiners, {
-						several: "several" in declared,
-					}),
-					"several" in declared
-						? undefined
-						: findNegated(request, candidates, card.negations),
+					// A negated item is no choice: "not Acme, Northwind" names one (ADR 0016).
+					negated.some(({ id }) => pair?.ids.includes(id)) ? undefined : pair,
+					negated,
 				);
 			} else {
 				const readings = readingsFor(

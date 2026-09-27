@@ -35,9 +35,12 @@ const WORD = /[\p{L}\p{M}\p{N}]+(?:[-'’][\p{L}\p{M}\p{N}]+)*/gu;
 
 export type Word = { folded: string; start: number; end: number };
 
-/** Folded, and a possessive dropped: "Tallyroot's" reads "tallyroot". */
+/**
+ * Folded, a curly apostrophe read as a straight one, and a possessive
+ * dropped: "Tallyroot's" reads "tallyroot", "wasn’t" reads "wasn't".
+ */
 export function foldWord(word: string): string {
-	return fold(word).replace(/['’]s$/, "");
+	return fold(word).replace(/’/g, "'").replace(/'s$/, "");
 }
 
 export function words(text: string): Word[] {

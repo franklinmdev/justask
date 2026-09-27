@@ -2,10 +2,10 @@ import { foldWord, mentions, type Word, words } from "./named-pair.ts";
 import type { Candidate } from "./search.ts";
 
 /**
- * Words that negate an item's name, in a card's language: `before` words sit
- * before the name, with up to two other words between ("not Beanhaven",
- * "didn't go to Larkspur", "no fue Cafetal"); `after` words follow it
- * straight on ("Larkspur wasn't it"). A phrase may be several words.
+ * Words that negate an item's name, in a card's language: `before` phrases
+ * sit straight before the name ("wasn't Beanhaven", "no fue Cafetal"),
+ * `after` phrases straight after it ("Larkspur wasn't it"). A phrase may be
+ * several words.
  */
 export type Negations = { before: string[]; after: string[] };
 
@@ -17,18 +17,14 @@ export type NegatedItem = {
 	text: string;
 };
 
-/** Other words than the name that may sit between a `before` negation and it. */
-const GAP = 2;
-
-/** A mark that ends a clause, so a negation on its other side negates something else. */
+/** A mark that ends a clause, so a negation across it negates something else. */
 const CLAUSE = /[,;:.!?()[\]"“”¿¡]/;
 
 /**
  * The items of the candidates the request names, every time it names them,
- * with a negation beside the name in the same clause: a `before` phrase with
- * up to two words between it and the name, and no other item's name among
- * them; or an `after` phrase straight after it. An item the request also
- * names once without one is left out.
+ * with a negation right beside the name and no clause mark between them: a
+ * `before` phrase straight before it, or an `after` phrase straight after
+ * it. An item the request also names once without one is left out.
  */
 export function findNegated(
 	request: string,
@@ -38,64 +34,41 @@ export function findNegated(
 	if (!negations) return [];
 	const text = request.normalize("NFC");
 	const said = words(text);
-	const named = mentions(said, candidates);
-	const phrase = (words: string) => words.trim().split(/\s+/).map(foldWord);
-	const before = negations.before.map(phrase);
-	const after = negations.after.map(phrase);
-	/** Whether `phrase` is said starting at word `at`, in one clause. */
+	const folded = (phrase: string) => phrase.trim().split(/\s+/).map(foldWord);
+	const before = negations.before.map(folded);
+	const after = negations.after.map(folded);
+	/** Whether `phrase` is said from word `at` on. */
 	const saidAt = (at: number, phrase: string[]) =>
 		at >= 0 &&
 		at + phrase.length <= said.length &&
-		phrase.every((word, i) => said[at + i]?.folded === word) &&
-		sameClause(text, said, at, at + phrase.length - 1);
+		phrase.every((word, i) => said[at + i]?.folded === word);
+	/** The span of words from `from` to `to`, when no clause mark splits it. */
+	const span = (from: number, to: number) => {
+		const spoken = text.slice(
+			(said[from] as Word).start,
+			(said[to] as Word).end,
+		);
+		return CLAUSE.test(spoken) ? undefined : spoken;
+	};
 
 	const negated = new Map<string, string>();
 	const plain = new Set<string>();
-	for (const mention of named) {
-		let span: [number, number] | undefined;
-		for (const words of after) {
-			if (saidAt(mention.last + 1, words)) {
-				span = [mention.first, mention.last + words.length];
-				break;
-			}
-		}
-		for (let gap = 0; !span && gap <= GAP; gap++) {
-			for (const words of before) {
-				const at = mention.first - gap - words.length;
-				const other = named.some(
-					(m) => m !== mention && m.last >= at && m.first < mention.first,
-				);
-				if (
-					!other &&
-					saidAt(at, words) &&
-					sameClause(text, said, at, mention.last)
-				) {
-					span = [at, mention.last];
-					break;
-				}
-			}
-		}
-		if (!span) {
-			plain.add(mention.id);
-			continue;
-		}
-		if (!negated.has(mention.id)) {
-			negated.set(
-				mention.id,
-				text.slice((said[span[0]] as Word).start, (said[span[1]] as Word).end),
-			);
-		}
+	for (const { id, first, last } of mentions(said, candidates)) {
+		const spoken =
+			after
+				.filter((phrase) => saidAt(last + 1, phrase))
+				.map((phrase) => span(first, last + phrase.length))
+				.find(Boolean) ??
+			before
+				.filter((phrase) => saidAt(first - phrase.length, phrase))
+				.map((phrase) => span(first - phrase.length, last))
+				.find(Boolean);
+		if (!spoken) plain.add(id);
+		else if (!negated.has(id)) negated.set(id, spoken);
 	}
 	return [...negated]
 		.filter(([id]) => !plain.has(id))
 		.map(([id, text]) => ({ id, text }));
-}
-
-/** Whether words `from` to `to` sit in one clause, with no clause mark between them. */
-function sameClause(text: string, said: Word[], from: number, to: number) {
-	return !CLAUSE.test(
-		text.slice((said[from] as Word).start, (said[to] as Word).end),
-	);
 }
 
 /** Refuses a blank negation, which would match beside any name. */

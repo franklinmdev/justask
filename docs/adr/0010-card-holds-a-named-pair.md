@@ -54,7 +54,7 @@ Checked with no call over all 2,494 rows of every set in `demo/eval/` (card, fil
 
 ### Known cost
 
-A negated name beside a comma is held: "not Larkspur, Beanhaven coffee" names Beanhaven, but reads as two names with a comma between them. It is held, never filled wrong. A negation rule in `findPair` was weighed and rejected for the filter's statuses (ADR 0011, Amendment); the card's negation hold (ADR 0016) reads the pick, not the pair.
+A negated name beside a comma reads as a pair: "not Larkspur, Beanhaven coffee" names Beanhaven, but has two names with a comma between them. On the card the negation hold (ADR 0016) drops a pair one of whose items the request names negated, so it fills Beanhaven there. The filter and the search hold it, as they declare no negations: held, never filled wrong.
 
 ## Considered Options
 

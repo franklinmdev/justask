@@ -612,8 +612,7 @@ export const spanish: Content = {
 	},
 	joiners: { or: ["o", "u", "vs", "versus"], and: ["y", "e"] },
 	cardNegations: {
-		// Bare "no" also modifies a noun: "un acuerdo de no competencia de Lindero".
-		before: ["no fue", "no era", "no es", "nunca", "ni"],
+		before: ["no", "no fue", "no era", "no es", "nunca", "ni"],
 		after: ["no fue", "no era", "no es"],
 	},
 
