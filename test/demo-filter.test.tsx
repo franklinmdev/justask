@@ -438,7 +438,7 @@ describe("the demo's Table case", () => {
 
 		const state = panel("Esta llamada");
 		expect(await figure(state, "Tokens de entrada")).toBe("120");
-		expect(await figure(state, "Costo")).toBe("0,000005\u00a0US$");
+		expect(await figure(state, "Costo")).toBe("US$0.000005");
 	});
 
 	it("shows why each field filled or was held in the state panel", async () => {

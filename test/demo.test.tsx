@@ -259,7 +259,7 @@ describe("the demo's Search case", () => {
 
 		const state = within(screen.getByRole("region", { name: "Esta llamada" }));
 		expect(await figure(state, "Tokens de entrada")).toBe("120");
-		expect(await figure(state, "Costo")).toBe("0,000005\u00a0US$");
+		expect(await figure(state, "Costo")).toBe("US$0.000005");
 	});
 
 	it("shows a retried call in the strip in Spanish", async () => {

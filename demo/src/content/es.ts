@@ -38,7 +38,8 @@ function fieldHeldBecause(reason: FieldHeldReason): string {
 // the Spanish UI the provider is "el modelo", since "proveedor" is a vendor.
 export const spanish: Content = {
 	language: "es",
-	locale: "es",
+	// The Dominican convention, 1,000.50, which the Spanish requests and the amount box already use (#221).
+	locale: "es-DO",
 	copy: {
 		skip: "Ir al contenido",
 		stopped: {

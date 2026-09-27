@@ -365,7 +365,17 @@ describe("the demo's card page", () => {
 
 		const state = panel("Esta llamada");
 		expect(await figure(state, "Tokens de entrada")).toBe("120");
-		expect(await figure(state, "Costo")).toBe("0,000005\u00a0US$");
+		expect(await figure(state, "Costo")).toBe("US$0.000005");
+	});
+
+	it("writes a Spanish amount as the request and the box do, 86.40, once saved (#221)", async () => {
+		const { user } = renderDemo({ url: "/?case=form&lang=es" });
+
+		await suggest(user, "almuerzo con Cazuela Azul ayer, $86.40");
+		expect(amount("Monto, dólar estadounidense").value).toBe("86.40");
+		await user.click(save("Guardar gasto"));
+
+		expect(saved("Gastos guardados")[0]).toMatch(/US\$86\.40$/);
 	});
 
 	it("takes the expense back on Undo and puts it on the card again", async () => {
