@@ -1598,6 +1598,8 @@ The owner ruled on [#244](https://github.com/franklinmdev/justask/issues/244) on
 
 **For the next round's rules:** a line that counts frozen rows names the rows a later owner ruling moved, and a line for one field counts that field.
 
+**Corrected at review, and the ruling stands (the owner, 2026-09-27).** The pre-merge review found two figures above recorded wrong, both corrected where they stand: line 2 on the card is 61 of 76 English and 65 of 77 Spanish, not 62 and 66, so English is one under the line if line 2 is read on the card as line 3 is (at the field, the measure its 39 of 77 was taken on, 65 and 68); and line 3 in English also misses at the total's own gate (11 of 14), where `en-b-03` and `en-b-11` pick `not_mentioned` on the total, so "the misses are the unchanged intent's" holds for Spanish. Shown both, the owner ruled that the ruling stands.
+
 ### Run logs
 
 - Round 9's rows: `demo/eval/runs/card-<en|es>-round9-3.jsonl` (decides), `-4.jsonl` (flips)
