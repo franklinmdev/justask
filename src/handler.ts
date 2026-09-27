@@ -208,7 +208,8 @@ function serve(
 			});
 		} catch (error) {
 			// The browser went away, and its call with it: nobody reads this answer.
-			if (httpRequest.signal.aborted) {
+			// Any other error, even one thrown as it left, is the host's to answer.
+			if (httpRequest.signal.aborted && error === httpRequest.signal.reason) {
 				return new Response(null, { status: CLIENT_CLOSED });
 			}
 			throw error;

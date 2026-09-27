@@ -362,6 +362,22 @@ describe("createSearchHandler", () => {
 		expect(provider.calls[0]?.signal.aborted).toBe(true);
 	});
 
+	it("rejects with the shortlist's own error when it throws as the browser goes away", async () => {
+		const browser = new AbortController();
+
+		await expect(
+			handler({
+				search: {
+					...search,
+					shortlist: () => {
+						browser.abort();
+						throw new Error("db down");
+					},
+				},
+			})(new Request(post(asked), { signal: browser.signal })),
+		).rejects.toThrow("db down");
+	});
+
 	it("refuses anything but POST", async () => {
 		const response = await handler()(
 			new Request("https://app.test/api/justask"),
