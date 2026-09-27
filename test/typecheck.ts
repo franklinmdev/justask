@@ -32,6 +32,7 @@ export function diagnosticsOf(files: Record<string, string>): string {
 					strict: true,
 					noUncheckedIndexedAccess: true,
 					exactOptionalPropertyTypes: true,
+					verbatimModuleSyntax: true,
 					isolatedModules: true,
 					allowImportingTsExtensions: true,
 					skipLibCheck: true,
