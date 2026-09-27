@@ -652,6 +652,13 @@ h2 {
 	}
 }
 
+/* On a phone the month takes the whole row: a billion users' month in Spanish ran past 375px (#223). */
+@media (max-width: 560px) {
+	.calculator-results {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
 /* The case's title, and beside it the recorded run's label while it shows. */
 .case-head {
 	display: flex;
