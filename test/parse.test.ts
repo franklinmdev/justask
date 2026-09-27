@@ -490,6 +490,145 @@ describe("month names", () => {
 	});
 });
 
+describe("common day phrases (#189)", () => {
+	it.each([
+		["Beanhaven coffee on the 3rd $5", "on the 3rd", "$5"],
+		["Beanhaven on the 3rd for $5", "on the 3rd", "$5"],
+		["café en Cafetal el día 3 por 5 dólares", "el día 3", "5 dólares"],
+		["Cafetal el 3 5 dólares", "el 3", "5 dólares"],
+		["the 3rd, $5", "the 3rd", "$5"],
+	])(
+		"reads the day of the month before an amount, and not as one: %s",
+		(text, day, amount) => {
+			const read = parse(text);
+			expect(read.dates?.map((d) => [d.text, d.from])).toEqual([
+				[day, "2026-09-03"],
+			]);
+			expect(read.amounts?.map((a) => a.text)).toEqual([amount]);
+		},
+	);
+
+	it.each([
+		"Acme $100 con el 5 por ciento de descuento",
+		"bought the 3 for $12",
+	])("reads no day from a count or a share: %s", (text) => {
+		expect(dates(text)).toEqual([]);
+	});
+
+	it.each([
+		["a week ago, Beanhaven, $6", "a week ago", "2026-09-14"],
+		["a day ago", "a day ago", "2026-09-20"],
+		["a couple days ago", "a couple days ago", "2026-09-19"],
+		["a couple of days ago", "a couple of days ago", "2026-09-19"],
+		["Cafetal 4 dólares dos días atrás", "dos días atrás", "2026-09-19"],
+		["hace un par de días", "hace un par de días", "2026-09-19"],
+		["hace una semana", "hace una semana", "2026-09-14"],
+		["Beanhaven $6 yday", "yday", "2026-09-20"],
+	])("%s", (text, span, day) => {
+		expect(dates(text)).toEqual([[span, day, day]]);
+	});
+
+	it.each([
+		["next month", "next month"],
+		["el mes que viene", "el mes que viene"],
+		["el próximo mes", "próximo mes"],
+		["el mes próximo", "el mes próximo"],
+	])("reads %s as the month after this one", (text, span) => {
+		expect(dates(text)).toEqual([[span, "2026-10-01", "2026-10-31"]]);
+	});
+});
+
+describe("before and after leave the day they name out (#183)", () => {
+	it.each([
+		["invoices after May 5", "after May 5", "2026-05-06"],
+		["invoices before September 10", "before September 10", "2026-09-09"],
+		["invoices before yesterday", "before yesterday", "2026-09-19"],
+		["invoices before May", "before May", "2026-04-30"],
+		["invoices after June", "after June", "2026-07-01"],
+		["facturas de antes de mayo", "antes de mayo", "2026-04-30"],
+		["facturas antes del mes pasado", "antes del mes pasado", "2026-07-31"],
+		[
+			"facturas después de la semana pasada",
+			"después de la semana pasada",
+			"2026-09-21",
+		],
+		["gastos luego del 5 de agosto", "luego del 5 de agosto", "2026-08-06"],
+		[
+			"facturas posteriores al 5 de mayo",
+			"posteriores al 5 de mayo",
+			"2026-05-06",
+		],
+		["facturas anteriores a julio", "anteriores a julio", "2026-06-30"],
+		["facturas previas a julio", "previas a julio", "2026-06-30"],
+		["invoices older than June", "older than June", "2026-05-31"],
+		["invoices later than July", "later than July", "2026-08-01"],
+		["invoices prior to May 5", "prior to May 5", "2026-05-04"],
+		["invoices before 2025", "before 2025", "2024-12-31"],
+	])("%s", (text, span, day) => {
+		expect(dates(text)).toEqual([[span, day, day]]);
+	});
+
+	it("says which day the bound leaves out", () => {
+		expect(parse("after May 5").dates?.[0]?.note).toBe(
+			"the first day after May 5, which 'after' leaves out",
+		);
+		expect(parse("antes de mayo").dates?.[0]?.note).toBe(
+			"the last day before mayo, which 'antes de' leaves out",
+		);
+	});
+
+	it("keeps both readings of an ambiguous day, each moved, and ambiguous", () => {
+		expect(
+			(parse("after last Friday").dates ?? []).map((d) => [
+				d.from,
+				d.ambiguous,
+			]),
+		).toEqual(
+			(parse("last Friday").dates ?? []).map((d) => [
+				// Read on a Monday, both last Fridays are single days.
+				new Date(Date.parse(`${d.from}T00:00:00Z`) + 86_400_000)
+					.toISOString()
+					.slice(0, 10),
+				d.ambiguous,
+			]),
+		);
+	});
+
+	it.each([
+		["invoices on or after May 5", "May 5", "2026-05-05"],
+		["invoices on or before May 5", "May 5", "2026-05-05"],
+		["invoices not before May 5", "May 5", "2026-05-05"],
+		["after May 5th inclusive", "May 5th", "2026-05-05"],
+	])("keeps the day a bound says it includes: %s", (text, span, day) => {
+		expect(dates(text)).toEqual([[span, day, day]]);
+	});
+
+	it.each([
+		["dinner after Friday's game $40", "Friday", "2026-09-18"],
+		["Acme lunch before Friday’s meeting $30", "Friday", "2026-09-18"],
+	])("leaves an event on that day as the day: %s", (text, span, day) => {
+		expect(dates(text)).toEqual([[span, day, day]]);
+	});
+
+	it.each([
+		["since March", "March", "2026-03-01", "2026-03-31"],
+		["until July", "July", "2026-07-01", "2026-07-31"],
+		["hasta mayo", "mayo", "2026-05-01", "2026-05-31"],
+		[
+			"the day before yesterday",
+			"the day before yesterday",
+			"2026-09-19",
+			"2026-09-19",
+		],
+		["antes de ayer", "antes de ayer", "2026-09-19", "2026-09-19"],
+	])(
+		"leaves an inclusive bound as the period it names: %s",
+		(text, span, from, to) => {
+			expect(dates(text)).toEqual([[span, from, to]]);
+		},
+	);
+});
+
 describe("numeric dates", () => {
 	it("reads an unambiguous day/month one way", () => {
 		expect(dates("desde el 25/08")).toEqual([
@@ -539,6 +678,23 @@ describe("a bare year is both a date and a number", () => {
 		]);
 		expect(read.amounts?.map((a) => a.value)).toEqual([2025]);
 	});
+
+	it.each([
+		["invoices of $2025", "$2025"],
+		["facturas de 2025 dólares", "2025 dólares"],
+		["paid 2026 dollars", "2026 dollars"],
+		["$1999", "$1999"],
+		["over US$2025", "US$2025"],
+		["2025 usd", "2025 usd"],
+		["€ 2025", "€ 2025"],
+	])(
+		"reads %s, a currency touching the number, as money alone (#184)",
+		(text, span) => {
+			const read = parse(text);
+			expect(read.dates).toEqual([]);
+			expect(read.amounts?.map((a) => a.text)).toEqual([span]);
+		},
+	);
 });
 
 describe("amounts", () => {
@@ -553,7 +709,6 @@ describe("amounts", () => {
 		["10mil", "10mil", 10000],
 		["5k", "5k", 5000],
 		["2.5 millones", "2.5 millones", 2500000],
-		["mil pesos", "mil", 1000],
 		["diez mil", "diez mil", 10000],
 		["un millón", "un millón", 1000000],
 		["a thousand", "a thousand", 1000],
@@ -593,6 +748,148 @@ describe("amounts", () => {
 	it("does not read an everyday word of three letters as a currency code", () => {
 		expect(amounts("the top 10 invoices")).toEqual([["10", 10, null]]);
 		expect(amounts("500 for rent")).toEqual([["500", 500, null]]);
+	});
+
+	describe("numbers written in words (#182)", () => {
+		it.each([
+			["twenty-five dollars", 25],
+			["thirty two dollars", 32],
+			["one hundred fifty dollars", 150],
+			["two hundred and fifty dollars", 250],
+			["two hundred dollars", 200],
+			["twelve hundred dollars", 1200],
+			["sixty-five dollars", 65],
+			["cuarenta y cinco dólares", 45],
+			["doscientos cincuenta dólares", 250],
+			["trescientos cincuenta dólares", 350],
+			["ciento veinte dólares", 120],
+			["doscientos noventa y nueve dólares", 299],
+			["veinticinco dólares", 25],
+			["dieciséis dólares", 16],
+			["mil quinientos dólares", 1500],
+			["mil doscientos dólares", 1200],
+			["dos mil trescientos dólares", 2300],
+			["one thousand two hundred dollars", 1200],
+		])("reads %s whole", (text, value) => {
+			expect(amounts(text)).toEqual([[text, value, "USD"]]);
+		});
+
+		it.each([
+			["diez dólares con cincuenta", 10.5],
+			["10 dólares con 50", 10.5],
+			["ten dollars and fifty cents", 10.5],
+		])("reads the cents said after the currency: %s", (text, value) => {
+			expect(amounts(text)).toEqual([[text, value, "USD"]]);
+		});
+
+		it("reads a number of words with a multiplier whole, currency or not", () => {
+			expect(amounts("over two thousand five hundred")).toEqual([
+				["two thousand five hundred", 2500, null],
+			]);
+			expect(amounts("más de dos mil quinientos")).toEqual([
+				["dos mil quinientos", 2500, null],
+			]);
+		});
+
+		it("still reads no money from number words with neither a multiplier nor a currency", () => {
+			expect(amounts("the two hundred rows")).toEqual([]);
+			expect(amounts("los dos de Ana")).toEqual([]);
+			expect(amounts("a coffee")).toEqual([]);
+		});
+	});
+
+	describe("abbreviated millions and spaced thousands (#182)", () => {
+		it.each([
+			["$1.5M", 1500000, "USD"],
+			["$2M", 2000000, "USD"],
+			["1.5m dollars", 1500000, "USD"],
+			["US$3MM", 3000000, "USD"],
+		])("reads %s as millions beside a currency", (text, value, currency) => {
+			expect(amounts(text, { local_currency: "USD" })).toEqual([
+				[text, value, currency],
+			]);
+		});
+
+		it("reads no amount from an M with no currency beside it, which may be minutes or meters", () => {
+			expect(amounts("a 5m walk")).toEqual([]);
+		});
+
+		it.each([
+			["1 234,56", 1234.56, null],
+			["$ 1 234,56", 1234.56, null],
+			["1 000 pesos", 1000, null],
+			["12 000", 12000, null],
+			["RD$ 12 500", 12500, "DOP"],
+		])(
+			"reads %s with a space between thousands as one number",
+			(text, value, currency) => {
+				expect(amounts(text)).toEqual([[text, value, currency]]);
+			},
+		);
+	});
+
+	it.each([
+		["2 300 dollar tickets", [2, 300]],
+		["compré 2 200 pesos de pan", [2, 200]],
+		["room 12 300 dollars", [12, 300]],
+		["el 3 500 pesos", [500]],
+		["el martes 22 500 pesos", [500]],
+	])(
+		"keeps a count before an amount apart, since only round thousands, decimals or a mark say a space is a separator: %s",
+		(text, values) => {
+			expect(amounts(text).map(([, v]) => v)).toEqual(values);
+		},
+	);
+
+	describe("a currency the request names beside the number (#181)", () => {
+		it.each([
+			["over RD$300", "RD$300", 300, "DOP"],
+			["menos de RD$ 2,000", "RD$ 2,000", 2000, "DOP"],
+			["£299", "£299", 299, "GBP"],
+			["A$20", "A$20", 20, "AUD"],
+			["300 mxn", "300 mxn", 300, "MXN"],
+			["Pieveloz 300 dop", "300 dop", 300, "DOP"],
+			["eur 12", "eur 12", 12, "EUR"],
+			["EUR12", "EUR12", 12, "EUR"],
+			["gbp 40", "gbp 40", 40, "GBP"],
+		])("reads %s in the currency it names", (text, span, value, currency) => {
+			expect(parse(text, { local_currency: "USD" }).amounts).toEqual([
+				{ text: span, value, currency },
+			]);
+		});
+
+		it.each([
+			["over ¥1000", "¥1000", 1000, "¥"],
+			["over C$500", "C$500", 500, "C$"],
+			["mil pesos", "mil pesos", 1000, "pesos"],
+			["un millón de pesos", "un millón de pesos", 1000000, "pesos"],
+			["a thousand pesos", "a thousand pesos", 1000, "pesos"],
+		])(
+			"holds %s, whose mark names no one currency the local one fits, unresolved",
+			(text, span, value, mark) => {
+				expect(parse(text, { local_currency: "USD" }).amounts).toEqual([
+					{ text: span, value, currency: null, unresolved: mark },
+				]);
+			},
+		);
+
+		it("reads an ambiguous mark as the local currency when that is how the local one is written", () => {
+			expect(amounts("¥500", { local_currency: "JPY" })).toEqual([
+				["¥500", 500, "JPY"],
+			]);
+			expect(amounts("mil pesos", { local_currency: "DOP" })).toEqual([
+				["mil pesos", 1000, "DOP"],
+			]);
+		});
+
+		it("still leaves a lowercase word of three letters that is not a common code alone", () => {
+			expect(amounts("the top 10 invoices", { local_currency: "USD" })).toEqual(
+				[["10", 10, null]],
+			);
+			expect(amounts("10 all told", { local_currency: "USD" })).toEqual([
+				["10", 10, null],
+			]);
+		});
 	});
 
 	describe("the local currency fact", () => {
@@ -710,6 +1007,159 @@ describe("amounts", () => {
 		["1,5", 1.5],
 	])("reads the separators of %s", (raw, value) => {
 		expect(amounts(raw)).toEqual([[raw, value, null]]);
+	});
+});
+
+describe("small misreads (#193)", () => {
+	it("does not read the verb 'march' after its subject as March", () => {
+		expect(dates("we march on")).toEqual([]);
+		expect(dates("March invoices")).toEqual([
+			["March", "2026-03-01", "2026-03-31"],
+		]);
+	});
+
+	it.each([
+		["8.30am", "8.30am", ["08:30"]],
+		["8 de la mañana", "8 de la mañana", ["08:00"]],
+		["8 de la noche", "8 de la noche", ["20:00"]],
+		["nos vemos a las 12", "a las 12", ["12:00"]],
+		["pagué a las 3.", "a las 3", ["03:00", "15:00"]],
+		["pagué las 3.", "las 3", ["03:00", "15:00"]],
+		["almuerzo, las 12", "las 12", ["12:00"]],
+	])("reads %s as a time, not an amount", (text, span, at) => {
+		expect(times(text)).toEqual(at.map((time) => [span, time]));
+		expect(amounts(text)).toEqual([]);
+	});
+
+	it("still reads the count after 'las' as a count", () => {
+		expect(times("las 3 facturas")).toEqual([]);
+	});
+
+	it.each(["31/02", "02/30/2026", "2026-02-30"])(
+		"reads nothing from %s, a day that does not exist",
+		(text) => {
+			expect(parse(text)).toEqual({ dates: [], times: [], amounts: [] });
+		},
+	);
+
+	it.each(["$-50", "gastos de -50"])(
+		"reads no amount from %s, a negative number",
+		(text) => {
+			expect(amounts(text)).toEqual([]);
+		},
+	);
+
+	it("still reads both ends of a range written with a dash", () => {
+		expect(amounts("$5-10")).toEqual([
+			["$5", 5, null],
+			["10", 10, null],
+		]);
+	});
+
+	it.each([
+		["Uber - $23", "$23"],
+		["Beanhaven - 5 dollars", "5 dollars"],
+		["Acme -$50 yesterday", "$50"],
+	])("still reads the amount after a dash that separates: %s", (text, span) => {
+		expect(amounts(text).map(([t]) => t)).toEqual([span]);
+	});
+
+	it("reads no amount from 1e3", () => {
+		expect(amounts("1e3")).toEqual([]);
+	});
+
+	it("reads a weekday and its day of the month as one day when they agree", () => {
+		expect(dates("el martes 15")).toEqual([
+			["el martes 15", "2026-09-15", "2026-09-15"],
+		]);
+		expect(dates("Tuesday the 15th")).toEqual([
+			["Tuesday the 15th", "2026-09-15", "2026-09-15"],
+		]);
+		expect(amounts("el martes 15")).toEqual([]);
+	});
+
+	it("holds a weekday and a day of the month that disagree, both readings ambiguous", () => {
+		const read = parse("el martes 16");
+		expect(read.dates?.map((d) => [d.text, d.from, d.ambiguous])).toEqual([
+			["el martes 16", "2026-09-15", true],
+			["el martes 16", "2026-09-16", true],
+		]);
+		expect(read.amounts).toEqual([]);
+	});
+
+	it("reads a weekday with 'the' or an ordinal as a date whatever follows", () => {
+		expect(dates("the Tuesday the 15th Farwander cab 18")).toEqual([
+			["Tuesday the 15th", "2026-09-15", "2026-09-15"],
+		]);
+	});
+
+	it.each(["Beanhaven Monday 2 lattes $9", "lunch Friday 3 people $60"])(
+		"leaves a count after a weekday alone: %s",
+		(text) => {
+			const read = parse(text);
+			expect(read.dates?.map((d) => [d.text, d.ambiguous])).toEqual([
+				[text.split(" ").find((w) => /day$/.test(w)), undefined],
+			]);
+		},
+	);
+
+	it("leaves the money after a weekday to the amounts", () => {
+		expect(dates("martes 15 dólares")).toEqual([
+			["martes", "2026-09-15", "2026-09-15"],
+		]);
+		expect(amounts("martes 15 dólares")).toEqual([["15 dólares", 15, "USD"]]);
+	});
+
+	it("reads cañas, Dominican for pesos, as the local peso only when it is the Dominican one", () => {
+		expect(
+			parse("Cafetal, 500 cañas", { local_currency: "USD" }).amounts,
+		).toEqual([
+			{ text: "500 cañas", value: 500, currency: null, unresolved: "cañas" },
+		]);
+		expect(amounts("Cafetal, 500 cañas", { local_currency: "DOP" })).toEqual([
+			["500 cañas", 500, "DOP"],
+		]);
+		// A caña of beer is a drink, not money.
+		expect(amounts("3 cañas de cerveza 150 pesos")).toEqual([
+			["3", 3, null],
+			["150 pesos", 150, null],
+		]);
+	});
+});
+
+describe("the same value said twice (#201)", () => {
+	it("reads it once, where it is first said", () => {
+		expect(dates("Paid Acme $12 yesterday, yes yesterday")).toEqual([
+			["yesterday", "2026-09-20", "2026-09-20"],
+		]);
+		expect(
+			amounts("Paid Acme $12 yesterday, $12", { local_currency: "USD" }),
+		).toEqual([["$12", 12, "USD"]]);
+		expect(amounts("Paid Acme 12 dollars yesterday, 12 dollars total")).toEqual(
+			[["12 dollars", 12, "USD"]],
+		);
+		expect(times("a las 3pm, sí, a las 3pm")).toEqual([["a las 3pm", "15:00"]]);
+	});
+
+	it("reads one amount however it is written, when both ways name the same currency", () => {
+		expect(amounts("$12 or 12 dollars", { local_currency: "CAD" })).toEqual([
+			["$12", 12, "CAD"],
+		]);
+	});
+
+	it("keeps two readings that differ, even by their currency alone", () => {
+		expect(amounts("12 pesos, $12", { local_currency: "USD" })).toEqual([
+			["12 pesos", 12, null],
+			["$12", 12, "USD"],
+		]);
+		expect(dates("ayer o anteayer")).toHaveLength(2);
+	});
+
+	it("keeps a number with no currency each time it is said, since one may be a count", () => {
+		expect(amounts("500 invoices over 500")).toEqual([
+			["500", 500, null],
+			["500", 500, null],
+		]);
 	});
 });
 

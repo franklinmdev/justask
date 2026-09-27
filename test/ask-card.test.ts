@@ -103,6 +103,34 @@ function tagAnswers(yes: Tag[] = [], p = 0.9) {
 }
 
 describe("ask: card", () => {
+	it("asks about a day or an amount said twice as one candidate, so the two mentions never split its probability (#201)", async () => {
+		const fake = fakeProvider({
+			intent: answer(INTENT, "new_record", 0.97),
+			vendor: answer(["northwind", "acme", ...MISSING], "acme"),
+			...tagAnswers(),
+			spent_on: answer(["d0", ...MISSING], "d0"),
+			total: answer(["a0", ...MISSING], "a0"),
+		});
+
+		const result = await ask({
+			...base,
+			request: "Paid Acme $12 yesterday, yes yesterday, $12",
+			provider: fake,
+			card: expenseCard(),
+		});
+
+		const labels = (id: string) =>
+			fake.calls[0]?.questions
+				.find((question) => question.id === id)
+				?.labels.map(({ label }) => label);
+		expect(labels("spent_on")).toEqual(["d0", ...MISSING]);
+		expect(labels("total")).toEqual(["a0", ...MISSING]);
+		expect(result.card.value).toMatchObject({
+			spent_on: "2026-09-21",
+			total: { value: 12, currency: "USD" },
+		});
+	});
+
 	it("fills a new record from its picked candidates, in one call with the intent question", async () => {
 		const fake = fakeProvider({
 			intent: answer(INTENT, "new_record", 0.97),
@@ -919,8 +947,9 @@ describe("ask: card", () => {
 				request: "Acme bill from Friday, due Friday",
 				provider: fakeProvider({
 					intent: answer(INTENT, "new_record", 0.97),
-					issued_on: answer(["d0", "d1", ...MISSING], "d0"),
-					due_on: answer(["d0", "d1", ...MISSING], "d1"),
+					// "Friday" said twice is one candidate on each field, read its own way (#201).
+					issued_on: answer(["d0", ...MISSING], "d0"),
+					due_on: answer(["d0", ...MISSING], "d0"),
 				}),
 				card: {
 					...billCard(),
