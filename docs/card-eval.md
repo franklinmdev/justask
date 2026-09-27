@@ -28,7 +28,7 @@
 
 **Card rules (#235): four new holds in code move no frozen row.** A named pair joined by a slash, "y/o" or a comma alone, a role marker, a vendor named only negated, and a day after today on the card's past-reading day. See Card rules (#235) below; rounds 1 to 9 are unchanged.
 
-**Round 10 (#244): a bare weekday and a number with no currency fails three of its six lines, as run; the owner has not ruled yet.** Round 9's rows pass every kill line in both languages, bare weekdays fill their day on 65 of 76 English and 68 of 77 Spanish rows (39 of 77 before), and no confident-wrong pair rose. The bare amounts fill 11 and 9 of 14 cards against a line of 12, most misses the unchanged intent's; four frozen `last Thursday` and `last Friday` rows, held before #140, filled the day #140 now reads; and one suggestion, said on a Friday, held its day at 0.79. See Round 10: result below; rounds 1 to 9 are unchanged. Two wording changes on the card's questions for #190 and #191, measured on round 9's frozen rows again and on a new probe set of bare amounts. See Round 10 below; rounds 1 to 9 are unchanged.
+**Round 10 (#244): a bare weekday and a number with no currency fails three of its six lines, as run; the owner ruled on 2026-09-27 that the FAIL stands and the wording ships.** Round 9's rows pass every kill line in both languages, bare weekdays fill their day on 65 of 76 English and 68 of 77 Spanish rows (39 of 77 before), and no confident-wrong pair rose. The bare amounts fill 11 and 9 of 14 cards against a line of 12, most misses the unchanged intent's; four frozen `last Thursday` and `last Friday` rows, held before #140, filled the day #140 now reads; and one suggestion, said on a Friday, held its day at 0.79. See Round 10: result below; rounds 1 to 9 are unchanged. Two wording changes on the card's questions for #190 and #191, measured on round 9's frozen rows again and on a new probe set of bare amounts. See Round 10 below; rounds 1 to 9 are unchanged.
 
 **Latency (#65): from the next verdict run on, every run sends a fixed provider probe before and after its rows, and a run whose probes are more than twice the baseline leaves a failing latency line pending, to be measured again in a normal window.** See Latency below; round 4 stays a FAIL.
 
@@ -1586,6 +1586,17 @@ The three suggestions per language, through `ask` with the demo's card and today
 - **Line 6:** one call of 42, 0.01 under the gate, on the day a bare weekday is most in doubt.
 
 Whether the wording lands, and whether #190 and #191 close, is the owner's ruling on these.
+
+### The owner's ruling
+
+The owner ruled on [#244](https://github.com/franklinmdev/justask/issues/244) on 2026-09-27: **the round stays a FAIL as run, and the wording ships anyway.** No line, set or score is changed after the result; #190, #191 and #244 close with it.
+
+- **Line 3** counted the whole card, while the change was to the amount question only. At the total's own gate the bare amounts filled 11 and 12 of 14 (6 and 5 before), never a wrong total; the misses are the unchanged intent's.
+- **Line 4**'s four days are the `HELD_BEFORE_140` rows, frozen as held before #140 and kept as frozen by the owner's ruling of 2026-09-25. The provider filled the day #140 reads. The line should have excluded that list: a flaw in the line, recorded as such, not rescored.
+- **Line 6:** 41 of 42. The miss holds the day at 0.79 against a 0.8 gate, said on a Friday, and never fills a wrong day; the Spanish twin filled.
+- Lines 1, 2 and 5 pass: round 9's rows pass every kill line, bare weekdays fill 65 of 76 and 68 of 77 (39 of 77 before), and confident-wrong went from 35 to 34 with none new.
+
+**For the next round's rules:** a line that counts frozen rows names the rows a later owner ruling moved, and a line for one field counts that field.
 
 ### Run logs
 
