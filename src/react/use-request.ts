@@ -34,6 +34,9 @@ export type RequestError =
 	| { kind: "server"; status: number; message: string }
 	| { kind: "network"; message: string };
 
+/** A request waiting for its answer, with the number of its pause or call. */
+type Asked = { text: string; number: number };
+
 /** The key of the handler's 200 body that holds the result. */
 type Flow = "search" | "filter" | "card";
 
@@ -66,18 +69,20 @@ export function useRequest<R>({
 	const [loading, setLoading] = useState(false);
 	const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 	// The request the running pause will call for, or null.
-	const paused = useRef<string | null>(null);
-	const inFlight = useRef<{
-		controller: AbortController;
-		text: string;
-	} | null>(null);
+	const paused = useRef<Asked | null>(null);
+	const inFlight = useRef<(Asked & { controller: AbortController }) | null>(
+		null,
+	);
 	// The request whose pause or call a hidden <Activity> cut short.
-	const pending = useRef<string | null>(null);
+	const pending = useRef<Asked | null>(null);
 	// The request a successful `answer` is for, read by a `setRequest` in the
 	// same event; a failed one, or a box replaced, asks again.
 	const answered = useRef<string | null>(null);
-	// How many calls have gone out.
-	const sent = useRef(0);
+	// True once the host spent the answer (a filter's Confirm): other words in
+	// the box then forget it, so the same words typed back call again.
+	const retired = useRef(false);
+	// The number of the latest pause or call begun; a resend keeps its own.
+	const begun = useRef(0);
 	// The latest render's options, for a call a pause or an effect makes later.
 	// A ref rather than `useEffectEvent`, which React 19.0 and 19.1 lack (#175).
 	const latest = useRef({ endpoint, timing, fetchImpl, flow });
@@ -89,8 +94,8 @@ export function useRequest<R>({
 	 * The newest request still waiting for its answer: the running pause's,
 	 * else the call's on its way. A stale answer landing leaves a pause due.
 	 */
-	function due(): string | null {
-		return paused.current ?? inFlight.current?.text ?? null;
+	function due(): Asked | null {
+		return paused.current ?? inFlight.current;
 	}
 
 	function stopPause() {
@@ -106,16 +111,20 @@ export function useRequest<R>({
 	// biome-ignore lint/correctness/useExhaustiveDependencies: runs on mount and when a hidden <Activity> shows again, never per render; `call` reads the latest options from `latest`.
 	useEffect(() => {
 		// A hidden <Activity> shown again runs this: the call it cut short is
-		// made, unless an earlier effect already started a newer one. It waits a
-		// pause of 0, so StrictMode's cleanup and second run, straight after
-		// this one, cancel it and make it once (#215).
+		// made, under its own number, unless an earlier effect already started
+		// a newer one. It waits a pause of 0, so StrictMode's cleanup and second
+		// run, straight after this one, cancel it and make it once (#215).
 		const cut = pending.current;
 		pending.current = null;
 		if (cut !== null && due() === null) {
-			pause(cut, 0, () => call(cut));
+			pause(cut, 0, () => call(cut.text, cut.number));
 		}
 		return () => {
-			pending.current = due();
+			const cutShort = due();
+			pending.current = cutShort && {
+				text: cutShort.text,
+				number: cutShort.number,
+			};
 			stopPause();
 			abortCall();
 			// A hidden <Activity> keeps this state, and its aborted call never lands.
@@ -123,8 +132,11 @@ export function useRequest<R>({
 		};
 	}, []);
 
-	/** Starts a call for `text`, dropping any pending or earlier one. */
-	function call(text: string) {
+	/**
+	 * Starts a call for `text`, dropping any pending or earlier one, under the
+	 * number of the pause that led to it, or a new one.
+	 */
+	function call(text: string, number = ++begun.current) {
 		stopPause();
 		abortCall();
 		if (isBlank(text)) {
@@ -134,9 +146,7 @@ export function useRequest<R>({
 			return;
 		}
 		const controller = new AbortController();
-		inFlight.current = { controller, text };
-		sent.current += 1;
-		const callNumber = sent.current;
+		inFlight.current = { controller, text, number };
 		setLoading(true);
 		const { endpoint, fetchImpl, flow } = latest.current;
 		post<R>(fetchImpl ?? fetch, endpoint, flow, text, controller.signal).then(
@@ -144,7 +154,8 @@ export function useRequest<R>({
 				if (controller.signal.aborted) return;
 				inFlight.current = null;
 				answered.current = next.error ? null : text;
-				setAnswer({ ...next, request: text, call: callNumber });
+				retired.current = false;
+				setAnswer({ ...next, request: text, call: number });
 				setLoading(due() !== null);
 			},
 		);
@@ -152,36 +163,47 @@ export function useRequest<R>({
 
 	function setRequest(text: string) {
 		setRequestState(text);
+		if (
+			retired.current &&
+			answered.current !== null &&
+			!sameRequest(answered.current, text)
+		) {
+			answered.current = null;
+			retired.current = false;
+		}
 		if (isBlank(text)) {
 			call(text);
 		} else if (timing.on === "type") {
 			// Surrounding spaces ask nothing new (#216): the pause or call already
 			// due for the same words goes on, and back at the answered words no
 			// call is needed.
-			const asked = due() ?? answered.current;
-			if (asked !== null && sameRequest(asked, text)) return;
+			if (paused.current && sameRequest(paused.current.text, text)) return;
+			if (inFlight.current && sameRequest(inFlight.current.text, text)) {
+				stopPause();
+				return;
+			}
 			if (answered.current !== null && sameRequest(answered.current, text)) {
 				stopPause();
 				abortCall();
 				setLoading(false);
 				return;
 			}
-			pause(text, timing.debounceMs, () => {
+			pause({ text, number: ++begun.current }, timing.debounceMs, (asked) => {
 				// A host that turned to Enter during the pause wants no call now.
-				if (latest.current.timing.on === "type") call(text);
+				if (latest.current.timing.on === "type") call(asked.text, asked.number);
 				else setLoading(due() !== null);
 			});
 		}
 	}
 
-	/** Waits `ms` for `text`, replacing any running pause, then runs `end`. */
-	function pause(text: string, ms: number, end: () => void) {
+	/** Waits `ms` for `asked`, replacing any running pause, then runs `end`. */
+	function pause(asked: Asked, ms: number, end: (asked: Asked) => void) {
 		clearTimeout(timer.current);
-		paused.current = text;
+		paused.current = asked;
 		setLoading(true);
 		timer.current = setTimeout(() => {
 			paused.current = null;
-			end();
+			end(asked);
 		}, ms);
 	}
 
@@ -199,13 +221,17 @@ export function useRequest<R>({
 		setRequest,
 		replaceRequest,
 		submit: () => call(request),
+		/** Spends the answer: other words in the box forget it, and the same words typed back call again. */
+		retire: () => {
+			retired.current = true;
+		},
 		loading,
 		answer,
 		/**
-		 * The number of the latest call, counting the one a running pause will
-		 * make, for an event to stamp a change with.
+		 * The number of the latest pause or call begun, the one whose answer a
+		 * change made now comes after, for an event to stamp the change with.
 		 */
-		latestCall: () => sent.current + (paused.current === null ? 0 : 1),
+		latestCall: () => begun.current,
 		/** True when `answer` is for the request in the box, surrounding spaces aside. */
 		current: answer !== null && sameRequest(answer.request, request),
 	};

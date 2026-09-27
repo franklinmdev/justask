@@ -77,9 +77,8 @@ export function useFilter<F extends Fields>({
 	onConfirm,
 	fetch,
 }: UseFilterOptions<F>): UseFilter<F> {
-	const { request, setRequest, submit, loading, answer, current } = useRequest<
-		FilterResult<F>
-	>({ endpoint, timing, fetch, flow: "filter" });
+	const { request, setRequest, submit, retire, loading, answer, current } =
+		useRequest<FilterResult<F>>({ endpoint, timing, fetch, flow: "filter" });
 	// Keyed by the answer it edits, so a new answer starts with nothing removed.
 	const [removed, setRemoved] = useState<{
 		answer: typeof answer;
@@ -119,6 +118,8 @@ export function useFilter<F extends Fields>({
 			if (!ready) return;
 			onConfirm(value);
 			setConfirmed(answer);
+			// The same words typed back after other words call again (#233).
+			retire();
 		},
 	};
 }

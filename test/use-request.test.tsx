@@ -232,6 +232,24 @@ describe("the hooks' request timing", () => {
 		expect(result.current.loading).toBe(false);
 	});
 
+	it("makes no second call when the box returns to the words already on their way (#216)", async () => {
+		const { calls, fetchImpl } = gatedFetch();
+		const { result } = renderSearch({ fetch: fetchImpl });
+		act(() => result.current.setRequest("acme"));
+		await waitFor(() => expect(calls).toHaveLength(1));
+
+		act(() => result.current.setRequest("acme t"));
+		act(() => result.current.setRequest("acme"));
+		await act(() => pause(DEBOUNCE_MS * 2));
+		expect(calls).toHaveLength(1);
+		expect(result.current.loading).toBe(true);
+
+		calls[0]?.open();
+		await waitFor(() =>
+			expect(result.current.item?.name).toBe("Acme Supplies"),
+		);
+	});
+
 	it("retries a failed answer when the same words are typed again (#216)", async () => {
 		let failing = true;
 		const { result } = renderSearch({

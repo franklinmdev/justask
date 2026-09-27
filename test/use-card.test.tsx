@@ -1,5 +1,12 @@
 // @vitest-environment jsdom
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+	act,
+	cleanup,
+	render,
+	renderHook,
+	screen,
+	waitFor,
+} from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import {
 	type Candidate,
@@ -18,6 +25,7 @@ import {
 	type UseCard,
 	useCard,
 } from "justask/react";
+import { Activity, type ReactNode, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { expectNoAxeViolations } from "./checks.ts";
 import { failingProvider, fakeProvider } from "./fake-provider.ts";
@@ -431,6 +439,74 @@ describe("useCard and its pieces", () => {
 		await waitFor(() => expect(provider.calls).toHaveLength(2));
 		await waitFor(() => expect(vendor().value).toBe("northwind"));
 		expect(seen.card?.ready).toBe(true);
+	});
+
+	it("keeps a field set mid call when a hidden tab resends that call (#213)", async () => {
+		let open = () => {};
+		const opened = new Promise<void>((resolve) => {
+			open = resolve;
+		});
+		const inner = fakeProvider(fills);
+		const provider: Provider = {
+			answer: async (input) => {
+				await opened;
+				return inner.answer(input);
+			},
+		};
+		vi.setSystemTime(new Date("2026-09-22T15:00:00Z"));
+		const handler = createCardHandler<Fields>({
+			provider,
+			timeoutMs: 5_000,
+			facts: { local_currency: "USD" },
+			card: expense,
+		});
+		const host = { setMode: (_mode: "visible" | "hidden") => {} };
+		function Tabs({ children }: { children: ReactNode }) {
+			const [mode, setMode] = useState<"visible" | "hidden">("visible");
+			host.setMode = setMode;
+			return <Activity mode={mode}>{children}</Activity>;
+		}
+		const { result } = renderHook(
+			() =>
+				useCard<Fields>({
+					endpoint: "/api/card",
+					onConfirm: () => {},
+					fetch: (input, init) =>
+						handler(new Request(new URL(String(input), location.href), init)),
+				}),
+			{ wrapper: Tabs },
+		);
+
+		act(() => result.current.setRequest(lunch));
+		act(() => result.current.submit());
+		act(() => result.current.set("vendor", vendors[1]?.value));
+		act(() => host.setMode("hidden"));
+		act(() => host.setMode("visible"));
+		await act(() => pause(50));
+		open();
+		await waitFor(() => expect(result.current.answered).toBe(true));
+
+		expect(result.current.value.vendor).toEqual({ id: "acme", name: "Acme" });
+		expect(result.current.filledBy("vendor")).toBe("person");
+	});
+
+	it("starts over a field set during a pause that was dropped before any call (#213)", async () => {
+		const { user } = renderCard({
+			provider: fakeProvider(fills),
+			timing: { on: "type", debounceMs: 200 },
+		});
+		await user.type(box(), lunch);
+		await screen.findByText(/^Filled:/);
+
+		await user.type(box(), " x");
+		await user.selectOptions(vendor(), "acme");
+		await user.type(box(), "{Backspace}{Backspace}");
+		await pause(400);
+		expect(vendor().value).toBe("acme");
+
+		await user.type(box(), " please");
+		await waitFor(() => expect(vendor().value).toBe("northwind"));
+		expect(filledBy(vendor())).toBe("answer");
 	});
 
 	it("starts over a field the person set before Enter (#213)", async () => {

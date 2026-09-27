@@ -241,6 +241,23 @@ describe("useFilter and its pieces", () => {
 		expect(seen.filter?.ready).toBe(false);
 	});
 
+	it("calls again for the same words retyped after Confirm, and not for a trailing space (#233)", async () => {
+		const provider = fakeProvider(fills);
+		const { user } = renderFilter({ provider });
+		await user.type(screen.getByRole("searchbox"), "acme invoices");
+		await screen.findByText("Vendor: Acme Supplies");
+		await user.click(confirmButton());
+		expect(screen.queryByText("Vendor: Acme Supplies")).toBeNull();
+
+		await user.type(screen.getByRole("searchbox"), " ");
+		await pause(DEBOUNCE_MS * 2);
+		expect(provider.calls).toHaveLength(1);
+
+		await user.type(screen.getByRole("searchbox"), "{Backspace}{Backspace}s");
+		await screen.findByText("Vendor: Acme Supplies");
+		expect(provider.calls).toHaveLength(2);
+	});
+
 	it("leaves a held field out, exactly as one the request never mentioned", async () => {
 		const { container, onConfirm, user } = renderFilter({
 			provider: fakeProvider(holdsVendor),
