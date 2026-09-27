@@ -276,6 +276,23 @@ describe("ask: filter with amount fields", () => {
 		});
 	});
 
+	it("says a number with no currency does not say which, whatever the local currency: the card's wording (#191) is not the filter's", async () => {
+		const fake = fakeProvider({ total_a0: answer(ROLES, "min") });
+
+		await ask({
+			...base,
+			facts: { ...facts, local_currency: "USD" },
+			request: "facturas de más de 500",
+			provider: fake,
+			filter: invoiceFilter(),
+		});
+
+		const [question] = fake.calls[0]?.questions ?? [];
+		expect(question?.instruction).toContain(
+			'the number "500": 500, the request does not say in which currency in the request',
+		);
+	});
+
 	it("holds the whole amount when the request names a currency that does not resolve, without asking", async () => {
 		const fake = fakeProvider({});
 

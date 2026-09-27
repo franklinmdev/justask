@@ -1,0 +1,24 @@
+{"id": "en-b-01", "request": "Swiftlane same-day delivery to the bank yesterday, 38", "kind": "record", "expected": {"vendor": "swiftlane", "tags": ["office"], "spent_on": "2026-09-22", "total": {"value": 38}}}
+{"id": "en-b-02", "request": "Larkspur sandwich platter for the staff meeting today, 126.40", "kind": "record", "expected": {"vendor": "larkspur", "tags": ["meals"], "spent_on": "2026-09-23", "total": {"value": 126.4}}}
+{"id": "en-b-03", "request": "taxi to the airport on September 17, 52", "kind": "record", "expected": {"tags": ["travel"], "spent_on": "2026-09-17", "total": {"value": 52}}}
+{"id": "en-b-04", "request": "Cloudberth hosting renewal, 1,080 on September 1", "kind": "record", "expected": {"vendor": "cloudberth", "tags": ["office"], "spent_on": "2026-09-01", "total": {"value": 1080}}}
+{"id": "en-b-05", "request": "Fixbright laptop screen repair yesterday, 245 even", "kind": "record", "expected": {"vendor": "fixbright", "tags": ["office"], "spent_on": "2026-09-22", "total": {"value": 245}}}
+{"id": "en-b-06", "request": "Clausewood contract review, 1.450,00 on September 8", "kind": "record", "expected": {"vendor": "clausewood", "tags": ["office"], "spent_on": "2026-09-08", "total": {"value": 1450}}}
+{"id": "en-b-07", "request": "lunch at Rosa's Diner with the team today, 67.25", "kind": "record", "expected": {"tags": ["meals"], "spent_on": "2026-09-23", "total": {"value": 67.25}}}
+{"id": "en-b-08", "request": "Glasswell window washing on September 15, 180 bucks", "kind": "record", "expected": {"vendor": "glasswell", "tags": ["office"], "spent_on": "2026-09-15", "total": {"value": 180}}}
+{"id": "en-b-09", "request": "Paydale payroll processing fee, 95 on September 4", "kind": "record", "expected": {"vendor": "paydale", "tags": ["office"], "spent_on": "2026-09-04", "total": {"value": 95}}}
+{"id": "en-b-10", "request": "Sureharbor liability insurance premium yesterday, 2,340", "kind": "record", "expected": {"vendor": "sureharbor", "tags": ["office"], "spent_on": "2026-09-22", "total": {"value": 2340}}}
+{"id": "en-b-11", "request": "Farwander flight to Denver on September 18, 318", "kind": "record", "expected": {"vendor": "farwander", "tags": ["travel"], "spent_on": "2026-09-18", "total": {"value": 318}}}
+{"id": "en-b-12", "request": "Tallyroot monthly subscription today, 49.99", "kind": "record", "expected": {"vendor": "tallyroot", "tags": ["office"], "spent_on": "2026-09-23", "total": {"value": 49.99}}}
+{"id": "en-b-13", "request": "Inkhollow 500 business cards yesterday, 89", "kind": "record", "expected": {"vendor": "inkhollow", "tags": ["office"], "spent_on": "2026-09-22", "total": {"value": 89}}}
+{"id": "en-b-14", "request": "Papergrove 12 boxes of pens on September 16, 54", "kind": "record", "expected": {"vendor": "papergrove", "tags": ["office"], "spent_on": "2026-09-16", "total": {"value": 54}}}
+{"id": "en-b-15", "request": "Papergrove 8 packs of copy paper yesterday", "kind": "record", "expected": {"vendor": "papergrove", "tags": ["office"], "spent_on": "2026-09-22"}}
+{"id": "en-b-16", "request": "Larkspur 30 lunches for the board today", "kind": "record", "expected": {"vendor": "larkspur", "tags": ["meals"], "spent_on": "2026-09-23"}}
+{"id": "en-b-17", "request": "Swiftlane 3 packages to the lawyer on September 14", "kind": "record", "expected": {"vendor": "swiftlane", "tags": ["office"], "spent_on": "2026-09-14"}}
+{"id": "en-b-18", "request": "Brightmop 2 extra cleanings of the lobby on September 19", "kind": "record", "expected": {"vendor": "brightmop", "tags": ["office"], "spent_on": "2026-09-19"}}
+{"id": "en-b-19", "request": "Larkspur breakfast for the team yesterday, 40 or 45", "kind": "ambiguous", "expected": {"vendor": "larkspur", "tags": ["meals"], "spent_on": "2026-09-22", "total": "held"}}
+{"id": "en-b-20", "request": "Farwander train to Boston on September 11, 72 or 76", "kind": "ambiguous", "expected": {"vendor": "farwander", "tags": ["travel"], "spent_on": "2026-09-11", "total": "held"}}
+{"id": "en-b-21", "request": "change the Swiftlane charge from yesterday to 42", "kind": "nothing"}
+{"id": "en-b-22", "request": "did we pay Glasswell more than 300 this month?", "kind": "nothing"}
+{"id": "en-b-23", "request": "delete the 64 from Larkspur", "kind": "nothing"}
+{"id": "en-b-24", "request": "split the 120 Farwander bill in two", "kind": "nothing"}
