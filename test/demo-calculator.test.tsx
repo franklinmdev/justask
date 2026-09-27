@@ -138,6 +138,37 @@ describe("the showcase's cost calculator", () => {
 		await expectNoAxeViolations(container);
 	});
 
+	it("shows the cost per call with every digit the month uses, so the formula multiplies out to the month (#220)", async () => {
+		const { user } = renderDemo({
+			provider: fakeProvider(fixtureFor, { costUsd: 0.000031701 }),
+		});
+
+		await user.click(
+			screen.getByRole("button", { name: "the catering people" }),
+		);
+
+		await calculator().findByRole("status");
+		expect(figure("Cost per call")).toBe("$0.000031701");
+		// 1,000 × 10 × 0.000031701 × 30 = 9.5103.
+		expect(month()).toBe("$9.51");
+		expect(
+			calculator().getByText("1,000 × 10 × $0.000031701 × 30 days"),
+		).toBeDefined();
+	});
+
+	it("keeps a float's noise out of the cost per call's digits", async () => {
+		const { user } = renderDemo({
+			provider: fakeProvider(fixtureFor, { costUsd: 0.1 + 0.2 }),
+		});
+
+		await user.click(
+			screen.getByRole("button", { name: "the catering people" }),
+		);
+
+		await calculator().findByRole("status");
+		expect(figure("Cost per call")).toBe("$0.3");
+	});
+
 	it("takes users and actions from the person, never the cost per call", () => {
 		renderDemo();
 
@@ -238,17 +269,17 @@ describe("the showcase's cost calculator", () => {
 		).toBe("42");
 	});
 
-	it("formats the month in Spanish", async () => {
+	it("formats the month in Spanish with the Dominican convention its requests use, as in $1,000 and $86.40 (#221)", async () => {
 		const { container, user } = renderDemo({ url: "/?case=search&lang=es" });
 
 		await user.click(screen.getByRole("button", { name: "los del catering" }));
 
 		const region = "Costo por mes";
 		await calculator(region).findByRole("status");
-		expect(figure("Costo por llamada", region)).toBe("0,000005 US$");
-		expect(month(region)).toBe("1,50 US$");
+		expect(figure("Costo por llamada", region)).toBe("US$0.000005");
+		expect(month(region)).toBe("US$1.50");
 		expect(
-			calculator(region).getByText("1000 × 10 × 0,000005 US$ × 30 días"),
+			calculator(region).getByText("1,000 × 10 × US$0.000005 × 30 días"),
 		).toBeDefined();
 		expect(
 			calculator(region).getByRole("textbox", { name: "Usuarios" }),

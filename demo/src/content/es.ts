@@ -1,3 +1,4 @@
+import { waitOf } from "../format.ts";
 import {
 	type Content,
 	type FieldHeldReason,
@@ -40,7 +41,8 @@ function fieldHeldBecause(reason: FieldHeldReason): string {
 // the Spanish UI the provider is "el modelo", since "proveedor" is a vendor.
 export const spanish: Content = {
 	language: "es",
-	locale: "es",
+	// The Dominican convention, 1,000.50, which the Spanish requests and the amount box already use (#221).
+	locale: "es-DO",
 	copy: {
 		skip: "Ir al contenido",
 		stopped: {
@@ -80,6 +82,8 @@ export const spanish: Content = {
 		stripIdle:
 			"La latencia, los tokens y el costo aparecen después de la primera llamada.",
 		notReported: "No informado",
+		cut: (limit) =>
+			`Las solicitudes llegan hasta ${limit} caracteres, así que el resto quedó fuera.`,
 		jsonIdle: "El resultado aparece aquí después de la primera llamada.",
 		showLabel: "Mostrar",
 		app: "Aplicación",
@@ -139,6 +143,25 @@ export const spanish: Content = {
 					return "El modelo falló, así que no se muestra nada. El registro del servidor tiene los detalles.";
 				case "timeout":
 					return `El modelo no respondió en ${reason.timeoutMs}\u00a0ms, así que no se muestra nada.`;
+				case "refused":
+					return `El servidor rechazó la solicitud: ${reason.message}`;
+				case "too-large":
+					return "La solicitud era demasiado grande para el servidor, así que no se muestra nada.";
+				case "unsupported":
+					return "El servidor no aceptó la solicitud como JSON, así que no se muestra nada.";
+				case "rate-limited": {
+					if (reason.retryAfterMs === null) {
+						return "El servidor está recibiendo demasiadas solicitudes. Inténtelo de nuevo en un momento.";
+					}
+					const wait = waitOf(reason.retryAfterMs);
+					const after =
+						"seconds" in wait
+							? `${wait.seconds} ${wait.seconds === 1 ? "segundo" : "segundos"}`
+							: `${wait.minutes} ${wait.minutes === 1 ? "minuto" : "minutos"}`;
+					return `El servidor está recibiendo demasiadas solicitudes. Inténtelo de nuevo en ${after}.`;
+				}
+				case "server":
+					return `El servidor falló (${reason.status}), así que no se muestra nada. Inténtelo de nuevo.`;
 				case "unreachable":
 					return `No se pudo contactar al servidor: ${reason.message}`;
 			}
@@ -277,15 +300,20 @@ export const spanish: Content = {
 			chooseVendor: "Elija un proveedor",
 			fromRequest: "de la solicitud",
 			fromVendor: "del proveedor",
-			announce: (filled, waiting) => {
+			announce: (filled, waiting, kept) => {
 				const list = (names: string[]) =>
 					listFormat.format(names.map((name) => name.toLowerCase()));
-				if (filled.length === 0) {
-					return `Nada completado. Por completar: ${list(waiting)}.`;
-				}
-				return waiting.length === 0
-					? `Completado: ${list(filled)}. Nada por completar.`
-					: `Completado: ${list(filled)}. Por completar: ${list(waiting)}.`;
+				return [
+					filled.length > 0
+						? `Completado: ${list(filled)}.`
+						: kept.length === 0 && "Nada completado.",
+					kept.length > 0 && `Se mantuvieron sus cambios: ${list(kept)}.`,
+					waiting.length > 0
+						? `Por completar: ${list(waiting)}.`
+						: "Nada por completar.",
+				]
+					.filter(Boolean)
+					.join(" ");
 			},
 			unanswered:
 				"No se pudo leer la solicitud, así que la tarjeta queda como estaba. Complétela a mano.",

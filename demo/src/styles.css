@@ -652,6 +652,13 @@ h2 {
 	}
 }
 
+/* On a phone the month takes the whole row: a billion users' month in Spanish ran past 375px (#223). */
+@media (max-width: 560px) {
+	.calculator-results {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
 /* The case's title, and beside it the recorded run's label while it shows. */
 .case-head {
 	display: flex;
@@ -791,7 +798,8 @@ h2 {
 	}
 }
 
-.fill-hint:empty {
+.fill-hint:empty,
+.limit-note:empty {
 	display: none;
 }
 
@@ -2387,8 +2395,9 @@ fieldset.table-filter[data-settle]::before {
 	text-wrap: balance;
 }
 
-/* Focused by the page, never by a key: it is no control, so it shows no ring. */
-.stopped h2:focus {
+/* Focused by the page, never by a key: it is no control, so it shows no ring. The case's heading takes the focus back from the notice (#222). */
+.stopped h2:focus,
+.case-head h2:focus {
 	outline: none;
 }
 

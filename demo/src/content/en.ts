@@ -1,3 +1,4 @@
+import { waitOf } from "../format.ts";
 import {
 	type Content,
 	type FieldHeldReason,
@@ -77,6 +78,8 @@ export const english: Content = {
 		strip: "This call",
 		stripIdle: "Latency, tokens and cost show after the first call.",
 		notReported: "Not reported",
+		cut: (limit) =>
+			`Requests stop at ${limit} characters, so the rest was left out.`,
 		jsonIdle: "The result shows here after the first call.",
 		showLabel: "Show",
 		app: "App",
@@ -136,6 +139,25 @@ export const english: Content = {
 					return "The provider failed, so nothing is shown. The server log has the details.";
 				case "timeout":
 					return `The provider did not answer within ${reason.timeoutMs}\u00a0ms, so nothing is shown.`;
+				case "refused":
+					return `The server refused the request: ${reason.message}`;
+				case "too-large":
+					return "The request was too large for the server, so nothing is shown.";
+				case "unsupported":
+					return "The server did not take the request as JSON, so nothing is shown.";
+				case "rate-limited": {
+					if (reason.retryAfterMs === null) {
+						return "The server is taking too many requests. Try again in a moment.";
+					}
+					const wait = waitOf(reason.retryAfterMs);
+					const after =
+						"seconds" in wait
+							? `${wait.seconds} ${wait.seconds === 1 ? "second" : "seconds"}`
+							: `${wait.minutes} ${wait.minutes === 1 ? "minute" : "minutes"}`;
+					return `The server is taking too many requests. Try again in ${after}.`;
+				}
+				case "server":
+					return `The server failed (${reason.status}), so nothing is shown. Try again.`;
 				case "unreachable":
 					return `The server could not be reached: ${reason.message}`;
 			}
@@ -277,15 +299,20 @@ export const english: Content = {
 			chooseVendor: "Choose a vendor",
 			fromRequest: "from the request",
 			fromVendor: "from the vendor",
-			announce: (filled, waiting) => {
+			announce: (filled, waiting, kept) => {
 				const list = (names: string[]) =>
 					listFormat.format(names.map((name) => name.toLowerCase()));
-				if (filled.length === 0) {
-					return `Nothing filled. For you to fill: ${list(waiting)}.`;
-				}
-				return waiting.length === 0
-					? `Filled: ${list(filled)}. Nothing left to fill.`
-					: `Filled: ${list(filled)}. For you to fill: ${list(waiting)}.`;
+				return [
+					filled.length > 0
+						? `Filled: ${list(filled)}.`
+						: kept.length === 0 && "Nothing filled.",
+					kept.length > 0 && `Kept your changes: ${list(kept)}.`,
+					waiting.length > 0
+						? `For you to fill: ${list(waiting)}.`
+						: "Nothing left to fill.",
+				]
+					.filter(Boolean)
+					.join(" ");
 			},
 			unanswered:
 				"The request could not be read, so the card stays as it was. Fill it in by hand.",

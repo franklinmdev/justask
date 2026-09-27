@@ -381,7 +381,17 @@ describe("the demo's card page", () => {
 
 		const state = panel("Esta llamada");
 		expect(await figure(state, "Tokens de entrada")).toBe("120");
-		expect(await figure(state, "Costo")).toBe("0,000005\u00a0US$");
+		expect(await figure(state, "Costo")).toBe("US$0.000005");
+	});
+
+	it("writes a Spanish amount as the request and the box do, 86.40, once saved (#221)", async () => {
+		const { user } = renderDemo({ url: "/?case=form&lang=es" });
+
+		await suggest(user, "almuerzo con Cazuela Azul ayer, $86.40");
+		expect(amount("Monto, dólar estadounidense").value).toBe("86.40");
+		await user.click(save("Guardar gasto"));
+
+		expect(saved("Gastos guardados")[0]).toMatch(/US\$86\.40$/);
 	});
 
 	it("takes the expense back on Undo and puts it on the card again", async () => {
@@ -874,6 +884,71 @@ describe("the demo's card page", () => {
 
 		await suggest(user, "almuerzo con Cazuela Azul ayer, $86.40");
 		expect(counter()).toBe("1 frase frente a 6 clics en 2 menús");
+	});
+
+	it.each([
+		{
+			lang: "en",
+			suggestion: "lunch with Larkspur yesterday, $86.40",
+			amountName: "Amount, US Dollar",
+			status:
+				"Filled: vendor, tags, and day. Kept your changes: amount. Nothing left to fill.",
+		},
+		{
+			lang: "es",
+			suggestion: "almuerzo con Cazuela Azul ayer, $86.40",
+			amountName: "Monto, dólar estadounidense",
+			status:
+				"Completado: proveedor, etiquetas y día. Se mantuvieron sus cambios: monto. Nada por completar.",
+		},
+	])(
+		"names a field the person set during the call, which the answer kept ($lang, #233)",
+		async ({ lang, suggestion, amountName, status }) => {
+			let release = () => {};
+			const held = new Promise<void>((resolve) => {
+				release = resolve;
+			});
+			let asked = 0;
+			const { user } = renderDemo({
+				url: `/?case=form&lang=${lang}`,
+				provider: {
+					async answer(input) {
+						asked++;
+						await held;
+						return byRequest.answer(input);
+					},
+				},
+			});
+
+			await user.click(screen.getByRole("button", { name: suggestion }));
+			await waitFor(() => expect(asked).toBe(1));
+			await user.type(amount(amountName), "90");
+			release();
+
+			expect(await screen.findByText(status)).toBeDefined();
+			expect(amount(amountName).value).toBe("90.00");
+		},
+	);
+
+	it("claims nothing on the card comes from a request that failed, though the card stays as it was (#218)", async () => {
+		const { user } = renderDemo();
+		await suggest(user, "lunch with Larkspur yesterday, $86.40");
+		expect(screen.getAllByText("from the request")).toHaveLength(4);
+
+		const box = screen.getByRole("searchbox", { name: "Describe the expense" });
+		await user.clear(box);
+		// No fixture answers it, so the provider fails.
+		await user.type(box, "Beanhaven coffee today, $18.50{Enter}");
+
+		expect(
+			await screen.findByText(
+				"The request could not be read, so the card stays as it was. Fill it in by hand.",
+			),
+		).toBeDefined();
+		expect(vendor().value).toBe("larkspur");
+		expect(amount().value).toBe("86.40");
+		expect(screen.queryAllByText("from the request")).toHaveLength(0);
+		expect(screen.queryAllByText("from the vendor")).toHaveLength(0);
 	});
 
 	it("keeps working when the provider fails: the person fills the card by hand", async () => {

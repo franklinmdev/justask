@@ -1,3 +1,4 @@
+import { ProviderUnavailableError } from "justask";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	DAILY_BUDGET_USD,
@@ -14,7 +15,7 @@ import {
 	VISITOR_MINUTE_LIMIT,
 } from "../demo/src/api.ts";
 import { english } from "../demo/src/content/en.ts";
-import { fakeProvider } from "./fake-provider.ts";
+import { fakeProvider, unavailableFirstProvider } from "./fake-provider.ts";
 
 const DEMO = "http://localhost:5173";
 
@@ -228,6 +229,82 @@ describe("the demo's per-visitor limits", () => {
 		expect(await statuses(handler, VISITOR_MINUTE_LIMIT)).toEqual(
 			Array(VISITOR_MINUTE_LIMIT).fill(200),
 		);
+	});
+
+	it("counts only a request that calls the provider: an empty request, a malformed body or a GET counts nothing (#219)", async () => {
+		vi.setSystemTime(new Date("2026-09-25T12:00:00Z"));
+		const { handler, provider } = demo();
+		const post = (body: string) =>
+			handler(
+				new Request(new URL(searchEndpoint("en"), DEMO), {
+					method: "POST",
+					headers: {
+						"content-type": "application/json",
+						origin: DEMO,
+						"cf-connecting-ip": "203.0.113.7",
+					},
+					body,
+				}),
+			);
+		const refused: number[] = [];
+		for (let i = 0; i < VISITOR_MINUTE_LIMIT; i++) {
+			refused.push(
+				(await post(JSON.stringify({ request: "", timeZone: "UTC" }))).status,
+				(await post(JSON.stringify({ request: "   ", timeZone: "UTC" })))
+					.status,
+				(await post("garbage")).status,
+				(
+					await post(
+						JSON.stringify({ request: "the caterers", timeZone: "Mars/Base" }),
+					)
+				).status,
+				(
+					await handler(
+						new Request(new URL(searchEndpoint("en"), DEMO), {
+							headers: { "cf-connecting-ip": "203.0.113.7" },
+						}),
+					)
+				).status,
+			);
+		}
+		expect(new Set(refused)).toEqual(new Set([200, 400, 405]));
+		expect(provider.calls).toHaveLength(0);
+
+		// The minute's 20 are all still there.
+		expect(await statuses(handler, VISITOR_MINUTE_LIMIT)).toEqual(
+			Array(VISITOR_MINUTE_LIMIT).fill(200),
+		);
+		expect((await search(handler)).status).toBe(402);
+	});
+
+	it("logs no failed call when the visitor's limit refuses one", async () => {
+		vi.setSystemTime(new Date("2026-09-25T12:00:00Z"));
+		const onError = vi.fn();
+		const handler = createDemoHandler(fakeProvider(answers, { costUsd: 0 }), {
+			ledger: memoryLedger(),
+			onError,
+		});
+		await statuses(handler, VISITOR_MINUTE_LIMIT);
+
+		expect((await search(handler)).status).toBe(402);
+		expect(onError).not.toHaveBeenCalled();
+	});
+
+	it("counts a request once when its call is retried (#219)", async () => {
+		vi.setSystemTime(new Date("2026-09-25T12:00:00Z"));
+		const ledger = memoryLedger();
+		const visit = vi.spyOn(ledger, "visit");
+		const provider = unavailableFirstProvider(
+			[new ProviderUnavailableError("reset")],
+			answers,
+			{ costUsd: 0 },
+		);
+		const handler = createDemoHandler(provider, { ledger });
+
+		expect((await search(handler)).status).toBe(200);
+
+		expect(provider.calls).toHaveLength(2);
+		expect(visit).toHaveBeenCalledTimes(1);
 	});
 
 	it("names the day's budget, not the visitor, once the budget is spent", async () => {

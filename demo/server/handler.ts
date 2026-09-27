@@ -38,7 +38,7 @@ import {
 	utcDay,
 } from "./budget.ts";
 import { refusal } from "./policy.ts";
-import { visitorAddress } from "./visitors.ts";
+import { type VisitorLimit, visitorAddress } from "./visitors.ts";
 
 /**
  * Fixed by the owner for round 2, before its rows existed: round 1 failed at
@@ -204,8 +204,10 @@ export function logError(error: AskError): void {
  * the day's budget (#109): past it, or with the kill switch on, the answer is
  * 402 with no call, its cause the budget or the pause; each call's cost is
  * added to the day's spend. Then the visitor's limits (#110), counted by the
- * address Cloudflare names in `CF-Connecting-IP`: past 20 calls a minute or
- * 200 a day, the same 402, its cause the visitor. A request that names no
+ * address Cloudflare names in `CF-Connecting-IP` on the request's first
+ * provider call, so a request that never calls the provider (an empty or a
+ * malformed one) counts nothing (#219): past 20 calls a minute or 200 a day,
+ * the same 402, its cause the visitor. A request that names no
  * address counts against no visitor: on the Worker Cloudflare always names
  * one, and the dev server names the socket's; only the recording script and
  * the tests call the handler directly. The `ledger` defaults to one in
@@ -225,32 +227,32 @@ export function createDemoHandler(
 	} = {},
 ): (request: Request) => Promise<Response> {
 	// The catalogs' shortlists are built once; each request gets a handler over its own counted provider.
+	type Shared = { provider: Provider; onError?: (error: AskError) => void };
 	const routes = new Map<
 		string,
-		(provider: Provider) => (request: Request) => Promise<Response>
+		(shared: Shared) => (request: Request) => Promise<Response>
 	>(
 		Object.values(contents).flatMap((content) => {
 			const search = demoSearch(content);
 			const filter = demoFilter(content);
 			const card = demoCard(content);
-			const shared = (provider: Provider) => ({
-				provider,
+			const shared = (own: Shared) => ({
+				...own,
 				timeoutMs: TIMEOUT_MS,
 				facts: FACTS,
-				...(onError && { onError }),
 			});
 			return [
 				[
 					searchEndpoint(content.language),
-					(provider) => createSearchHandler({ ...shared(provider), search }),
+					(own) => createSearchHandler({ ...shared(own), search }),
 				],
 				[
 					filterEndpoint(content.language),
-					(provider) => createFilterHandler({ ...shared(provider), filter }),
+					(own) => createFilterHandler({ ...shared(own), filter }),
 				],
 				[
 					cardEndpoint(content.language),
-					(provider) => createCardHandler({ ...shared(provider), card }),
+					(own) => createCardHandler({ ...shared(own), card }),
 				],
 			];
 		}),
@@ -270,17 +272,52 @@ export function createDemoHandler(
 			});
 		}
 		const address = visitorAddress(request.headers.get("cf-connecting-ip"));
-		const limit = address && (await ledger.visit(address, new Date()));
-		if (limit) {
+		const calls = counted(provider, ledger);
+		const visitor = visiting(
+			calls,
+			address ? () => ledger.visit(address, new Date()) : async () => null,
+		);
+		const response = await route({
+			provider: visitor,
+			// The visitor's limit is answered below, not logged as a failed call.
+			...(onError && {
+				onError: (error) => {
+					if (!visitor.limit) onError(error);
+				},
+			}),
+		})(request);
+		if (visitor.limit) {
 			return Response.json(
-				limit === "minute" ? VISITOR_MINUTE_USED : VISITOR_DAY_USED,
+				visitor.limit === "minute" ? VISITOR_MINUTE_USED : VISITOR_DAY_USED,
 				{ status: 402 },
 			);
 		}
-		const calls = counted(provider, ledger);
-		const response = await route(calls)(request);
 		return calls.refused
 			? Response.json(KEY_OUT_OF_SERVICE, { status: 503 })
 			: response;
 	};
+}
+
+/**
+ * One request's provider that counts the visitor on its first call only, so
+ * a retry is the same request (#219). Past a limit every call throws, before
+ * the provider is called, and `limit` names which limit refused it.
+ */
+function visiting(
+	provider: Provider,
+	visit: () => Promise<VisitorLimit | null>,
+): Provider & { limit: VisitorLimit | null } {
+	let visited: Promise<VisitorLimit | null> | undefined;
+	const request: Provider & { limit: VisitorLimit | null } = {
+		limit: null,
+		async answer(input) {
+			visited ??= visit();
+			request.limit = await visited;
+			if (request.limit) {
+				throw new Error(`The visitor's ${request.limit} limit is used`);
+			}
+			return provider.answer(input);
+		},
+	};
+	return request;
 }

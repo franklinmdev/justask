@@ -1,4 +1,4 @@
-import { buffer } from "node:stream/consumers";
+import { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
 import {
@@ -36,12 +36,9 @@ function justaskHandler(): Plugin {
 			if (process.env.TYPESAFE_API_KEY) {
 				// One discarded call once the server listens, so a visitor's first request is not the cold start.
 				server.httpServer?.once("listening", async () => {
-					const started = performance.now();
 					try {
-						await (await devModule()).warmOnStart();
-						server.config.logger.info(
-							`justask: provider warmed up in ${Math.round(performance.now() - started)} ms`,
-						);
+						const { level, message } = await (await devModule()).warmStart();
+						server.config.logger[level](message);
 					} catch (error) {
 						server.config.logger.warn(`justask: warm-up failed: ${error}`);
 					}
@@ -54,6 +51,9 @@ function justaskHandler(): Plugin {
 			server.middlewares.use("/api", async (req, res, next) => {
 				try {
 					const { handle } = await devModule();
+					// Aborts the provider call when the browser goes away, as the README's toNode does.
+					const browser = new AbortController();
+					res.on("close", () => browser.abort());
 					const response = await handle(
 						new Request(`http://${req.headers.host}${req.originalUrl}`, {
 							method: req.method ?? "GET",
@@ -62,8 +62,15 @@ function justaskHandler(): Plugin {
 								// Who the visitor's limits count, as Cloudflare names them on the Worker (#110).
 								"cf-connecting-ip": req.socket.remoteAddress ?? "",
 							},
-							body: req.method === "POST" ? await buffer(req) : null,
-						}),
+							// Streamed, so the handler stops reading a body past its 16 KiB cap.
+							body:
+								req.method === "POST"
+									? (Readable.toWeb(req) as ReadableStream)
+									: null,
+							signal: browser.signal,
+							// A streamed body needs it; the DOM's own types do not know it yet.
+							duplex: "half",
+						} as RequestInit),
 					);
 					res.writeHead(response.status, Object.fromEntries(response.headers));
 					res.end(Buffer.from(await response.arrayBuffer()));

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { unstable_readConfig } from "wrangler";
 import { english } from "../demo/src/content/en.ts";
 import { createWorker } from "../demo/worker/index.ts";
 import { fakeProvider } from "./fake-provider.ts";
@@ -44,5 +45,14 @@ describe("the demo's Worker", () => {
 
 		expect(response.status).toBe(404);
 		expect(provider.calls).toHaveLength(0);
+	});
+
+	it("runs with request.signal on, so the handler stops the provider call when the browser leaves (#176)", () => {
+		// No default-on date, and local workerd cannot show it: see docs/workers.md, The browser's abort.
+		const { compatibility_flags } = unstable_readConfig({
+			config: "wrangler.jsonc",
+		});
+
+		expect(compatibility_flags).toContain("enable_request_signal");
 	});
 });

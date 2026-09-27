@@ -827,6 +827,10 @@ describe("the recorded runs while the kill switch is on (#109)", () => {
 		);
 
 		expect(screen.queryByRole("heading", { name: PAUSED })).toBeNull();
+		// Focus lands on the case that replaced the notice, not the page's body (#222).
+		expect(document.activeElement).toBe(
+			screen.getByRole("heading", { level: 2, name: "Transactions" }),
+		);
 		// Asked for, the replay types in again, though this tab has played it.
 		await waitFor(
 			() => expect(announced()).toContain("Replaying a recorded run"),
@@ -834,5 +838,16 @@ describe("the recorded runs while the kill switch is on (#109)", () => {
 		);
 		await replayApplied();
 		expect(searchbox("Filter the transactions").value).toBe(table.request);
+
+		// Stopped and replayed a second time, the heading takes the focus again.
+		await user.clear(searchbox("Filter the transactions"));
+		await user.type(searchbox("Filter the transactions"), "overdue invoices");
+		await screen.findByRole("heading", { name: PAUSED }, REPLAY);
+		await user.click(
+			screen.getByRole("button", { name: "Replay the recorded run" }),
+		);
+		expect(document.activeElement).toBe(
+			screen.getByRole("heading", { level: 2, name: "Transactions" }),
+		);
 	});
 });

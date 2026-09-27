@@ -1,7 +1,7 @@
 import type { AmountRange, DateRange, FieldValue } from "justask";
 import { FilterBox, FilterEmpty, useFilter } from "justask/react";
 import { useEffect, useState } from "react";
-import { filterEndpoint, REQUEST_LIMIT } from "./api.ts";
+import { filterEndpoint } from "./api.ts";
 import type {
 	Content,
 	FieldName,
@@ -14,10 +14,12 @@ import { foreignCurrency, formats, parseAmount } from "./format.ts";
 import {
 	CaseHead,
 	DEBOUNCE_MS,
+	LimitNote,
 	Saved,
 	type Settle,
 	Suggestions,
 	settleAt,
+	useRequestLimit,
 	useTypedText,
 } from "./parts.tsx";
 import { dayShown, type TableRecording } from "./recording.ts";
@@ -177,6 +179,7 @@ export function FilterPage({
 	});
 	replay.follow(filter);
 	const box = replay.stoppedBy(filter);
+	const limit = useRequestLimit(box.request, "table-box-limit");
 	const suggest = useSuggest(box);
 	const transactions = transactionsOn(
 		content.transactions,
@@ -221,8 +224,9 @@ export function FilterPage({
 				className="box"
 				autoComplete="off"
 				spellCheck={false}
-				maxLength={REQUEST_LIMIT}
+				{...limit.box}
 			/>
+			<LimitNote content={content} limit={limit} />
 			<Saved
 				content={content}
 				cost={costOf(tableControls(filter.result?.value ?? {}))}

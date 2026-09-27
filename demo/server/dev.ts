@@ -1,6 +1,6 @@
 import { jevProvider } from "justask/jev";
 import { createDemoHandler, logError } from "./handler.ts";
-import { warmUp } from "./warm-up.ts";
+import { warmOnStart } from "./warm-up.ts";
 
 const provider = jevProvider();
 
@@ -13,14 +13,16 @@ const provider = jevProvider();
  * (vite.config.ts); DEMO_KILL_SWITCH, set to any value, turns the kill
  * switch on, as on the Worker.
  */
+const killSwitch = Boolean(process.env.DEMO_KILL_SWITCH);
+
 export const handle = createDemoHandler(provider, {
 	onError: logError,
-	killSwitch: Boolean(process.env.DEMO_KILL_SWITCH),
+	killSwitch,
 });
 
 /**
  * One discarded call on the dev server's start, so the provider's cold start
  * falls on it and not on a visitor's first request, which would time out
- * (#65).
+ * (#65); none with the kill switch on. Answers the line to log (#224).
  */
-export const warmOnStart = () => warmUp(provider, { times: 1 });
+export const warmStart = () => warmOnStart(provider, { killSwitch });

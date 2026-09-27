@@ -15,6 +15,7 @@ import { spanish } from "./content/es.ts";
 import type { Case, Language } from "./content/types.ts";
 import { retryOnCpuLimit } from "./cpu-limit.ts";
 import { FilterPage } from "./filter-page.tsx";
+import { FocusCaseContext } from "./parts.tsx";
 import { type Recordings, recordings as recordingFiles } from "./recording.ts";
 import { forgetPlayed } from "./replay.ts";
 import { SearchPage } from "./search-page.tsx";
@@ -84,6 +85,8 @@ export function App({
 	const [users, setUsers] = useState("1000");
 	const [actions, setActions] = useState("10");
 	const [stopped, setStopped] = useState<Stopped | null>(null);
+	// The case the notice's replay opened, whose heading takes the focus (#222).
+	const [replayed, setReplayed] = useState(false);
 	const { language, case: shownCase } = view;
 	// The cases opened in this language, each kept once opened. One opened later
 	// mounts then, so the page first renders only its own case.
@@ -114,6 +117,7 @@ export function App({
 	function show(next: View, step = false) {
 		if (next.language === language && next.case === shownCase) return;
 		setStopped(null);
+		setReplayed(false);
 		if (step) history.replaceState(null, "", hrefOf(next));
 		else history.pushState(null, "", hrefOf(next));
 		setView(next);
@@ -223,40 +227,43 @@ export function App({
 							actions: { value: actions, set: setActions },
 						}}
 					>
-						{stopped && (
-							<StoppedNotice
-								content={content}
-								stopped={stopped}
-								onReplay={
-									recording &&
-									(() => {
-										forgetPlayed(recording);
-										setStopped(null);
-									})
-								}
-							/>
-						)}
-						{mountedCase(
-							"table",
-							<FilterPage
-								recording={recordings?.table[language] ?? null}
-								{...shared}
-							/>,
-						)}
-						{mountedCase(
-							"form",
-							<CardPage
-								recording={recordings?.form[language] ?? null}
-								{...shared}
-							/>,
-						)}
-						{mountedCase(
-							"search",
-							<SearchPage
-								recording={recordings?.search[language] ?? null}
-								{...shared}
-							/>,
-						)}
+						<FocusCaseContext value={replayed}>
+							{stopped && (
+								<StoppedNotice
+									content={content}
+									stopped={stopped}
+									onReplay={
+										recording &&
+										(() => {
+											forgetPlayed(recording);
+											setStopped(null);
+											setReplayed(true);
+										})
+									}
+								/>
+							)}
+							{mountedCase(
+								"table",
+								<FilterPage
+									recording={recordings?.table[language] ?? null}
+									{...shared}
+								/>,
+							)}
+							{mountedCase(
+								"form",
+								<CardPage
+									recording={recordings?.form[language] ?? null}
+									{...shared}
+								/>,
+							)}
+							{mountedCase(
+								"search",
+								<SearchPage
+									recording={recordings?.search[language] ?? null}
+									{...shared}
+								/>,
+							)}
+						</FocusCaseContext>
 					</CalculatorInputsContext>
 				</div>
 			</main>

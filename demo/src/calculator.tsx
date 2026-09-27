@@ -99,7 +99,7 @@ export function Calculator({
 							text: copy.formula(
 								format.count(users),
 								format.count(actions),
-								format.cost(costPerCall),
+								format.exactCost(costPerCall),
 								DAYS,
 							),
 							kind: "formula",
@@ -152,7 +152,7 @@ export function Calculator({
 						) : costPerCall === undefined ? (
 							<dd className="unreported">{content.copy.notReported}</dd>
 						) : (
-							<dd className="data">{format.cost(costPerCall)}</dd>
+							<dd className="data">{format.exactCost(costPerCall)}</dd>
 						)}
 					</div>
 					<div>

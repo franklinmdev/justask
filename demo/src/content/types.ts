@@ -121,8 +121,12 @@ export type CardCopy = {
 	fromRequest: string;
 	/** Beside the tags' label while their value is the one the vendor implied (ADR 0012). */
 	fromVendor: string;
-	/** What a screen reader hears, and the page shows, once an answer comes back. */
-	announce: (filled: string[], waiting: string[]) => string;
+	/**
+	 * What a screen reader hears, and the page shows, once an answer comes
+	 * back: the fields it filled, the ones the person set during the call,
+	 * which it kept, and the ones left to fill.
+	 */
+	announce: (filled: string[], waiting: string[], kept: string[]) => string;
 	/** What the page says when the answer failed: the card stays as it was. */
 	unanswered: string;
 	pickDay: string;
@@ -234,6 +238,11 @@ export type HeldReason =
 	| { kind: "no-candidates" }
 	| { kind: "provider" }
 	| { kind: "timeout"; timeoutMs: number }
+	| { kind: "refused"; message: string }
+	| { kind: "too-large" }
+	| { kind: "unsupported" }
+	| { kind: "rate-limited"; retryAfterMs: number | null }
+	| { kind: "server"; status: number }
 	| { kind: "unreachable"; message: string };
 
 /**
@@ -267,6 +276,8 @@ export type Copy = {
 	strip: string;
 	stripIdle: string;
 	notReported: string;
+	/** Under the request box once a paste or a key ran into its limit: the box cut the rest (#225). */
+	cut: (limit: number) => string;
 	jsonIdle: string;
 	showLabel: string;
 	app: string;
