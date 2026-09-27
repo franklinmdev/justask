@@ -1,6 +1,13 @@
 import type { Usage } from "justask";
 import type { SearchError } from "justask/react";
-import { type CSSProperties, useState } from "react";
+import {
+	type CSSProperties,
+	createContext,
+	use,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 import type { Content, Cost, HeldReason } from "./content/types.ts";
 import { formats } from "./format.ts";
 import { dayOf, type Recording } from "./recording.ts";
@@ -135,6 +142,12 @@ export function useStillAnswer(answer: number, still: boolean): boolean {
 }
 
 /**
+ * True while the shown case was opened from the stopped notice's replay: its
+ * heading takes the focus the notice held, as the notice took the box's (#222).
+ */
+export const FocusCaseContext = createContext(false);
+
+/**
  * A case's heading, labelled with the day its recorded run ran while the
  * display is the recording's, then the live region that says the replay
  * started. `said` goes first when the page has something newer to say.
@@ -156,10 +169,17 @@ export function CaseHead({
 }) {
 	const { copy } = content;
 	const day = recording ? formats(content.locale).date(dayOf(recording)) : "";
+	const focus = use(FocusCaseContext);
+	const heading = useRef<HTMLHeadingElement>(null);
+	useEffect(() => {
+		if (focus) heading.current?.focus();
+	}, [focus]);
 	return (
 		<>
 			<div className="case-head">
-				<h2 id={id}>{title}</h2>
+				<h2 id={id} ref={heading} tabIndex={-1}>
+					{title}
+				</h2>
 				{recording && replay.recorded && (
 					<p className="recorded">{copy.recorded(day)}</p>
 				)}

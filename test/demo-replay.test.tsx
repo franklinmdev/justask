@@ -827,6 +827,10 @@ describe("the recorded runs while the kill switch is on (#109)", () => {
 		);
 
 		expect(screen.queryByRole("heading", { name: PAUSED })).toBeNull();
+		// Focus lands on the case that replaced the notice, not the page's body (#222).
+		expect(document.activeElement).toBe(
+			screen.getByRole("heading", { level: 2, name: "Transactions" }),
+		);
 		// Asked for, the replay types in again, though this tab has played it.
 		await waitFor(
 			() => expect(announced()).toContain("Replaying a recorded run"),

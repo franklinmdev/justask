@@ -2394,8 +2394,9 @@ fieldset.table-filter[data-settle]::before {
 	text-wrap: balance;
 }
 
-/* Focused by the page, never by a key: it is no control, so it shows no ring. */
-.stopped h2:focus {
+/* Focused by the page, never by a key: it is no control, so it shows no ring. The case's heading takes the focus back from the notice (#222). */
+.stopped h2:focus,
+.case-head h2:focus {
 	outline: none;
 }
 
