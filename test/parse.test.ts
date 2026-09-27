@@ -509,6 +509,13 @@ describe("common day phrases (#189)", () => {
 	);
 
 	it.each([
+		"Acme $100 con el 5 por ciento de descuento",
+		"bought the 3 for $12",
+	])("reads no day from a count or a share: %s", (text) => {
+		expect(dates(text)).toEqual([]);
+	});
+
+	it.each([
 		["a week ago, Beanhaven, $6", "a week ago", "2026-09-14"],
 		["a day ago", "a day ago", "2026-09-20"],
 		["a couple days ago", "a couple days ago", "2026-09-19"],
@@ -574,6 +581,13 @@ describe("before and after leave the day they name out (#183)", () => {
 				d.ambiguous,
 			]),
 		);
+	});
+
+	it.each([
+		["dinner after Friday's game $40", "Friday", "2026-09-18"],
+		["Acme lunch before Friday’s meeting $30", "Friday", "2026-09-18"],
+	])("leaves an event on that day as the day: %s", (text, span, day) => {
+		expect(dates(text)).toEqual([[span, day, day]]);
 	});
 
 	it.each([
@@ -994,7 +1008,7 @@ describe("small misreads (#193)", () => {
 		},
 	);
 
-	it.each(["$-50", "-$50", "gastos de -50"])(
+	it.each(["$-50", "gastos de -50"])(
 		"reads no amount from %s, a negative number",
 		(text) => {
 			expect(amounts(text)).toEqual([]);
@@ -1006,6 +1020,14 @@ describe("small misreads (#193)", () => {
 			["$5", 5, null],
 			["10", 10, null],
 		]);
+	});
+
+	it.each([
+		["Uber - $23", "$23"],
+		["Beanhaven - 5 dollars", "5 dollars"],
+		["Acme -$50 yesterday", "$50"],
+	])("still reads the amount after a dash that separates: %s", (text, span) => {
+		expect(amounts(text).map(([t]) => t)).toEqual([span]);
 	});
 
 	it("reads no amount from 1e3", () => {
@@ -1030,6 +1052,22 @@ describe("small misreads (#193)", () => {
 		]);
 		expect(read.amounts).toEqual([]);
 	});
+
+	it("reads a weekday with 'the' or an ordinal as a date whatever follows", () => {
+		expect(dates("the Tuesday the 15th Farwander cab 18")).toEqual([
+			["Tuesday the 15th", "2026-09-15", "2026-09-15"],
+		]);
+	});
+
+	it.each(["Beanhaven Monday 2 lattes $9", "lunch Friday 3 people $60"])(
+		"leaves a count after a weekday alone: %s",
+		(text) => {
+			const read = parse(text);
+			expect(read.dates?.map((d) => [d.text, d.ambiguous])).toEqual([
+				[text.split(" ").find((w) => /day$/.test(w)), undefined],
+			]);
+		},
+	);
 
 	it("leaves the money after a weekday to the amounts", () => {
 		expect(dates("martes 15 dólares")).toEqual([

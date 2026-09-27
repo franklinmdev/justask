@@ -319,7 +319,10 @@ const SMALL_NUMBERS: Record<string, number> = {
 	nine: 9,
 	ten: 10,
 };
-const SMALL = `(\\d{1,3}|${byLength(Object.keys(SMALL_NUMBERS).filter((w) => w !== "a" && w !== "an"))})`;
+const SMALL_WORDS = byLength(
+	Object.keys(SMALL_NUMBERS).filter((w) => w !== "a" && w !== "an"),
+);
+const SMALL = `(\\d{1,3}|${SMALL_WORDS})`;
 const small = (s: string | undefined) =>
 	SMALL_NUMBERS[s ?? ""] ?? Number(s ?? 0);
 
@@ -346,12 +349,15 @@ const LOWERCASE_CODES = [
 const CURRENCY_WORDS =
 	"pesos|peso|canas|cana|dolares|dolar|dollars|dollar|euros|euro";
 
+/** What may follow a day of the month said with no month: an end, a time or an amount. "Monday 2 lattes" is a count. */
+const DAY_ENDS = "$|[,.;:!?)]|a\\s+las?\\s|at\\s|@|[$€£¥]|\\d";
+
 /** Not money: "martes 15 dólares" is a weekday and an amount. */
 const NOT_MONEY = `(?![.,]\\d|\\s*(?:${CURRENCY_WORDS}|${LOWERCASE_CODES.join("|")}|%|k(?![a-z])|mil(?![a-z])))`;
 
 /** A count before a unit of time: a number, "un par de" or "a couple of", "a" or "an". */
-const COUNT_ES = `(un\\s+par\\s+de|${SMALL.slice(1)}`;
-const COUNT_EN = `(a\\s+couple(?:\\s+of)?|an?|${SMALL.slice(1)}`;
+const COUNT_ES = `(un\\s+par\\s+de|\\d{1,3}|${SMALL_WORDS})`;
+const COUNT_EN = `(a\\s+couple(?:\\s+of)?|an?|\\d{1,3}|${SMALL_WORDS})`;
 const count = (s: string | undefined) =>
 	/par|couple/.test(s ?? "") ? 2 : /^an?$/.test(s ?? "") ? 1 : small(s);
 
@@ -983,12 +989,16 @@ const DATE_RULES: DateRule[] = [
 	{
 		// A weekday and its day of the month: "el martes 15", "Tuesday the 15th". Held when they disagree.
 		re: new RegExp(
-			`${b}(?:el\\s+)?${WEEKDAY_ANY}\\s+(?:the\\s+)?(\\d{1,2})(?:st|nd|rd|th)?${e}${NOT_MONEY}`,
+			`${b}(?:el\\s+)?${WEEKDAY_ANY}\\s+(the\\s+)?(\\d{1,2})(st|nd|rd|th)?${e}${NOT_MONEY}`,
 			"g",
 		),
 		read: (m, today, reads) => {
 			const w = WEEKDAYS[m[1] ?? ""] ?? 0;
-			const day = undatedDayOfMonth(Number(m[2]), today, reads);
+			// "Tuesday the 22nd" is a date whatever follows; "Monday 2 lattes" is a count.
+			const said = !!(m[2] || m[4]);
+			const after = m.input.slice(m.index + m[0].length);
+			if (!said && !new RegExp(`^\\s*(?:${DAY_ENDS})`).test(after)) return null;
+			const day = undatedDayOfMonth(Number(m[3]), today, reads);
 			if (!day) return null;
 			if (weekday(day) === w) return point(day);
 			const step =
@@ -1026,14 +1036,15 @@ const DATE_RULES: DateRule[] = [
 		},
 	},
 	{
-		// A day of the month alone: "el día 28", "on the 3rd", "el 28 a las 3", "the 3rd $5". Not "the 3rd largest".
+		// A day of the month alone: "el día 28", "on the 3rd for $5", "el 28 a las 3", "el 3 5 dólares".
+		// Not "the 3rd largest", "the 3 for $12" nor "el 5 por ciento": without "día" or an ordinal, only an end, a time or an amount may follow.
 		re: new RegExp(
-			`${b}(?:(?:el\\s+)?dia\\s+(\\d{1,2})${e}|(?:el|the|on\\s+the)\\s+(\\d{1,2})(?:st|nd|rd|th)?${e}(?=\\s*(?:$|[,.;:!?)]|a\\s+las?\\s|at\\s|@|[$€£¥]|\\d|(?:for|por|para)\\s)))`,
+			`${b}(?:(?:el\\s+)?dia\\s+(\\d{1,2})${e}|(?:the|on\\s+the)\\s+(\\d{1,2})(?:st|nd|rd|th)${e}(?=\\s*(?:${DAY_ENDS}|(?:for|por|para)\\s))|(?:el|the|on\\s+the)\\s+(\\d{1,2})${e}(?=\\s*(?:${DAY_ENDS})))`,
 			"g",
 		),
 		read: (m, today, reads) =>
 			point(
-				undatedDayOfMonth(Number(m[1] ?? m[2]), today, reads),
+				undatedDayOfMonth(Number(m[1] ?? m[2] ?? m[3]), today, reads),
 				`the ${reads === "past" ? "latest such day up to" : "first such day from"} today`,
 			),
 	},
@@ -1567,7 +1578,11 @@ function readSpans(
 			if (!free(s, t, true)) continue;
 			let hits = rule.read(m, today, reads);
 			if (!hits) continue;
-			const bound = rule.soft ? null : BOUND.exec(folded.slice(0, s));
+			// "after Friday's game" is an event on that Friday, not a bound.
+			const bound =
+				rule.soft || /^['’]s(?![a-z])/.test(folded.slice(t))
+					? null
+					: BOUND.exec(folded.slice(0, s));
 			if (bound && free(bound.index, s, true)) {
 				hits = hits.map((hit) =>
 					beyond(hit, bound, text.slice(s, t), text.slice(bound.index, s)),
@@ -1604,9 +1619,10 @@ function readSpans(
 	for (let m = DIGIT_AMOUNT.exec(folded); m; m = DIGIT_AMOUNT.exec(folded)) {
 		let s = m.index + (m[0].length - m[0].trimStart().length);
 		let t = m.index + m[0].trimEnd().length;
-		// A negative number ("$-50", "-$50"), a form's number ("W-2") and an exponent ("1e3") are no amount; "5-10" is a range.
+		// A minus touching the number ("$-50", "-50") or a form's number ("W-2"), and an exponent ("1e3"), are no amount.
+		// "5-10" is a range, and "Uber - $23" or "Acme -$50" a dash that separates.
 		const numberAt = folded.indexOf(m[2] ?? "", s);
-		if (/(?<!\d\s*)-\s*(?:[$€£¥]\s*)?$/.test(folded.slice(0, numberAt))) {
+		if (/(?<!\d)-$/.test(folded.slice(0, numberAt))) {
 			continue;
 		}
 		if (/^e\d/.test(folded.slice(t))) continue;

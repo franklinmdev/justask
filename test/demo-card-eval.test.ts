@@ -252,9 +252,9 @@ describe.each([english, spanish])("the card sets in $language", (content) => {
 				reads: "past",
 			});
 			const texts = [...dates, ...amounts].map(({ text }) => text);
-			const moved = MOVED_BY_232[row.id] ?? { now: "" };
-			if ("now" in moved) expect(texts, row.id).toContain(moved.now);
-			else expect(texts, row.id).not.toContain(moved.gone);
+			const change = MOVED_BY_232[row.id] ?? { now: "" };
+			if ("now" in change) expect(texts, row.id).toContain(change.now);
+			else expect(texts, row.id).not.toContain(change.gone);
 		}
 	});
 
