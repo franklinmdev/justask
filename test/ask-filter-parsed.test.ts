@@ -436,6 +436,64 @@ describe("ask: filter with amount fields", () => {
 	});
 });
 
+describe("ask: a request with more readings than a field can weigh", () => {
+	it("holds the amount without a question when the request has over 10 amounts", async () => {
+		const fake = fakeProvider({});
+
+		const result = await ask({
+			...base,
+			request: "1 ".repeat(11),
+			provider: fake,
+			filter: invoiceFilter(),
+		});
+
+		expect(fake.calls).toHaveLength(0);
+		expect(result.filter.value).toEqual({});
+		expect(result.filter.fields.total.candidates).toEqual([]);
+	});
+
+	it("still asks about 10 amounts", async () => {
+		const labels = [...ROLES];
+		const fake = fakeProvider(
+			Object.fromEntries(
+				Array.from({ length: 10 }, (_, i) => [
+					`total_a${i}`,
+					answer(labels, "not_mentioned"),
+				]),
+			),
+		);
+
+		const result = await ask({
+			...base,
+			request: "1 ".repeat(10),
+			provider: fake,
+			filter: invoiceFilter(),
+		});
+
+		expect(fake.calls[0]?.questions).toHaveLength(10);
+		expect(result.filter.fields.total.candidates).toHaveLength(10);
+	});
+
+	it("holds the date without a question when the request has over 10 dates, and still asks about the amount", async () => {
+		const labels = [...ROLES];
+		const fake = fakeProvider({ total_a0: answer(labels, "exact") });
+		const days = Array.from(
+			{ length: 11 },
+			(_, i) => `2026-01-${String(i + 1).padStart(2, "0")}`,
+		).join(", ");
+
+		const result = await ask({
+			...base,
+			request: `invoices of $12 on ${days}`,
+			provider: fake,
+			filter: invoiceFilter(),
+		});
+
+		expect(fake.calls[0]?.questions.map(({ id }) => id)).toEqual(["total_a0"]);
+		expect(result.filter.fields.issued.candidates).toEqual([]);
+	});
+});
+
 describe("ask: parsers the host app registers", () => {
 	/** A regional format no built-in parser ships: "RD$" for Dominican pesos. */
 	const dominicanPesos: Parser = (request) => {

@@ -8,3 +8,5 @@ The owner's decision of 2026-09-24, in the grilling session that settled the pub
 4. **The demo passes its own `fetch` to every hook**, to send a visitor's key and to read the server's own answers, such as its budget answer.
 
 A host app that wants a cap builds it the same way, from each call's `costUsd`.
+
+Amended for #174 (the pre-launch QA, #231): the core's handlers bound their input, which is safety, not the demo's policy. A body over 16 KiB, a request over 1,000 characters, and more than 10 readings of one kind for a field are refused or held in every handler, since without them one POST could stop the server. The demo's own 200-character cap, budget and visitor limits stay in the demo.

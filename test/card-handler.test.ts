@@ -173,10 +173,43 @@ describe("createCardHandler", () => {
 		expect(onError).toHaveBeenCalledOnce();
 	});
 
+	it.each([
+		["a gate outside 0 to 1", { ...card, gate: 1 }, /the card's gate/],
+		[
+			"a blank command",
+			{ ...card, commands: { verbs: [" "], references: ["it"] } },
+			/blank verb/,
+		],
+	])(
+		"refuses %s when it is created, not on each request",
+		(_, bad, message) => {
+			expect(() => handler({ card: bad })).toThrow(message);
+		},
+	);
+
 	it("refuses a body without a time zone, as the other handlers do", async () => {
 		const response = await handler()(post({ request: "lunch" }));
 
 		expect(response.status).toBe(400);
 		expect((await response.json()).error.kind).toBe("request");
 	});
+
+	it.each([
+		["empty", ""],
+		["only whitespace", "  \n\t "],
+	])(
+		"holds every field without a call for a request that is %s",
+		async (_, request) => {
+			const provider = fakeProvider(picks);
+
+			const response = await handler({ provider })(post({ ...asked, request }));
+
+			expect(response.status).toBe(200);
+			const body = await response.json();
+			expect(body.card.intent.passes).toBe(false);
+			expect(body.card.value).toEqual({});
+			expect(body).not.toHaveProperty("costUsd");
+			expect(provider.calls).toHaveLength(0);
+		},
+	);
 });
