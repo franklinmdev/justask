@@ -1,9 +1,18 @@
 // @vitest-environment jsdom
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
-import { type Candidate, createSearchHandler } from "justask";
-import { type SearchTiming, type UseSearch, useSearch } from "justask/react";
+import {
+	type Candidate,
+	createFilterHandler,
+	createSearchHandler,
+} from "justask";
+import {
+	type SearchTiming,
+	type UseSearch,
+	useCard,
+	useSearch,
+} from "justask/react";
 import { Activity, type ReactNode, useState } from "react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { fakeProvider } from "./fake-provider.ts";
 
 /*
@@ -221,5 +230,193 @@ describe("the hooks' request timing", () => {
 		expect(calls).toHaveLength(1);
 		expect(result.current.item?.name).toBe("Acme Supplies");
 		expect(result.current.loading).toBe(false);
+	});
+});
+
+/** A `fetch` that hands each request to `serve`, as the host's server. */
+function serving(
+	serve: (request: Request) => Response | Promise<Response>,
+): typeof fetch {
+	return async (input, init) =>
+		serve(new Request(new URL(String(input), location.href), init));
+}
+
+/** Sends `request` through a search hook on Enter, and waits for its answer. */
+async function answerOf(fetchImpl: typeof fetch, request = "acme") {
+	const { result } = renderSearch({ fetch: fetchImpl, timing: enter });
+	act(() => result.current.setRequest(request));
+	act(() => result.current.submit());
+	await waitFor(() => expect(result.current.answered).toBe(true));
+	return result.current;
+}
+
+describe("the hooks' reading of an answer", () => {
+	it("says a 200 from another flow's handler is something else, not an empty answer (#214)", async () => {
+		const filterHandler = createFilterHandler({
+			provider: fakeProvider({}),
+			timeoutMs: 1_000,
+			filter: { description: "an invoice", fields: {} },
+		});
+		const search = await answerOf(serving(filterHandler));
+
+		expect(search.error).toEqual({
+			kind: "network",
+			message: "The search handler answered something else",
+		});
+		expect(search.result).toBeNull();
+		expect(search.item).toBeNull();
+	});
+
+	it("keeps the person's card when the handler answers something else (#214)", async () => {
+		const { result } = renderHook(() =>
+			useCard<{
+				vendor: {
+					kind: "catalog";
+					description: string;
+					gate: number;
+					shortlist: () => [];
+				};
+			}>({
+				endpoint: "/api/card",
+				onConfirm: () => {},
+				fetch: serving(handler),
+			}),
+		);
+		act(() => result.current.set("vendor", "Larkspur"));
+		act(() => result.current.setRequest("lunch at Larkspur"));
+		act(() => result.current.submit());
+		await waitFor(() => expect(result.current.answered).toBe(true));
+
+		expect(result.current.error?.kind).toBe("network");
+		expect(result.current.value).toEqual({ vendor: "Larkspur" });
+		expect(result.current.filledBy("vendor")).toBe("person");
+	});
+
+	it("says a page that is not JSON is something else, not a parse error (#179)", async () => {
+		const search = await answerOf(
+			serving(
+				() =>
+					new Response("<!doctype html><title>Sign in</title>", {
+						headers: { "content-type": "text/html" },
+					}),
+			),
+		);
+
+		expect(search.error).toEqual({
+			kind: "network",
+			message: "The search handler answered something else",
+		});
+	});
+
+	it("tells a request too large for the handler, with its message (#233)", async () => {
+		const search = await answerOf(serving(handler), "acme ".repeat(4_000));
+
+		expect(search.error).toEqual({
+			kind: "too-large",
+			message: "The body is over 16384 bytes",
+		});
+	});
+
+	it("tells a body the handler refused as not JSON, with its message (#233)", async () => {
+		// A proxy that rewrites the content type, the one way the hook's own
+		// JSON post reaches the handler as something else.
+		const search = await answerOf(
+			serving(async (request) =>
+				handler(
+					new Request(request.url, {
+						method: "POST",
+						headers: { "content-type": "text/plain" },
+						body: await request.text(),
+					}),
+				),
+			),
+		);
+
+		expect(search.error).toEqual({
+			kind: "unsupported",
+			message: "The body must be sent as application/json",
+		});
+	});
+
+	it("tells a rate limit, with the host's message and when to retry (#179)", async () => {
+		const search = await answerOf(
+			serving(
+				() =>
+					new Response("Too many requests", {
+						status: 429,
+						headers: { "content-type": "text/plain", "retry-after": "30" },
+					}),
+			),
+		);
+
+		expect(search.error).toEqual({
+			kind: "rate-limited",
+			message: "Too many requests",
+			retryAfterMs: 30_000,
+		});
+	});
+
+	it("reads a Retry-After given as a date, and a 429 with neither (#179)", async () => {
+		vi.setSystemTime(new Date("2026-09-26T12:00:00Z"));
+		try {
+			const dated = await answerOf(
+				serving(
+					() =>
+						new Response(null, {
+							status: 429,
+							headers: { "retry-after": "Sat, 26 Sep 2026 12:01:00 GMT" },
+						}),
+				),
+			);
+			expect(dated.error).toEqual({
+				kind: "rate-limited",
+				message: "The search handler answered 429",
+				retryAfterMs: 60_000,
+			});
+		} finally {
+			vi.useRealTimers();
+		}
+		cleanup();
+
+		const bare = await answerOf(
+			serving(() => new Response(null, { status: 429 })),
+		);
+		expect(bare.error).toEqual({
+			kind: "rate-limited",
+			message: "The search handler answered 429",
+			retryAfterMs: null,
+		});
+	});
+
+	it("tells a server error with its status and the host's message (#179)", async () => {
+		const json = await answerOf(
+			serving(() =>
+				Response.json(
+					{ error: { message: "The vendors database is down" } },
+					{ status: 500 },
+				),
+			),
+		);
+		expect(json.error).toEqual({
+			kind: "server",
+			status: 500,
+			message: "The vendors database is down",
+		});
+		cleanup();
+
+		const page = await answerOf(
+			serving(
+				() =>
+					new Response("<html>Bad gateway</html>", {
+						status: 502,
+						headers: { "content-type": "text/html" },
+					}),
+			),
+		);
+		expect(page.error).toEqual({
+			kind: "server",
+			status: 502,
+			message: "The search handler answered 502",
+		});
 	});
 });

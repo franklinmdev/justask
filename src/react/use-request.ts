@@ -15,12 +15,22 @@ export type RequestTiming =
 
 /**
  * Why the last answer has nothing beyond the flow's own result: the
- * provider's error as the handler sends it, a request the handler refused, or
- * a handler that could not be reached or answered something else.
+ * provider's error as the handler sends it (`provider`, `timeout`), a request
+ * the handler refused (`request`, its 400), a body over its 16 KiB
+ * (`too-large`, its 413) or not sent as JSON (`unsupported`, its 415), the
+ * host's server pacing the browser (`rate-limited`, a 429, with its
+ * `Retry-After` in ms when it sends one) or failing (`server`, a 5xx), or a
+ * handler that could not be reached or answered something else (`network`).
+ * `rate-limited` and `server` carry the host's own message when its body has
+ * one, as `{ error: { message } }`, `{ message }` or plain text.
  */
 export type RequestError =
 	| HandlerError
 	| HandlerBadRequest["error"]
+	| { kind: "too-large"; message: string }
+	| { kind: "unsupported"; message: string }
+	| { kind: "rate-limited"; message: string; retryAfterMs: number | null }
+	| { kind: "server"; status: number; message: string }
 	| { kind: "network"; message: string };
 
 /** The key of the handler's 200 body that holds the result. */
@@ -206,6 +216,12 @@ async function post<R>(
 		request,
 		timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
 	};
+	const failed = (error: RequestError): Outcome<R> => ({ result: null, error });
+	const answered = `The ${flow} handler answered`;
+	const somethingElse = failed({
+		kind: "network",
+		message: `${answered} something else`,
+	});
 	try {
 		const response = await fetchImpl(endpoint, {
 			method: "POST",
@@ -213,30 +229,104 @@ async function post<R>(
 			body: JSON.stringify(body),
 			signal,
 		});
-		if (response.status === 200) {
-			const answer = (await response.json()) as Record<string, unknown> & {
-				error?: HandlerError;
+		const { status } = response;
+		if (status === 200) {
+			const answer = await readJson(response);
+			// Another flow's handler, or a page, answers 200 too (#214).
+			if (!isRecord(answer) || !isRecord(answer[flow])) return somethingElse;
+			return {
+				result: answer[flow] as R,
+				error: (answer.error as HandlerError | undefined) ?? null,
 			};
-			return { result: answer[flow] as R, error: answer.error ?? null };
 		}
-		if (response.status === 400) {
-			const { error } = (await response.json()) as HandlerBadRequest;
-			return { result: null, error };
+		if (status === 400 || status === 413 || status === 415) {
+			const answer = await readJson(response);
+			if (!isRecord(answer) || !isRecord(answer.error)) return somethingElse;
+			const { message } = answer.error as HandlerBadRequest["error"];
+			const kind =
+				status === 413
+					? "too-large"
+					: status === 415
+						? "unsupported"
+						: "request";
+			return failed({ kind, message: String(message) });
 		}
-		return {
-			result: null,
-			error: {
-				kind: "network",
-				message: `The ${flow} handler answered ${response.status}`,
-			},
-		};
+		if (status === 429) {
+			return failed({
+				kind: "rate-limited",
+				message: (await hostMessage(response)) ?? `${answered} 429`,
+				retryAfterMs: retryAfterMs(response.headers.get("retry-after")),
+			});
+		}
+		if (status >= 500 && status < 600) {
+			return failed({
+				kind: "server",
+				status,
+				message: (await hostMessage(response)) ?? `${answered} ${status}`,
+			});
+		}
+		return failed({ kind: "network", message: `${answered} ${status}` });
 	} catch (cause) {
-		return {
-			result: null,
-			error: {
-				kind: "network",
-				message: cause instanceof Error ? cause.message : String(cause),
-			},
-		};
+		return failed({
+			kind: "network",
+			message: cause instanceof Error ? cause.message : String(cause),
+		});
 	}
+}
+
+/** The body as JSON, or undefined when it is not JSON. */
+async function readJson(response: Response): Promise<unknown> {
+	try {
+		return await response.json();
+	} catch {
+		return undefined;
+	}
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * The host server's own words for a failure: `{ error: { message } }`,
+ * `{ error: "..." }` or `{ message }` in JSON, or a plain text body. Null for
+ * anything else, such as an HTML error page.
+ */
+async function hostMessage(response: Response): Promise<string | null> {
+	let text: string;
+	try {
+		text = (await response.text()).trim();
+	} catch {
+		return null;
+	}
+	if (text === "") return null;
+	if (response.headers.get("content-type")?.startsWith("text/plain")) {
+		return text;
+	}
+	let body: unknown;
+	try {
+		body = JSON.parse(text);
+	} catch {
+		return null;
+	}
+	if (!isRecord(body)) return null;
+	const message = isRecord(body.error)
+		? body.error.message
+		: (body.error ?? body.message);
+	return typeof message === "string" && message.trim() !== ""
+		? message.trim()
+		: null;
+}
+
+/**
+ * A `Retry-After` header in ms: whole seconds, or an HTTP date from now. Null
+ * when there is none or it is neither. A cross-origin host exposes the header
+ * with `Access-Control-Expose-Headers`, or the browser hides it.
+ */
+function retryAfterMs(header: string | null): number | null {
+	if (header === null) return null;
+	const value = header.trim();
+	if (/^\d+$/.test(value)) return Number(value) * 1_000;
+	const at = Date.parse(value);
+	return Number.isNaN(at) ? null : Math.max(0, at - Date.now());
 }

@@ -63,6 +63,8 @@ It answers:
 - `499` with no body when the browser goes away mid call: the request's `signal` aborts the provider call, so an answer nobody reads is not paid for to the end. `ask` takes the same `signal` and rejects with its reason. On Cloudflare Workers the incoming request's `signal` fires only with the `enable_request_signal` compatibility flag.
 - A rejection, not a response, when the host's own code throws: a shortlist that fails, such as a database that is down. The host's server answers it as it answers its own errors, so its message stays on the server. An `onError` that throws is logged and the held `200` still goes out.
 
+In React, each hook's `error` tells these apart by `kind`, so the host can word each one: `provider` and `timeout` from a `200`, `request` for a `400`, `too-large` for a `413`, `unsupported` for a `415`, and for statuses the host's own server gives, `rate-limited` for a `429`, with `retryAfterMs` read from its `Retry-After` (seconds or a date; null without one), and `server` for a `5xx`, with its `status`. Those two carry the host's own message when its body has one (`{ error: { message } }`, `{ message }` or plain text), and a fixed one otherwise. A handler that cannot be reached, answers any other status, or answers a body that is not its flow's (another flow's handler, a sign-in page) gives `network`. A host that serves the handler from another origin lists `Retry-After` in `Access-Control-Expose-Headers`, or the browser hides it.
+
 A date, time or amount field weighs at most 10 readings of its kind: a request with more, such as a pasted list of numbers, gives that kind none, and its fields are held without a question.
 
 ### What leaves the server on each call
