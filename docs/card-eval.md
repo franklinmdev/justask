@@ -28,7 +28,7 @@
 
 **Card rules (#235): four new holds in code move no frozen row.** A named pair joined by a slash, "y/o" or a comma alone, a role marker, a vendor named only negated, and a day after today on the card's past-reading day. See Card rules (#235) below; rounds 1 to 9 are unchanged.
 
-**Round 10 (#244): a bare weekday and a number with no currency, proposed and not yet approved; no call made.** Two wording changes on the card's questions for #190 and #191, measured on round 9's frozen rows again and on a new probe set of bare amounts. See Round 10 below; rounds 1 to 9 are unchanged.
+**Round 10 (#244): a bare weekday and a number with no currency, approved by the owner on 2026-09-26 before any call.** Two wording changes on the card's questions for #190 and #191, measured on round 9's frozen rows again and on a new probe set of bare amounts. See Round 10 below; rounds 1 to 9 are unchanged.
 
 **Latency (#65): from the next verdict run on, every run sends a fixed provider probe before and after its rows, and a run whose probes are more than twice the baseline leaves a failing latency line pending, to be measured again in a normal window.** See Latency below; round 4 stays a FAIL.
 
@@ -1478,7 +1478,7 @@ The pre-launch QA's parser fixes ([#232](https://github.com/franklinmdev/justask
 
 ## Round 10: a bare weekday and a number with no currency (#244)
 
-Carried by [#244](https://github.com/franklinmdev/justask/issues/244), the owner's decision of 2026-09-26 to fix [#190](https://github.com/franklinmdev/justask/issues/190) and [#191](https://github.com/franklinmdev/justask/issues/191) before launch with one new card round, starting from the proposals in #243. **Status: proposed. Nothing below is approved, and no provider call is made until it is.**
+Carried by [#244](https://github.com/franklinmdev/justask/issues/244), the owner's decision of 2026-09-26 to fix [#190](https://github.com/franklinmdev/justask/issues/190) and [#191](https://github.com/franklinmdev/justask/issues/191) before launch with one new card round, starting from the proposals in #243. **Approved by the owner on 2026-09-26, as written, before any provider call**, with the `bare` sets frozen by checksum in `test/demo-card-eval.test.ts` in the commit before the first call.
 
 ### The wording
 
