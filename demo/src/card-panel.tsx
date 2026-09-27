@@ -41,10 +41,10 @@ function intentReasonOf(
 
 /**
  * Why a card field is held, read the way the code holds it: no candidates,
- * a request that asks for no new expense, a named pair, no answer, a tie, a
- * missing label, then a picked reading the code refuses (two ways to read
- * it, a currency that is not the local one, a period, a day after today),
- * and last a pick below the gate.
+ * a request that asks for no new expense, a named pair, a pick the request
+ * names only negated, no answer, a tie, a missing label, then a picked
+ * reading the code refuses (two ways to read it, a currency that is not the
+ * local one, a period, a day after today), and last a pick below the gate.
  */
 function heldReasonOf(
 	name: ExpenseName,
@@ -56,6 +56,10 @@ function heldReasonOf(
 	if (!result.intent.passes) return { kind: "not-a-record" };
 	if ("pair" in field && field.pair) {
 		return { kind: "pair", text: field.pair.text };
+	}
+	if ("negated" in field) {
+		const negated = field.negated?.find(({ id }) => id === field.pick?.label);
+		if (negated) return { kind: "negated", text: negated.text };
 	}
 	const belowGate = (probability: number) => ({
 		kind: "below-gate" as const,

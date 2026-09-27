@@ -341,6 +341,8 @@ export const english: Content = {
 						return `“${reason.text}” reads two ways, so the code held the field whatever its probability.`;
 					case "period":
 						return `“${reason.text}” is a period, not one day, so the code held the field.`;
+					case "negated":
+						return `The request says it was not this vendor (“${reason.text}”), so the code held the field whatever the pick.`;
 					case "after-today":
 						return `“${reason.text}” is after today, and an expense’s day has already happened, so the code held the field.`;
 					default:
@@ -572,6 +574,23 @@ export const english: Content = {
 		],
 	},
 	joiners: { or: ["or", "vs", "versus"], and: ["and"] },
+	cardNegations: {
+		before: [
+			"not",
+			"never",
+			"no",
+			"wasn't",
+			"wasnt",
+			"was not",
+			"isn't",
+			"isnt",
+			"is not",
+			"didn't",
+			"didnt",
+			"did not",
+		],
+		after: ["wasn't", "wasnt", "was not", "isn't", "isnt", "is not"],
+	},
 
 	cardSuggestions: {
 		fills: [

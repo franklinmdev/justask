@@ -58,8 +58,9 @@ export type CardMiss = {
 	 * so no pick could have been right; `command` when the card's command
 	 * words held the intent (ADR 0009); `marker` when a role marker held it
 	 * (ADR 0015); `pair` when a named pair held the field (ADR 0010);
-	 * `implied` when another field's item filled it (ADR 0012); `provider`
-	 * otherwise.
+	 * `negation` when the request names the expected item only negated (ADR
+	 * 0016); `implied` when another field's item filled it (ADR 0012);
+	 * `provider` otherwise.
 	 */
 	blame:
 		| "shortlist"
@@ -67,6 +68,7 @@ export type CardMiss = {
 		| "command"
 		| "marker"
 		| "pair"
+		| "negation"
 		| "implied"
 		| "provider";
 };
@@ -168,6 +170,7 @@ function readField(row: CardRunRow, name: string, gate: number): FieldReading {
 			...(logged.kind === "amount" && { amounts: logged.candidates }),
 		},
 		row.pairs?.[name],
+		row.negations?.[name],
 	);
 	const { result, value } = plan.read(row.answers);
 	const picks =
@@ -519,6 +522,9 @@ function blame(
 	const logged = row.fields[name];
 	if (expected === null || !logged) return "provider";
 	if (row.pairs?.[name]) return "pair";
+	if (row.negations?.[name]?.some(({ id }) => id === expected)) {
+		return "negation";
+	}
 	const ids = logged.candidates.map(({ id }) => id);
 	switch (logged.kind) {
 		case "catalog":

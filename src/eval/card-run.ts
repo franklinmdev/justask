@@ -8,6 +8,7 @@ import {
 	INTENT,
 } from "../card.ts";
 import type { NamedPair } from "../named-pair.ts";
+import type { NegatedItem } from "../negation.ts";
 import type { AmountReading, TimeReading } from "../parse.ts";
 import type { Facts, Provider, ProviderAnswer } from "../provider.ts";
 import { type CardEvalRow, isAmount, isIds } from "./card-set.ts";
@@ -46,6 +47,8 @@ export type CardRunRow = CardEvalRow & {
 	pairs?: Record<string, NamedPair>;
 	/** The role marker that held the card before its gate (ADR 0015); absent when none did, and from logs written before it. */
 	marker?: string;
+	/** Per field that takes one item, the items the request names only negated (ADR 0016); absent when there were none, and from logs written before it. */
+	negations?: Record<string, NegatedItem[]>;
 	/** The whole pipeline, parsing and shortlists included. */
 	latencyMs: number;
 	/** False when the provider was never asked. A card asks its intent on every request, so only a failure before the call leaves it false. */
@@ -179,12 +182,15 @@ async function runRow<F extends CardFields>(
 	const latencyMs = performance.now() - started;
 	const fields: Record<string, LoggedCardField> = {};
 	const pairs: Record<string, NamedPair> = {};
+	const negations: Record<string, NegatedItem[]> = {};
 	for (const [name, field] of Object.entries(card.fields)) {
-		const { candidates, pair } = result.fields[name] as {
+		const { candidates, pair, negated } = result.fields[name] as {
 			candidates: (LoggedItem & { value: unknown })[];
 			pair?: NamedPair;
+			negated?: NegatedItem[];
 		};
 		if (pair) pairs[name] = pair;
+		if (negated) negations[name] = negated;
 		const kind = loggedKind(field as CardField);
 		fields[name] =
 			kind === "catalog" || kind === "several"
@@ -206,6 +212,7 @@ async function runRow<F extends CardFields>(
 		...(command && { command }),
 		...(marker && { marker }),
 		...(Object.keys(pairs).length > 0 && { pairs }),
+		...(Object.keys(negations).length > 0 && { negations }),
 		latencyMs,
 		...calls.logged({ costUsd, error }),
 	};

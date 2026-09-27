@@ -18,6 +18,7 @@ export type {
 	CardCommand,
 	CardCommands,
 	CardDateField,
+	CardDateReading,
 	CardField,
 	CardFieldResult,
 	CardFields,
@@ -61,6 +62,7 @@ export {
 	type SearchHandlerResponse,
 } from "./handler.ts";
 export type { Joiners, NamedPair } from "./named-pair.ts";
+export type { NegatedItem, Negations } from "./negation.ts";
 export {
 	type AmountReading,
 	builtInParser,

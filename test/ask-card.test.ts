@@ -688,6 +688,118 @@ describe("ask: card", () => {
 		});
 	});
 
+	describe("a negated item (ADR 0016)", () => {
+		const negations = {
+			before: ["not", "wasn't", "never", "no", "didn't", "no fue", "no era"],
+			after: ["wasn't", "isn't", "no fue"],
+		};
+		const fill = (
+			request: string,
+			picked = "northwind",
+			declared: typeof negations | null = negations,
+		) =>
+			ask({
+				...base,
+				request,
+				provider: fakeProvider({
+					intent: answer(INTENT, "new_record", 0.99),
+					...confident,
+					vendor: answer(["northwind", "acme", ...MISSING], picked, 0.99),
+				}),
+				card: {
+					...expenseCard(),
+					...(declared && { negations: declared }),
+				},
+			});
+
+		it.each([
+			["after its name", "lunch $30, Northwind wasn't it", "Northwind wasn't"],
+			["right before it", "coffee, wasn't Northwind, $5", "wasn't Northwind"],
+			[
+				"two words before it",
+				"lunch $30, didn't go to Northwind",
+				"didn't go to Northwind",
+			],
+			[
+				"in Spanish",
+				"almuerzo 30 dólares, no fue Northwind",
+				"no fue Northwind",
+			],
+			["by a name's typo", "coffee, wasn't Nortwind, $5", "wasn't Nortwind"],
+		])(
+			"holds the field when the picked item is named negated %s, whatever its pick, and names the words",
+			async (_, request, text) => {
+				const { card } = await fill(request);
+
+				expect("vendor" in card.value).toBe(false);
+				expect(card.fields.vendor.negated).toEqual([{ id: "northwind", text }]);
+				// Still asked, so the pick is reported; the rest of the card fills.
+				expect(card.fields.vendor.pick?.label).toBe("northwind");
+				expect(card.value.total).toBeDefined();
+			},
+		);
+
+		it("fills the item the request names beside another it negates", async () => {
+			const { card } = await fill("not Acme, Northwind coffee today, $12");
+
+			expect(card.fields.vendor.negated).toEqual([
+				{ id: "acme", text: "not Acme" },
+			]);
+			expect(card.value.vendor).toEqual({ name: "Northwind" });
+		});
+
+		it.each([
+			["a negation across a comma", "Northwind lunch, no tip, $42"],
+			[
+				"a negation three words away",
+				"not sure about the Northwind lunch, $42",
+			],
+			["an after-word before the name", "isn't it Northwind, $42"],
+			[
+				"the item named again without one",
+				"never Northwind before, but a Northwind lunch today, $42",
+			],
+			[
+				"another name between the negation and it",
+				"not Acme but Northwind, $42",
+			],
+		])("fills on %s", async (_, request) => {
+			const { card } = await fill(request);
+
+			expect(card.value.vendor).toEqual({ name: "Northwind" });
+		});
+
+		it("fills as before when the card declares no negations", async () => {
+			const { card } = await fill(
+				"lunch $30, Northwind wasn't it",
+				"northwind",
+				null,
+			);
+
+			expect(card.fields.vendor).not.toHaveProperty("negated");
+			expect(card.value.vendor).toEqual({ name: "Northwind" });
+		});
+
+		it("never holds a field where several items may apply", async () => {
+			const { card } = await fill("Northwind lunch, not travel, $42");
+
+			expect(card.fields.tags).not.toHaveProperty("negated");
+			expect(card.value.tags).toEqual(["meals"]);
+		});
+
+		it.each([
+			[{ before: ["not", ""], after: [] }],
+			[{ before: [], after: ["  "] }],
+		])(
+			"refuses %j: a blank negation would match anywhere",
+			async (declared) => {
+				await expect(fill("a lunch", "northwind", declared)).rejects.toThrow(
+					/negation/,
+				);
+			},
+		);
+	});
+
 	describe("a catalog field where several items may apply", () => {
 		const fill = (tagQuestions: Record<string, Probabilities>) =>
 			ask({

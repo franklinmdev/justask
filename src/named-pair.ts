@@ -33,14 +33,14 @@ const GAP_TOKEN = /[\p{L}\p{M}\p{N}]+(?:[-'’/][\p{L}\p{M}\p{N}]+)*\/?|[/,]/gu;
  */
 const WORD = /[\p{L}\p{M}\p{N}]+(?:[-'’][\p{L}\p{M}\p{N}]+)*/gu;
 
-type Word = { folded: string; start: number; end: number };
+export type Word = { folded: string; start: number; end: number };
 
 /** Folded, and a possessive dropped: "Tallyroot's" reads "tallyroot". */
-function foldWord(word: string): string {
+export function foldWord(word: string): string {
 	return fold(word).replace(/['’]s$/, "");
 }
 
-function words(text: string): Word[] {
+export function words(text: string): Word[] {
 	return [...text.matchAll(WORD)].map((found) => ({
 		folded: foldWord(found[0]),
 		start: found.index,
@@ -107,10 +107,13 @@ function namesItem(naming: Naming, run: Word[]): boolean {
 	);
 }
 
-type Mention = { id: string; first: number; last: number };
+export type Mention = { id: string; first: number; last: number };
 
 /** The items the request names, in order, the longest naming first where two start on one word. */
-function mentions(text: Word[], candidates: Candidate<unknown>[]): Mention[] {
+export function mentions(
+	text: Word[],
+	candidates: Candidate<unknown>[],
+): Mention[] {
 	const all = namings(candidates)
 		.filter(({ words }) => words.length > 0)
 		.sort((a, b) => b.words.length - a.words.length);

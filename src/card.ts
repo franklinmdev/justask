@@ -11,6 +11,7 @@ import {
 	type ParsedFieldResult,
 } from "./filter.ts";
 import type { Joiners, NamedPair } from "./named-pair.ts";
+import type { NegatedItem, Negations } from "./negation.ts";
 import type {
 	AmountReading,
 	DateReading,
@@ -111,6 +112,15 @@ export type Card<F extends CardFields> = {
 	 * (ADR 0010).
 	 */
 	joiners?: Joiners;
+	/**
+	 * Words that negate an item's name, in the card's language, each a word
+	 * or a phrase: `before` words sit before the name, with up to two other
+	 * words between ("not", "didn't"; "no fue"), `after` words straight after
+	 * it ("wasn't"; "no fue"), in one clause. A field that takes one item is
+	 * held when its pick is an item the request names only negated, whatever
+	 * its probability (ADR 0016).
+	 */
+	negations?: Negations;
 };
 
 /** A card's command words: "quite", "envíe"; "el gasto", "la factura". */
@@ -161,12 +171,15 @@ export type CardFieldResult<F extends CardField> =
 	F extends SeveralCatalogField<infer T>
 		? ParsedFieldResult<T> & Paired & Implied
 		: F extends CatalogField<infer T>
-			? CatalogFieldResult<T> & Paired
+			? CatalogFieldResult<T> & Paired & Negated
 			: F extends CardDateField
 				? CatalogFieldResult<CardDateReading>
 				: F extends TimeField
 					? CatalogFieldResult<TimeReading>
 					: CatalogFieldResult<AmountReading>;
+
+/** The items a field that takes one item names only negated; its pick on one holds it (ADR 0016). */
+export type Negated = { negated?: NegatedItem[] };
 
 /** A field filled from another field's item, where its own questions left a gap (ADR 0012). */
 export type Implied = {
@@ -348,7 +361,12 @@ function choicePlan<T>(
 	{
 		ambiguous = () => false,
 		pair,
-	}: { ambiguous?: (value: T) => boolean; pair?: NamedPair | undefined } = {},
+		negated = [],
+	}: {
+		ambiguous?: (value: T) => boolean;
+		pair?: NamedPair | undefined;
+		negated?: NegatedItem[];
+	} = {},
 ): FieldPlan {
 	const held = {
 		candidates,
@@ -356,6 +374,7 @@ function choicePlan<T>(
 		probabilities: {},
 		gate,
 		...(pair && { pair }),
+		...(negated.length > 0 && { negated }),
 	};
 	return {
 		questions: question ? [question] : [],
@@ -365,7 +384,13 @@ function choicePlan<T>(
 			const pick = readPick(probabilities);
 			const result = { ...held, pick, probabilities };
 			const winner = candidates.find(({ id }) => id === pick?.label);
-			if (pair || !winner || !pick || ambiguous(winner.value)) {
+			if (
+				pair ||
+				!winner ||
+				!pick ||
+				ambiguous(winner.value) ||
+				negated.some(({ id }) => id === winner.id)
+			) {
 				return { result };
 			}
 			if (pick.probability < gate) return { result };
@@ -378,7 +403,8 @@ function choicePlan<T>(
 /**
  * A card field's questions, and how to build its value from the provider's
  * picks. A catalog field the request names a pair of is held whatever its
- * picks (ADR 0010).
+ * picks (ADR 0010), and so is one that takes one item whose pick the request
+ * names only negated (ADR 0016).
  */
 export function cardPlan(
 	name: string,
@@ -387,6 +413,7 @@ export function cardPlan(
 	catalog: Candidate<unknown>[],
 	readings: CandidateReadings,
 	pair?: NamedPair,
+	negated?: NegatedItem[],
 ): FieldPlan {
 	if (field.kind === "catalog" && "several" in field) {
 		return severalPlan(name, card, field, catalog, pair);
@@ -399,6 +426,7 @@ export function cardPlan(
 		case "catalog":
 			return choicePlan(name, ask(catalog, ""), catalog, field.gate, (v) => v, {
 				pair,
+				...(negated && { negated }),
 			});
 		case "date":
 			return choicePlan(

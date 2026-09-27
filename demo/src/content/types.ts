@@ -9,6 +9,7 @@ import type {
 	DateField,
 	DateRange,
 	Joiners,
+	Negations,
 	SeveralCatalogField,
 } from "justask";
 export type Language = "en" | "es";
@@ -82,7 +83,8 @@ export type CardHeldReason =
 	| { kind: "foreign-currency"; mark: string }
 	| { kind: "ambiguous"; text: string }
 	| { kind: "period"; text: string }
-	| { kind: "after-today"; text: string };
+	| { kind: "after-today"; text: string }
+	| { kind: "negated"; text: string };
 
 /** Why the intent question let the fields fill, or held them all. */
 export type IntentReason =
@@ -382,6 +384,11 @@ export type Content = {
 	 * filter and the card hold (ADR 0010, 0011).
 	 */
 	joiners: Joiners;
+	/**
+	 * The words that negate a vendor's name on the card, so a vendor the
+	 * request names only negated is held (ADR 0016).
+	 */
+	cardNegations: Negations;
 };
 
 /**

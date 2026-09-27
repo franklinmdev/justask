@@ -131,6 +131,12 @@ const answers: Record<string, FakeAnswers> = {
 		tagged: ["office"],
 		amount: "a0",
 	}),
+	// A vendor the request names only negated, picked above the gate: the code holds it (#188).
+	"lunch $30, Larkspur wasn't it": answer({
+		vendor: question(vendors, "larkspur"),
+		tagged: ["meals"],
+		amount: "a0",
+	}),
 	// A named pair, its vendor picked above the gate: the code holds it.
 	"Tallyroot or Cloudberth, $75 yesterday": answer({
 		vendor: question(vendors, "tallyroot"),
@@ -597,6 +603,24 @@ describe("the demo's card page", () => {
 			),
 		).toBeDefined();
 		await expectNoAxeViolations(container);
+	});
+
+	it("holds the vendor the request says it was not, whatever its pick, says which words, and fills the rest (#188)", async () => {
+		const { user } = renderDemo();
+
+		await user.type(
+			screen.getByRole("searchbox", { name: "Describe the expense" }),
+			"lunch $30, Larkspur wasn't it{Enter}",
+		);
+		await screen.findByText(/^Filled:/);
+
+		expect(vendor().value).toBe("");
+		expect(amount().value).toBe("30.00");
+		expect(
+			within(panel().getByRole("region", { name: "Vendor" })).getByText(
+				"The request says it was not this vendor (“Larkspur wasn't”), so the code held the field whatever the pick.",
+			),
+		).toBeDefined();
 	});
 
 	it.each([

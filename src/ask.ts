@@ -36,6 +36,7 @@ import {
 } from "./filter.ts";
 import { checkGate } from "./gate.ts";
 import { checkJoiners, findPair, type NamedPair } from "./named-pair.ts";
+import { checkNegations, findNegated } from "./negation.ts";
 import {
 	type DateReading,
 	type Parser,
@@ -199,6 +200,7 @@ export function checkCard(card: Card<CardFields>): void {
 	checkGate(card.gate, "the card's gate");
 	checkCommands(card.commands);
 	checkJoiners(card.joiners, "card");
+	checkNegations(card.negations);
 	const names = Object.keys(card.fields);
 	const field = (name: string) => card.fields[name] as CardFields[string];
 	for (const name of names) {
@@ -406,6 +408,9 @@ async function askCard<F extends CardFields>({
 					findPair(request, candidates, card.joiners, {
 						several: "several" in declared,
 					}),
+					"several" in declared
+						? undefined
+						: findNegated(request, candidates, card.negations),
 				);
 			} else {
 				const readings = readingsFor(

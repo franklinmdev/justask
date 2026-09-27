@@ -341,6 +341,8 @@ export const spanish: Content = {
 						return `“${reason.text}” se lee de dos maneras, así que el código retuvo el campo sin importar su probabilidad.`;
 					case "period":
 						return `“${reason.text}” es un período, no un día, así que el código retuvo el campo.`;
+					case "negated":
+						return `La solicitud dice que no fue este proveedor (“${reason.text}”), así que el código retuvo el campo sin importar la elección.`;
 					case "after-today":
 						return `“${reason.text}” es después de hoy, y el día de un gasto ya pasó, así que el código retuvo el campo.`;
 					default:
@@ -609,6 +611,11 @@ export const spanish: Content = {
 		],
 	},
 	joiners: { or: ["o", "u", "vs", "versus"], and: ["y", "e"] },
+	cardNegations: {
+		// Bare "no" also modifies a noun: "un acuerdo de no competencia de Lindero".
+		before: ["no fue", "no era", "no es", "nunca", "ni"],
+		after: ["no fue", "no era", "no es"],
+	},
 
 	cardSuggestions: {
 		fills: [

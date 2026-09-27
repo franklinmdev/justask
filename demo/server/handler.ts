@@ -157,6 +157,7 @@ export function demoCard(content: Content): Card<ExpenseFields> {
 		gate: CARD_GATES.intent,
 		commands: content.cardCommands,
 		joiners: content.joiners,
+		negations: content.cardNegations,
 		fields: {
 			vendor: {
 				kind: "catalog",

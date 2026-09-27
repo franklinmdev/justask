@@ -109,7 +109,7 @@ What one visitor may call on the public demo's owner's key: 20 calls a UTC minut
 _Avoid_: Rate limit, quota, throttle
 
 **Held field**:
-A field left empty because its pick did not clear the gate, because the provider picked `not_mentioned` or `not_available`, because a parser marked its candidates ambiguous (such as "next Friday" said on a Monday, this week's or next week's), because the request names a pair of the field's items or holds a role marker, or, on a card, because the request is a command on an existing record, or the day lies after today on a field that reads the past. Empty looks the same whatever the reason.
+A field left empty because its pick did not clear the gate, because the provider picked `not_mentioned` or `not_available`, because a parser marked its candidates ambiguous (such as "next Friday" said on a Monday, this week's or next week's), because the request names a pair of the field's items or holds a role marker, or, on a card, because the request is a command on an existing record, the pick is an item the request names only negated, or the day lies after today on a field that reads the past. Empty looks the same whatever the reason.
 _Avoid_: Abstained field, unknown, null field
 
 **Confirm**:
@@ -143,6 +143,10 @@ _Avoid_: Injection guard, jailbreak filter
 **Named pair**:
 Two items of one catalog field that a request names with a joiner between them, and no third item of that field: "Tallyroot or Cloudberth", "Lindero y Serena", "Larkspur/Beanhaven", "Cazuela, Cafetal". An "or" word or a slash holds any catalog field; an "and" word, or a comma with nothing else between the names, only a field that takes one item. The search holds its item, and the filter and the card that field, before the gate, whatever the pick (ADR 0010, 0011). A filter's catalog field may opt out with `heldByPair: false` (ADR 0011).
 _Avoid_: Choice, either-or
+
+**Negated item**:
+An item of a card field that takes one item, which the request names only with a negation beside it, in one clause: "Larkspur wasn't it", "no fue Cafetal". The card's per-language `negations` list the words; a pick on such an item holds the field whatever its probability (ADR 0016).
+_Avoid_: Excluded vendor, not-vendor
 
 **Implied value**:
 The items a catalog item declares for another field of a card (`implies`): the demo's office-only vendors imply the `office` tag. The card fills them only in a gap, and says the value came from the other field (ADR 0012).

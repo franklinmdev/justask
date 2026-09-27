@@ -713,6 +713,59 @@ describe("runCardEval", () => {
 		expect(fields.spent_on).toMatchObject({ wrong: 0, highestWrong: null });
 	});
 
+	it("logs the items a field names negated, holds a pick on one at every gate, and blames the negation for a record it held (ADR 0016)", async () => {
+		const run = await runCardEval({
+			...input(
+				join(dir, "run-1.jsonl"),
+				fakeProvider(() => ({
+					intent: answer(intentLabels, "new_record", 0.97),
+					vendor: answer(vendorLabels, "northwind", 0.99),
+					...mealsOnly(),
+					total: answer(amountLabels, "a0", 0.99),
+				})),
+			),
+			set: set([
+				{
+					id: "negated",
+					request: "lunch $42, Northwind wasn't it",
+					kind: "record",
+					expected: { tags: ["meals"], total: { value: 42, currency: "USD" } },
+				},
+				{
+					id: "false-hold",
+					request: "lunch $42, wasn't cheap at Northwind",
+					kind: "record",
+					expected: {
+						vendor: "northwind",
+						tags: ["meals"],
+						total: { value: 42, currency: "USD" },
+					},
+				},
+			]),
+			card: {
+				...expenseCard(),
+				negations: { before: ["wasn't"], after: ["wasn't"] },
+			},
+		});
+
+		expect(run.rows[0]?.negations).toEqual({
+			vendor: [{ id: "northwind", text: "Northwind wasn't" }],
+		});
+		expect(
+			(await readCardRun(join(dir, "run-1.jsonl"))).rows[0]?.negations,
+		).toEqual(run.rows[0]?.negations);
+		const { fields, misses } = scoreCardRun(run, { gates: { vendor: 0.5 } });
+		expect(fields.vendor).toMatchObject({ wrong: 0, highestWrong: null });
+		expect(misses).toEqual([
+			expect.objectContaining({
+				id: "false-hold",
+				field: "vendor",
+				got: null,
+				blame: "negation",
+			}),
+		]);
+	});
+
 	it("blames the pair for a record the code held, a false hold", async () => {
 		const request = "Northwind lunch for the Acme or Northwind team, $42";
 		const run = await runCardEval({
