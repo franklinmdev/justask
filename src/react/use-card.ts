@@ -67,13 +67,25 @@ export type UseCard<F extends CardFields> = {
 	/**
 	 * The card as it stands: what the last successful answer filled, with the
 	 * person's changes since. A held field's key is left out, exactly as one
-	 * the request never mentioned. A successful answer starts the card over; a
-	 * failed one leaves it as it was, the person's changes included, and says
-	 * why in `error`.
+	 * the request never mentioned. A successful answer starts the card over,
+	 * but for the fields the person set or emptied after its call went out,
+	 * which keep what the person gave them; a failed one leaves the card as it
+	 * was, the person's changes included, and says why in `error`.
 	 */
 	value: CardValue<F>;
 	/** Who filled a field, or null while it is empty. */
 	filledBy: (name: keyof F & string) => FilledBy | null;
+	/**
+	 * What the last successful answer did to the card as it landed: the
+	 * fields it filled, and the fields holding a value the person set after
+	 * its call went out, which it left as they were (#213); each in the order
+	 * they are declared. Both empty before an answer. Later changes by the
+	 * person leave it as it was.
+	 */
+	landed: {
+		filled: (keyof F & string)[];
+		kept: (keyof F & string)[];
+	};
 	/** Fills or changes one field for the person; undefined empties it. */
 	set: <K extends keyof F & string>(
 		name: K,
@@ -99,29 +111,62 @@ export type UseCard<F extends CardFields> = {
 	restore: () => void;
 };
 
-/** The card: its values, who filled each one, and the answer it started from. */
+/**
+ * The card: its values, who filled each one, the answer it started from,
+ * and, for each field the person set or emptied, how many calls had gone
+ * out when they last did.
+ */
 type Draft = {
 	answer: Answered<unknown> | null;
 	value: Record<string, unknown>;
 	by: Record<string, FilledBy>;
+	touched: Record<string, number>;
+	landed: { filled: string[]; kept: string[] };
 };
 
-const EMPTY: Draft = { answer: null, value: {}, by: {} };
+const EMPTY: Draft = {
+	answer: null,
+	value: {},
+	by: {},
+	touched: {},
+	landed: { filled: [], kept: [] },
+};
 
 /**
- * The card once `answer` lands: a new card from its filled fields, or, when
- * it failed, the card as it was.
+ * The card once `answer` lands: a new card from its filled fields, with the
+ * person's own word on any field they set or emptied after its call went out
+ * (#213), or, when it failed, the card as it was.
  */
 function draftOf(
 	answer: Answered<CardResult<CardFields>>,
 	current: Draft,
 ): Draft {
 	if (answer.error) return { ...current, answer };
-	const value = { ...(answer.result?.value ?? {}) };
-	const by = Object.fromEntries(
+	const value: Record<string, unknown> = { ...(answer.result?.value ?? {}) };
+	const by: Record<string, FilledBy> = Object.fromEntries(
 		Object.keys(value).map((name) => [name, "answer" as const]),
 	);
-	return { answer, value, by };
+	for (const [name, sent] of Object.entries(current.touched)) {
+		if (sent < answer.call) continue;
+		if (name in current.value) {
+			value[name] = current.value[name];
+			by[name] = "person";
+		} else {
+			delete value[name];
+			delete by[name];
+		}
+	}
+	const names = Object.keys(answer.result?.fields ?? {});
+	return {
+		answer,
+		value,
+		by,
+		touched: current.touched,
+		landed: {
+			filled: names.filter((name) => by[name] === "answer"),
+			kept: names.filter((name) => by[name] === "person"),
+		},
+	};
 }
 
 /**
@@ -175,8 +220,10 @@ export function useCard<F extends CardFields>({
 		answered: current && answer !== spent,
 		value,
 		filledBy: (name) => (name in draft.value ? (draft.by[name] ?? null) : null),
+		landed: draft.landed as UseCard<F>["landed"],
 		set: (name, next) => {
 			setSaved(null);
+			const sent = flow.sent();
 			// From the latest card, so two sets in one event both apply (#212).
 			setKept((latest) => {
 				const nextValue = { ...latest.value };
@@ -188,7 +235,12 @@ export function useCard<F extends CardFields>({
 					nextValue[name] = next;
 					by[name] = "person";
 				}
-				return { ...latest, value: nextValue, by };
+				return {
+					...latest,
+					value: nextValue,
+					by,
+					touched: { ...latest.touched, [name]: sent },
+				};
 			});
 		},
 		ready,
@@ -197,7 +249,7 @@ export function useCard<F extends CardFields>({
 			onConfirm(value);
 			setSpent(answer);
 			setSaved({ request: flow.request, draft });
-			setKept({ answer, value: {}, by: {} });
+			setKept({ ...EMPTY, answer });
 			flow.replaceRequest("");
 		},
 		saved: saved ? (saved.draft.value as CardValue<F>) : null,

@@ -359,6 +359,60 @@ describe("useCard and its pieces", () => {
 		expect(seen.card?.filledBy("total")).toBe("person");
 	});
 
+	it("keeps a field the person set or emptied after Enter when the answer lands (#213)", async () => {
+		// The provider answers only once the test opens it, so the person acts
+		// while the call is on its way.
+		let open = () => {};
+		const opened = new Promise<void>((resolve) => {
+			open = resolve;
+		});
+		const inner = fakeProvider(fills);
+		const provider: Provider = {
+			answer: async (input) => {
+				await opened;
+				return inner.answer(input);
+			},
+		};
+		const { seen, user } = renderCard({ provider });
+
+		await user.selectOptions(vendor(), "acme");
+		await user.type(box(), `${lunch}{Enter}`);
+		expect(seen.card?.loading).toBe(true);
+		await user.selectOptions(vendor(), "northwind");
+		await user.selectOptions(vendor(), "acme");
+		act(() => seen.card?.set("total", undefined));
+		act(() => seen.card?.set("total", { value: 50, currency: "USD" }));
+		act(() => seen.card?.set("spent_on", undefined));
+		open();
+		await screen.findByText(/^Filled:/);
+
+		expect(vendor().value).toBe("acme");
+		expect(filledBy(vendor())).toBe("person");
+		expect(amount().value).toBe("50");
+		expect(filledBy(amount())).toBe("person");
+		expect(day().value).toBe("");
+		expect(meals().checked).toBe(true);
+		expect(filledBy(meals())).toBe("answer");
+		// The status neither claims the person's fields nor calls them waiting.
+		expect(seen.card?.landed).toEqual({
+			filled: ["tags"],
+			kept: ["vendor", "total"],
+		});
+		expect(screen.getByText(/^Filled:/).textContent).toBe(
+			"Filled: tags. Waiting for you: spent_on.",
+		);
+	});
+
+	it("starts over a field the person set before Enter (#213)", async () => {
+		const { user } = renderCard({ provider: fakeProvider(fills) });
+
+		await user.selectOptions(vendor(), "acme");
+		await ask(user);
+
+		expect(vendor().value).toBe("northwind");
+		expect(filledBy(vendor())).toBe("answer");
+	});
+
 	it("tells what the answer filled from what the person filled, for the host's styling", async () => {
 		const { user } = renderCard({ provider: fakeProvider(holdsVendor) });
 

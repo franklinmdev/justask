@@ -38,8 +38,11 @@ type Flow = "search" | "filter" | "card";
 
 type Outcome<R> = { result: R | null; error: RequestError | null };
 
-/** An outcome with the request it answers, so an edit in the box retires it. */
-export type Answered<R> = Outcome<R> & { request: string };
+/**
+ * An outcome with the request it answers, so an edit in the box retires it,
+ * and its call's number, counted from 1 as calls go out.
+ */
+export type Answered<R> = Outcome<R> & { request: string; call: number };
 
 /**
  * What every flow's hook shares: the box's text, the pause, one call
@@ -71,6 +74,8 @@ export function useRequest<R>({
 	const pending = useRef<string | null>(null);
 	// The request `answer` is for, read by a `setRequest` in the same event.
 	const answered = useRef<string | null>(null);
+	// How many calls have gone out.
+	const sent = useRef(0);
 	// The latest render's options, for a call a pause or an effect makes later.
 	// A ref rather than `useEffectEvent`, which React 19.0 and 19.1 lack (#175).
 	const latest = useRef({ endpoint, timing, fetchImpl, flow });
@@ -128,6 +133,8 @@ export function useRequest<R>({
 		}
 		const controller = new AbortController();
 		inFlight.current = { controller, text };
+		sent.current += 1;
+		const number = sent.current;
 		setLoading(true);
 		const { endpoint, fetchImpl, flow } = latest.current;
 		post<R>(fetchImpl ?? fetch, endpoint, flow, text, controller.signal).then(
@@ -135,7 +142,7 @@ export function useRequest<R>({
 				if (controller.signal.aborted) return;
 				inFlight.current = null;
 				answered.current = text;
-				setAnswer({ ...next, request: text });
+				setAnswer({ ...next, request: text, call: number });
 				setLoading(due() !== null);
 			},
 		);
@@ -191,6 +198,8 @@ export function useRequest<R>({
 		submit: () => call(request),
 		loading,
 		answer,
+		/** How many calls have gone out, for an event to stamp a change with. */
+		sent: () => sent.current,
 		/** True when `answer` is for the request in the box, surrounding spaces aside. */
 		current: answer !== null && sameRequest(answer.request, request),
 	};
