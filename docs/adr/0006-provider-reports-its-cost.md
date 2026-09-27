@@ -4,6 +4,8 @@ A provider's `answer` resolves to `{ answers, costUsd? }`: the probabilities ADR
 
 Amended for #46: the result also carries the call's input tokens, `{ answers, costUsd?, inputTokens? }`, so a page can show what a call used without running an eval. The Jev adapter reports the input tokens it already reads to price the call. `ask` passes both figures on in its result and each handler in its response, leaving out any the provider did not report, never writing zero for unknown. A call whose answer breaks the contract keeps its figures, since it was still made; a failed or timed-out call has none.
 
+Amended for #205 and #209: a figure that is not a finite number is unknown too and left out, so no budget adds a NaN; the Jev adapter reports no figures for a result with no usage.
+
 ## Considered Options
 
 - A callback in the provider's input (`onCost`): no shape changes, but a side channel an adapter can forget without any type error. Rejected.

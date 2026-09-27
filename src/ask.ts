@@ -64,6 +64,11 @@ type AskBase = {
 	provider: Provider;
 	/** How long the provider call may take before everything is held. No default. */
 	timeoutMs: number;
+	/**
+	 * Aborts the provider call when the caller no longer wants the answer, such
+	 * as a browser that went away; `ask` then rejects with the signal's reason.
+	 */
+	signal?: AbortSignal;
 };
 
 export type AskInput<T> = AskBase & { search: Search<T> };
@@ -132,10 +137,11 @@ const SEARCH = "search";
 /**
  * Resolves a request through the host app's own state: code finds the
  * candidates, the provider picks in one call, code builds the result (ADR
- * 0002). A search resolves to one item or none; a filter to the filter object
- * its table understands; a card to a new record, or to nothing when the
- * request asks for none. A failed or late provider holds everything; an
- * unavailable one is called once more within the same timeout (ADR 0013).
+ * 0002). A search resolves to one item or none; a filter to the filter
+ * object its table understands; a card to a new record, or to nothing when
+ * the request asks for none. A blank request holds everything with no call.
+ * A failed or late provider holds everything; an unavailable one is called
+ * once more within the same timeout (ADR 0013).
  */
 export function ask<T>(input: AskInput<T>): Promise<AskResult<T>>;
 // The filter's overload stays last: a call that matches none reports against it.
@@ -155,6 +161,54 @@ export function ask(
 }
 
 /**
+ * Throws on a search the flow cannot run: a gate outside 0 to 1, or a joiner
+ * that is not one word. `ask` checks on every call, a handler once, when
+ * created.
+ */
+export function checkSearch(search: Search<unknown>): void {
+	checkGate(search.gate, "the search's gate");
+	checkJoiners(search.joiners, "search");
+}
+
+/** Throws on a filter the flow cannot run, as `checkSearch` does, or two fields whose question ids clash. */
+export function checkFilter(filter: Filter<Fields>): void {
+	checkJoiners(filter.joiners, "filter");
+	const names = Object.keys(filter.fields);
+	const field = (name: string) => filter.fields[name] as Field;
+	for (const name of names) {
+		checkGate(field(name).gate, `the gate of field "${name}"`);
+		const ids = questionIds(name, field(name));
+		const clash = names.find((other) => other !== name && ids.test(other));
+		if (clash) {
+			throw new TypeError(
+				`justask: field "${clash}" takes the id of one of field "${name}"'s questions; rename one of them`,
+			);
+		}
+	}
+}
+
+/** Throws on a card the flow cannot run, as `checkFilter` does, or a blank command. */
+export function checkCard(card: Card<CardFields>): void {
+	checkGate(card.gate, "the card's gate");
+	checkCommands(card.commands);
+	checkJoiners(card.joiners, "card");
+	const names = Object.keys(card.fields);
+	const field = (name: string) => card.fields[name] as CardFields[string];
+	for (const name of names) {
+		checkGate(field(name).gate, `the gate of field "${name}"`);
+		const ids = cardQuestionIds(name, field(name));
+		const clash = [INTENT, ...names.filter((other) => other !== name)].find(
+			(other) => ids.test(other),
+		);
+		if (clash) {
+			throw new TypeError(
+				`justask: "${clash}" takes the id of one of field "${name}"'s questions; rename the field`,
+			);
+		}
+	}
+}
+
+/**
  * The item fills when a candidate wins outright and none and several stay
  * below the gate (ADR 0005, 0007), and the request names no pair of
  * candidates (ADR 0011).
@@ -164,10 +218,11 @@ async function askSearch<T>({
 	facts,
 	provider,
 	timeoutMs,
+	signal,
 	search,
 }: AskInput<T>): Promise<AskResult<T>> {
-	checkGate(search.gate, "the search's gate");
-	checkJoiners(search.joiners, "search");
+	checkTimeout(timeoutMs);
+	checkSearch(search);
 	const candidates = await search.shortlist(request);
 	checkShortlist(candidates, SEARCH_LABELS);
 	const pair = findPair(request, candidates, search.joiners, {
@@ -181,13 +236,14 @@ async function askSearch<T>({
 		gate: search.gate,
 		...(pair && { pair }),
 	};
-	if (candidates.length === 0) return { search: held };
+	if (candidates.length === 0 || isBlank(request)) return { search: held };
 
 	const questions = [searchQuestion(SEARCH, search, candidates)];
 	const outcome = await answer(
 		provider,
 		{ request, facts, questions },
 		timeoutMs,
+		{ signal },
 	);
 	if ("error" in outcome) {
 		return { search: held, ...spent(outcome), error: outcome.error };
@@ -217,21 +273,13 @@ async function askFilter<F extends Fields>({
 	facts,
 	provider,
 	timeoutMs,
+	signal,
 	filter,
 }: AskFilterInput<F>): Promise<AskFilterResult<F>> {
-	checkJoiners(filter.joiners, "filter");
+	checkTimeout(timeoutMs);
+	checkFilter(filter);
 	const names = Object.keys(filter.fields);
 	const field = (name: string) => filter.fields[name] as Field;
-	for (const name of names) {
-		checkGate(field(name).gate, `the gate of field "${name}"`);
-		const ids = questionIds(name, field(name));
-		const clash = names.find((other) => other !== name && ids.test(other));
-		if (clash) {
-			throw new TypeError(
-				`justask: field "${clash}" takes the id of one of field "${name}"'s questions; rename one of them`,
-			);
-		}
-	}
 	const parsed = names.some((name) => field(name).kind !== "catalog")
 		? readCandidates(request, facts, filter.parsers ?? [], "past")
 		: NO_READINGS;
@@ -271,12 +319,13 @@ async function askFilter<F extends Fields>({
 		}) as FilterResult<F>;
 
 	const questions = names.flatMap((name) => planOf(name).questions);
-	if (questions.length === 0) return { filter: held() };
+	if (questions.length === 0 || isBlank(request)) return { filter: held() };
 
 	const outcome = await answer(
 		provider,
 		{ request, facts, questions },
 		timeoutMs,
+		{ signal },
 	);
 	if ("error" in outcome) {
 		return { filter: held(), ...spent(outcome), error: outcome.error };
@@ -308,25 +357,13 @@ async function askCard<F extends CardFields>({
 	facts,
 	provider,
 	timeoutMs,
+	signal,
 	card,
 }: AskCardInput<F>): Promise<AskCardResult<F>> {
-	checkGate(card.gate, "the card's gate");
-	checkCommands(card.commands);
-	checkJoiners(card.joiners, "card");
+	checkTimeout(timeoutMs);
+	checkCard(card);
 	const names = Object.keys(card.fields);
 	const field = (name: string) => card.fields[name] as CardFields[string];
-	for (const name of names) {
-		checkGate(field(name).gate, `the gate of field "${name}"`);
-		const ids = cardQuestionIds(name, field(name));
-		const clash = [INTENT, ...names.filter((other) => other !== name)].find(
-			(other) => ids.test(other),
-		);
-		if (clash) {
-			throw new TypeError(
-				`justask: "${clash}" takes the id of one of field "${name}"'s questions; rename the field`,
-			);
-		}
-	}
 	const parsed = new Map<Reads, CandidateReadings>();
 	const readingsFor = (reads: Reads) => {
 		let readings = parsed.get(reads);
@@ -379,6 +416,7 @@ async function askCard<F extends CardFields>({
 			),
 		}) as CardResult<F>;
 
+	if (isBlank(request)) return { card: held() };
 	const questions = [
 		intentQuestion(card),
 		...names.flatMap((name) => planOf(name).questions),
@@ -387,6 +425,7 @@ async function askCard<F extends CardFields>({
 		provider,
 		{ request, facts, questions },
 		timeoutMs,
+		{ signal },
 	);
 	if ("error" in outcome) {
 		return { card: held(), ...spent(outcome), error: outcome.error };
@@ -414,6 +453,11 @@ async function askCard<F extends CardFields>({
 		card: { intent, value, fields } as CardResult<F>,
 		...spent(outcome),
 	};
+}
+
+/** A request with nothing in it asks for nothing, so it makes no call. */
+function isBlank(request: string): boolean {
+	return request.trim() === "";
 }
 
 /**
@@ -445,8 +489,17 @@ function fillImplied(
 }
 
 /**
+ * The most readings of one kind a field weighs. A request with more, such as
+ * a pasted list of numbers, has no one reading to pick, and each would add
+ * labels to the call and its cost; that kind is left with none, so its fields
+ * are held without a question.
+ */
+const MAX_READINGS = 10;
+
+/**
  * The parsers' readings as candidates: dates d0, d1..., times t0, t1...,
- * amounts a0, a1..., in the order they appear in the request.
+ * amounts a0, a1..., in the order they appear in the request. A kind with
+ * more than MAX_READINGS has none.
  */
 function readCandidates(
 	request: string,
@@ -465,18 +518,20 @@ function readCandidates(
 		{ today, reads, facts },
 		parsers,
 	);
+	const weighed = <R>(readings: R[]) =>
+		readings.length > MAX_READINGS ? [] : readings;
 	return {
-		dates: dates.map((value, i) => ({
+		dates: weighed(dates).map((value, i) => ({
 			id: `d${i}`,
 			description: describeDate(value),
 			value,
 		})),
-		times: times.map((value, i) => ({
+		times: weighed(times).map((value, i) => ({
 			id: `t${i}`,
 			description: describeTime(value),
 			value,
 		})),
-		amounts: amounts.map((value, i) => ({
+		amounts: weighed(amounts).map((value, i) => ({
 			id: `a${i}`,
 			description: describeAmount(value),
 			value,
@@ -488,14 +543,27 @@ function readCandidates(
  * One call to the provider under the timeout, and one more within it when
  * the provider was unavailable (ADR 0013). The eval's probes make theirs
  * through it too, with `retry` off, since they time the provider's one call.
+ * The caller's `signal` aborts the call and rejects with its reason.
  */
 export async function answer(
 	provider: Provider,
 	input: { request: string; facts: Facts; questions: Question[] },
 	timeoutMs: number,
-	{ retry = true }: { retry?: boolean } = {},
+	{
+		retry = true,
+		signal,
+	}: { retry?: boolean; signal?: AbortSignal | undefined } = {},
 ): Promise<({ answer: ProviderAnswer } | { error: AskError }) & Spent> {
+	signal?.throwIfAborted();
 	const controller = new AbortController();
+	let stop: (() => void) | undefined;
+	const aborted = new Promise<never>((_, reject) => {
+		stop = () => {
+			controller.abort(signal?.reason);
+			reject(signal?.reason);
+		};
+		signal?.addEventListener("abort", stop, { once: true });
+	});
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	const timeout = new Promise<{ error: AskError }>((resolve) => {
 		timer = setTimeout(() => {
@@ -526,7 +594,7 @@ export async function answer(
 				(cause: unknown) => ({ error: providerError(cause) }),
 			);
 	// Each call races the one timeout, so a second call cut short is still marked.
-	const timed = () => Promise.race([once(), timeout]);
+	const timed = () => Promise.race([once(), timeout, aborted]);
 	try {
 		const first = await timed();
 		return retry &&
@@ -538,6 +606,22 @@ export async function answer(
 			: first;
 	} finally {
 		clearTimeout(timer);
+		if (stop) signal?.removeEventListener("abort", stop);
+	}
+}
+
+/** setTimeout's ceiling: a longer timeout, or none, would fire at once. */
+const MAX_TIMEOUT_MS = 2 ** 31 - 1;
+
+/**
+ * Throws unless the timeout is a number of milliseconds setTimeout keeps:
+ * any other, Infinity included, would end every call at once.
+ */
+export function checkTimeout(timeoutMs: number): void {
+	if (!(timeoutMs >= 1 && timeoutMs <= MAX_TIMEOUT_MS)) {
+		throw new TypeError(
+			`justask: the timeout must be a number of milliseconds from 1 to ${MAX_TIMEOUT_MS}, not ${timeoutMs}`,
+		);
 	}
 }
 

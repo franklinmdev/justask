@@ -91,7 +91,7 @@ describe("the demo's server policy", () => {
 		const response = await handler(
 			new Request(new URL(searchEndpoint("en"), DEMO), {
 				method: "POST",
-				headers: { origin: DEMO },
+				headers: { "content-type": "application/json", origin: DEMO },
 				body: "not json",
 			}),
 		);
