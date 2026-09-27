@@ -31,6 +31,8 @@ function fieldHeldBecause(reason: FieldHeldReason): string {
 			return "The picks do not add up to one filter, so the code held the field.";
 		case "pair":
 			return `The request names two candidates (“${reason.text}”), so the code held the field whatever the pick.`;
+		case "marker":
+			return `The request speaks as the system or an admin (“${reason.text}”), not as the person, so the code held the field whatever the pick.`;
 	}
 }
 
@@ -325,6 +327,8 @@ export const english: Content = {
 						return "No answer came back, so every field is held.";
 					case "command":
 						return `The request acts on an expense already recorded (“${reason.verb}”, “${reason.reference}”), so the code held every field whatever the pick.`;
+					case "marker":
+						return `The request speaks as the system or an admin (“${reason.text}”), not as the person, so the code held every field whatever the pick.`;
 				}
 			},
 			heldBecause: (reason) => {

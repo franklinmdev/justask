@@ -59,7 +59,8 @@ export type FieldHeldReason =
 	| { kind: "not-available" }
 	| { kind: "below-gate"; probability: string; gate: string }
 	| { kind: "conflict" }
-	| { kind: "pair"; text: string };
+	| { kind: "pair"; text: string }
+	| { kind: "marker"; text: string };
 
 /** How an expense is tagged; several can apply to one. */
 export type Tag = "meals" | "travel" | "office" | "client";
@@ -91,7 +92,8 @@ export type IntentReason =
 	| { kind: "not-available" }
 	| { kind: "tie" }
 	| { kind: "failed" }
-	| ({ kind: "command" } & CardCommand);
+	| ({ kind: "command" } & CardCommand)
+	| { kind: "marker"; text: string };
 
 /** A calendar popover's words: its name, the month steps and the clear button. */
 export type CalendarCopy = {

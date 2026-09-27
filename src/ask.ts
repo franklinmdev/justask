@@ -53,6 +53,7 @@ import {
 	type Usage,
 	usageOf,
 } from "./provider.ts";
+import { findRoleMarker } from "./role-marker.ts";
 import {
 	type Candidate,
 	checkShortlist,
@@ -316,12 +317,14 @@ async function askFilter<F extends Fields>({
 		}),
 	);
 	const planOf = (name: string) => plans[name] as FieldPlan;
+	const marker = findRoleMarker(request);
 	const held = () =>
 		({
 			value: {},
 			fields: Object.fromEntries(
 				names.map((name) => [name, planOf(name).held]),
 			),
+			...(marker && { marker }),
 		}) as FilterResult<F>;
 
 	const questions = names.flatMap((name) => planOf(name).questions);
@@ -347,9 +350,12 @@ async function askFilter<F extends Fields>({
 		}
 		const read = plan.read(outcome.answer);
 		fields[name] = read.result;
-		if ("value" in read) value[name] = read.value;
+		if (!marker && "value" in read) value[name] = read.value;
 	}
-	return { filter: { value, fields } as FilterResult<F>, ...spent(outcome) };
+	return {
+		filter: { value, fields, ...(marker && { marker }) } as FilterResult<F>,
+		...spent(outcome),
+	};
 }
 
 /**
@@ -444,6 +450,7 @@ async function askCard<F extends CardFields>({
 		outcome.answer[INTENT] ?? {},
 		card.gate,
 		findCommand(request, card.commands),
+		findRoleMarker(request),
 	);
 	const value: Record<string, unknown> = {};
 	const fields: Record<string, unknown> = {};

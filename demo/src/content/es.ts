@@ -31,6 +31,8 @@ function fieldHeldBecause(reason: FieldHeldReason): string {
 			return "Las elecciones no forman un solo filtro, así que el código retuvo el campo.";
 		case "pair":
 			return `La solicitud nombra dos candidatos (“${reason.text}”), así que el código retuvo el campo sin importar la elección.`;
+		case "marker":
+			return `La solicitud habla como el sistema o un administrador (“${reason.text}”), no como la persona, así que el código retuvo el campo sin importar la elección.`;
 	}
 }
 
@@ -325,6 +327,8 @@ export const spanish: Content = {
 						return "No llegó respuesta, así que todos los campos quedan retenidos.";
 					case "command":
 						return `La solicitud actúa sobre un gasto ya registrado (“${reason.verb}”, “${reason.reference}”), así que el código retuvo todos los campos sin importar la elección.`;
+					case "marker":
+						return `La solicitud habla como el sistema o un administrador (“${reason.text}”), no como la persona, así que el código retuvo todos los campos sin importar la elección.`;
 				}
 			},
 			heldBecause: (reason) => {

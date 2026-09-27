@@ -44,6 +44,8 @@ export type CardRunRow = CardEvalRow & {
 	command?: CardCommand;
 	/** Per field, the named pair that held it whatever its pick (ADR 0010); absent when none did, and from logs written before it. */
 	pairs?: Record<string, NamedPair>;
+	/** The role marker that held the card before its gate (ADR 0015); absent when none did, and from logs written before it. */
+	marker?: string;
 	/** The whole pipeline, parsing and shortlists included. */
 	latencyMs: number;
 	/** False when the provider was never asked. A card asks its intent on every request, so only a failure before the call leaves it false. */
@@ -196,12 +198,13 @@ async function runRow<F extends CardFields>(
 					}
 				: ({ kind, candidates } as LoggedCardField);
 	}
-	const { command } = result.intent;
+	const { command, marker } = result.intent;
 	return {
 		...row,
 		fields,
 		answers: error ? {} : calls.answers(),
 		...(command && { command }),
+		...(marker && { marker }),
 		...(Object.keys(pairs).length > 0 && { pairs }),
 		latencyMs,
 		...calls.logged({ costUsd, error }),

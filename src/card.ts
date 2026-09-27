@@ -183,11 +183,13 @@ export type IntentResult = {
 	gate: number;
 	/**
 	 * True when the intent lets the card fill: new_record picked at or above
-	 * the gate, and no command held it.
+	 * the gate, and no command or role marker held it.
 	 */
 	passes: boolean;
 	/** The command that held the card before its gate, whatever the pick. */
 	command?: CardCommand;
+	/** The role marker that held the card before its gate, whatever the pick, as the request writes it (ADR 0015). */
+	marker?: string;
 };
 
 export type CardResult<F extends CardFields> = {
@@ -204,19 +206,28 @@ export function cardQuestionIds(name: string, field: CardField): RegExp {
 		: new RegExp(`^${escaped}$`);
 }
 
-/** Whether the intent pick clears the card's gate; a command holds it whatever the pick. */
+/**
+ * Whether the intent pick clears the card's gate; a command or a role marker
+ * holds it whatever the pick.
+ */
 export function readIntent(
 	probabilities: Probabilities,
 	gate: number,
 	command?: CardCommand,
+	marker?: string,
 ): IntentResult {
 	const pick = readPick(probabilities);
 	return {
 		pick,
 		probabilities,
 		gate,
-		passes: !command && pick?.label === NEW_RECORD && pick.probability >= gate,
+		passes:
+			!command &&
+			!marker &&
+			pick?.label === NEW_RECORD &&
+			pick.probability >= gate,
 		...(command && { command }),
+		...(marker && { marker }),
 	};
 }
 

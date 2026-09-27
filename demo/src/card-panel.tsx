@@ -21,11 +21,12 @@ function intentReasonOf(
 	failed: boolean,
 	format: Format,
 ): IntentReason {
-	const { pick, probabilities, gate, command } = result.intent;
+	const { pick, probabilities, gate, command, marker } = result.intent;
 	if (failed || Object.keys(probabilities).length === 0) {
 		return { kind: "failed" };
 	}
 	if (command) return { kind: "command", ...command };
+	if (marker) return { kind: "marker", text: marker };
 	if (!pick) return { kind: "tie" };
 	if (pick.label === "not_mentioned") return { kind: "not-mentioned" };
 	if (pick.label === "not_available") return { kind: "not-available" };
