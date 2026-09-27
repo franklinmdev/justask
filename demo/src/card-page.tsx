@@ -9,7 +9,7 @@ import {
 	useCard,
 } from "justask/react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { cardEndpoint, REQUEST_LIMIT } from "./api.ts";
+import { cardEndpoint } from "./api.ts";
 import { CardPanel, impliedByOf } from "./card-panel.tsx";
 import type { Content, ExpenseFields, ExpenseName } from "./content/types.ts";
 import { DayPicker } from "./day-picker.tsx";
@@ -17,9 +17,11 @@ import { foreignCurrency, formats, parseAmount } from "./format.ts";
 import {
 	answerKey,
 	CaseHead,
+	LimitNote,
 	Saved,
 	Suggestions,
 	settleAt,
+	useRequestLimit,
 	useStillAnswer,
 	useTypedText,
 } from "./parts.tsx";
@@ -101,6 +103,7 @@ export function CardPage({
 	}, [pressed]);
 	replay.follow(markingSends);
 	const box = replay.stoppedBy(markingSends);
+	const limit = useRequestLimit(box.request, "card-box-limit");
 	const suggest = useSuggest(box);
 	// A field the person sets ends the replay, so its answer never writes over their choice.
 	const fields: typeof card = {
@@ -178,9 +181,11 @@ export function CardPage({
 					className="box"
 					autoComplete="off"
 					spellCheck={false}
-					maxLength={REQUEST_LIMIT}
 					enterKeyHint="go"
-					aria-describedby="card-box-hint"
+					{...limit.box}
+					aria-describedby={
+						limit.cut ? `card-box-hint ${limit.id}` : "card-box-hint"
+					}
 				/>
 				{/* Sends what Enter sends; off while the box is blank, as Save is with nothing to save. */}
 				<button
@@ -204,6 +209,7 @@ export function CardPage({
 			<p id="card-box-hint" className="hint fill-hint">
 				{unsent ? copy.card.fillHint : ""}
 			</p>
+			<LimitNote content={content} limit={limit} />
 			<Saved
 				content={content}
 				cost={costOf(formControls(card.result?.value ?? {}))}

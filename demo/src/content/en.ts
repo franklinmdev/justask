@@ -76,6 +76,8 @@ export const english: Content = {
 		strip: "This call",
 		stripIdle: "Latency, tokens and cost show after the first call.",
 		notReported: "Not reported",
+		cut: (limit) =>
+			`Requests stop at ${limit} characters, so the rest was left out.`,
 		jsonIdle: "The result shows here after the first call.",
 		showLabel: "Show",
 		app: "App",

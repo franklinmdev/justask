@@ -2,7 +2,7 @@ import type { Candidate, SearchResult } from "justask";
 import { SearchBox, SearchEmpty, SearchItem, useSearch } from "justask/react";
 import { useState } from "react";
 import { flushSync } from "react-dom";
-import { REQUEST_LIMIT, searchEndpoint } from "./api.ts";
+import { searchEndpoint } from "./api.ts";
 import type { Content, Vendor } from "./content/types.ts";
 import { formats } from "./format.ts";
 import { type Offer, offerOf } from "./offer.ts";
@@ -10,8 +10,10 @@ import {
 	answerKey,
 	CaseHead,
 	DEBOUNCE_MS,
+	LimitNote,
 	Saved,
 	Suggestions,
+	useRequestLimit,
 	useStillAnswer,
 } from "./parts.tsx";
 import { dayShown, type SearchRecording } from "./recording.ts";
@@ -55,6 +57,7 @@ export function SearchPage({
 	});
 	replay.follow(search);
 	const box = replay.stoppedBy(search);
+	const limit = useRequestLimit(box.request, "vendor-box-limit");
 	const suggest = useSuggest(box);
 	// The vendor the person picked from the offer, for the answer it was offered on.
 	const [chosen, setChosen] = useState<{
@@ -101,8 +104,9 @@ export function SearchPage({
 				className="box"
 				autoComplete="off"
 				spellCheck={false}
-				maxLength={REQUEST_LIMIT}
+				{...limit.box}
 			/>
+			<LimitNote content={content} limit={limit} />
 			<Saved
 				content={content}
 				cost={costOf(searchControls(search.result?.item ?? null))}

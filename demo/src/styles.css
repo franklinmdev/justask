@@ -798,7 +798,8 @@ h2 {
 	}
 }
 
-.fill-hint:empty {
+.fill-hint:empty,
+.limit-note:empty {
 	display: none;
 }
 

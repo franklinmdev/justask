@@ -80,6 +80,8 @@ export const spanish: Content = {
 		stripIdle:
 			"La latencia, los tokens y el costo aparecen después de la primera llamada.",
 		notReported: "No informado",
+		cut: (limit) =>
+			`Las solicitudes llegan hasta ${limit} caracteres, así que el resto quedó fuera.`,
 		jsonIdle: "El resultado aparece aquí después de la primera llamada.",
 		showLabel: "Mostrar",
 		app: "Aplicación",

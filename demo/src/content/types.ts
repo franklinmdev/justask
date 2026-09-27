@@ -271,6 +271,8 @@ export type Copy = {
 	strip: string;
 	stripIdle: string;
 	notReported: string;
+	/** Under the request box once a paste or a key ran into its limit: the box cut the rest (#225). */
+	cut: (limit: number) => string;
 	jsonIdle: string;
 	showLabel: string;
 	app: string;

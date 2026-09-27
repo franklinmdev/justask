@@ -1,13 +1,16 @@
 import type { Usage } from "justask";
 import type { SearchError } from "justask/react";
 import {
+	type ClipboardEvent,
 	type CSSProperties,
 	createContext,
+	type KeyboardEvent,
 	use,
 	useEffect,
 	useRef,
 	useState,
 } from "react";
+import { REQUEST_LIMIT } from "./api.ts";
 import type { Content, Cost, HeldReason } from "./content/types.ts";
 import { formats } from "./format.ts";
 import { dayOf, type Recording } from "./recording.ts";
@@ -148,6 +151,60 @@ export function useStillAnswer(answer: number, still: boolean): boolean {
 		setStillAnswer(answer);
 	}
 	return answer !== NO_ANSWER && (still || answer === stillAnswer);
+}
+
+/**
+ * The request box's limit, and whether a paste or a key ran into it: the
+ * box's maxLength cuts what does not fit and says nothing, and what was cut
+ * may be the amount or the date (#225). It stops saying so once the request
+ * is under the limit again. Spread `box` on the box, and render `LimitNote`.
+ */
+export function useRequestLimit(request: string, id: string) {
+	// The request when a paste or a key ran into the limit; a paste's own text lands after it.
+	const [cutAt, setCutAt] = useState<string | null>(null);
+	if (cutAt !== null && request !== cutAt && request.length < REQUEST_LIMIT) {
+		setCutAt(null);
+	}
+	const cut = cutAt !== null;
+	const kept = (input: HTMLInputElement) =>
+		input.value.length -
+		((input.selectionEnd ?? 0) - (input.selectionStart ?? 0));
+	return {
+		cut,
+		id,
+		box: {
+			maxLength: REQUEST_LIMIT,
+			...(cut && { "aria-describedby": id }),
+			onPaste: (event: ClipboardEvent<HTMLInputElement>) => {
+				const pasted = event.clipboardData.getData("text/plain");
+				if (kept(event.currentTarget) + pasted.length > REQUEST_LIMIT) {
+					setCutAt(request);
+				}
+			},
+			onKeyDown: (event: KeyboardEvent<HTMLInputElement>) => {
+				const typed =
+					event.key.length === 1 && !event.ctrlKey && !event.metaKey;
+				if (typed && kept(event.currentTarget) >= REQUEST_LIMIT) {
+					setCutAt(request);
+				}
+			},
+		},
+	};
+}
+
+/** Under the box: what `useRequestLimit` found, empty until a paste or a key ran into the limit. */
+export function LimitNote({
+	content,
+	limit,
+}: {
+	content: Content;
+	limit: ReturnType<typeof useRequestLimit>;
+}) {
+	return (
+		<p id={limit.id} className="hint limit-note" role="status">
+			{limit.cut ? content.copy.cut(REQUEST_LIMIT) : ""}
+		</p>
+	);
 }
 
 /**
