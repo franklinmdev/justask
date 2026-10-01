@@ -171,6 +171,38 @@ describe("the README's toNode", () => {
 		await expect.poll(() => provider.calls[before]?.signal.aborted).toBe(true);
 	});
 
+	it("answers 499, not 500, when the browser hangs up mid upload (#240)", async () => {
+		const handler = createSearchHandler({ provider, timeoutMs: 1_000, search });
+		const answered: (number | "threw")[] = [];
+		const port = await serve(async (httpRequest) => {
+			try {
+				const response = await handler(httpRequest);
+				answered.push(response.status);
+				return response;
+			} catch (error) {
+				answered.push("threw");
+				throw error;
+			}
+		});
+
+		// Half the body it declares, then gone.
+		const sent = request({
+			port,
+			method: "POST",
+			path: "/api/justask",
+			headers: {
+				"content-type": "application/json",
+				"content-length": String(asked.length * 2),
+			},
+		});
+		sent.on("error", () => {});
+		sent.write(asked);
+		await new Promise((resolve) => setTimeout(resolve, 50));
+		sent.destroy();
+
+		await expect.poll(() => answered).toEqual([499]);
+	});
+
 	it("stops reading a body past the handler's cap", async () => {
 		const port = await serve(
 			createSearchHandler({ provider, timeoutMs: 1_000, search }),

@@ -194,6 +194,7 @@ function serve(
 			return badRequest("The body must be sent as application/json", 415);
 		}
 		const read = await readBody(httpRequest);
+		if ("closed" in read) return new Response(null, { status: CLIENT_CLOSED });
 		if ("error" in read) return badRequest(read.error, read.status);
 
 		const now = new Date();
@@ -230,8 +231,16 @@ function serve(
 
 async function readBody(
 	httpRequest: Request,
-): Promise<{ body: HandlerRequest } | { error: string; status?: 413 }> {
-	const text = await readCapped(httpRequest);
+): Promise<
+	{ body: HandlerRequest } | { error: string; status?: 413 } | { closed: true }
+> {
+	// A read fails when the connection drops mid upload (#240).
+	const text = await readCapped(httpRequest).catch(() => undefined);
+	if (text === undefined) {
+		return httpRequest.signal.aborted
+			? { closed: true }
+			: { error: "The body could not be read" };
+	}
 	if (text === null) {
 		return { error: `The body is over ${MAX_BODY_BYTES} bytes`, status: 413 };
 	}
