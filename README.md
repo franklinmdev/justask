@@ -10,7 +10,7 @@ Turns what a person types in plain language into an app's own state: search resu
 npm i @justask/core @typesafe-ai/sdk
 ```
 
-justask runs on Node 22 or later. `@typesafe-ai/sdk` (0.6) and `react` (19) are optional peers: install the SDK for `@justask/core/jev`, the Jev provider, and React for `@justask/core/react`. Without the SDK, importing `@justask/core/jev` fails with `Cannot find package '@typesafe-ai/sdk'`. The package is not on npm yet: until `@justask/core@0.1.0` is published, run `npm pack` in this repo and install the tarball it writes in place of `@justask/core`.
+justask runs on Node 22 or later. `@typesafe-ai/sdk` (0.6) and `react` (19) are optional peers: install the SDK for `@justask/core/jev`, the Jev provider, and React for `@justask/core/react`. Without the SDK, importing `@justask/core/jev` fails with `Cannot find package '@typesafe-ai/sdk'`.
 
 | Import | What it holds |
 |---|---|
