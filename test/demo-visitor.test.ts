@@ -1,4 +1,4 @@
-import { ProviderUnavailableError } from "justask";
+import { ProviderUnavailableError } from "@justask/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	DAILY_BUDGET_USD,

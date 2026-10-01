@@ -1,4 +1,4 @@
-import type { Amount, CardValue } from "justask";
+import type { Amount, CardValue } from "@justask/core";
 import {
 	CardBox,
 	CardConfirm,
@@ -7,7 +7,7 @@ import {
 	CardUndo,
 	type FilledBy,
 	useCard,
-} from "justask/react";
+} from "@justask/core/react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { cardEndpoint } from "./api.ts";
 import { CardPanel, impliedByOf } from "./card-panel.tsx";

@@ -1,4 +1,4 @@
-import type { CardRun, CardRunRow } from "justask/eval";
+import type { CardRun, CardRunRow } from "@justask/core/eval";
 import { describe, expect, it } from "vitest";
 import { CARD_KILL_LINES } from "../demo/eval/kill-lines.ts";
 import {

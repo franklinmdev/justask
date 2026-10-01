@@ -3,7 +3,7 @@ import {
 	createSearchHandler,
 	ProviderUnavailableError,
 	type SearchHandlerConfig,
-} from "justask";
+} from "@justask/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	failingProvider,

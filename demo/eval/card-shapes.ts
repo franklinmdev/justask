@@ -1,4 +1,4 @@
-import type { CardEvalKind } from "justask/eval";
+import type { CardEvalKind } from "@justask/core/eval";
 
 /** A shape's kind and its rows per language: at most two (#86). */
 export type Shape = { kind: CardEvalKind; rows: 1 | 2 };

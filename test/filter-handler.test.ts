@@ -3,7 +3,7 @@ import {
 	createFilterHandler,
 	type FilterHandlerConfig,
 	ProviderUnavailableError,
-} from "justask";
+} from "@justask/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	failingProvider,

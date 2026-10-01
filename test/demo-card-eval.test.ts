@@ -1,13 +1,13 @@
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
-import { ask, builtInParser } from "justask";
+import { ask, builtInParser } from "@justask/core";
 import {
 	type CardEvalKind,
 	type CardEvalRow,
 	parseCardEvalSet,
 	readCardRun,
 	scoreCardRun,
-} from "justask/eval";
+} from "@justask/core/eval";
 import { describe, expect, it } from "vitest";
 import {
 	CARD_SET_NAMES,

@@ -3,7 +3,7 @@ import {
 	type CardHandlerConfig,
 	createCardHandler,
 	ProviderUnavailableError,
-} from "justask";
+} from "@justask/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	failingProvider,

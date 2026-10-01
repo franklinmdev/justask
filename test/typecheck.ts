@@ -10,7 +10,7 @@ const modules = join(root, "node_modules");
 /**
  * The files typechecked by the repo's own tsc under its strict options, as
  * an app with a bundler would resolve them, in a fresh temp directory that
- * goes afterwards. `justask` resolves to the repo's source, as an installed
+ * goes afterwards. `@justask/core` resolves to the repo's source, as an installed
  * package would to its types.
  */
 export function diagnosticsOf(files: Record<string, string>): string {
@@ -40,10 +40,10 @@ export function diagnosticsOf(files: Record<string, string>): string {
 					types: ["node"],
 					typeRoots: [join(modules, "@types")],
 					paths: {
-						justask: [join(root, "src/index.ts")],
-						"justask/react": [join(root, "src/react/index.ts")],
-						"justask/jev": [join(root, "src/jev/index.ts")],
-						"justask/eval": [join(root, "src/eval/index.ts")],
+						"@justask/core": [join(root, "src/index.ts")],
+						"@justask/core/react": [join(root, "src/react/index.ts")],
+						"@justask/core/jev": [join(root, "src/jev/index.ts")],
+						"@justask/core/eval": [join(root, "src/eval/index.ts")],
 						react: [join(modules, "@types/react/index.d.ts")],
 						"react/*": [join(modules, "@types/react/*")],
 					},

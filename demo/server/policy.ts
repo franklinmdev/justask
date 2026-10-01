@@ -1,4 +1,4 @@
-import type { HandlerBadRequest } from "justask";
+import type { HandlerBadRequest } from "@justask/core";
 // The one file of the demo that reaches into src/: the core handler's own body
 // reader, kept out of the package's API, so the two never read a body apart (#250).
 import { readCapped } from "../../src/capped-body.ts";

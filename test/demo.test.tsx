@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 // @module-tag page
+
+import { type Provider, ProviderUnavailableError } from "@justask/core";
 import {
 	cleanup,
 	render,
@@ -8,7 +10,6 @@ import {
 	within,
 } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
-import { type Provider, ProviderUnavailableError } from "justask";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { createDemoHandler } from "../demo/server/handler.ts";
 import { App } from "../demo/src/app.tsx";

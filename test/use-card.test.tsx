@@ -1,20 +1,12 @@
 // @vitest-environment jsdom
-import {
-	act,
-	cleanup,
-	render,
-	renderHook,
-	screen,
-	waitFor,
-} from "@testing-library/react";
-import { userEvent } from "@testing-library/user-event";
+
 import {
 	type Candidate,
 	type CardValue,
 	createCardHandler,
 	type Probabilities,
 	type Provider,
-} from "justask";
+} from "@justask/core";
 import {
 	CardBox,
 	CardConfirm,
@@ -24,7 +16,16 @@ import {
 	CardUndo,
 	type UseCard,
 	useCard,
-} from "justask/react";
+} from "@justask/core/react";
+import {
+	act,
+	cleanup,
+	render,
+	renderHook,
+	screen,
+	waitFor,
+} from "@testing-library/react";
+import { userEvent } from "@testing-library/user-event";
 import { Activity, type ReactNode, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { expectNoAxeViolations } from "./checks.ts";

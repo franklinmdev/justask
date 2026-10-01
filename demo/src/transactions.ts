@@ -1,4 +1,4 @@
-import type { FilterValue } from "justask";
+import type { FilterValue } from "@justask/core";
 import type {
 	FieldName,
 	Transaction,

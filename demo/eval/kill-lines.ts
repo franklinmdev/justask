@@ -1,4 +1,4 @@
-import type { KillLines } from "justask/eval";
+import type { KillLines } from "@justask/core/eval";
 
 /**
  * The search's kill lines, the same in both languages; the verdict passes only

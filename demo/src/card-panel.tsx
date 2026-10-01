@@ -1,5 +1,5 @@
-import type { CardResult, FieldAnswer } from "justask";
-import type { UseCard } from "justask/react";
+import type { CardResult, FieldAnswer } from "@justask/core";
+import type { UseCard } from "@justask/core/react";
 import type {
 	CardHeldReason,
 	Content,

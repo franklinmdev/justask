@@ -3,9 +3,9 @@
 //
 //   node --conditions=justask-source scripts/jev-call.ts ["a request"]
 
+import { ask, type Candidate, type Provider } from "@justask/core";
+import { JEV_MODEL, jevProvider } from "@justask/core/jev";
 import { TypeSafeClient, type Usage } from "@typesafe-ai/sdk";
-import { ask, type Candidate, type Provider } from "justask";
-import { JEV_MODEL, jevProvider } from "justask/jev";
 import { loadKeyEnv } from "./load-env.ts";
 
 loadKeyEnv();

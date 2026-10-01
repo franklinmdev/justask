@@ -1,7 +1,7 @@
 import { defineConfig } from "vitest/config";
 
 // Tests import the package by its own name. The `justask-source` condition points
-// `justask`, `justask/react` and `justask/jev` at src/ instead of dist/.
+// `@justask/core`, `@justask/core/react` and `@justask/core/jev` at src/ instead of dist/.
 export default defineConfig({
 	resolve: {
 		// jsdom tests run as web code: Vite's client conditions, plus `justask-source`.
@@ -15,7 +15,7 @@ export default defineConfig({
 	ssr: {
 		// Node tests run as SSR. Left external, the self-import would reach Node's
 		// own loader, which strips types from .ts but cannot load .tsx.
-		noExternal: ["justask"],
+		noExternal: ["@justask/core"],
 		resolve: {
 			conditions: [
 				"justask-source",

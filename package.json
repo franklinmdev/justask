@@ -1,7 +1,6 @@
 {
-	"name": "justask",
-	"version": "0.0.0",
-	"private": true,
+	"name": "@justask/core",
+	"version": "0.1.0",
 	"description": "Turns what a person types in plain language into an app's own state. Code finds the candidates, a provider model picks, code builds the result.",
 	"keywords": [
 		"natural-language",
@@ -12,6 +11,13 @@
 		"jev"
 	],
 	"license": "MIT",
+	"author": "Franklin Martinez (https://github.com/franklinmdev)",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/franklinmdev/justask.git"
+	},
+	"homepage": "https://github.com/franklinmdev/justask#readme",
+	"bugs": "https://github.com/franklinmdev/justask/issues",
 	"type": "module",
 	"packageManager": "pnpm@12.5.1",
 	"engines": {
@@ -42,6 +48,9 @@
 	"files": [
 		"dist"
 	],
+	"publishConfig": {
+		"access": "public"
+	},
 	"scripts": {
 		"build": "tsc -p tsconfig.build.json",
 		"typecheck": "tsc --noEmit",

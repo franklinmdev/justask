@@ -1,19 +1,19 @@
 import type {
-	ChoiceResponse,
-	Questions,
-	RequestOptions,
-	SystemOneRequest,
-	SystemOneResult,
-} from "@typesafe-ai/sdk";
-import type {
 	Probabilities,
 	Provider,
 	ProviderAnswer,
 	ProviderInput,
 	ProviderResult,
 	Usage,
-} from "justask";
-import type { JevClient } from "justask/jev";
+} from "@justask/core";
+import type { JevClient } from "@justask/core/jev";
+import type {
+	ChoiceResponse,
+	Questions,
+	RequestOptions,
+	SystemOneRequest,
+	SystemOneResult,
+} from "@typesafe-ai/sdk";
 
 /** Fixed probabilities per question id, then per label. */
 export type FakeAnswers = Record<string, Probabilities>;

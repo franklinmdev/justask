@@ -1,5 +1,5 @@
+import { ProviderUnavailableError } from "@justask/core";
 import { APIError } from "@typesafe-ai/sdk";
-import { ProviderUnavailableError } from "justask";
 import { describe, expect, it } from "vitest";
 import { PROBE, PROBE_WARM_UP } from "../demo/eval/probe.ts";
 import { warmOnStart, warmUp } from "../demo/server/warm-up.ts";

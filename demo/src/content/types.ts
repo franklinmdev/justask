@@ -11,7 +11,7 @@ import type {
 	Joiners,
 	Negations,
 	SeveralCatalogField,
-} from "justask";
+} from "@justask/core";
 export type Language = "en" | "es";
 
 /** The clicks and menus the person works through to set controls by hand. */

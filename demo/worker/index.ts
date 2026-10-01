@@ -1,4 +1,4 @@
-import type { Provider } from "justask";
+import type { Provider } from "@justask/core";
 import type { Ledger } from "../server/budget.ts";
 import { createDemoHandler, logError } from "../server/handler.ts";
 

@@ -1,4 +1,4 @@
-import type { Spent } from "justask";
+import type { Spent } from "@justask/core";
 import { useEffect, useState } from "react";
 
 /**

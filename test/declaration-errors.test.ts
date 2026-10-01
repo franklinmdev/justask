@@ -5,7 +5,7 @@ describe("a card or filter declared as a plain const", () => {
 	it("fails on the kind it widened to a string, not on a missing several", () => {
 		const output = diagnosticsOf({
 			"plain.ts": `
-import { createCardHandler, type Provider, type Shortlist } from "justask";
+import { createCardHandler, type Provider, type Shortlist } from "@justask/core";
 declare const provider: Provider;
 declare const shortlist: Shortlist<{ name: string }>;
 const expense = {

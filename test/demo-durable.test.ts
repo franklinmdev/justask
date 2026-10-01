@@ -19,7 +19,7 @@ import {
 // tested against the real runtime, never a stand-in (docs/workers.md). The
 // entry is the deployed one's shape over the fake provider, each call $0.4.
 
-// wrangler bundles `justask` from src/, as `pnpm demo:worker` does.
+// wrangler bundles `@justask/core` from src/, as `pnpm demo:worker` does.
 process.env.WRANGLER_BUILD_CONDITIONS = "justask-source,workerd,worker,browser";
 
 /** The deployed Worker's runtime and bindings, read from wrangler.jsonc so the two cannot drift. */

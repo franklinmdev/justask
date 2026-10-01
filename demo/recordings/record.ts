@@ -14,7 +14,7 @@
 
 import { execFileSync } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
-import type { AmountRange, DateRange, FieldValue, Usage } from "justask";
+import type { AmountRange, DateRange, FieldValue, Usage } from "@justask/core";
 import {
 	type CardEvalRow,
 	type EvalRow,
@@ -23,8 +23,8 @@ import {
 	parseCardEvalSet,
 	parseEvalSet,
 	parseFilterEvalSet,
-} from "justask/eval";
-import { jevProvider } from "justask/jev";
+} from "@justask/core/eval";
+import { jevProvider } from "@justask/core/jev";
 import { loadKeyEnv } from "../../scripts/load-env.ts";
 import { createDemoHandler } from "../server/handler.ts";
 import { warmUp } from "../server/warm-up.ts";

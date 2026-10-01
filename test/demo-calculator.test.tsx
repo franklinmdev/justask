@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 // @module-tag page
+
+import type { Provider } from "@justask/core";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
-import type { Provider } from "justask";
 import { afterEach, describe, expect, it } from "vitest";
 import { createDemoHandler } from "../demo/server/handler.ts";
 import { App } from "../demo/src/app.tsx";

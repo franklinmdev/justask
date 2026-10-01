@@ -1,4 +1,4 @@
-import type { FieldStats } from "justask/eval";
+import type { FieldStats } from "@justask/core/eval";
 
 /** Gates sit on multiples of 0.05; the lab's 0.9 is the highest a field gets with no wrong pick. */
 const STEP = 0.05;

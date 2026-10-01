@@ -1,7 +1,7 @@
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { Candidate, Probabilities } from "justask";
+import type { Candidate, Probabilities } from "@justask/core";
 import {
 	type CardRun,
 	compareCardRuns,
@@ -11,7 +11,7 @@ import {
 	readCardRun,
 	runCardEval,
 	scoreCardRun,
-} from "justask/eval";
+} from "@justask/core/eval";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
 	type FakeAnswers,

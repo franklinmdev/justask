@@ -39,8 +39,8 @@ import {
 	remeasureSet,
 	runCardEval,
 	scoreCardRun,
-} from "justask/eval";
-import { jevProvider } from "justask/jev";
+} from "@justask/core/eval";
+import { jevProvider } from "@justask/core/jev";
 import { loadKeyEnv } from "../../scripts/load-env.ts";
 import { contents, demoCard, FACTS, TIMEOUT_MS } from "../server/handler.ts";
 import type { Content, Language } from "../src/content/types.ts";

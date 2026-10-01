@@ -5,7 +5,7 @@ import {
 	parseCardEvalSet,
 	parseEvalSet,
 	parseFilterEvalSet,
-} from "justask/eval";
+} from "@justask/core/eval";
 import { describe, expect, it } from "vitest";
 import { CARD_GATES, FILTER_GATES, GATE } from "../demo/server/handler.ts";
 import { diagnosticsOf } from "./typecheck.ts";
@@ -43,8 +43,8 @@ declare const app: {
 	): void;
 };
 declare function setTableFilter(filter: unknown): void;
-declare function formatRange(range: import("justask").DateRange): string;
-declare function formatAmount(amount: import("justask").AmountRange): string;
+declare function formatRange(range: import("@justask/core").DateRange): string;
+declare function formatAmount(amount: import("@justask/core").AmountRange): string;
 declare function saveExpense(expense: unknown): void;
 declare function undoSave(): void;
 declare function VendorSelect(props: {
@@ -71,7 +71,7 @@ describe("the README", () => {
 	it("builds the provider and installs its SDK before the first handler", () => {
 		const first = (text: string) => readme.indexOf(text);
 
-		expect(first("npm i justask @typesafe-ai/sdk")).toBeGreaterThan(-1);
+		expect(first("npm i @justask/core @typesafe-ai/sdk")).toBeGreaterThan(-1);
 		expect(first("jevProvider()")).toBeGreaterThan(-1);
 		expect(first("TYPESAFE_API_KEY")).toBeLessThan(
 			first("createSearchHandler({"),
