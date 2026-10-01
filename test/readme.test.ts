@@ -206,8 +206,11 @@ describe("the README's GIF", () => {
 		expect(image).toContain(`“${gif.request}”`);
 	});
 
-	it("is followed directly by the opening paragraph, with no caption", () => {
-		expect(next).toMatch(/^Turns what a person types/);
+	it("is followed by one line to the live demo, then the opening paragraph", () => {
+		expect(next).toBe(
+			"Try it: [live demo](https://justask-demo.franklinmdev.workers.dev), in English and Spanish.",
+		);
+		expect(readme).toContain(`${next}\n\nTurns what a person types`);
 	});
 
 	it("stays under 3 MB, to load fast on GitHub and npm", () => {
