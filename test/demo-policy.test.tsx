@@ -81,6 +81,22 @@ describe("the demo's server policy", () => {
 		expect(provider.calls).toHaveLength(0);
 	});
 
+	it("refuses a Worker's subrequest before the budget's answer (#263)", async () => {
+		const paused = createDemoHandler(provider, { killSwitch: true });
+		const response = await paused(
+			new Request(new URL(searchEndpoint("en"), DEMO), {
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+					"cf-worker": "elsewhere.workers.dev",
+				},
+				body: JSON.stringify({ request: "the caterers" }),
+			}),
+		);
+
+		expect(response.status).toBe(403);
+	});
+
 	it("answers a request that names no origin, as a script's does", async () => {
 		const response = await search("the caterers");
 
