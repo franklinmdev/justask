@@ -47,25 +47,24 @@ export const spanish: Content = {
 		skip: "Ir al contenido",
 		stopped: {
 			budget: {
-				title: "Se agotó el presupuesto de hoy de la demostración",
-				body: "La demostración llama a TypeSafe con la clave de su dueño, con 1 dólar por día, y el dólar de hoy ya se gastó. Vuelve a empezar a la medianoche UTC. Mientras tanto, la ejecución grabada de cada caso sigue disponible, y una copia de justask funciona con su propia clave.",
+				title: "La demo agotó su presupuesto de hoy",
+				body: "La demo llama a TypeSafe con la clave de su dueño, con 1 dólar por día, y el dólar de hoy ya se gastó. Vuelve a empezar a la medianoche UTC. Mientras tanto, la ejecución grabada de cada caso sigue disponible, y una copia de justask funciona con su propia clave.",
 			},
 			paused: {
-				title: "La demostración en vivo está en pausa",
-				body: "El dueño de la demostración pausó sus llamadas en vivo a TypeSafe. La ejecución grabada de cada caso sigue disponible, y una copia de justask funciona con su propia clave.",
+				title: "La demo en vivo está en pausa",
+				body: "El dueño de la demo pausó sus llamadas en vivo a TypeSafe. La ejecución grabada de cada caso sigue disponible, y una copia de justask funciona con su propia clave.",
 			},
 			key: {
-				title:
-					"La clave propia de la demostración está fuera de servicio ahora mismo",
-				body: "No es que justask haya leído mal su solicitud: TypeSafe rechazó la clave con la que llama la demostración. La ejecución grabada de cada caso sigue disponible, y una copia de justask funciona con su propia clave.",
+				title: "La clave de la demo no está funcionando ahora mismo",
+				body: "No es que justask haya leído mal su solicitud: TypeSafe rechazó la clave con la que llama la demo. La ejecución grabada de cada caso sigue disponible, y una copia de justask funciona con su propia clave.",
 			},
 			minute: {
 				title: "Usó sus 20 solicitudes en vivo de este minuto",
-				body: "Cada visitante tiene 20 solicitudes en vivo por minuto y 200 por día con la clave de la demostración, contadas por dirección IP. Vuelven en alrededor de un minuto. Mientras tanto, la ejecución grabada de cada caso sigue disponible, y una copia de justask funciona con su propia clave.",
+				body: "Cada visitante tiene 20 solicitudes en vivo por minuto y 200 por día con la clave de la demo, contadas por dirección IP. Vuelven a estar disponibles en menos de un minuto. Mientras tanto, la ejecución grabada de cada caso sigue disponible, y una copia de justask funciona con su propia clave.",
 			},
 			day: {
 				title: "Usó sus 200 solicitudes en vivo de hoy",
-				body: "Cada visitante tiene 200 solicitudes en vivo por día con la clave de la demostración, contadas por dirección IP, así que quienes comparten la red de una oficina también las comparten. Vuelven a la medianoche UTC. Mientras tanto, la ejecución grabada de cada caso sigue disponible, y una copia de justask funciona con su propia clave.",
+				body: "Cada visitante tiene 200 solicitudes en vivo por día con la clave de la demo, contadas por dirección IP, así que quienes comparten la red de una oficina también las comparten. Vuelven a la medianoche UTC. Mientras tanto, la ejecución grabada de cada caso sigue disponible, y una copia de justask funciona con su propia clave.",
 			},
 			replay: "Reproducir la ejecución grabada",
 			clone: "Clonar justask y usarlo con su propia clave",
@@ -99,7 +98,7 @@ export const spanish: Content = {
 		nothing: "Nada que encontrar",
 		empty: "Ningún proveedor coincide",
 		unanswered:
-			"No se pudo leer la solicitud, así que no se muestra ningún proveedor. Inténtelo de nuevo.",
+			"No llegó ninguna respuesta, así que no se muestra ningún proveedor. Inténtelo de nuevo.",
 		choices: "¿Cuál de estos?",
 		severalFit: "Podría ser más de un proveedor",
 		closest: "Los más cercanos",
@@ -118,23 +117,23 @@ export const spanish: Content = {
 		held: "Retenido",
 		failed: "Falló",
 		filledBecause: (name, none, several, gate) =>
-			`Ganó ${name}, y none (${none}) y several (${several}) quedaron por debajo del umbral (${gate}).`,
+			`Ganó ${name}; las etiquetas none (${none}) y several (${several}) quedaron por debajo del umbral (${gate}).`,
 		heldBecause: (reason) => {
 			switch (reason.kind) {
 				case "none-reached-gate":
-					return `none (${reason.none}) alcanzó el umbral (${reason.gate}), así que no se muestra nada.`;
+					return `La etiqueta none (${reason.none}) alcanzó el umbral (${reason.gate}), así que no se muestra nada.`;
 				case "several-reached-gate":
-					return `several (${reason.several}) alcanzó el umbral (${reason.gate}), así que no se muestra nada.`;
+					return `La etiqueta several (${reason.several}) alcanzó el umbral (${reason.gate}), así que no se muestra nada.`;
 				case "none-picked":
-					return `El modelo eligió none (${reason.none}), así que no se muestra nada.`;
+					return `El modelo eligió la etiqueta none (${reason.none}), así que no se muestra nada.`;
 				case "several-picked":
-					return `El modelo eligió several (${reason.several}), así que no se muestra nada.`;
+					return `El modelo eligió la etiqueta several (${reason.several}), así que no se muestra nada.`;
 				case "pair":
 					return `La solicitud nombra dos candidatos (“${reason.text}”), así que el código no muestra nada, sin importar la elección.`;
 				case "none-tied":
-					return `none (${reason.none}) empató en el primer lugar, así que no se muestra nada.`;
+					return `La etiqueta none (${reason.none}) empató en el primer lugar, así que no se muestra nada.`;
 				case "several-tied":
-					return `several (${reason.several}) empató en el primer lugar, así que no se muestra nada.`;
+					return `La etiqueta several (${reason.several}) empató en el primer lugar, así que no se muestra nada.`;
 				case "tie":
 					return "Dos candidatos empataron en el primer lugar, así que no se muestra nada.";
 				case "no-candidates":
@@ -199,7 +198,7 @@ export const spanish: Content = {
 			},
 			empty: "Nada en esa solicitud filtra las transacciones.",
 			unanswered:
-				"No se pudo leer la solicitud, así que la tabla queda como estaba. Inténtelo de nuevo.",
+				"No llegó ninguna respuesta, así que la tabla queda como estaba. Inténtelo de nuevo.",
 			applied: "Aplicados",
 			appliedFields: (set, held) =>
 				[
@@ -316,7 +315,7 @@ export const spanish: Content = {
 					.join(" ");
 			},
 			unanswered:
-				"No se pudo leer la solicitud, así que la tarjeta queda como estaba. Complétela a mano.",
+				"No llegó ninguna respuesta, así que la tarjeta queda como estaba. Complétela a mano.",
 			pickDay: "Elija un día",
 			calendar: {
 				label: "Elija el día",
@@ -378,7 +377,7 @@ export const spanish: Content = {
 				}
 			},
 			impliedBecause: (vendor, tags) =>
-				`Completado desde el proveedor: toda venta de ${vendor} lleva la etiqueta ${tags.toLowerCase()}, y ninguna respuesta de las etiquetas decía otra cosa.`,
+				`Completado desde el proveedor: toda compra a ${vendor} lleva la etiqueta ${tags.toLowerCase()}, y ninguna respuesta de las etiquetas decía otra cosa.`,
 			tagQuestion: (name) => `¿Etiqueta ${name.toLowerCase()}?`,
 			yes: "la solicitud lo pide",
 			unresolved: (mark) => `“${mark}” no es la moneda local`,

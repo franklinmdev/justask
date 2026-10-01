@@ -152,7 +152,7 @@ function checkSet(set: CardEvalRow[], card: Card<CardFields>): void {
 }
 
 function loggedKind(field: CardField): LoggedCardField["kind"] {
-	return field.kind === "catalog" && "several" in field
+	return field.kind === "catalog" && field.several === true
 		? "several"
 		: field.kind;
 }

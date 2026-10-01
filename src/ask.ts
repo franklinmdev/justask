@@ -401,7 +401,7 @@ async function askCard<F extends CardFields>({
 				const candidates = await declared.shortlist(request);
 				checkShortlist(candidates, MISSING);
 				checkImplies(name, declared, candidates, card.fields);
-				const several = "several" in declared;
+				const several = declared.several === true;
 				const negated = several
 					? []
 					: findNegated(request, candidates, card.negations);

@@ -7,7 +7,7 @@
 // time is read from `wrangler tail --format json`, started first
 // (docs/workers.md, Measuring CPU).
 //
-//   node --conditions=source demo/worker/measure.ts <deployed url> [rounds]
+//   node --conditions=justask-source demo/worker/measure.ts <deployed url> [rounds]
 
 import { readFileSync } from "node:fs";
 import { loadKeyEnv } from "../../scripts/load-env.ts";
@@ -20,7 +20,7 @@ loadKeyEnv(undefined, "CF_ACCESS_CLIENT_ID");
 const [base, rounds = "1"] = process.argv.slice(2);
 if (!base || !/^[1-9]\d*$/.test(rounds)) {
 	throw new Error(
-		"usage: node --conditions=source demo/worker/measure.ts <deployed url> [rounds]",
+		"usage: node --conditions=justask-source demo/worker/measure.ts <deployed url> [rounds]",
 	);
 }
 const id = process.env.CF_ACCESS_CLIENT_ID;

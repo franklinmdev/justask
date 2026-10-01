@@ -1,10 +1,27 @@
 import type { SearchResult } from "justask";
 import type { UseSearch } from "justask/react";
+import type { ReactNode } from "react";
 import type { Content, HeldReason, Vendor } from "./content/types.ts";
 import { formats } from "./format.ts";
 import { heldBy, NONE, SEVERAL } from "./offer.ts";
 import { Bar, failureOf } from "./parts.tsx";
 import type { Trace } from "./trace.ts";
+
+/** The search's own labels, as whole words in a sentence. */
+const LABELS = new RegExp(`\\b(${NONE}|${SEVERAL})\\b`);
+
+/**
+ * The sentence with the search's own labels set as code, so none and several
+ * read as labels, not as words, in either language.
+ */
+function withLabels(text: string): ReactNode[] {
+	let offset = 0;
+	return text.split(LABELS).map((part, i) => {
+		const at = offset;
+		offset += part.length;
+		return i % 2 === 1 ? <code key={at}>{part}</code> : part;
+	});
+}
 
 type Verdict =
 	| { kind: "idle" }
@@ -126,14 +143,16 @@ export function StatePanel({
 			) : (
 				<div className="readout" data-stale={search.loading || undefined}>
 					<p className="reason">
-						{verdict.kind === "filled"
-							? copy.filledBecause(
-									verdict.name,
-									format.probability(verdict.none),
-									format.probability(verdict.several),
-									format.probability(result?.gate ?? 0),
-								)
-							: copy.heldBecause(verdict.reason)}
+						{withLabels(
+							verdict.kind === "filled"
+								? copy.filledBecause(
+										verdict.name,
+										format.probability(verdict.none),
+										format.probability(verdict.several),
+										format.probability(result?.gate ?? 0),
+									)
+								: copy.heldBecause(verdict.reason),
+						)}
 					</p>
 					<dl className="facts">
 						{trace && (
@@ -145,7 +164,7 @@ export function StatePanel({
 						{result && (
 							<>
 								<div>
-									<dt>{copy.gate}</dt>
+									<dt>{withLabels(copy.gate)}</dt>
 									<dd className="data">{format.probability(result.gate)}</dd>
 								</div>
 								<div>

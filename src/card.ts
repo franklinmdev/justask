@@ -77,7 +77,9 @@ export type TimeField = {
 
 /** One named part of a card, declared with its kind, description and gate. */
 export type CardField =
-	| CatalogField<unknown>
+	// `several` absent, so a catalog field whose `kind` widened to a string
+	// fails on its kind, not on a missing `several` (#195).
+	| (CatalogField<unknown> & { several?: never })
 	| SeveralCatalogField<unknown>
 	| CardDateField
 	| TimeField
@@ -215,7 +217,7 @@ export type CardResult<F extends CardFields> = {
 /** The ids a card field's questions take, so two fields, or a field and the intent question, never share one. */
 export function cardQuestionIds(name: string, field: CardField): RegExp {
 	const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-	return "several" in field
+	return field.kind === "catalog" && field.several === true
 		? new RegExp(`^${escaped}_.+$`)
 		: new RegExp(`^${escaped}$`);
 }
@@ -418,7 +420,7 @@ export function cardPlan(
 	pair?: NamedPair,
 	negated?: NegatedItem[],
 ): FieldPlan {
-	if (field.kind === "catalog" && "several" in field) {
+	if (field.kind === "catalog" && field.several === true) {
 		return severalPlan(name, card, field, catalog, pair);
 	}
 	const ask = <T>(candidates: Candidate<T>[], rules: string) =>
@@ -590,7 +592,7 @@ export function checkImplies(
 ): void {
 	for (const { id, implies } of candidates) {
 		if (!implies) continue;
-		if (field.kind === "catalog" && "several" in field) {
+		if (field.kind === "catalog" && field.several === true) {
 			throw new TypeError(
 				`justask: item "${id}" of field "${name}" implies a value, but only an item of a field that takes one can`,
 			);
@@ -602,7 +604,7 @@ export function checkImplies(
 					`justask: item "${id}" implies a value for field "${target}", which the card does not declare`,
 				);
 			}
-			if (!(declared.kind === "catalog" && "several" in declared)) {
+			if (!(declared.kind === "catalog" && declared.several === true)) {
 				throw new TypeError(
 					`justask: item "${id}" implies a value for field "${target}", which is not a catalog field where several items may apply`,
 				);

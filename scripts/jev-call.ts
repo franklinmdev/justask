@@ -1,7 +1,7 @@
 // One real Jev call through ask, by hand, never in CI. Reads TYPESAFE_API_KEY
 // from the environment or from .env, and prints the result, latency and cost.
 //
-//   node --conditions=source scripts/jev-call.ts ["a request"]
+//   node --conditions=justask-source scripts/jev-call.ts ["a request"]
 
 import { TypeSafeClient, type Usage } from "@typesafe-ai/sdk";
 import { ask, type Candidate, type Provider } from "justask";

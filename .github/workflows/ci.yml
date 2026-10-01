@@ -26,12 +26,16 @@ jobs:
         run: bash scripts/check-docs-location.sh
 
   check:
-    name: lint, typecheck and test
+    name: lint, typecheck and test on Node ${{ matrix.node }}
     runs-on: ubuntu-latest
     # Same event rules as docs location.
     if: >-
       github.event_name == 'push' ||
       github.event.pull_request.head.repo.full_name != github.repository
+    strategy:
+      matrix:
+        # The package's engines floor and the repo's own Node (#196).
+        node: [22, 24]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -40,7 +44,7 @@ jobs:
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24
+          node-version: ${{ matrix.node }}
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
@@ -50,7 +54,7 @@ jobs:
       # Tests resolve the entry points to src/. Build, then import each one
       # through the exports map as Node would, to prove dist/ resolves too.
       - run: pnpm build
-      - run: node -e "Promise.all(['justask','justask/react','justask/jev'].map((e) => import(e)))"
+      - run: node -e "Promise.all(['justask','justask/react','justask/jev','justask/eval'].map((e) => import(e)))"
 
   react-peer:
     name: justask/react on React ${{ matrix.react }}

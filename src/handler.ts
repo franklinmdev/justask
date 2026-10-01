@@ -235,6 +235,13 @@ async function readBody(
 	if (text === null) {
 		return { error: `The body is over ${MAX_BODY_BYTES} bytes`, status: 413 };
 	}
+	if (text === "") {
+		// Most often a body parser mounted before the handler read it.
+		return {
+			error:
+				"The body is empty: was it read before the handler, as express.json() does?",
+		};
+	}
 	let body: unknown;
 	try {
 		body = JSON.parse(text);

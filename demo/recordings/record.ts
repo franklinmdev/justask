@@ -1,7 +1,7 @@
 // The showcase's recorded runs, by hand with the key in .env, never in CI:
 // every recording is a real Jev call through the demo's handler.
 //
-//   node --conditions=source demo/recordings/record.ts [table|search|form ...]
+//   node --conditions=justask-source demo/recordings/record.ts [table|search|form ...]
 //
 // Writes demo/recordings/<case>-<language>.json for the named cases, every
 // case when none is named, in English and Spanish, each case's sentence taken
@@ -59,7 +59,7 @@ const named = process.argv.slice(2);
 for (const name of named) {
 	if (!Object.hasOwn(ROWS, name)) {
 		console.error(
-			"Usage: node --conditions=source demo/recordings/record.ts [table|search|form ...]",
+			"Usage: node --conditions=justask-source demo/recordings/record.ts [table|search|form ...]",
 		);
 		process.exit(1);
 	}

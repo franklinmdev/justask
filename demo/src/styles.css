@@ -1932,6 +1932,13 @@ fieldset.table-filter[data-settle]::before {
 	max-width: 68ch;
 }
 
+/* A label the model answers, none or several, named inside a sentence. */
+.reason code,
+.facts dt code {
+	font-family: var(--mono);
+	font-size: 0.95em;
+}
+
 .facts {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));

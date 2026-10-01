@@ -15,26 +15,26 @@
 	"type": "module",
 	"packageManager": "pnpm@12.5.1",
 	"engines": {
-		"node": ">=24"
+		"node": ">=22"
 	},
 	"exports": {
 		".": {
-			"source": "./src/index.ts",
+			"justask-source": "./src/index.ts",
 			"types": "./dist/index.d.ts",
 			"default": "./dist/index.js"
 		},
 		"./react": {
-			"source": "./src/react/index.ts",
+			"justask-source": "./src/react/index.ts",
 			"types": "./dist/react/index.d.ts",
 			"default": "./dist/react/index.js"
 		},
 		"./jev": {
-			"source": "./src/jev/index.ts",
+			"justask-source": "./src/jev/index.ts",
 			"types": "./dist/jev/index.d.ts",
 			"default": "./dist/jev/index.js"
 		},
 		"./eval": {
-			"source": "./src/eval/index.ts",
+			"justask-source": "./src/eval/index.ts",
 			"types": "./dist/eval/index.d.ts",
 			"default": "./dist/eval/index.js"
 		}
@@ -50,8 +50,8 @@
 		"format": "biome check --write",
 		"demo": "vite --config demo/vite.config.ts",
 		"demo:build": "vite build --config demo/vite.config.ts",
-		"demo:worker": "pnpm demo:build && WRANGLER_BUILD_CONDITIONS=source,workerd,worker,browser wrangler dev",
-		"demo:deploy": "pnpm demo:build && WRANGLER_BUILD_CONDITIONS=source,workerd,worker,browser wrangler deploy"
+		"demo:worker": "pnpm demo:build && WRANGLER_BUILD_CONDITIONS=justask-source,workerd,worker,browser wrangler dev",
+		"demo:deploy": "pnpm demo:build && WRANGLER_BUILD_CONDITIONS=justask-source,workerd,worker,browser wrangler deploy"
 	},
 	"peerDependencies": {
 		"@typesafe-ai/sdk": "^0.6.0",

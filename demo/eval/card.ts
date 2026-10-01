@@ -1,14 +1,14 @@
 // The demo's card eval, by hand with the key in .env, never in CI: every
 // row is a real Jev call.
 //
-//   node --conditions=source demo/eval/card.ts run <en|es> <set> <n>
-//   node --conditions=source demo/eval/card.ts run <en|es> office <n> <label>
-//   node --conditions=source demo/eval/card.ts office <en|es> <n> <label>
-//   node --conditions=source demo/eval/card.ts gaps <en|es> <n>
-//   node --conditions=source demo/eval/card.ts compare <en|es> <set> <first n> <second n>
-//   node --conditions=source demo/eval/card.ts remeasure <en|es> <set> <first n> <n>...
-//   node --conditions=source demo/eval/card.ts merge <en|es> <set> <first n> <n>...
-//   node --conditions=source demo/eval/card.ts gates <dev n>
+//   node --conditions=justask-source demo/eval/card.ts run <en|es> <set> <n>
+//   node --conditions=justask-source demo/eval/card.ts run <en|es> office <n> <label>
+//   node --conditions=justask-source demo/eval/card.ts office <en|es> <n> <label>
+//   node --conditions=justask-source demo/eval/card.ts gaps <en|es> <n>
+//   node --conditions=justask-source demo/eval/card.ts compare <en|es> <set> <first n> <second n>
+//   node --conditions=justask-source demo/eval/card.ts remeasure <en|es> <set> <first n> <n>...
+//   node --conditions=justask-source demo/eval/card.ts merge <en|es> <set> <first n> <n>...
+//   node --conditions=justask-source demo/eval/card.ts gates <dev n>
 //
 // The sets and which give a verdict are listed in card-sets.ts; where each
 // set's file and run logs live is in sets.ts. `run` writes its set's log, which it never

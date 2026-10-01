@@ -1,10 +1,10 @@
 // The demo's search eval, by hand with the key in .env, never in CI: every
 // row is a real Jev call.
 //
-//   node --conditions=source demo/eval/search.ts run <en|es> <eval|round2|round3|round4|dev> <n>
-//   node --conditions=source demo/eval/search.ts compare <en|es> <eval|round2|round3|round4> <first n> <second n>
-//   node --conditions=source demo/eval/search.ts remeasure <en|es> <eval|round2|round3|round4> <first n> <n>...
-//   node --conditions=source demo/eval/search.ts merge <en|es> <eval|round2|round3|round4> <first n> <n>...
+//   node --conditions=justask-source demo/eval/search.ts run <en|es> <eval|round2|round3|round4|dev> <n>
+//   node --conditions=justask-source demo/eval/search.ts compare <en|es> <eval|round2|round3|round4> <first n> <second n>
+//   node --conditions=justask-source demo/eval/search.ts remeasure <en|es> <eval|round2|round3|round4> <first n> <n>...
+//   node --conditions=justask-source demo/eval/search.ts merge <en|es> <eval|round2|round3|round4> <first n> <n>...
 //
 // `run` writes demo/eval/runs/search-<language>[-round2|-round3|-round4|-dev]-<n>.jsonl,
 // which it never overwrites, and prints its report. `eval` is round 1's set,

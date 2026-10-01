@@ -80,8 +80,8 @@ Run logs: `demo/eval/runs/filter-en-dev-1.jsonl`, `demo/eval/runs/filter-es-dev-
 
 By hand with the key in `.env`, never in CI; every row is a paid call.
 
-1. After #39 is in main and merged into this branch: dev runs, `node --conditions=source demo/eval/filter.ts run <en|es> dev <n>`. They print no verdict.
-2. `node --conditions=source demo/eval/filter.ts gates <n>` prints each field's gate by the rule; write them into the demo.
+1. After #39 is in main and merged into this branch: dev runs, `node --conditions=justask-source demo/eval/filter.ts run <en|es> dev <n>`. They print no verdict.
+2. `node --conditions=justask-source demo/eval/filter.ts gates <n>` prints each field's gate by the rule; write them into the demo.
 3. From #65 on, write the probe baseline into the demo, as Latency below says. Run 1 per language gives the verdict: `run <en|es> eval 1`.
 4. Run 2 per language reports flips only: `run <en|es> eval 2`, then `compare <en|es> eval 1 2`.
 5. Record here the verdict, the numbers, the misses and the run logs' paths (`demo/eval/runs/`, committed so anyone can rescore them with no call).

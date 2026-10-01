@@ -99,7 +99,7 @@ The owner's triage decision on [#65](https://github.com/franklinmdev/justask/iss
 
 - **Probes.** Every run sends one fixed provider probe (`PROBE` in `demo/eval/probe.ts`: one request, one question, three labels) straight to the provider, three times before its rows and three times after, and saves each probe's latency in its run log: the ones before in the header, the ones after on the log's last line.
 - **Warm-up.** Before the measured probes and before any row, every run sends the probe request three more times (`PROBE_WARM_UP`) and discards them: they are saved in the header as `warmUp`, and never counted in the probe median or the p95. The owner's ruling on #65, 2026-09-23, after the first two runs with probes (search dev runs 3 and 4, below): in both, the first calls after idle took 1,236 to 1,443 ms and the rest about 250 to 450 ms, a cold start and not a slow window. The warm-up keeps a cold start out of the baseline, and it also protects a verdict's first rows: dev run 3's first four rows (`en-dev01` to `en-dev04`) timed out at 2 s, and a verdict run's first rows would have done the same. The probe is the same for every flow and language, and frozen by value in `test/demo-probe.test.ts`. It is not the diagnostic probe sets of rounds 3 and 4 (`diag`, `pair`), which are eval rows.
-- **Baseline.** The probes' median from the most recent normal runs, written into `PROBE_BASELINE_MS` in `demo/eval/probe.ts` before the next verdict run, saved in every run log beside the kill lines, and frozen by value in the same test. `node --conditions=source demo/eval/baseline.ts <run log>...` prints the median over the runs named, with no call. A probe that timed out counts at its wait; one that failed fast is left out. While no baseline is written, a dev, diag or pair run still sends the probes, and the CLIs refuse a verdict run before any call.
+- **Baseline.** The probes' median from the most recent normal runs, written into `PROBE_BASELINE_MS` in `demo/eval/probe.ts` before the next verdict run, saved in every run log beside the kill lines, and frozen by value in the same test. `node --conditions=justask-source demo/eval/baseline.ts <run log>...` prints the median over the runs named, with no call. A probe that timed out counts at its wait; one that failed fast is left out. While no baseline is written, a dev, diag or pair run still sends the probes, and the CLIs refuse a verdict run before any call.
 - **Slow window.** A run whose probes' median is more than twice its baseline, or whose every probe failed, is marked a slow window, in its report's measures. Its quality lines (exact, coverage, invented, held ambiguous, errors) still decide: any of them failing is a FAIL. A p95 that passes its line counts, since a slow provider only adds latency (the owner's ruling on #65, 2026-09-23). A p95 that fails is pending, and when every quality line passes the report's verdict reads `LATENCY PENDING`. Only that latency line is measured again: a later run of the same frozen rows, with nothing else changed, in a window whose probes are normal, under the next free run number (run 3 when run 2 took the flips). Read two lines of its report and nothing else: `Probes` must say `normal`, and the p95 in `Measures` decides the latency line against its kill line. Its verdict table decides nothing, even where it prints FAIL on a quality line; record the result beside run 1's. A later run for the latency line in a slow window decides nothing either; wait and run again.
 - **Round 4 stays a FAIL** as recorded. Every log saved before this rule has no probes and scores as it did.
 
@@ -122,7 +122,7 @@ The owner ruled on 2026-09-23 (#65) that the first baseline is seeded from two s
 | Search `en` dev 6 | 273 ms | 0 | 414, 217, 317 | 228, 261, 202 · 235, 231, 223 |
 
 - **Dev runs 3 and 4 were rejected.** Dev run 3's rows sat far above the history, and both runs' first calls were a cold start. That led to the warm-up (above). Their logs are kept, and they seed nothing.
-- **Dev runs 5 and 6 were accepted**, both near the history. Dev run 5's warm-up took the cold start on its own: all three calls timed out, and no row did. `node --conditions=source demo/eval/baseline.ts demo/eval/runs/search-en-dev-5.jsonl demo/eval/runs/search-en-dev-6.jsonl` gives 235 ms over the 11 measured probes left: the warm-up is left out, and so is the one probe that failed fast. `PROBE_BASELINE_MS` is 235, frozen by value in `test/demo-probe.test.ts`, so a run is a slow window when its probes' median is above 470 ms.
+- **Dev runs 5 and 6 were accepted**, both near the history. Dev run 5's warm-up took the cold start on its own: all three calls timed out, and no row did. `node --conditions=justask-source demo/eval/baseline.ts demo/eval/runs/search-en-dev-5.jsonl demo/eval/runs/search-en-dev-6.jsonl` gives 235 ms over the 11 measured probes left: the warm-up is left out, and so is the one probe that failed fast. `PROBE_BASELINE_MS` is 235, frozen by value in `test/demo-probe.test.ts`, so a run is a slow window when its probes' median is above 470 ms.
 
 Run logs: `demo/eval/runs/search-en-dev-3.jsonl` to `search-en-dev-6.jsonl`.
 
@@ -174,8 +174,8 @@ Run logs: `demo/eval/runs/card-en-dev-1.jsonl`, `demo/eval/runs/card-es-dev-1.js
 By hand with the key in `.env`, never in CI; every row is a paid call.
 
 1. The owner approves the sets, the measures, the kill lines and the gate rule; they are frozen in `test/demo-card-eval.test.ts` before any call.
-2. Dev runs: `node --conditions=source demo/eval/card.ts run <en|es> dev 1`. They print no verdict.
-3. `node --conditions=source demo/eval/card.ts gates 1` prints the intent's and each field's gate by the rule; write them into the demo.
+2. Dev runs: `node --conditions=justask-source demo/eval/card.ts run <en|es> dev 1`. They print no verdict.
+3. `node --conditions=justask-source demo/eval/card.ts gates 1` prints the intent's and each field's gate by the rule; write them into the demo.
 4. From #65 on, write the probe baseline into the demo (Latency, above).
 5. Run 1 per language gives the verdict: `run <en|es> eval 1`. In a slow window a failing latency line is measured again, and from #93 on an errors line over only by transport failures has those rows sent again, as Latency says.
 6. Run 2 per language reports flips only: `run <en|es> eval 2`, then `compare <en|es> eval 1 2`.
@@ -283,7 +283,7 @@ Runs of 2026-09-23 with `jev-1.13.0`, at round 1's gates, today fixed at Wednesd
 
 ### Gates for round 2
 
-The owner ruled on 2026-09-23 that dev run 3 alone fixes the gates, the only dev run with the final descriptions, by the same rule as round 1. `node --conditions=source demo/eval/card.ts gates 3`:
+The owner ruled on 2026-09-23 that dev run 3 alone fixes the gates, the only dev run with the final descriptions, by the same rule as round 1. `node --conditions=justask-source demo/eval/card.ts gates 3`:
 
 | Field | Lowest right | Highest wrong | Rule | Gate | Round 1 |
 |---|---|---|---|---|---|
@@ -438,7 +438,7 @@ Before any gate was fixed, the owner asked for the cost: 15 real new records per
 
 ### Gates for round 3
 
-Dev run 4, of 2026-09-23 with `jev-1.13.0`, the first dev run with both fixes, fixes every gate by the same rule as rounds 1 and 2. `node --conditions=source demo/eval/card.ts gates 4`:
+Dev run 4, of 2026-09-23 with `jev-1.13.0`, the first dev run with both fixes, fixes every gate by the same rule as rounds 1 and 2. `node --conditions=justask-source demo/eval/card.ts gates 4`:
 
 | Field | Lowest right | Highest wrong | Rule | Gate | Round 2 |
 |---|---|---|---|---|---|
@@ -560,7 +560,7 @@ Pair run 1, of 2026-09-23 with `jev-1.13.0`, ran with the first rule, "or" alone
 
 ### Gates for round 4
 
-Dev run 5, of 2026-09-23 with `jev-1.13.0`, the first dev run with both fixes, fixes every gate by the same rule as rounds 1 to 3. `node --conditions=source demo/eval/card.ts gates 5`:
+Dev run 5, of 2026-09-23 with `jev-1.13.0`, the first dev run with both fixes, fixes every gate by the same rule as rounds 1 to 3. `node --conditions=justask-source demo/eval/card.ts gates 5`:
 
 | Field | Lowest right | Highest wrong | Rule | Gate | Round 3 |
 |---|---|---|---|---|---|
@@ -856,7 +856,7 @@ The owner chose fix 1 on 2026-09-23, with one change: **the card adds `office` f
 
 ### Run logs
 
-`demo/eval/runs/card-<en|es>-office-<current|backups|short|rest>-<1|2>.jsonl`. `node --conditions=source demo/eval/card.ts office <en|es> <n> <label>` prints a run's office picks with no call.
+`demo/eval/runs/card-<en|es>-office-<current|backups|short|rest>-<1|2>.jsonl`. `node --conditions=justask-source demo/eval/card.ts office <en|es> <n> <label>` prints a run's office picks with no call.
 
 ## False-fill probes (#79)
 
@@ -872,7 +872,7 @@ Carried by [#79](https://github.com/franklinmdev/justask/issues/79), before roun
 
 ### Result
 
-Runs of 2026-09-23 with `jev-1.13.0`, the card as the demo serves it with the rule (gates intent 0.45, vendor 0.7, tags 0.4, spent_on 0.8, total 0.9), today fixed at Wednesday 2026-09-23. Every probe window was normal (medians 216 to 257 ms against 235), and no row errored. `node --conditions=source demo/eval/card.ts gaps <en|es> <n>` prints each row's tags and gap with no call.
+Runs of 2026-09-23 with `jev-1.13.0`, the card as the demo serves it with the rule (gates intent 0.45, vendor 0.7, tags 0.4, spent_on 0.8, total 0.9), today fixed at Wednesday 2026-09-23. Every probe window was normal (medians 216 to 257 ms against 235), and no row errored. `node --conditions=justask-source demo/eval/card.ts gaps <en|es> <n>` prints each row's tags and gap with no call.
 
 | Of 20 rows, runs 1 and 2 | English | Spanish |
 |---|---|---|
