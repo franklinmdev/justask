@@ -350,9 +350,9 @@ const { card } = await ask({
 
 As with a filter, a field below its gate is left out of `card.value`, and `card.fields` says why.
 
-- **date** fields fill with one day, `YYYY-MM-DD`, and declare which way they read: `"past"` for the day an expense was spent, `"future"` for a due date. A picked period ("next week") is held, and so is a day after today on a field that reads the past, explicit words included ("tomorrow"); its candidate says `afterToday: true`.
+- **date** fields fill with one day, `YYYY-MM-DD`, and declare which way they read: `"past"` for the day an expense was spent, `"future"` for a due date. A picked period ("next week") is held, and so is a day after today on a field that reads the past, explicit words included ("tomorrow"); its candidate says `afterToday: true`. A weekday named alone ("Friday", "el viernes") is the most recent one before today on a field that reads the past, and the first one after today on one that reads the future, and the card's question says so; "Friday" said on a Friday is the one a week away.
 - **time** fields fill with `HH:MM`. A bare hour offers its morning and evening readings, and the provider picks from the words around it.
-- **amount** fields fill with `{ value, currency? }`, one question over every number found.
+- **amount** fields fill with `{ value, currency? }`, one question over every number found. With the `local_currency` fact set, the question says a number with no currency written is in the local currency when it is money, so "Swiftlane 74" fills `{ value: 74 }`; the currency stays out, since the host knows its own. A filter's questions do not say it.
 - **catalog** fields that take one item are held when the pick is an item the request names only negated ("Larkspur wasn't it"), by the words the card declares in `negations: { before, after }`, per language; the result names them in `negated`. Declare none and nothing is held this way.
 - **catalog** fields with `several: true` ask one yes-or-no question per shortlisted item, so combinations are never enumerated, and fill with the items asked for. The field is held when any item's pick is below the gate, or says a word could be this item or another.
 

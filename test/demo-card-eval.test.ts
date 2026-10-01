@@ -478,6 +478,15 @@ describe("the frozen card eval", () => {
 			"card-es.copyrec.jsonl",
 			"fb865c26339047f4493af7113dd5f1aa800670a22ed1608c4a75167745a99be3",
 		],
+		// #244's bare amount probes, approved with round 10's rules on 2026-09-26, before any call.
+		[
+			"card-en.bare.jsonl",
+			"f8d9a3a14d788f8afdd57c5924d90134c7fda4b7e8a0c49ec411cb9a01fc658c",
+		],
+		[
+			"card-es.bare.jsonl",
+			"b42e6936346646026344eab47c10cbda94e7a0a210c8ab7e42c82080cfec521f",
+		],
 	])("keeps %s as approved", (name, sha256) => {
 		const bytes = readFileSync(evalFile(name));
 		expect(createHash("sha256").update(bytes).digest("hex")).toBe(sha256);

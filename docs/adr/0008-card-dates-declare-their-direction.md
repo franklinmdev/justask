@@ -21,6 +21,14 @@ The pre-launch QA (#172, finding F7) found the demo's expense card filling its d
 - **The eval log keeps the mark** with the candidate it saves, so a run rescores as it was held; a log from before this amendment has no mark and rescores as it ran.
 - Today is the date in the `today` fact, the day the rest of the card reads from.
 
+## Amendment (#190): the question says what a bare weekday names
+
+The pre-launch QA (#172, finding F11) found this ADR's own example held: "Beanhaven coffee on Friday $5", said on a Monday or a Wednesday, offered the one candidate `"Friday": the single day Fri 2026-09-18 (the most recent one before today)`, and the provider picked it at 0.66 to 0.68 or answered `not_available`, under the 0.8 gate, in 8 of 8 calls. Round 9's rows with a bare weekday filled their day in 39 of 77 per language, against 42 or 43 of 43 for every other day. The candidate was right; the provider doubted the reading.
+
+- **The card's date question now says it.** On a field that reads the past: a weekday named alone, with no "last" or "next", means the most recent one before today, so its candidate is the day the request names; on a field that reads the future, the first one after today. The parser and the candidates are unchanged, and so is the filter's question.
+- **Measured before it landed**, in card round 10 (docs/card-eval.md), approved by the owner on 2026-09-26 before any call. The round failed three of its six lines as run, and the owner ruled on 2026-09-27 that the FAIL stands and the wording ships: bare weekdays filled their day on 65 of 76 English and 68 of 77 Spanish rows at the field, against 39 of 77, and no day filled wrong but four rows frozen as held before #140.
+- **Left as it was:** a numeric date such as "3/9" keeps its two readings and is held when the provider does not choose; telling the provider which language writes day/month would state a place's convention as a language's.
+
 ## Considered Options
 
 - Every card date forward, as the spec said: wrong for the demo's own expense card. Rejected.

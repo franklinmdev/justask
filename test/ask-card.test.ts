@@ -1189,6 +1189,32 @@ describe("ask: card", () => {
 		});
 
 		it.each([
+			["past", "the most recent one before today"],
+			["future", "the first one after today"],
+		] as const)(
+			"says in the date question that a weekday named alone on a field that reads the %s means %s (#190)",
+			async (reads, means) => {
+				const fake = fakeProvider({});
+				await ask({
+					...base,
+					request: "Acme bill, Friday",
+					provider: fake,
+					card: {
+						...billCard(),
+						fields: { due_on: { ...billCard().fields.due_on, reads } },
+					},
+				});
+
+				expect(
+					fake.calls[0]?.questions.find(({ id }) => id === "due_on")
+						?.instruction,
+				).toContain(
+					` A weekday named alone, with no "last" or "next" ("Friday", "el viernes"), means ${means}, so its candidate is the day the request names.`,
+				);
+			},
+		);
+
+		it.each([
 			["tomorrow", "Acme lunch tomorrow, $6", "2026-09-23"],
 			["next Monday, one reading", "Acme lunch next Monday, $6", "2026-09-28"],
 		])(
@@ -1330,6 +1356,68 @@ describe("ask: card", () => {
 			expect(result.card.fields.total.candidates[0]?.value.unresolved).toBe(
 				"pesos",
 			);
+		});
+
+		describe("a number written with no currency (#191)", () => {
+			const asked = async (request: string, askFacts: Facts = facts) => {
+				const fake = fakeProvider({});
+				await ask({
+					...base,
+					facts: askFacts,
+					request,
+					provider: fake,
+					card: card(),
+				});
+				return fake.calls[0]?.questions.find(({ id }) => id === "total");
+			};
+
+			it("reads as the local currency when the local currency is known, and fills with the number alone", async () => {
+				const total = await asked("Swiftlane 74");
+
+				expect(total?.labels[0]?.description).toBe(
+					'"74": 74, no currency written',
+				);
+				expect(total?.instruction).toContain(
+					" When a number with no currency written is money, it is in the local currency.",
+				);
+				const result = await ask({
+					...base,
+					request: "Swiftlane 74",
+					provider: fakeProvider({
+						intent: answer(INTENT, "new_record", 0.97),
+						total: answer(["a0", ...MISSING], "a0"),
+					}),
+					card: card(),
+				});
+				expect(result.card.value).toEqual({ total: { value: 74 } });
+			});
+
+			it("asks as before when every number has its currency", async () => {
+				const total = await asked("Swiftlane $74");
+
+				expect(total?.labels[0]?.description).toBe('"$74": 74 USD (US Dollar)');
+				expect(total?.instruction).not.toContain("local currency");
+			});
+
+			it("asks as before when the request names a currency that does not resolve", async () => {
+				const total = await asked("Farwander hotel, 480,000 pesos");
+
+				expect(total?.labels[0]?.description).toBe(
+					'"480,000 pesos": 480000, the request does not say in which currency',
+				);
+				expect(total?.instruction).not.toContain("local currency");
+			});
+
+			it("asks as before when no local currency is known", async () => {
+				const total = await asked("Swiftlane 74", {
+					today: "Today is Tuesday 2026-09-22.",
+				});
+
+				expect(total?.labels[0]?.description).toBe(
+					'"74": 74, the request does not say in which currency',
+				);
+				expect(total?.instruction).not.toContain("local currency");
+			});
 		});
 
 		it("holds a field with no candidates without a question, and asks the intent question alone", async () => {

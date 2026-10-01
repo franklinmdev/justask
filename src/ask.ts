@@ -382,7 +382,9 @@ async function askCard<F extends CardFields>({
 	const readingsFor = (reads: Reads) => {
 		let readings = parsed.get(reads);
 		if (!readings) {
-			readings = readCandidates(request, facts, card.parsers ?? [], reads);
+			readings = readCandidates(request, facts, card.parsers ?? [], reads, {
+				bareIsLocal: facts.local_currency !== undefined,
+			});
 			if (reads === "past") {
 				readings = { ...readings, dates: markAfter(readings.dates, facts) };
 			}
@@ -557,6 +559,7 @@ function readCandidates(
 	facts: Facts,
 	parsers: readonly Parser[],
 	reads: Reads,
+	{ bareIsLocal = false }: { bareIsLocal?: boolean } = {},
 ): CandidateReadings {
 	const today = todayOf(facts);
 	const { dates, times, amounts } = parseRequest(
@@ -579,9 +582,10 @@ function readCandidates(
 		})),
 		amounts: weighed(amounts).map((value, i) => ({
 			id: `a${i}`,
-			description: describeAmount(value),
+			description: describeAmount(value, bareIsLocal),
 			value,
 		})),
+		...(bareIsLocal && { bareIsLocal: true as const }),
 	};
 }
 
