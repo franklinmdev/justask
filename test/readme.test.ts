@@ -16,8 +16,8 @@ const read = (path: string) => readFileSync(join(root, path), "utf8");
 const readme = read("README.md");
 
 /**
- * The README and the guides in `docs/` it links, whose code builds on the
- * README's files: every Markdown file in `docs/` (#256).
+ * The README and every Markdown file in `docs/`, where the README's detail
+ * moved and whose code builds on the README's files (#256).
  */
 const docs = [
 	"README.md",
@@ -82,6 +82,14 @@ describe("the README and its guides", () => {
 		);
 
 		expect(diagnosticsOf({ ...files, "host.d.ts": host })).toBe("");
+	});
+
+	it("name each file in one block only, so no doc's file hides another's", () => {
+		const names = blocks
+			.filter(({ excerpt }) => !excerpt)
+			.map(({ name }) => name);
+
+		expect(names).toEqual([...new Set(names)]);
 	});
 
 	it("build the provider and install its SDK before the first handler", () => {
