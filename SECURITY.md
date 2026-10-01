@@ -2,7 +2,7 @@
 
 ## Reporting a vulnerability
 
-Report it privately through GitHub: on this repository's page, open the **Security and quality** tab (**Security** on some accounts) and press **Report a vulnerability**. Only the repository's maintainers read the report. Please do not open a public issue, pull request or discussion about it.
+Report it privately through GitHub: on this repository's page, open the **Security and quality** tab (**Security** on some accounts) and press **Report a vulnerability**. Only the maintainer reads the report. Please do not open a public issue, pull request or discussion about it.
 
 Say what is affected (the package, which entry point, or the demo), how to reproduce it, and what an attacker gains. I aim to reply within 7 days. A fix and its advisory are published together, once a fixed release is out.
 
