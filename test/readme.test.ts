@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -7,6 +7,7 @@ import {
 	parseFilterEvalSet,
 } from "justask/eval";
 import { describe, expect, it } from "vitest";
+import gif from "../demo/recordings/gif-en.json" with { type: "json" };
 import { CARD_GATES, FILTER_GATES, GATE } from "../demo/server/handler.ts";
 import { diagnosticsOf } from "./typecheck.ts";
 
@@ -140,6 +141,35 @@ describe("the README's demo gates", () => {
 
 		expect(sentence, flow).toMatch(
 			new RegExp(`\\bround ${latestRound(doc)}\\b`),
+		);
+	});
+});
+
+describe("the README's GIF", () => {
+	/** The GIF's image tag at the top of the README, and the paragraph under it. */
+	const [image = "", caption = ""] =
+		/^(<img src="docs\/readme-card\.gif"[^>]*>)\n\n(.*)$/m
+			.exec(readme)
+			?.slice(1) ?? [];
+
+	it("sits above the first section, and its alt text types the recorded sentence", () => {
+		expect(readme.indexOf(image)).toBeLessThan(readme.indexOf("\n## "));
+		expect(image).toContain(`alt="`);
+		expect(image).toContain(`“${gif.request}”`);
+	});
+
+	it("says the answer is a real call, recorded on the recording's day", () => {
+		const day = gif.recordedAt.slice(0, 10);
+
+		expect(caption).toContain("real Jev call");
+		expect(caption).toContain(day);
+		expect(caption).toContain("demo/recordings/gif-en.json");
+		expect(caption).toContain("scripts/readme-gif.ts");
+	});
+
+	it("stays under 3 MB, to load fast on GitHub and npm", () => {
+		expect(statSync(join(root, "docs", "readme-card.gif")).size).toBeLessThan(
+			3 * 1024 * 1024,
 		);
 	});
 });
