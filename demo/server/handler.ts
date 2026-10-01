@@ -16,6 +16,8 @@ import {
 	DEMO_PAUSED,
 	filterEndpoint,
 	KEY_OUT_OF_SERVICE,
+	NETWORK_DAY_USED,
+	NETWORK_MINUTE_USED,
 	searchEndpoint,
 	VISITOR_DAY_USED,
 	VISITOR_MINUTE_USED,
@@ -290,16 +292,21 @@ export function createDemoHandler(
 			}),
 		})(request);
 		if (visitor.limit) {
-			return Response.json(
-				visitor.limit === "minute" ? VISITOR_MINUTE_USED : VISITOR_DAY_USED,
-				{ status: 402 },
-			);
+			return Response.json(LIMIT_USED[visitor.limit], { status: 402 });
 		}
 		return calls.refused
 			? Response.json(KEY_OUT_OF_SERVICE, { status: 503 })
 			: response;
 	};
 }
+
+/** The budget's 402 for each limit that refuses a visitor's call. */
+const LIMIT_USED = {
+	minute: VISITOR_MINUTE_USED,
+	day: VISITOR_DAY_USED,
+	networkMinute: NETWORK_MINUTE_USED,
+	networkDay: NETWORK_DAY_USED,
+} satisfies Record<VisitorLimit, unknown>;
 
 /**
  * One request's provider that counts the visitor on its first call only, so

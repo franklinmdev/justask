@@ -4,10 +4,12 @@ import {
 	type TestHarness,
 	unstable_readConfig,
 } from "wrangler";
-import { NETWORK_MINUTE_LIMIT, utcMinute } from "../demo/server/visitors.ts";
+import { utcMinute } from "../demo/server/visitors.ts";
 import {
 	BUDGET_EXCEEDED,
 	DEMO_PAUSED,
+	NETWORK_MINUTE_LIMIT,
+	NETWORK_MINUTE_USED,
 	VISITOR_MINUTE_LIMIT,
 	VISITOR_MINUTE_USED,
 } from "../demo/src/api.ts";
@@ -183,7 +185,7 @@ describe("the Worker's per-visitor limits, in the same Durable Object", {
 		});
 
 		expect(allowed).toEqual(Array(NETWORK_MINUTE_LIMIT).fill(200));
-		expect(refused).toEqual({ status: 402, body: VISITOR_MINUTE_USED });
+		expect(refused).toEqual({ status: 402, body: NETWORK_MINUTE_USED });
 		// Three times the other tests' calls, and maybe twice over.
 	}, 140_000);
 });

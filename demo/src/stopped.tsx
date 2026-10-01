@@ -3,6 +3,7 @@ import {
 	BUDGET_EXCEEDED,
 	DEMO_PAUSED,
 	KEY_OUT_OF_SERVICE,
+	NETWORK_MINUTE_USED,
 	type Stopped,
 	VISITOR_DAY_USED,
 	VISITOR_MINUTE_USED,
@@ -14,9 +15,10 @@ export const REPO_URL = "https://github.com/franklinmdev/justask";
 
 /**
  * The demo's `fetch`, watching for the server's answers that stop live calls
- * on the owner's key (#109): the day's budget, the kill switch or this
- * visitor's limit (#110), 402, and a key TypeSafe refused, 503. It hands the
- * answer on untouched, so the hook still ends its call, and tells the page why.
+ * on the owner's key (#109): the day's budget, the kill switch, this
+ * visitor's limit (#110) or its network's (#250), 402, and a key TypeSafe
+ * refused, 503. It hands the answer on untouched, so the hook still ends its
+ * call, and tells the page why.
  */
 export function watchStops(
 	fetchImpl: typeof fetch,
@@ -41,9 +43,16 @@ async function stoppedBy(response: Response): Promise<Stopped | null> {
 		if (kind !== BUDGET_EXCEEDED.error.kind) return null;
 		if (cause === BUDGET_EXCEEDED.error.cause) return "budget";
 		if (cause === DEMO_PAUSED.error.cause) return "paused";
-		if (cause !== VISITOR_MINUTE_USED.error.cause) return null;
-		if (limit === VISITOR_MINUTE_USED.error.limit) return "minute";
-		return limit === VISITOR_DAY_USED.error.limit ? "day" : null;
+		// The visitor's own limits, or its IPv6 /48's (#250), each with its own notice.
+		const by =
+			cause === VISITOR_MINUTE_USED.error.cause
+				? ({ minute: "minute", day: "day" } as const)
+				: cause === NETWORK_MINUTE_USED.error.cause
+					? ({ minute: "networkMinute", day: "networkDay" } as const)
+					: null;
+		if (!by) return null;
+		if (limit === VISITOR_MINUTE_USED.error.limit) return by.minute;
+		return limit === VISITOR_DAY_USED.error.limit ? by.day : null;
 	} catch {
 		// A body that is not JSON is not the demo's own answer: the page's usual error shows.
 		return null;

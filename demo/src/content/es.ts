@@ -66,6 +66,14 @@ export const spanish: Content = {
 				title: "Usó sus 200 solicitudes en vivo de hoy",
 				body: "Cada visitante tiene 200 solicitudes en vivo por día con la clave de la demo, contadas por dirección IP, así que quienes comparten la red de una oficina también las comparten. Vuelven a la medianoche UTC. Mientras tanto, la ejecución grabada de cada caso sigue disponible, y una copia de justask funciona con su propia clave.",
 			},
+			networkMinute: {
+				title: "Su red usó sus 60 solicitudes en vivo de este minuto",
+				body: "Los visitantes de una misma red IPv6 comparten 60 solicitudes en vivo por minuto y 1,000 por día con la clave de la demo, además de las 20 y 200 de cada visitante. Vuelven a estar disponibles en menos de un minuto. Mientras tanto, la ejecución grabada de cada caso sigue disponible, y una copia de justask funciona con su propia clave.",
+			},
+			networkDay: {
+				title: "Su red usó sus 1,000 solicitudes en vivo de hoy",
+				body: "Los visitantes de una misma red IPv6 comparten 1,000 solicitudes en vivo por día con la clave de la demo, además de las 200 de cada visitante. Vuelven a la medianoche UTC. Mientras tanto, la ejecución grabada de cada caso sigue disponible, y una copia de justask funciona con su propia clave.",
+			},
 			replay: "Reproducir la ejecución grabada",
 			clone: "Clonar justask y usarlo con su propia clave",
 		},

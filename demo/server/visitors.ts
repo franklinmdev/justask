@@ -1,18 +1,12 @@
-import { VISITOR_DAY_LIMIT, VISITOR_MINUTE_LIMIT } from "../src/api.ts";
+import {
+	NETWORK_DAY_LIMIT,
+	NETWORK_MINUTE_LIMIT,
+	VISITOR_DAY_LIMIT,
+	VISITOR_MINUTE_LIMIT,
+} from "../src/api.ts";
 
-/** Which of a visitor's limits refused a call (#110). */
-export type VisitorLimit = "minute" | "day";
-
-/**
- * Each IPv6 /48's calls, beside each of its /64s' own (#250): a /56 holds 256
- * /64s, and at 200 calls a day each would spend the day's budget in minutes.
- * A /48 is one site's whole allocation, so it is looser than a visitor's: three
- * busy visitors at once, and five days' worth of one, about $0.10 a day at the
- * budget's reservation. Several visitors of one carrier's pool may share a
- * /48 and its limits.
- */
-export const NETWORK_MINUTE_LIMIT = 60;
-export const NETWORK_DAY_LIMIT = 1_000;
+/** Which limit refused a call: the visitor's own (#110), or its IPv6 /48's (#250). */
+export type VisitorLimit = "minute" | "day" | "networkMinute" | "networkDay";
 
 /**
  * Who a request counts against, from the address Cloudflare names it by
@@ -86,29 +80,41 @@ export function utcMinute(now: Date): string {
 	return now.toISOString().slice(0, 16);
 }
 
-/** The limits an address counts under: a /48's, or a visitor's. */
-function limitsOf(address: string): { minute: number; day: number } {
-	return address.endsWith("::/48")
-		? { minute: NETWORK_MINUTE_LIMIT, day: NETWORK_DAY_LIMIT }
-		: { minute: VISITOR_MINUTE_LIMIT, day: VISITOR_DAY_LIMIT };
+/** Whether an address (visitorAddresses) is an IPv6 /48, counted under the network's limits. */
+function isNetwork(address: string): boolean {
+	return address.endsWith("::/48");
 }
 
 /**
  * The limits' one rule, which both ledgers keep, over a request's addresses
  * (visitorAddresses) and their counts so far: past any one's calls in the
  * day, or in the minute, the call is refused and counts nothing; otherwise it
- * counts against each, in both. The day's limit is named first, since it
- * lasts longer.
+ * counts against each, in both. A day's limit is named before a minute's,
+ * since it lasts longer, and the visitor's own before its network's.
  */
 export function countCall(
 	addresses: { address: string; count: VisitorCount | undefined }[],
 	minute: string,
 ): { limit: VisitorLimit } | { counts: VisitorCount[] } {
-	const counted = addresses.map(({ address, count }) =>
-		countOne(count, minute, limitsOf(address)),
-	);
-	for (const limit of ["day", "minute"] as const) {
-		if (counted.some((one) => one === limit)) return { limit };
+	const counted = addresses.map(({ address, count }) => {
+		const network = isNetwork(address);
+		const one = countOne(
+			count,
+			minute,
+			network
+				? { minute: NETWORK_MINUTE_LIMIT, day: NETWORK_DAY_LIMIT }
+				: { minute: VISITOR_MINUTE_LIMIT, day: VISITOR_DAY_LIMIT },
+		);
+		if (typeof one !== "string" || !network) return one;
+		return one === "day" ? "networkDay" : "networkMinute";
+	});
+	for (const limit of [
+		"day",
+		"networkDay",
+		"minute",
+		"networkMinute",
+	] as const) {
+		if (counted.includes(limit)) return { limit };
 	}
 	return { counts: counted as VisitorCount[] };
 }
@@ -117,7 +123,7 @@ function countOne(
 	count: VisitorCount | undefined,
 	minute: string,
 	limits: { minute: number; day: number },
-): VisitorLimit | VisitorCount {
+): "minute" | "day" | VisitorCount {
 	// A call stamped before the latest minute, by another isolate's clock, counts in that minute.
 	const at = count && count.minute > minute ? count.minute : minute;
 	const dayCalls = count?.dayCalls ?? 0;
