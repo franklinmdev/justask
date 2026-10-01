@@ -206,7 +206,8 @@ export function logError(error: AskError): void {
  * added to the day's spend. Then the visitor's limits (#110), counted by the
  * address Cloudflare names in `CF-Connecting-IP` on the request's first
  * provider call, so a request that never calls the provider (an empty or a
- * malformed one) counts nothing (#219): past 20 calls a minute or 200 a day,
+ * malformed one, or one whose shortlist leaves nothing to ask) counts
+ * nothing (#219): past 20 calls a minute or 200 a day,
  * the same 402, its cause the visitor. A request that names no
  * address counts against no visitor: on the Worker Cloudflare always names
  * one, and the dev server names the socket's; only the recording script and
