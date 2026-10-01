@@ -1,10 +1,11 @@
 // The showcase's recorded runs, by hand with the key in .env, never in CI:
 // every recording is a real Jev call through the demo's handler.
 //
-//   node --conditions=justask-source demo/recordings/record.ts [table|search|form ...]
+//   node --conditions=justask-source demo/recordings/record.ts [table|search|form|gif ...]
 //
 // Writes demo/recordings/<case>-<language>.json for the named cases, every
-// case when none is named, in English and Spanish, each case's sentence taken
+// case when none is named, in English and Spanish (the README GIF's in English
+// only), each case's sentence taken
 // from a frozen eval row. The eval runners' warm-up goes first, discarded,
 // so a cold start never falls on a recorded call. A call whose result is not
 // the row's expected one writes nothing, and neither do the others, so every
@@ -46,20 +47,27 @@ import type {
  * every field but one. The form's names no vendor and no day, so both stay
  * empty, and no relative day, so a rerun on another day expects the same
  * card; both round 4 runs filled its fields at least 0.1 above their gates in
- * both languages (#53).
+ * both languages (#53). The README GIF's, `gif`, is no showcase case: its
+ * sentence fills every field of the card, and names its day as a date, so a
+ * rerun expects the same card; the README is English, so it has no Spanish
+ * row (#251).
  */
-const ROWS = {
+const ROWS: Record<
+	"table" | "search" | "form" | "gif",
+	{ set: string; suffix: string; en: string; es?: string }
+> = {
 	table: { set: "filter", suffix: "", en: "en-f-26", es: "es-f-26" },
 	search: { set: "search", suffix: ".round3", en: "en-r3-01", es: "es-r3-01" },
 	form: { set: "card", suffix: ".round4", en: "en-r4-20", es: "es-r4-20" },
-} as const;
+	gif: { set: "card", suffix: ".round7", en: "en-r7-061" },
+};
 type Case = keyof typeof ROWS;
 
 const named = process.argv.slice(2);
 for (const name of named) {
 	if (!Object.hasOwn(ROWS, name)) {
 		console.error(
-			"Usage: node --conditions=justask-source demo/recordings/record.ts [table|search|form ...]",
+			"Usage: node --conditions=justask-source demo/recordings/record.ts [table|search|form|gif ...]",
 		);
 		process.exit(1);
 	}
@@ -254,10 +262,18 @@ const recorders: Record<Case, (language: Language) => Promise<void>> = {
 			endpoint: cardEndpoint,
 			check: checkForm,
 		}),
+	gif: (language) =>
+		record("gif", language, {
+			parse: parseCardEvalSet,
+			endpoint: cardEndpoint,
+			check: checkForm,
+		}),
 };
 await warmUp(provider);
 for (const language of ["en", "es"] as Language[]) {
-	for (const name of cases) await recorders[name](language);
+	for (const name of cases) {
+		if (ROWS[name][language]) await recorders[name](language);
+	}
 }
 
 if (problems.length > 0) {
