@@ -1,4 +1,6 @@
 import type { HandlerBadRequest } from "justask";
+// The one file of the demo that reaches into src/: the core handler's own body
+// reader, kept out of the package's API, so the two never read a body apart (#250).
 import { readCapped } from "../../src/capped-body.ts";
 import { REQUEST_LIMIT } from "../src/api.ts";
 
