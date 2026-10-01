@@ -2,8 +2,6 @@
 
 <img src="docs/readme-card.gif" width="852" alt="The demo's New expense card. The sentence “Larkspur dinner with our client from Halden Corp, $230 on September 12” is typed into its box and sent with Enter, and the card fills itself in field order: vendor Larkspur Catering, the Meals and Client tags, the day Sep 12, 2026 and the amount $230.00, each with an emerald line drawn along its top.">
 
-The answer is a real Jev call, recorded on 2026-10-01 (`demo/recordings/gif-en.json`) and replayed by the demo; `scripts/readme-gif.ts` reshoots the GIF from it without calling Jev.
-
 Turns what a person types in plain language into an app's own state: search results, table filters, a filled record card. Code finds the candidates (parsed dates, times and amounts; a shortlist of the host app's catalog rows), a provider model picks one label per question with a probability for every label, and code builds the result. A field the model is unsure of stays empty for the person to fill, and nothing reaches the host app until the person confirms.
 
 The first provider is Jev (TypeSafe, `@typesafe-ai/sdk`). Any model that answers every question in one call with a probability for every label can be added without touching the core.

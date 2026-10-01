@@ -147,7 +147,7 @@ describe("the README's demo gates", () => {
 
 describe("the README's GIF", () => {
 	/** The GIF's image tag at the top of the README, and the paragraph under it. */
-	const [image = "", caption = ""] =
+	const [image = "", next = ""] =
 		/^(<img src="docs\/readme-card\.gif"[^>]*>)\n\n(.*)$/m
 			.exec(readme)
 			?.slice(1) ?? [];
@@ -158,13 +158,8 @@ describe("the README's GIF", () => {
 		expect(image).toContain(`“${gif.request}”`);
 	});
 
-	it("says the answer is a real call, recorded on the recording's day", () => {
-		const day = gif.recordedAt.slice(0, 10);
-
-		expect(caption).toContain("real Jev call");
-		expect(caption).toContain(day);
-		expect(caption).toContain("demo/recordings/gif-en.json");
-		expect(caption).toContain("scripts/readme-gif.ts");
+	it("is followed directly by the opening paragraph, with no caption", () => {
+		expect(next).toMatch(/^Turns what a person types/);
 	});
 
 	it("stays under 3 MB, to load fast on GitHub and npm", () => {
