@@ -1,4 +1,4 @@
-import { readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -12,20 +12,35 @@ import { CARD_GATES, FILTER_GATES, GATE } from "../demo/server/handler.ts";
 import { diagnosticsOf } from "./typecheck.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const readme = readFileSync(join(root, "README.md"), "utf8");
+const read = (path: string) => readFileSync(join(root, path), "utf8");
+const readme = read("README.md");
 
 /**
- * The README's ts and tsx blocks as a person copies them. A block whose first
- * line names a file (`// catalog.ts, ...`) is that file, and the others import
- * it by that name; a block that starts `// in ` is an excerpt of one of them,
- * never compiled alone; any other block is a module of its own.
+ * The README and every Markdown file in `docs/`, where the README's detail
+ * moved and whose code builds on the README's files (#256).
  */
-const blocks = [...readme.matchAll(/```(tsx?)\n([\s\S]*?)```/g)].map(
-	([, lang, code = ""], i) => ({
-		name: /^\/\/ ([\w-]+\.tsx?)\b/.exec(code)?.[1] ?? `block-${i}.${lang}`,
-		code,
-		excerpt: code.startsWith("// in "),
-	}),
+const docs = [
+	"README.md",
+	...readdirSync(join(root, "docs"))
+		.filter((name) => name.endsWith(".md"))
+		.map((name) => `docs/${name}`),
+];
+
+/**
+ * Their ts and tsx blocks as a person copies them. A block whose first line
+ * names a file (`// catalog.ts, ...`) is that file, and the others import it
+ * by that name, from any of them; a block that starts `// in ` is an excerpt
+ * of one of them, never compiled alone; any other block is a module of its own.
+ */
+const blocks = docs.flatMap((doc, d) =>
+	[...read(doc).matchAll(/```(tsx?)\n([\s\S]*?)```/g)].map(
+		([, lang, code = ""], i) => ({
+			name:
+				/^\/\/ ([\w-]+\.tsx?)\b/.exec(code)?.[1] ?? `block-${d}-${i}.${lang}`,
+			code,
+			excerpt: code.startsWith("// in "),
+		}),
+	),
 );
 
 /**
@@ -54,8 +69,8 @@ declare function VendorSelect(props: {
 }): import("react").ReactNode;
 `;
 
-describe("the README", () => {
-	it("typechecks every code block as copied, with only the host's own names declared", () => {
+describe("the README and its guides", () => {
+	it("typecheck every code block as copied, with only the host's own names declared", () => {
 		const files = Object.fromEntries(
 			blocks
 				.filter(({ excerpt }) => !excerpt)
@@ -69,7 +84,15 @@ describe("the README", () => {
 		expect(diagnosticsOf({ ...files, "host.d.ts": host })).toBe("");
 	});
 
-	it("builds the provider and installs its SDK before the first handler", () => {
+	it("name each file in one block only, so no doc's file hides another's", () => {
+		const names = blocks
+			.filter(({ excerpt }) => !excerpt)
+			.map(({ name }) => name);
+
+		expect(names).toEqual([...new Set(names)]);
+	});
+
+	it("build the provider and install its SDK before the first handler", () => {
 		const first = (text: string) => readme.indexOf(text);
 
 		expect(first("npm i @justask/core @typesafe-ai/sdk")).toBeGreaterThan(-1);
@@ -80,10 +103,10 @@ describe("the README", () => {
 		expect(first("jevProvider()")).toBeLessThan(first("createSearchHandler({"));
 	});
 
-	it("shows eval sets that parse, the search's, the filter's and the card's in turn", () => {
-		const sets = [...readme.matchAll(/```jsonl\n([\s\S]*?)```/g)].map(
-			([, text = ""]) => text,
-		);
+	it("show eval sets that parse, the search's, the filter's and the card's in turn", () => {
+		const sets = [
+			...read("docs/measuring-gates.md").matchAll(/```jsonl\n([\s\S]*?)```/g),
+		].map(([, text = ""]) => text);
 		const parsers = [parseEvalSet, parseFilterEvalSet, parseCardEvalSet];
 
 		expect(sets).toHaveLength(parsers.length);
@@ -92,7 +115,32 @@ describe("the README", () => {
 		});
 	});
 
-	it("names excerpts only after the block they are part of", () => {
+	it.each(docs)("link from %s only to files that exist", (doc) => {
+		const targets = [...read(doc).matchAll(/\]\(([^)#\s]+)(?:#[^)]*)?\)/g)]
+			.map(([, target = ""]) => target)
+			.filter((target) => !/^[a-z]+:/.test(target));
+
+		for (const target of targets) {
+			expect(existsSync(join(root, dirname(doc), target)), target).toBe(true);
+		}
+	});
+
+	it("link the live demo, SECURITY.md and every guide the README's detail moved to", () => {
+		for (const target of [
+			"https://justask-demo.franklinmdev.workers.dev",
+			"SECURITY.md",
+			"docs/handlers.md",
+			"docs/filter.md",
+			"docs/card.md",
+			"docs/measuring-gates.md",
+			"docs/demo.md",
+			"docs/development.md",
+		]) {
+			expect(readme).toContain(`](${target})`);
+		}
+	});
+
+	it("name excerpts only of a block they show", () => {
 		for (const { code, excerpt } of blocks) {
 			if (!excerpt) continue;
 			const [, of] = /^\/\/ in (\S+?)[,\s]/.exec(code) ?? [];
@@ -101,9 +149,9 @@ describe("the README", () => {
 	});
 });
 
-/** The README's paragraph on the demo's gates, the one that names the search's. */
+/** The demo doc's paragraph on its gates, the one that names the search's. */
 const gatesParagraph =
-	readme
+	read("docs/demo.md")
 		.split("\n\n")
 		.find((paragraph) => paragraph.startsWith("The demo's gate (")) ?? "";
 
@@ -117,7 +165,7 @@ function latestRound(doc: string): number {
 	);
 }
 
-describe("the README's demo gates", () => {
+describe("the demo doc's gates", () => {
 	it("quote each flow's gates as the demo serves them", () => {
 		const gates = (entries: Record<string, number>) =>
 			Object.entries(entries)
@@ -158,8 +206,11 @@ describe("the README's GIF", () => {
 		expect(image).toContain(`“${gif.request}”`);
 	});
 
-	it("is followed directly by the opening paragraph, with no caption", () => {
-		expect(next).toMatch(/^Turns what a person types/);
+	it("is followed by one line to the live demo, then the opening paragraph", () => {
+		expect(next).toBe(
+			"Try it: [live demo](https://justask-demo.franklinmdev.workers.dev), in English and Spanish.",
+		);
+		expect(readme).toContain(`${next}\n\nTurns what a person types`);
 	});
 
 	it("stays under 3 MB, to load fast on GitHub and npm", () => {
