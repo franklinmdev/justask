@@ -10,3 +10,5 @@ The owner's decision of 2026-09-24, in the grilling session that settled the pub
 A host app that wants a cap builds it the same way, from each call's `costUsd`.
 
 Amended for #174 (the pre-launch QA, #231): the core's handlers bound their input, which is safety, not the demo's policy. A body over 16 KiB, a request over 1,000 characters, and more than 10 readings of one kind for a field are refused or held in every handler, since without them one POST could stop the server. The demo's own 200-character cap, budget and visitor limits stay in the demo.
+
+Amended for #250: the budget reserves a fixed cost on the ledger before each call and settles it to the call's `costUsd` when the call returns, so a call that never returns (the visitor hung up, the timeout fired) is still counted. Still the demo's policy, built from `costUsd` as a host would.

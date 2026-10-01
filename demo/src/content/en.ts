@@ -64,6 +64,14 @@ export const english: Content = {
 				title: "You have used your 200 live requests today",
 				body: "Each visitor gets 200 live requests a day on the demo's key, counted by IP address, so people on one office network share them. They come back at midnight UTC. Until then every case's recorded run still plays, and a clone of justask runs on your own key.",
 			},
+			networkMinute: {
+				title: "Your network has used its 60 live requests this minute",
+				body: "Visitors on one IPv6 network share 60 live requests a minute and 1,000 a day on the demo's key, beside each visitor's own 20 and 200. They come back within a minute. Until then every case's recorded run still plays, and a clone of justask runs on your own key.",
+			},
+			networkDay: {
+				title: "Your network has used its 1,000 live requests today",
+				body: "Visitors on one IPv6 network share 1,000 live requests a day on the demo's key, beside each visitor's own 200. They come back at midnight UTC. Until then every case's recorded run still plays, and a clone of justask runs on your own key.",
+			},
 			replay: "Replay the recorded run",
 			clone: "Clone justask and run it with your own key",
 		},

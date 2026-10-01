@@ -16,6 +16,8 @@ import {
 	DEMO_PAUSED,
 	filterEndpoint,
 	KEY_OUT_OF_SERVICE,
+	NETWORK_DAY_USED,
+	NETWORK_MINUTE_USED,
 	searchEndpoint,
 	VISITOR_DAY_USED,
 	VISITOR_MINUTE_USED,
@@ -38,7 +40,7 @@ import {
 	utcDay,
 } from "./budget.ts";
 import { refusal } from "./policy.ts";
-import { type VisitorLimit, visitorAddress } from "./visitors.ts";
+import { type VisitorLimit, visitorAddresses } from "./visitors.ts";
 
 /**
  * Fixed by the owner for round 2, before its rows existed: round 1 failed at
@@ -206,7 +208,8 @@ export function logError(error: AskError): void {
  * added to the day's spend. Then the visitor's limits (#110), counted by the
  * address Cloudflare names in `CF-Connecting-IP` on the request's first
  * provider call, so a request that never calls the provider (an empty or a
- * malformed one) counts nothing (#219): past 20 calls a minute or 200 a day,
+ * malformed one, or one whose shortlist leaves nothing to ask) counts
+ * nothing (#219): past 20 calls a minute or 200 a day,
  * the same 402, its cause the visitor. A request that names no
  * address counts against no visitor: on the Worker Cloudflare always names
  * one, and the dev server names the socket's; only the recording script and
@@ -271,11 +274,13 @@ export function createDemoHandler(
 				status: 402,
 			});
 		}
-		const address = visitorAddress(request.headers.get("cf-connecting-ip"));
+		const addresses = visitorAddresses(request.headers.get("cf-connecting-ip"));
 		const calls = counted(provider, ledger);
 		const visitor = visiting(
 			calls,
-			address ? () => ledger.visit(address, new Date()) : async () => null,
+			addresses.length > 0
+				? () => ledger.visit(addresses, new Date())
+				: async () => null,
 		);
 		const response = await route({
 			provider: visitor,
@@ -287,16 +292,21 @@ export function createDemoHandler(
 			}),
 		})(request);
 		if (visitor.limit) {
-			return Response.json(
-				visitor.limit === "minute" ? VISITOR_MINUTE_USED : VISITOR_DAY_USED,
-				{ status: 402 },
-			);
+			return Response.json(LIMIT_USED[visitor.limit], { status: 402 });
 		}
 		return calls.refused
 			? Response.json(KEY_OUT_OF_SERVICE, { status: 503 })
 			: response;
 	};
 }
+
+/** The budget's 402 for each limit that refuses a visitor's call. */
+const LIMIT_USED = {
+	minute: VISITOR_MINUTE_USED,
+	day: VISITOR_DAY_USED,
+	networkMinute: NETWORK_MINUTE_USED,
+	networkDay: NETWORK_DAY_USED,
+} satisfies Record<VisitorLimit, unknown>;
 
 /**
  * One request's provider that counts the visitor on its first call only, so

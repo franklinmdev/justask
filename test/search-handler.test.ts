@@ -545,6 +545,33 @@ describe("createSearchHandler", () => {
 		expect(pulled).toBeLessThanOrEqual(20 * 1024);
 	});
 
+	it("answers 400, not a throw, when the body's stream fails mid read (#250)", async () => {
+		const provider = hangingProvider();
+		const broken = new ReadableStream<Uint8Array>({
+			start(controller) {
+				controller.enqueue(new TextEncoder().encode('{"request":'));
+			},
+			pull(controller) {
+				controller.error(new Error("connection reset"));
+			},
+		});
+
+		const response = await handler({ provider })(
+			new Request("https://app.test/api/justask", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: broken,
+				duplex: "half",
+			} as RequestInit),
+		);
+
+		expect(response.status).toBe(400);
+		expect((await response.json()).error.message).toBe(
+			"The body could not be read",
+		);
+		expect(provider.calls).toHaveLength(0);
+	});
+
 	it("answers 413 from a declared length over 16 KiB before reading the body", async () => {
 		let pulled = 0;
 		// No high-water mark, so the stream is pulled only when read.

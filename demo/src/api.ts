@@ -54,6 +54,17 @@ export const VISITOR_MINUTE_LIMIT = 20;
 export const VISITOR_DAY_LIMIT = 200;
 
 /**
+ * Each IPv6 /48's calls, beside each of its /64s' own (#250): a /56 holds 256
+ * /64s, and at 200 calls a day each would spend the day's budget in minutes.
+ * A /48 is one site's whole allocation, so it is looser than a visitor's: three
+ * busy visitors at once, and five days' worth of one, about $0.10 a day at the
+ * budget's reservation. Several visitors of one carrier's pool may share a
+ * /48 and its limits.
+ */
+export const NETWORK_MINUTE_LIMIT = 60;
+export const NETWORK_DAY_LIMIT = 1_000;
+
+/**
  * The budget's 402 through the same path once this visitor's calls in a
  * minute, or in the UTC day, are used; `limit` says which, so the page can
  * say when it frees up (#110).
@@ -77,6 +88,29 @@ export const VISITOR_DAY_USED = {
 } as const;
 
 /**
+ * The same 402 once the calls of this visitor's IPv6 /48 in a minute, or in
+ * the UTC day, are used, its cause the network, so the page names the
+ * network's limits, not the visitor's (#250).
+ */
+export const NETWORK_MINUTE_USED = {
+	error: {
+		kind: "budget_exceeded",
+		cause: "network",
+		limit: "minute",
+		message: `This network's ${NETWORK_MINUTE_LIMIT} calls a minute are used`,
+	},
+} as const;
+
+export const NETWORK_DAY_USED = {
+	error: {
+		kind: "budget_exceeded",
+		cause: "network",
+		limit: "day",
+		message: `This network's ${NETWORK_DAY_LIMIT} calls a day are used`,
+	},
+} as const;
+
+/**
  * The server's answer, 503, when TypeSafe refused the owner's key with a 4xx
  * other than 429, so a key or account out of service never shows as a
  * request justask misread (#109).
@@ -93,4 +127,11 @@ export const KEY_OUT_OF_SERVICE = {
  * the day's budget, the kill switch, a key TypeSafe refused, or this
  * visitor's calls for the minute or the day (#110).
  */
-export type Stopped = "budget" | "paused" | "key" | "minute" | "day";
+export type Stopped =
+	| "budget"
+	| "paused"
+	| "key"
+	| "minute"
+	| "day"
+	| "networkMinute"
+	| "networkDay";

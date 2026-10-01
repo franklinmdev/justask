@@ -257,6 +257,9 @@ export type StoppedCopy = {
 	/** This visitor's limits (#110): each says when its calls come back. */
 	minute: { title: string; body: string };
 	day: { title: string; body: string };
+	/** Its IPv6 /48's limits (#250), shared with the network's other visitors. */
+	networkMinute: { title: string; body: string };
+	networkDay: { title: string; body: string };
 	replay: string;
 	clone: string;
 };

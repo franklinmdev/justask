@@ -19,7 +19,12 @@ import {
 	utcDay,
 } from "../demo/server/budget.ts";
 import { createDemoHandler } from "../demo/server/handler.ts";
-import { VISITOR_DAY_LIMIT, VISITOR_MINUTE_LIMIT } from "../demo/src/api.ts";
+import {
+	NETWORK_DAY_LIMIT,
+	NETWORK_MINUTE_LIMIT,
+	VISITOR_DAY_LIMIT,
+	VISITOR_MINUTE_LIMIT,
+} from "../demo/src/api.ts";
 import { App } from "../demo/src/app.tsx";
 import { english } from "../demo/src/content/en.ts";
 import { expectNoAxeViolations, warmUp } from "./checks.ts";
@@ -28,6 +33,10 @@ import { failingProvider } from "./fake-provider.ts";
 /** The one visitor every request comes from. */
 const VISITOR = "203.0.113.7";
 
+/** An IPv6 visitor, and the /48 its /64 shares with other visitors (#250). */
+const IPV6_VISITOR = "2001:db8:1:ff::a";
+const NETWORK = "2001:db8:1::/48";
+
 /** Where the notice sends a visitor to run justask on their own key. */
 const REPO = "https://github.com/franklinmdev/justask";
 
@@ -35,7 +44,8 @@ const REPO = "https://github.com/franklinmdev/justask";
  * The demo on its handler served in process, opening idle on `url`. With the
  * day's budget `spent`, or the kill switch on, every live request gets the
  * budget's 402; the provider is never reached then. Every request comes from
- * one visitor's address, whose minute's or day's calls `used` spends first.
+ * one visitor's address, whose minute's or day's calls `used` spends first;
+ * a network's are spent by other /64s of the IPv6 visitor's /48.
  */
 async function renderDemo({
 	url = "/?case=search",
@@ -47,7 +57,7 @@ async function renderDemo({
 	url?: string;
 	spent?: boolean;
 	killSwitch?: boolean;
-	used?: "minute" | "day";
+	used?: "minute" | "day" | "networkMinute" | "networkDay";
 	provider?: Provider;
 } = {}) {
 	history.replaceState(null, "", url);
@@ -55,16 +65,33 @@ async function renderDemo({
 	if (spent) await ledger.add(utcDay(new Date()), DAILY_BUDGET_USD);
 	if (used === "minute") {
 		for (let i = 0; i < VISITOR_MINUTE_LIMIT; i++) {
-			await ledger.visit(VISITOR, new Date());
+			await ledger.visit([VISITOR], new Date());
 		}
 	}
 	if (used === "day") {
 		// One call every 10 s, under the minute's limit, ending before now.
 		const start = Date.now() - VISITOR_DAY_LIMIT * 10_000;
 		for (let i = 0; i < VISITOR_DAY_LIMIT; i++) {
-			await ledger.visit(VISITOR, new Date(start + i * 10_000));
+			await ledger.visit([VISITOR], new Date(start + i * 10_000));
 		}
 	}
+	const network = used === "networkMinute" || used === "networkDay";
+	if (network) {
+		const [calls, perVisitor, every] =
+			used === "networkMinute"
+				? [NETWORK_MINUTE_LIMIT, VISITOR_MINUTE_LIMIT, 0]
+				: [NETWORK_DAY_LIMIT, VISITOR_DAY_LIMIT, 10_000];
+		// Other visitors of the /48, each under its own limits, ending before now.
+		const start = Date.now() - calls * every;
+		for (let i = 0; i < calls; i++) {
+			const visitor = Math.floor(i / perVisitor);
+			await ledger.visit(
+				[`2001:db8:1:${visitor}::/64`, NETWORK],
+				new Date(start + i * every),
+			);
+		}
+	}
+	const address = network ? IPV6_VISITOR : VISITOR;
 	const handler = createDemoHandler(provider, { ledger, killSwitch });
 	const { container } = render(
 		<App
@@ -73,7 +100,7 @@ async function renderDemo({
 					new URL(String(input), location.href),
 					init,
 				);
-				request.headers.set("cf-connecting-ip", VISITOR);
+				request.headers.set("cf-connecting-ip", address);
 				return handler(request);
 			}}
 			recordings={null}
@@ -294,6 +321,38 @@ describe("a live request past the visitor's own limit", () => {
 			language: "es",
 			box: "Buscar un proveedor",
 			title: "Usó sus 200 solicitudes en vivo de hoy",
+			resets: "Vuelven a la medianoche UTC.",
+			clone: "Clonar justask y usarlo con su propia clave",
+		},
+		{
+			used: "networkMinute",
+			language: "en",
+			box: english.copy.boxLabel,
+			title: "Your network has used its 60 live requests this minute",
+			resets: "They come back within a minute.",
+			clone: "Clone justask and run it with your own key",
+		},
+		{
+			used: "networkDay",
+			language: "en",
+			box: english.copy.boxLabel,
+			title: "Your network has used its 1,000 live requests today",
+			resets: "They come back at midnight UTC.",
+			clone: "Clone justask and run it with your own key",
+		},
+		{
+			used: "networkMinute",
+			language: "es",
+			box: "Buscar un proveedor",
+			title: "Su red usó sus 60 solicitudes en vivo de este minuto",
+			resets: "Vuelven a estar disponibles en menos de un minuto.",
+			clone: "Clonar justask y usarlo con su propia clave",
+		},
+		{
+			used: "networkDay",
+			language: "es",
+			box: "Buscar un proveedor",
+			title: "Su red usó sus 1,000 solicitudes en vivo de hoy",
 			resets: "Vuelven a la medianoche UTC.",
 			clone: "Clonar justask y usarlo con su propia clave",
 		},

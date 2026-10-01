@@ -97,7 +97,7 @@ An eval run whose provider probes' median is more than twice the baseline declar
 _Avoid_: Outage, bad run, flaky run
 
 **Daily budget**:
-What the public demo may spend on its owner's key in one UTC day, $1, summed from each call's cost as it returns; the call that crosses it is answered, the next request is refused with no call. Kept in the demo's ledger, never in the core (ADR 0014).
+What the public demo may spend on its owner's key in one UTC day, $1, summed from each call's cost: a fixed reservation before the call, settled to the call's own cost when it returns and kept when it never does; the call that crosses it is answered, the next request is refused with no call. Kept in the demo's ledger, never in the core (ADR 0014).
 _Avoid_: Quota, credit, rate limit
 
 **Kill switch**:
@@ -105,7 +105,7 @@ The demo's flag that makes the daily budget count as spent, so every live reques
 _Avoid_: Maintenance mode, off switch
 
 **Visitor limits**:
-What one visitor may call on the public demo's owner's key: 20 calls a UTC minute and 200 a UTC day, counted per request that passes the budget, by IP address (an IPv6 address by its /64) and never by a cookie, so an office behind one address shares them. Past either, the budget's 402 through the same path, its cause `visitor` and its `limit` the minute or the day; a refused request counts nothing. The ledger holds only a hash of the address with the day's salt, dropped at UTC midnight. Checked after the daily budget, which names itself first.
+What one visitor may call on the public demo's owner's key: 20 calls a UTC minute and 200 a UTC day, counted per request that passes the budget and calls the provider, by IP address (an IPv6 address by its /64, and its /48 under looser limits of 60 a minute and 1,000 a day) and never by a cookie, so an office behind one address shares them. Past either, the budget's 402 through the same path, its cause `visitor` (or `network`, past the /48's) and its `limit` the minute or the day; a refused request counts nothing, and so does one that never calls the provider (a blank request, or one whose shortlist leaves nothing to ask), which costs nothing (#219). The ledger holds only a hash of the address with the day's salt, dropped at UTC midnight. Checked after the daily budget, which names itself first.
 _Avoid_: Rate limit, quota, throttle
 
 **Held field**:

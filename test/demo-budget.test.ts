@@ -1,9 +1,11 @@
 import { APIError } from "@typesafe-ai/sdk";
+import { ProviderUnavailableError } from "justask";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	DAILY_BUDGET_USD,
 	type Ledger,
 	memoryLedger,
+	RESERVED_USD,
 	utcDay,
 } from "../demo/server/budget.ts";
 import { createDemoHandler } from "../demo/server/handler.ts";
@@ -16,7 +18,12 @@ import {
 	searchEndpoint,
 } from "../demo/src/api.ts";
 import { english } from "../demo/src/content/en.ts";
-import { failingProvider, fakeProvider } from "./fake-provider.ts";
+import {
+	failingProvider,
+	fakeProvider,
+	hangingProvider,
+	unavailableFirstProvider,
+} from "./fake-provider.ts";
 
 const DEMO = "http://localhost:5173";
 
@@ -75,7 +82,46 @@ describe("the demo's daily budget", () => {
 		await search(handler);
 		await search(handler);
 
-		expect(await ledger.spent(today())).toBe(0.5);
+		// Each call's reservation settled to its cost.
+		expect(await ledger.spent(today())).toBeCloseTo(0.5, 12);
+	});
+
+	it("reserves a call's cost before it returns, and keeps it when the visitor hangs up (#250)", async () => {
+		const provider = hangingProvider();
+		const ledger = memoryLedger();
+		const handler = createDemoHandler(provider, { ledger });
+		const visitor = new AbortController();
+
+		const answered = handler(
+			new Request(new URL(searchEndpoint("en"), DEMO), {
+				method: "POST",
+				headers: { "content-type": "application/json", origin: DEMO },
+				body: JSON.stringify({
+					request: "the caterers",
+					timeZone: "America/Santo_Domingo",
+				}),
+				signal: visitor.signal,
+			}),
+		);
+		await expect.poll(() => provider.calls.length).toBe(1);
+		expect(await ledger.spent(today())).toBe(RESERVED_USD);
+		visitor.abort();
+
+		expect((await answered).status).toBe(499);
+		expect(await ledger.spent(today())).toBe(RESERVED_USD);
+	});
+
+	it("keeps the reservation for a call that fails, which may still be billed (#250)", async () => {
+		const ledger = memoryLedger();
+		const handler = createDemoHandler(
+			failingProvider(new Error("connection reset")),
+			{ ledger, onError: () => {} },
+		);
+
+		await search(handler);
+
+		// The core calls an unavailable provider once more (ADR 0013); a plain error, once.
+		expect(await ledger.spent(today())).toBe(RESERVED_USD);
 	});
 
 	it.each([
@@ -120,14 +166,30 @@ describe("the demo's daily budget", () => {
 		expect((await search(handler)).status).toBe(200);
 	});
 
-	it("counts nothing for a call whose provider reports no cost", async () => {
+	it("keeps the first call's reservation when an unavailable provider is called again, and settles the second (#250)", async () => {
+		const ledger = memoryLedger();
+		const provider = unavailableFirstProvider(
+			[new ProviderUnavailableError("lost")],
+			answers,
+			{ costUsd: 0.25 },
+		);
+		const handler = createDemoHandler(provider, { ledger });
+
+		await search(handler);
+
+		// The core calls once more (ADR 0013); the first call may still be billed.
+		expect(provider.calls).toHaveLength(2);
+		expect(await ledger.spent(today())).toBeCloseTo(RESERVED_USD + 0.25, 12);
+	});
+
+	it("keeps the reservation for a call whose provider reports no cost, since it was still made", async () => {
 		const provider = fakeProvider(answers);
 		const ledger = memoryLedger();
 		const handler = createDemoHandler(provider, { ledger });
 
 		await search(handler);
 
-		expect(await ledger.spent(today())).toBe(0);
+		expect(await ledger.spent(today())).toBe(RESERVED_USD);
 	});
 });
 
@@ -166,6 +228,18 @@ describe("a refusal of the owner's key", () => {
 			expect(onError).toHaveBeenCalledOnce();
 		},
 	);
+
+	it("gives back the reservation of a call TypeSafe refused, which ran nothing (#250)", async () => {
+		const ledger = memoryLedger();
+		const handler = createDemoHandler(failingProvider(refused(401)), {
+			ledger,
+			onError: () => {},
+		});
+
+		await search(handler);
+
+		expect(await ledger.spent(today())).toBe(0);
+	});
 
 	it.each([
 		["a 429", refused(429)],

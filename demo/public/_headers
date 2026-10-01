@@ -1,0 +1,10 @@
+# Every static page and asset of the demo (#250). Cloudflare applies these to
+# what it serves from demo/dist, never to the Worker's /api/* answers.
+# script-src names the hash of index.html's one inline script, the theme read;
+# test/demo-headers.test.ts fails when the script changes and the hash does not.
+# data: carries the CSS's inline SVG icons and fonts.
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-boBK6N5SiItKpKT0UtR8oZ0PhTwOwaq2viKRnXSYCCg='; img-src 'self' data:; font-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'
+  X-Frame-Options: DENY
+  Referrer-Policy: no-referrer
+  X-Content-Type-Options: nosniff

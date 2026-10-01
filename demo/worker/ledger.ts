@@ -13,8 +13,9 @@ import {
  * The Worker's ledger (#109): one Durable Object with SQLite for the whole
  * demo, so every isolate, anywhere, reads and adds to the same day's spend
  * and the same visitor's calls (#110). One spend row a UTC day; one salt row
- * for today and one row per visitor today, keyed by the salted hash of their
- * address, both dropped on the next day's first call. Its methods are called
+ * for today and one row per visitor address today (an IPv6 visitor's /64 and
+ * /48 each, #250), keyed by the salted hash of the address, both dropped on
+ * the next day's first call. Its methods are called
  * over RPC (durableLedger).
  */
 export class DemoLedger extends DurableObject {
@@ -49,10 +50,10 @@ export class DemoLedger extends DurableObject {
 
 	/**
 	 * One visitor's call (Ledger.visit). Every read and write is synchronous
-	 * around the one await, the hash, so no other request's call on this
-	 * object runs between reading a visitor's count and writing it.
+	 * after the one await, the hashes, so no other request's call on this
+	 * object runs between reading a visitor's counts and writing them.
 	 */
-	async visit(address: string, now: Date): Promise<VisitorLimit | null> {
+	async visit(addresses: string[], now: Date): Promise<VisitorLimit | null> {
 		const { sql } = this.ctx.storage;
 		const day = utcDay(now);
 		// One row: the latest day's. A call stamped just before a midnight another call has passed counts on the new day.
@@ -67,30 +68,38 @@ export class DemoLedger extends DurableObject {
 			// Dropped at midnight even when no call comes after it.
 			this.ctx.storage.setAlarm(nextUtcMidnight(now));
 		}
-		const visitor = await visitorKey(salt, address);
-		const [row] = sql
-			.exec(
-				"SELECT minute, minute_calls, day_calls FROM visitors WHERE visitor = ?",
-				visitor,
-			)
-			.toArray();
+		const visitors = await Promise.all(
+			addresses.map((address) => visitorKey(salt, address)),
+		);
 		const counted = countCall(
-			row && {
-				minute: String(row.minute),
-				minuteCalls: Number(row.minute_calls),
-				dayCalls: Number(row.day_calls),
-			},
+			addresses.map((address, i) => {
+				const [row] = sql
+					.exec(
+						"SELECT minute, minute_calls, day_calls FROM visitors WHERE visitor = ?",
+						visitors[i] ?? "",
+					)
+					.toArray();
+				return {
+					address,
+					count: row && {
+						minute: String(row.minute),
+						minuteCalls: Number(row.minute_calls),
+						dayCalls: Number(row.day_calls),
+					},
+				};
+			}),
 			utcMinute(now),
 		);
 		if ("limit" in counted) return counted.limit;
-		const { minute, minuteCalls, dayCalls } = counted.count;
-		sql.exec(
-			"INSERT INTO visitors (visitor, minute, minute_calls, day_calls) VALUES (?, ?, ?, ?) ON CONFLICT (visitor) DO UPDATE SET minute = excluded.minute, minute_calls = excluded.minute_calls, day_calls = excluded.day_calls",
-			visitor,
-			minute,
-			minuteCalls,
-			dayCalls,
-		);
+		counted.counts.forEach(({ minute, minuteCalls, dayCalls }, i) => {
+			sql.exec(
+				"INSERT INTO visitors (visitor, minute, minute_calls, day_calls) VALUES (?, ?, ?, ?) ON CONFLICT (visitor) DO UPDATE SET minute = excluded.minute, minute_calls = excluded.minute_calls, day_calls = excluded.day_calls",
+				visitors[i] ?? "",
+				minute,
+				minuteCalls,
+				dayCalls,
+			);
+		});
 		return null;
 	}
 
@@ -110,7 +119,7 @@ export type LedgerNamespace = {
 	getByName(name: string): {
 		spent(day: string): Promise<number>;
 		add(day: string, usd: number): Promise<void>;
-		visit(address: string, now: Date): Promise<VisitorLimit | null>;
+		visit(addresses: string[], now: Date): Promise<VisitorLimit | null>;
 	};
 };
 
@@ -124,6 +133,6 @@ export function durableLedger(namespace: LedgerNamespace): Ledger {
 	return {
 		spent: (day) => ledger().spent(day),
 		add: (day, usd) => ledger().add(day, usd),
-		visit: (address, now) => ledger().visit(address, now),
+		visit: (addresses, now) => ledger().visit(addresses, now),
 	};
 }

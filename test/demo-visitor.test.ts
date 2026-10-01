@@ -7,9 +7,13 @@ import {
 	utcDay,
 } from "../demo/server/budget.ts";
 import { createDemoHandler } from "../demo/server/handler.ts";
-import { nextUtcMidnight, visitorAddress } from "../demo/server/visitors.ts";
+import { nextUtcMidnight, visitorAddresses } from "../demo/server/visitors.ts";
 import {
 	BUDGET_EXCEEDED,
+	NETWORK_DAY_LIMIT,
+	NETWORK_DAY_USED,
+	NETWORK_MINUTE_LIMIT,
+	NETWORK_MINUTE_USED,
 	searchEndpoint,
 	VISITOR_DAY_LIMIT,
 	VISITOR_MINUTE_LIMIT,
@@ -69,27 +73,34 @@ afterEach(() => {
 	vi.useRealTimers();
 });
 
-describe("a visitor's address", () => {
-	it("is an IPv4 address as it is", () => {
-		expect(visitorAddress("203.0.113.7")).toBe("203.0.113.7");
+describe("a visitor's addresses", () => {
+	it("are an IPv4 address as it is", () => {
+		expect(visitorAddresses("203.0.113.7")).toEqual(["203.0.113.7"]);
 	});
 
-	it("is an IPv6 address's /64, however it is written", () => {
-		expect(visitorAddress("2001:db8:85a3:8d3:1319:8a2e:370:7348")).toBe(
+	it("are an IPv6 address's /64 and its /48, however it is written (#250)", () => {
+		expect(visitorAddresses("2001:db8:85a3:8d3:1319:8a2e:370:7348")).toEqual([
 			"2001:db8:85a3:8d3::/64",
-		);
-		expect(visitorAddress("2001:DB8:0:0::1")).toBe("2001:db8:0:0::/64");
-		expect(visitorAddress("2001:db8::")).toBe("2001:db8:0:0::/64");
-		expect(visitorAddress("::1")).toBe("0:0:0:0::/64");
+			"2001:db8:85a3::/48",
+		]);
+		expect(visitorAddresses("2001:DB8:0:0::1")).toEqual([
+			"2001:db8:0:0::/64",
+			"2001:db8:0::/48",
+		]);
+		expect(visitorAddresses("2001:db8::")).toEqual([
+			"2001:db8:0:0::/64",
+			"2001:db8:0::/48",
+		]);
+		expect(visitorAddresses("::1")).toEqual(["0:0:0:0::/64", "0:0:0::/48"]);
 	});
 
-	it("is the IPv4 address inside an IPv4-mapped IPv6 one, as Node names a local visitor", () => {
-		expect(visitorAddress("::ffff:127.0.0.1")).toBe("127.0.0.1");
+	it("are the IPv4 address inside an IPv4-mapped IPv6 one, as Node names a local visitor", () => {
+		expect(visitorAddresses("::ffff:127.0.0.1")).toEqual(["127.0.0.1"]);
 	});
 
-	it("is none when the request names none", () => {
-		expect(visitorAddress(null)).toBeNull();
-		expect(visitorAddress("")).toBeNull();
+	it("are none when the request names none", () => {
+		expect(visitorAddresses(null)).toEqual([]);
+		expect(visitorAddresses("")).toEqual([]);
 	});
 });
 
@@ -166,7 +177,7 @@ describe("the demo's per-visitor limits", () => {
 		for (let i = 0; i < VISITOR_DAY_LIMIT; i++) {
 			expect(
 				await ledger.visit(
-					"203.0.113.7",
+					["203.0.113.7"],
 					new Date(Date.UTC(2026, 8, 25, 12, 0, i * 10)),
 				),
 			).toBeNull();
@@ -182,7 +193,7 @@ describe("the demo's per-visitor limits", () => {
 
 	it("counts a call stamped before the visitor's latest minute in that minute, across midnight too", async () => {
 		const ledger = memoryLedger();
-		const address = "203.0.113.7";
+		const address = ["203.0.113.7"];
 		for (let second = 0; second < VISITOR_MINUTE_LIMIT; second++) {
 			await ledger.visit(
 				address,
@@ -207,6 +218,86 @@ describe("the demo's per-visitor limits", () => {
 		expect((await search(handler, "2001:db8:1:2:ffff::b")).status).toBe(402);
 		// Another /64 is another visitor.
 		expect((await search(handler, "2001:db8:1:3::a")).status).toBe(200);
+	});
+
+	it(`answers a ${NETWORK_MINUTE_LIMIT + 1}st call in a minute from one IPv6 /48 402, whichever of its /64s sends it (#250)`, async () => {
+		vi.setSystemTime(new Date("2026-09-25T12:00:00Z"));
+		const { handler, provider } = demo();
+		const perVisitor = NETWORK_MINUTE_LIMIT / VISITOR_MINUTE_LIMIT;
+		for (let visitor = 0; visitor < perVisitor; visitor++) {
+			expect(
+				await statuses(
+					handler,
+					VISITOR_MINUTE_LIMIT,
+					`2001:db8:1:${visitor}::a`,
+				),
+			).toEqual(Array(VISITOR_MINUTE_LIMIT).fill(200));
+		}
+
+		const response = await search(handler, "2001:db8:1:ff::a");
+
+		expect(response.status).toBe(402);
+		expect(await response.json()).toEqual(NETWORK_MINUTE_USED);
+		expect(NETWORK_MINUTE_USED.error).toMatchObject({
+			cause: "network",
+			limit: "minute",
+			message: "This network's 60 calls a minute are used",
+		});
+		expect(provider.calls).toHaveLength(NETWORK_MINUTE_LIMIT);
+		// Another /48 is another network.
+		expect((await search(handler, "2001:db8:2:ff::a")).status).toBe(200);
+	});
+
+	it(`answers a ${NETWORK_DAY_LIMIT + 1}st call in a day from one IPv6 /48 402, naming the network's day (#250)`, async () => {
+		const ledger = memoryLedger();
+		const perVisitor = NETWORK_DAY_LIMIT / VISITOR_DAY_LIMIT;
+		// Each /64 its day's calls, one every 10 s, under every minute's limit.
+		for (let visitor = 0; visitor < perVisitor; visitor++) {
+			for (let i = 0; i < VISITOR_DAY_LIMIT; i++) {
+				const at = (visitor * VISITOR_DAY_LIMIT + i) * 10;
+				expect(
+					await ledger.visit(
+						[`2001:db8:1:${visitor}::/64`, "2001:db8:1::/48"],
+						new Date(Date.UTC(2026, 8, 25, 0, 0, at)),
+					),
+				).toBeNull();
+			}
+		}
+		const { handler } = demo(ledger);
+		vi.setSystemTime(new Date("2026-09-25T23:00:00Z"));
+
+		const response = await search(handler, "2001:db8:1:ff::a");
+
+		expect(response.status).toBe(402);
+		expect(await response.json()).toEqual(NETWORK_DAY_USED);
+		expect(NETWORK_DAY_USED.error).toMatchObject({
+			cause: "network",
+			limit: "day",
+			message: "This network's 1000 calls a day are used",
+		});
+	});
+
+	it("counts a call either address refuses against neither (#250)", async () => {
+		const ledger = memoryLedger();
+		const at = new Date("2026-09-25T12:00:00Z");
+		const network = "2001:db8:1::/48";
+		const from = (visitor: number) => [`2001:db8:1:${visitor}::/64`, network];
+		// The /64 refuses its 21st to 25th: the /48 counts 20 of them, not 25.
+		for (let i = 0; i < VISITOR_MINUTE_LIMIT + 5; i++) {
+			await ledger.visit(from(0), at);
+		}
+		for (const visitor of [1, 2]) {
+			for (let i = 0; i < VISITOR_MINUTE_LIMIT; i++) {
+				expect(await ledger.visit(from(visitor), at)).toBeNull();
+			}
+		}
+
+		// The /48 refuses: its /64 counts nothing, and still has its whole minute alone.
+		expect(await ledger.visit(from(3), at)).toBe("networkMinute");
+		for (let i = 0; i < VISITOR_MINUTE_LIMIT; i++) {
+			expect(await ledger.visit(["2001:db8:1:3::/64"], at)).toBeNull();
+		}
+		expect(await ledger.visit(["2001:db8:1:3::/64"], at)).toBe("minute");
 	});
 
 	it("counts each IPv4 address as its own visitor", async () => {
