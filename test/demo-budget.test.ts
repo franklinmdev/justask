@@ -1,4 +1,5 @@
 import { APIError } from "@typesafe-ai/sdk";
+import { ProviderUnavailableError } from "justask";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	DAILY_BUDGET_USD,
@@ -21,6 +22,7 @@ import {
 	failingProvider,
 	fakeProvider,
 	hangingProvider,
+	unavailableFirstProvider,
 } from "./fake-provider.ts";
 
 const DEMO = "http://localhost:5173";
@@ -162,6 +164,22 @@ describe("the demo's daily budget", () => {
 		vi.setSystemTime(new Date("2026-09-26T00:00:00Z"));
 
 		expect((await search(handler)).status).toBe(200);
+	});
+
+	it("keeps the first call's reservation when an unavailable provider is called again, and settles the second (#250)", async () => {
+		const ledger = memoryLedger();
+		const provider = unavailableFirstProvider(
+			[new ProviderUnavailableError("lost")],
+			answers,
+			{ costUsd: 0.25 },
+		);
+		const handler = createDemoHandler(provider, { ledger });
+
+		await search(handler);
+
+		// The core calls once more (ADR 0013); the first call may still be billed.
+		expect(provider.calls).toHaveLength(2);
+		expect(await ledger.spent(today())).toBeCloseTo(RESERVED_USD + 0.25, 12);
 	});
 
 	it("keeps the reservation for a call whose provider reports no cost, since it was still made", async () => {
