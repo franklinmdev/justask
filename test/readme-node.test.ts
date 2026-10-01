@@ -11,7 +11,7 @@ import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { createSearchHandler } from "justask";
+import { createSearchHandler } from "@justask/core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { fakeProvider, hangingProvider } from "./fake-provider.ts";
 

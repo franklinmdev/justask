@@ -1,4 +1,4 @@
-import { ask, type Candidate } from "justask";
+import { ask, type Candidate } from "@justask/core";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { failingProvider, fakeProvider, rawProvider } from "./fake-provider.ts";
 

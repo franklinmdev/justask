@@ -1,5 +1,5 @@
 /**
- * Runs the packed `justask/react` on whichever React is installed beside this
+ * Runs the packed `@justask/core/react` on whichever React is installed beside this
  * file, as a host app on the oldest React the peer range allows would (#175).
  * `scripts/react-peer.sh` installs it with the React named; the repo's own
  * tests only ever see the React in its lockfile. It renders every piece on
@@ -7,14 +7,14 @@
  * handler in process, with a provider that answers from the labels, and the
  * answer lands. No real provider is called.
  */
-import { JSDOM } from "jsdom";
+
 import {
 	type Candidate,
 	createCardHandler,
 	createFilterHandler,
 	createSearchHandler,
 	type Provider,
-} from "justask";
+} from "@justask/core";
 import {
 	CardBox,
 	CardConfirm,
@@ -31,7 +31,8 @@ import {
 	useCard,
 	useFilter,
 	useSearch,
-} from "justask/react";
+} from "@justask/core/react";
+import { JSDOM } from "jsdom";
 import { createElement as h, version } from "react";
 import { renderToString } from "react-dom/server";
 

@@ -1,4 +1,4 @@
-import { type CardRun, scoreCardRun } from "justask/eval";
+import { type CardRun, scoreCardRun } from "@justask/core/eval";
 import { english } from "../src/content/en.ts";
 import { spanish } from "../src/content/es.ts";
 import type { Content, Language } from "../src/content/types.ts";

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
-import { ask, builtInParser, type Fields, type Filter } from "justask";
+import { ask, builtInParser, type Fields, type Filter } from "@justask/core";
 import {
 	type FilterEvalKind,
 	type FilterEvalRow,
@@ -8,7 +8,7 @@ import {
 	parseFilterEvalSet,
 	readFilterRun,
 	scoreFilterRun,
-} from "justask/eval";
+} from "@justask/core/eval";
 import { beforeAll, describe, expect, it } from "vitest";
 import { fixGate, poolFields } from "../demo/eval/gates.ts";
 import { FILTER_KILL_LINES } from "../demo/eval/kill-lines.ts";

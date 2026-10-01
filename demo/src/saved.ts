@@ -1,4 +1,4 @@
-import type { CardValue, FilterValue } from "justask";
+import type { CardValue, FilterValue } from "@justask/core";
 import type {
 	Cost,
 	ExpenseFields,

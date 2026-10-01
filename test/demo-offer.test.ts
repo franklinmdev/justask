@@ -1,4 +1,4 @@
-import type { Probabilities, SearchResult } from "justask";
+import type { Probabilities, SearchResult } from "@justask/core";
 import { describe, expect, it } from "vitest";
 import { english } from "../demo/src/content/en.ts";
 import type { Vendor } from "../demo/src/content/types.ts";

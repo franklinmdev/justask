@@ -1,5 +1,5 @@
-import type { Usage } from "justask";
-import type { SearchError } from "justask/react";
+import type { Usage } from "@justask/core";
+import type { SearchError } from "@justask/core/react";
 import {
 	type ClipboardEvent,
 	type CSSProperties,

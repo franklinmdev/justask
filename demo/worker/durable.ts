@@ -1,5 +1,5 @@
 import { env } from "cloudflare:workers";
-import type { Provider } from "justask";
+import type { Provider } from "@justask/core";
 import { createWorker } from "./index.ts";
 import { durableLedger, type LedgerNamespace } from "./ledger.ts";
 

@@ -10,24 +10,24 @@ The first provider is Jev (TypeSafe, `@typesafe-ai/sdk`). Any model that answers
 
 ## Status
 
-Private and unpublished. `package.json` sets `"private": true`, so npm refuses to publish it. The domain is described in [CONTEXT.md](CONTEXT.md), the product in [PRODUCT.md](PRODUCT.md), and decisions in [docs/adr/](docs/adr/).
+Not on npm yet: `@justask/core@0.1.0` is the first release, and `publishConfig` publishes it public, since a scoped package is private by default. The domain is described in [CONTEXT.md](CONTEXT.md), the product in [PRODUCT.md](PRODUCT.md), and decisions in [docs/adr/](docs/adr/).
 
 ## Entry points
 
 | Import | What it holds |
 |---|---|
-| `justask` | The core, no UI: `ask`, the server handler and the provider contract |
-| `justask/react` | The React layer (hooks and unstyled pieces) |
-| `justask/jev` | The Jev provider adapter |
-| `justask/eval` | The eval functions, Node only: measure a search's, a filter's or a card's gates on an eval set |
+| `@justask/core` | The core, no UI: `ask`, the server handler and the provider contract |
+| `@justask/core/react` | The React layer (hooks and unstyled pieces) |
+| `@justask/core/jev` | The Jev provider adapter |
+| `@justask/core/eval` | The eval functions, Node only: measure a search's, a filter's or a card's gates on an eval set |
 
 ## Install
 
 ```sh
-npm i justask @typesafe-ai/sdk
+npm i @justask/core @typesafe-ai/sdk
 ```
 
-justask runs on Node 22 or later. `@typesafe-ai/sdk` (0.6) and `react` (19) are optional peers: install the SDK for `justask/jev`, the Jev provider, and React for `justask/react`. Without the SDK, importing `justask/jev` fails with `Cannot find package '@typesafe-ai/sdk'`. The package is not on npm yet (see [Status](#status)): until it is, run `npm pack` in this repo and install the tarball it writes in place of `justask`.
+justask runs on Node 22 or later. `@typesafe-ai/sdk` (0.6) and `react` (19) are optional peers: install the SDK for `@justask/core/jev`, the Jev provider, and React for `@justask/core/react`. Without the SDK, importing `@justask/core/jev` fails with `Cannot find package '@typesafe-ai/sdk'`. The package is not on npm yet (see [Status](#status)): until it is, run `npm pack` in this repo and install the tarball it writes in place of `@justask/core`.
 
 ## The provider
 
@@ -35,7 +35,7 @@ Every handler, `ask` and eval run takes a `provider`, built on the server. The J
 
 ```ts
 // provider.ts, on the server only
-import { jevProvider } from "justask/jev";
+import { jevProvider } from "@justask/core/jev";
 
 // Reads TYPESAFE_API_KEY from the server's environment on its first call.
 export const provider = jevProvider();
@@ -55,7 +55,7 @@ The candidates come from the host app's own catalog. Each row's `id` is the labe
 
 ```ts
 // catalog.ts, the host app's own rows
-import type { Candidate } from "justask";
+import type { Candidate } from "@justask/core";
 
 export type Vendor = { name: string };
 
@@ -72,7 +72,7 @@ export const tags: Candidate<string>[] = [
 
 ```ts
 // search.ts, on the server
-import { createSearchHandler, fuzzyShortlist, type Search } from "justask";
+import { createSearchHandler, fuzzyShortlist, type Search } from "@justask/core";
 import { type Vendor, vendors } from "./catalog";
 import { provider } from "./provider";
 
@@ -118,11 +118,11 @@ It answers:
 
 ### Search in React
 
-`useSearch` from `justask/react` drives the search from the host app's markup: it posts what the person types to the handler, keeps only the answer to the latest request, and hands the item to `onChoose` when the person chooses it. `timing` is required and has no default: `{ on: "type", debounceMs }` calls after a pause in typing, `{ on: "enter" }` only on Enter. Its unstyled pieces are `SearchBox` (the search input; Enter calls at once and never submits a surrounding form), `SearchItem` (the one item, as a button that chooses it, in a polite live region) and `SearchEmpty` (shown once an answer came back with no item, a failed call included; `search.error` says which).
+`useSearch` from `@justask/core/react` drives the search from the host app's markup: it posts what the person types to the handler, keeps only the answer to the latest request, and hands the item to `onChoose` when the person chooses it. `timing` is required and has no default: `{ on: "type", debounceMs }` calls after a pause in typing, `{ on: "enter" }` only on Enter. Its unstyled pieces are `SearchBox` (the search input; Enter calls at once and never submits a surrounding form), `SearchItem` (the one item, as a button that chooses it, in a polite live region) and `SearchEmpty` (shown once an answer came back with no item, a failed call included; `search.error` says which).
 
 ```tsx
 // VendorSearch.tsx
-import { SearchBox, SearchEmpty, SearchItem, useSearch } from "justask/react";
+import { SearchBox, SearchEmpty, SearchItem, useSearch } from "@justask/core/react";
 import type { Vendor } from "./catalog";
 
 export function VendorSearch({ onChoose }: { onChoose: (vendor: Vendor) => void }) {
@@ -224,7 +224,7 @@ A filter is declared field by field, and `ask` returns the filter object the hos
 
 ```ts
 // invoices.ts, on the server
-import { type Fields, type Filter, fuzzyShortlist } from "justask";
+import { type Fields, type Filter, fuzzyShortlist } from "@justask/core";
 import { vendors } from "./catalog";
 
 export const invoices = {
@@ -241,7 +241,7 @@ export const invoices = {
 Declare a filter with `satisfies Filter<Fields>`, and a card with `satisfies Card<CardFields>`, so the server and the browser share one declaration and `typeof invoices.fields` keeps each field's kind and value. A type annotation loses them, and a plain const widens each `kind` to `string`, which TypeScript refuses where the declaration is used: `Type 'string' is not assignable to type '"catalog"'`.
 
 ```ts
-import { ask } from "justask";
+import { ask } from "@justask/core";
 import { invoices } from "./invoices";
 import { provider } from "./provider";
 
@@ -268,11 +268,11 @@ Each field fills only when its pick clears its gate, so a real call may leave an
 
 `createFilterHandler` takes the same `provider`, `timeoutMs`, `facts` and `onError` as the search handler, plus the `filter` declaration, and answers `200` with `{ filter, error? }`: the filter object in `filter.value` and every field's candidates, picks, probabilities and gate in `filter.fields`. The browser posts the same body, and the handler writes today in the browser's time zone, so a date field reads "last month" as the person means it.
 
-`useFilter` from `justask/react` drives it from the host app's markup. Its unstyled pieces are `FilterBox` (the request box), `FilterFields` (one list item per proposed filter, each with a remove button, in a polite live region), `FilterEmpty` (shown when the answer fills no field, or failed) and `FilterConfirm`. Nothing reaches the app before Confirm: `onConfirm` receives the filter object, without the filters the person removed.
+`useFilter` from `@justask/core/react` drives it from the host app's markup. Its unstyled pieces are `FilterBox` (the request box), `FilterFields` (one list item per proposed filter, each with a remove button, in a polite live region), `FilterEmpty` (shown when the answer fills no field, or failed) and `FilterConfirm`. Nothing reaches the app before Confirm: `onConfirm` receives the filter object, without the filters the person removed.
 
 ```tsx
 // InvoiceFilter.tsx
-import { FilterBox, FilterConfirm, FilterEmpty, FilterFields, useFilter } from "justask/react";
+import { FilterBox, FilterConfirm, FilterEmpty, FilterFields, useFilter } from "@justask/core/react";
 import type { invoices } from "./invoices"; // its types only: the catalog stays on the server
 
 export function InvoiceFilter() {
@@ -323,7 +323,7 @@ A card is a new record filled from a request, such as an expense. An intent ques
 
 ```ts
 // expense.ts, on the server
-import { type Card, type CardFields, fuzzyShortlist } from "justask";
+import { type Card, type CardFields, fuzzyShortlist } from "@justask/core";
 import { tags, vendors } from "./catalog";
 
 export const expense = {
@@ -341,7 +341,7 @@ export const expense = {
 ```
 
 ```ts
-import { ask } from "justask";
+import { ask } from "@justask/core";
 import { expense } from "./expense";
 import { provider } from "./provider";
 
@@ -369,11 +369,11 @@ As with a filter, a field below its gate is left out of `card.value`, and `card.
 
 `createCardHandler` takes the same `provider`, `timeoutMs`, `facts` and `onError` as the other handlers, plus the `card` declaration, and answers `200` with `{ card, error? }`: the record in `card.value`, the intent question's pick, its gate and whether it passes in `card.intent`, and every field's candidates, picks and gate in `card.fields`.
 
-`useCard` from `justask/react` drives it from the host app's markup. It calls when the person presses Enter, unless `timing` says `{ on: "type", debounceMs }`. A successful answer starts the card over: the fields it filled, the held ones empty. A field the person set or emptied after the call went out, pressing Enter and then picking the vendor by hand, or during the pause on `type` timing, keeps what the person gave it. A field set before that is the answer's to fill, since the person asked again after setting it. A failed one leaves the card as it was, the person's changes included, and says why in `card.error`. The person fills or changes any field through `set`, and `onConfirm` receives the card only on Confirm. Saving and undo are the host app's: after Confirm the box and the card empty for the next record and the undo slot opens, and the host's undo control takes the record back its own way, then calls `card.restore()` to put the card back as it was.
+`useCard` from `@justask/core/react` drives it from the host app's markup. It calls when the person presses Enter, unless `timing` says `{ on: "type", debounceMs }`. A successful answer starts the card over: the fields it filled, the held ones empty. A field the person set or emptied after the call went out, pressing Enter and then picking the vendor by hand, or during the pause on `type` timing, keeps what the person gave it. A field set before that is the answer's to fill, since the person asked again after setting it. A failed one leaves the card as it was, the person's changes included, and says why in `card.error`. The person fills or changes any field through `set`, and `onConfirm` receives the card only on Confirm. Saving and undo are the host app's: after Confirm the box and the card empty for the next record and the undo slot opens, and the host's undo control takes the record back its own way, then calls `card.restore()` to put the card back as it was.
 
 ```tsx
 // ExpenseCard.tsx
-import { CardBox, CardConfirm, CardEntry, CardStatus, CardUndo, useCard } from "justask/react";
+import { CardBox, CardConfirm, CardEntry, CardStatus, CardUndo, useCard } from "@justask/core/react";
 import type { expense } from "./expense"; // its types only: the catalog stays on the server
 
 export function ExpenseCard() {
@@ -409,7 +409,7 @@ A failed provider fills nothing and takes nothing away, and the card keeps worki
 
 ## Measuring a gate
 
-Every gate is declared with no default, so it has to come from measurement. `justask/eval` runs an eval set through the real pipeline, with the real provider, and scores it the way the lab did. It runs by hand, never in CI, because every row is a paid call.
+Every gate is declared with no default, so it has to come from measurement. `@justask/core/eval` runs an eval set through the real pipeline, with the real provider, and scores it the way the lab did. It runs by hand, never in CI, because every row is a paid call.
 
 An eval set is JSONL, one request per line with the result a person expects. `item` rows name the candidate id they mean. `nothing` rows have no item to find. `ambiguous` rows could mean more than one candidate, so their item must stay held:
 
@@ -423,7 +423,7 @@ Write the kill lines before the first run. The run log saves them with the gate,
 
 ```ts
 import { readFile } from "node:fs/promises";
-import { formatReport, parseEvalSet, runEval, scoreRun } from "justask/eval";
+import { formatReport, parseEvalSet, runEval, scoreRun } from "@justask/core/eval";
 import { provider } from "./provider";
 import { search } from "./search";
 
@@ -444,7 +444,7 @@ The report gives exact (filled items that are the expected one), coverage (item 
 The p95 line reads the provider's latency and yours together. To tell them apart, pass `probe`: a fixed provider input under `input` (`request`, `facts`, `questions`), how many `warmUp` calls to send first and discard (so a cold start after idle falls on them, not on your rows), how many `times` to send it before the rows and again after, and a `baselineMs` declared before the run (or `null` until you have one). The log saves each probe's latency. When the probes' median is more than twice the baseline, the report marks a slow window: the quality lines still decide, and so does a p95 that passes its line; a p95 that fails is pending, to be measured again on the same rows when the probes are normal. `probeMedian` over earlier runs' probes gives the baseline; `readProbes(log)` gives null for a log saved before probes, so drop those first:
 
 ```ts
-import { type Probe, probeMedian, readProbes } from "justask/eval";
+import { type Probe, probeMedian, readProbes } from "@justask/core/eval";
 
 const earlier = await Promise.all(["eval/runs/search-1.jsonl", "eval/runs/search-2.jsonl"].map(readProbes));
 
@@ -479,7 +479,7 @@ Keep a separate dev set for tuning descriptions and shortlists, and never let it
 
 ### A filter's gates
 
-A filter has one gate per field, so its eval set names the filter object a person expects. A `filterable` row gives each field it mentions a value: a catalog field's candidate id, a date field's `{ from, to }`, an amount field's `{ min, max, exact, currency }`. A field left out is not mentioned and must stay empty. An `ambiguous` row marks at least one field `"held"` (`HELD`, exported by `justask/eval` for code that reads a set); a `nothing` row expects no field at all:
+A filter has one gate per field, so its eval set names the filter object a person expects. A `filterable` row gives each field it mentions a value: a catalog field's candidate id, a date field's `{ from, to }`, an amount field's `{ min, max, exact, currency }`. A field left out is not mentioned and must stay empty. An `ambiguous` row marks at least one field `"held"` (`HELD`, exported by `@justask/core/eval` for code that reads a set); a `nothing` row expects no field at all:
 
 ```jsonl
 {"id": "f01", "request": "Acme invoices over $500 last month", "kind": "filterable", "expected": {"vendor": "acme", "issued": {"from": "2026-08-01", "to": "2026-08-31"}, "total": {"min": 500, "currency": "USD"}}}
@@ -501,7 +501,7 @@ A card has the intent's gate and one per field, and its eval set names the recor
 
 ```ts
 import { readFile } from "node:fs/promises";
-import { formatCardReport, parseCardEvalSet, runCardEval, scoreCardRun } from "justask/eval";
+import { formatCardReport, parseCardEvalSet, runCardEval, scoreCardRun } from "@justask/core/eval";
 import { expense } from "./expense";
 import { provider } from "./provider";
 
@@ -557,7 +557,7 @@ To make one real Jev call by hand and see its latency and cost:
 node --conditions=justask-source scripts/jev-call.ts "invoices from Acme"
 ```
 
-`justask/react` takes any React 19 (`"react": "^19.0.0"`), but the tests run on the lockfile's React only. To run the packed package on another one, as CI does for 19.0.0 and the newest 19.1, build first:
+`@justask/core/react` takes any React 19 (`"react": "^19.0.0"`), but the tests run on the lockfile's React only. To run the packed package on another one, as CI does for 19.0.0 and the newest 19.1, build first:
 
 ```sh
 pnpm build && scripts/react-peer.sh 19.0.0

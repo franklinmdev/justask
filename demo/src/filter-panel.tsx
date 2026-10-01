@@ -7,8 +7,8 @@ import type {
 	FilterResult,
 	ParsedFieldResult,
 	Pick,
-} from "justask";
-import type { UseFilter } from "justask/react";
+} from "@justask/core";
+import type { UseFilter } from "@justask/core/react";
 import type {
 	Content,
 	FieldHeldReason,

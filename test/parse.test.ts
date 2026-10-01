@@ -1,4 +1,4 @@
-import { builtInParser, type Facts } from "justask";
+import { builtInParser, type Facts } from "@justask/core";
 import { describe, expect, it } from "vitest";
 
 // A Monday, as in the lab. Every relative date below is computed from it, never from the clock.

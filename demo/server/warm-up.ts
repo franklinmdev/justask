@@ -1,5 +1,5 @@
-import type { Provider } from "justask";
-import { type ProbeResult, probeSender } from "justask/eval";
+import type { Provider } from "@justask/core";
+import { type ProbeResult, probeSender } from "@justask/core/eval";
 import { PROBE_WARM_UP, probe } from "../eval/probe.ts";
 import { keyRefused } from "./budget.ts";
 import { TIMEOUT_MS } from "./handler.ts";

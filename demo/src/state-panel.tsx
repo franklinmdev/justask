@@ -1,5 +1,5 @@
-import type { SearchResult } from "justask";
-import type { UseSearch } from "justask/react";
+import type { SearchResult } from "@justask/core";
+import type { UseSearch } from "@justask/core/react";
 import type { ReactNode } from "react";
 import type { Content, HeldReason, Vendor } from "./content/types.ts";
 import { formats } from "./format.ts";

@@ -1,5 +1,5 @@
-import type { AmountRange, DateRange, FieldValue } from "justask";
-import { FilterBox, FilterEmpty, useFilter } from "justask/react";
+import type { AmountRange, DateRange, FieldValue } from "@justask/core";
+import { FilterBox, FilterEmpty, useFilter } from "@justask/core/react";
 import { useEffect, useState } from "react";
 import { filterEndpoint } from "./api.ts";
 import type {

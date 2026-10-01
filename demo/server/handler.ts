@@ -9,7 +9,7 @@ import {
 	fuzzyShortlist,
 	type Provider,
 	type Search,
-} from "justask";
+} from "@justask/core";
 import {
 	BUDGET_EXCEEDED,
 	cardEndpoint,

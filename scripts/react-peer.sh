@@ -26,9 +26,9 @@ node react-peer.ts
 # every source map must carry its sources, since src/ is not shipped (#197).
 node --conditions=source --input-type=module -e "
 import { readdirSync, readFileSync } from 'node:fs';
-await Promise.all(['justask', 'justask/react', 'justask/jev', 'justask/eval'].map((entry) => import(entry)));
-const maps = readdirSync('node_modules/justask/dist', { recursive: true }).filter((file) => file.endsWith('.map'));
-const bare = maps.filter((file) => !JSON.parse(readFileSync('node_modules/justask/dist/' + file, 'utf8')).sourcesContent);
+await Promise.all(['@justask/core', '@justask/core/react', '@justask/core/jev', '@justask/core/eval'].map((entry) => import(entry)));
+const maps = readdirSync('node_modules/@justask/core/dist', { recursive: true }).filter((file) => file.endsWith('.map'));
+const bare = maps.filter((file) => !JSON.parse(readFileSync('node_modules/@justask/core/dist/' + file, 'utf8')).sourcesContent);
 if (maps.length === 0 || bare.length > 0) throw new Error('source maps without their sources: ' + (bare.join(', ') || 'none shipped'));
 console.log('every entry point resolves under the source condition, ' + maps.length + ' source maps carry their sources');
 "

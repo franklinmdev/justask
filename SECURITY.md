@@ -8,7 +8,7 @@ Say what is affected (the package, which entry point, or the demo), how to repro
 
 ## What is covered
 
-- The package: `justask`, `justask/react`, `justask/jev` and `justask/eval`, at the latest release and on `main`.
+- The package: `@justask/core`, `@justask/core/react`, `@justask/core/jev` and `@justask/core/eval`, at the latest release and on `main`.
 - The public demo and its Cloudflare Worker (`demo/`), including its budget and per-visitor limits.
 
 ## Known limits, not vulnerabilities

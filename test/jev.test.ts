@@ -1,3 +1,5 @@
+import { ask, ProviderUnavailableError, type Question } from "@justask/core";
+import { JEV_MODEL, jevProvider } from "@justask/core/jev";
 import {
 	APIConnectionError,
 	APIError,
@@ -5,8 +7,6 @@ import {
 	BadRequestError,
 	RateLimitError,
 } from "@typesafe-ai/sdk";
-import { ask, ProviderUnavailableError, type Question } from "justask";
-import { JEV_MODEL, jevProvider } from "justask/jev";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PRICE } from "../demo/src/calculator.tsx";
 import { fakeJevClient, jevResult } from "./fake-provider.ts";

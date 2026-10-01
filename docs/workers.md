@@ -19,7 +19,7 @@ One Worker on the free plan, `justask-demo` (`wrangler.jsonc`):
 - Workers Logs is on (`observability`), which is where each request's CPU time is read. A failed request logs its error and, for a provider error, the SDK's error object, as on the dev server. That object holds TypeSafe's response (status, body, response headers), never the request's `Authorization` header, and the SDK redacts request headers even in its debug log (read in `@typesafe-ai/sdk` 0.6.0's `dist/index.mjs` on 2026-09-24). The Access service token's secret never reaches the Worker: in the measure's trace events on 2026-09-24, the request headers had no `cf-access-client-id` or `cf-access-client-secret`, and `cf-access-jwt-assertion` and `cookie` read `REDACTED`. Delete the token once it is no longer needed.
 - `pnpm demo` stays the Vite dev server with the handler as middleware, the key from `.env`. It streams each request's body to the handler, as the README's `toNode` does, so the handler's 16 KiB cap holds there too, and aborts the call when the browser goes away. It names each request's socket address in `CF-Connecting-IP`, so the visitor's limits count there as on the Worker; the ledger is in memory, so the counts start over with the server. A request with no `CF-Connecting-IP` counts against no visitor: only the recording script and the tests call the handler directly.
 
-wrangler bundles `justask` from `src/` through the `justask-source` export condition, set by `WRANGLER_BUILD_CONDITIONS` in the package scripts, as the tests and the dev server do.
+wrangler bundles `@justask/core` from `src/` through the `justask-source` export condition, set by `WRANGLER_BUILD_CONDITIONS` in the package scripts, as the tests and the dev server do.
 
 ## Running the Worker locally
 

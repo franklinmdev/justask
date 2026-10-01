@@ -1,4 +1,4 @@
-import { jevProvider } from "justask/jev";
+import { jevProvider } from "@justask/core/jev";
 import { createDemoHandler, logError } from "./handler.ts";
 import { warmOnStart } from "./warm-up.ts";
 

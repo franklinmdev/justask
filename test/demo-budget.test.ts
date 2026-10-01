@@ -1,5 +1,5 @@
+import { ProviderUnavailableError } from "@justask/core";
 import { APIError } from "@typesafe-ai/sdk";
-import { ProviderUnavailableError } from "justask";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	DAILY_BUDGET_USD,

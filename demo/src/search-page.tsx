@@ -1,5 +1,10 @@
-import type { Candidate, SearchResult } from "justask";
-import { SearchBox, SearchEmpty, SearchItem, useSearch } from "justask/react";
+import type { Candidate, SearchResult } from "@justask/core";
+import {
+	SearchBox,
+	SearchEmpty,
+	SearchItem,
+	useSearch,
+} from "@justask/core/react";
 import { useState } from "react";
 import { flushSync } from "react-dom";
 import { searchEndpoint } from "./api.ts";

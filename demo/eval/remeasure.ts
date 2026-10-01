@@ -3,7 +3,7 @@ import {
 	mergeRemeasure,
 	type Probes,
 	transportFailures,
-} from "justask/eval";
+} from "@justask/core/eval";
 
 type Run = { rows: { id: string; error?: LoggedError }[]; probes?: Probes };
 

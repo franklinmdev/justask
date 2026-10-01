@@ -1,7 +1,12 @@
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
-import { ask } from "justask";
-import { type EvalRow, parseEvalSet, readRun, scoreRun } from "justask/eval";
+import { ask } from "@justask/core";
+import {
+	type EvalRow,
+	parseEvalSet,
+	readRun,
+	scoreRun,
+} from "@justask/core/eval";
 import { describe, expect, it } from "vitest";
 import { KILL_LINES } from "../demo/eval/kill-lines.ts";
 import { demoSearch, FACTS } from "../demo/server/handler.ts";

@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 // @module-tag page
+
+import type { Probabilities, Provider } from "@justask/core";
 import {
 	cleanup,
 	render,
@@ -8,7 +10,6 @@ import {
 	within,
 } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
-import type { Probabilities, Provider } from "justask";
 import { useState } from "react";
 import {
 	afterEach,

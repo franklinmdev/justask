@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
-import { userEvent } from "@testing-library/user-event";
-import { type Candidate, createSearchHandler, type Provider } from "justask";
+
+import {
+	type Candidate,
+	createSearchHandler,
+	type Provider,
+} from "@justask/core";
 import {
 	SearchBox,
 	SearchEmpty,
@@ -9,7 +12,9 @@ import {
 	type SearchTiming,
 	type UseSearch,
 	useSearch,
-} from "justask/react";
+} from "@justask/core/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+import { userEvent } from "@testing-library/user-event";
 import { Activity, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { expectNoAxeViolations } from "./checks.ts";

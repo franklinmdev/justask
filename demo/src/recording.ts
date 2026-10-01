@@ -4,7 +4,7 @@ import type {
 	SearchHandlerResponse,
 	Spent,
 	Usage,
-} from "justask";
+} from "@justask/core";
 import formEn from "../recordings/form-en.json" with { type: "json" };
 import formEs from "../recordings/form-es.json" with { type: "json" };
 import searchEn from "../recordings/search-en.json" with { type: "json" };

@@ -1,13 +1,12 @@
 // @vitest-environment jsdom
-import { act, cleanup, render, screen, within } from "@testing-library/react";
-import { userEvent } from "@testing-library/user-event";
+
 import {
 	type AmountRange,
 	type Candidate,
 	createFilterHandler,
 	type FilterValue,
 	type Provider,
-} from "justask";
+} from "@justask/core";
 import {
 	FilterBox,
 	FilterConfirm,
@@ -16,7 +15,9 @@ import {
 	type FilterTiming,
 	type UseFilter,
 	useFilter,
-} from "justask/react";
+} from "@justask/core/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
+import { userEvent } from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { expectNoAxeViolations } from "./checks.ts";
 import {

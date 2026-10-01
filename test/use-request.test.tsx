@@ -1,16 +1,17 @@
 // @vitest-environment jsdom
-import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
+
 import {
 	type Candidate,
 	createFilterHandler,
 	createSearchHandler,
-} from "justask";
+} from "@justask/core";
 import {
 	type SearchTiming,
 	type UseSearch,
 	useCard,
 	useSearch,
-} from "justask/react";
+} from "@justask/core/react";
+import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { Activity, type ReactNode, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fakeProvider } from "./fake-provider.ts";

@@ -1,5 +1,5 @@
+import type { Provider } from "@justask/core";
 import { APIError } from "@typesafe-ai/sdk";
-import type { Provider } from "justask";
 import {
 	countCall,
 	newSalt,

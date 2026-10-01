@@ -5,7 +5,7 @@
 //
 // Name the most recent normal runs, by path from the repo root.
 
-import { type Probes, probeMedian, readProbes } from "justask/eval";
+import { type Probes, probeMedian, readProbes } from "@justask/core/eval";
 
 const logs = process.argv.slice(2);
 if (logs.length === 0) {

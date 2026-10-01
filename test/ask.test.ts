@@ -4,7 +4,7 @@ import {
 	fuzzyShortlist,
 	type ProviderAnswer,
 	ProviderUnavailableError,
-} from "justask";
+} from "@justask/core";
 import { describe, expect, it } from "vitest";
 import {
 	failingProvider,

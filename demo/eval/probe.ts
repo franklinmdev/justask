@@ -1,4 +1,4 @@
-import type { Probe } from "justask/eval";
+import type { Probe } from "@justask/core/eval";
 
 /**
  * The fixed request every eval run sends straight to the provider: three

@@ -1,4 +1,4 @@
-import { ask, type Probabilities } from "justask";
+import { ask, type Probabilities } from "@justask/core";
 import { describe, expect, it } from "vitest";
 import { demoFilter, FACTS } from "../demo/server/handler.ts";
 import { english } from "../demo/src/content/en.ts";

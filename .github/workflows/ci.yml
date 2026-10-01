@@ -54,10 +54,10 @@ jobs:
       # Tests resolve the entry points to src/. Build, then import each one
       # through the exports map as Node would, to prove dist/ resolves too.
       - run: pnpm build
-      - run: node -e "Promise.all(['justask','justask/react','justask/jev','justask/eval'].map((e) => import(e)))"
+      - run: node -e "Promise.all(['@justask/core','@justask/core/react','@justask/core/jev','@justask/core/eval'].map((e) => import(e)))"
 
   react-peer:
-    name: justask/react on React ${{ matrix.react }}
+    name: "@justask/core/react on React ${{ matrix.react }}"
     runs-on: ubuntu-latest
     # Same event rules as docs location.
     if: >-

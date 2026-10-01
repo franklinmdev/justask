@@ -1,7 +1,7 @@
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { ProviderUnavailableError } from "justask";
+import { ProviderUnavailableError } from "@justask/core";
 import {
 	formatCardReport,
 	formatFilterReport,
@@ -25,7 +25,7 @@ import {
 	scoreCardRun,
 	scoreFilterRun,
 	scoreRun,
-} from "justask/eval";
+} from "@justask/core/eval";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
 	type FakeAnswers,

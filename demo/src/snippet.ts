@@ -1,4 +1,4 @@
-import type { Candidate } from "justask";
+import type { Candidate } from "@justask/core";
 import {
 	demoCard,
 	demoFilter,
@@ -177,8 +177,8 @@ function server({
 	return {
 		name: "handler.ts",
 		code: [
-			`import {\n${fromJustask.map((name) => `  ${name},`).join("\n")}\n} from "justask";`,
-			'import { jevProvider } from "justask/jev";',
+			`import {\n${fromJustask.map((name) => `  ${name},`).join("\n")}\n} from "@justask/core";`,
+			'import { jevProvider } from "@justask/core/jev";',
 			"",
 			...hostTypes.map(([name, type]) => `export type ${name} = ${type};\n`),
 			...catalogs.map(
@@ -242,8 +242,8 @@ function tableSnippet(content: Content): Snippet {
 		}),
 		client: {
 			name: "Transactions.tsx",
-			code: `import type { FilterValue } from "justask";
-import { FilterBox, useFilter } from "justask/react";
+			code: `import type { FilterValue } from "@justask/core";
+import { FilterBox, useFilter } from "@justask/core/react";
 import { useEffect } from "react";
 import type { TransactionFields } from "./handler";
 
@@ -293,8 +293,8 @@ function formSnippet(content: Content): Snippet {
 		}),
 		client: {
 			name: "NewExpense.tsx",
-			code: `import type { CardValue } from "justask";
-import { CardBox, CardConfirm, CardEntry, useCard } from "justask/react";
+			code: `import type { CardValue } from "@justask/core";
+import { CardBox, CardConfirm, CardEntry, useCard } from "@justask/core/react";
 import type { ExpenseFields } from "./handler";
 
 export function NewExpense({
@@ -355,7 +355,7 @@ function searchSnippet(content: Content): Snippet {
 		}),
 		client: {
 			name: "VendorSearch.tsx",
-			code: `import { SearchBox, SearchItem, useSearch } from "justask/react";
+			code: `import { SearchBox, SearchItem, useSearch } from "@justask/core/react";
 import type { Vendor } from "./handler";
 
 export function VendorSearch({

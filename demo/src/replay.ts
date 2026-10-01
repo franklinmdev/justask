@@ -1,4 +1,4 @@
-import type { Usage } from "justask";
+import type { Usage } from "@justask/core";
 import { useEffect, useRef, useState } from "react";
 import { type Recording, traceOf } from "./recording.ts";
 import { type Trace, timed } from "./trace.ts";

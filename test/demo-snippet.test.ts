@@ -25,7 +25,7 @@ const projects = cases.flatMap((shown) =>
 /**
  * The snippets as copied React apps would hold them, each in its own folder
  * under a fresh temp directory, typechecked by the repo's own tsc under its
- * strict options with a bundler's resolution. `justask` and React resolve to
+ * strict options with a bundler's resolution. `@justask/core` and React resolve to
  * the repo's, as an installed package would; the directory goes afterwards.
  */
 function diagnosticsOf(snippets: { dir: string; snippet: Snippet }[]): string {
@@ -59,9 +59,9 @@ function diagnosticsOf(snippets: { dir: string; snippet: Snippet }[]): string {
 					noEmit: true,
 					types: [],
 					paths: {
-						justask: [join(root, "src/index.ts")],
-						"justask/react": [join(root, "src/react/index.ts")],
-						"justask/jev": [join(root, "src/jev/index.ts")],
+						"@justask/core": [join(root, "src/index.ts")],
+						"@justask/core/react": [join(root, "src/react/index.ts")],
+						"@justask/core/jev": [join(root, "src/jev/index.ts")],
 						react: [join(modules, "@types/react/index.d.ts")],
 						"react/*": [join(modules, "@types/react/*")],
 					},
@@ -98,9 +98,9 @@ describe("the showcase's Code tab snippets", () => {
 				for (const from of imported) {
 					expect([
 						"react",
-						"justask",
-						"justask/jev",
-						"justask/react",
+						"@justask/core",
+						"@justask/core/jev",
+						"@justask/core/react",
 						"./handler",
 					]).toContain(from);
 				}

@@ -1,4 +1,4 @@
-import { jevProvider } from "justask/jev";
+import { jevProvider } from "@justask/core/jev";
 import { durableWorker } from "./durable.ts";
 
 export { DemoLedger } from "./durable.ts";

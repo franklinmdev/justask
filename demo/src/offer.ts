@@ -1,4 +1,4 @@
-import type { Candidate, SearchResult } from "justask";
+import type { Candidate, SearchResult } from "@justask/core";
 
 /** The search question's own labels, asked beside the candidates (ADR 0005, 0007). */
 export const NONE = "none";

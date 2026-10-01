@@ -46,7 +46,7 @@ The provider model never writes a value. Code finds the candidates (parsed dates
 
 ## Brand Commitments
 
-- Name: `justask`. The package name never contains a provider's name.
+- Name: `@justask/core`. The package name never contains a provider's name.
 - The demo is a fictional English app with a Spanish toggle. No real business, person or brand appears in it.
 
 ## Evidence on Hand

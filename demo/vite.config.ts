@@ -17,7 +17,7 @@ loadKeyEnv();
 
 /**
  * Mounts the demo's search handler as dev middleware under /api. The handler
- * module runs in Vite's server environment, so it resolves `justask` from
+ * module runs in Vite's server environment, so it resolves `@justask/core` from
  * src/ like the tests do, and reloads when its files change.
  */
 function justaskHandler(): Plugin {
@@ -88,7 +88,7 @@ export default defineConfig({
 	// `justask-source` points justask's entry points at src/, as in the tests.
 	resolve: { conditions: ["justask-source", ...defaultClientConditions] },
 	ssr: {
-		noExternal: ["justask"],
+		noExternal: ["@justask/core"],
 		resolve: { conditions: ["justask-source", ...defaultServerConditions] },
 	},
 });
