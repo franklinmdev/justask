@@ -71,10 +71,23 @@ export function utcDay(now: Date): string {
 }
 
 /**
- * One request's provider: each call's cost is added to the day's spend as
- * soon as the call returns, before the answer is used, so a Worker stopped on
- * its CPU limit afterwards still counted the call it paid for (#107). Marks
- * `refused` when TypeSafe refused the owner's key.
+ * What each call reserves on the day's spend before it is sent (#250): the
+ * dearest call in the eval run logs of 2026-09-23 to 2026-09-27, $0.0000985
+ * (a Spanish card; a card ran $0.0000894 to $0.0000985, a filter $0.0000550
+ * to $0.0000942, a search $0.0000315 to $0.0000342), rounded up. A call that
+ * returns settles it to its own cost; one that never returns keeps it.
+ */
+export const RESERVED_USD = 0.0001;
+
+/**
+ * One request's provider: each call reserves RESERVED_USD on the day's spend
+ * before it is sent, so a call cancelled by the visitor hanging up or by the
+ * timeout, which TypeSafe may still bill (unverified), is counted too (#250).
+ * A call that returns settles the reservation to its cost, before the answer
+ * is used, so a Worker stopped on its CPU limit afterwards still counted the
+ * call it paid for (#107); one that fails, or reports no cost, keeps it.
+ * One TypeSafe refused with the owner's key gives it back, and marks
+ * `refused`.
  */
 export function counted(
 	provider: Provider,
@@ -83,12 +96,21 @@ export function counted(
 	const request = {
 		refused: false,
 		async answer(input: Parameters<Provider["answer"]>[0]) {
-			const result = await provider.answer(input).catch((error: unknown) => {
-				if (keyRefused(error)) request.refused = true;
-				throw error;
-			});
+			// Settled on the day it was reserved, even past midnight.
+			const day = utcDay(new Date());
+			await ledger.add(day, RESERVED_USD);
+			const result = await provider
+				.answer(input)
+				.catch(async (error: unknown) => {
+					if (keyRefused(error)) {
+						// Refused, so never run: nothing to bill.
+						request.refused = true;
+						await ledger.add(day, -RESERVED_USD);
+					}
+					throw error;
+				});
 			if (result.costUsd !== undefined) {
-				await ledger.add(utcDay(new Date()), result.costUsd);
+				await ledger.add(day, result.costUsd - RESERVED_USD);
 			}
 			return result;
 		},

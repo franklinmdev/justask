@@ -97,7 +97,7 @@ An eval run whose provider probes' median is more than twice the baseline declar
 _Avoid_: Outage, bad run, flaky run
 
 **Daily budget**:
-What the public demo may spend on its owner's key in one UTC day, $1, summed from each call's cost as it returns; the call that crosses it is answered, the next request is refused with no call. Kept in the demo's ledger, never in the core (ADR 0014).
+What the public demo may spend on its owner's key in one UTC day, $1, summed from each call's cost: a fixed reservation before the call, settled to the call's own cost when it returns and kept when it never does; the call that crosses it is answered, the next request is refused with no call. Kept in the demo's ledger, never in the core (ADR 0014).
 _Avoid_: Quota, credit, rate limit
 
 **Kill switch**:
