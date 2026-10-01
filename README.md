@@ -225,6 +225,7 @@ import { vendors } from "./catalog";
 
 export const invoices = {
   description: "invoices, one row per invoice",
+  joiners: { or: ["or"], and: ["and"] },
   fields: {
     vendor: { kind: "catalog", description: "the vendor", gate: 0.8, shortlist: fuzzyShortlist(vendors, { limit: 10 }) },
     issued: { kind: "date", description: "the day it was issued", gate: 0.8 },
@@ -256,6 +257,8 @@ Each field fills only when its pick clears its gate, so a real call may leave an
 - **catalog** fields take their candidates from the host app's `shortlist`, one question each.
 - **date** fields take theirs from the parsers, read backward as a filter looks at what already happened, and fill as `{ from?, to? }` in days. Two questions: where the period starts and where it ends.
 - **amount** fields take theirs from the parsers and fill as `{ min?, max?, exact?, currency? }`, one question per number found. The `local_currency` fact, an ISO 4217 code, decides what a bare "$" and "pesos" mean, and a mark shared by two currencies, such as "¥" or "C$". Without it, the currency is left out. A mark that names one currency reads as it: "RD$", "£", "EUR12", "300 mxn". When the request names a currency that does not resolve against it, such as "500 pesos" with `local_currency: "USD"`, the whole amount field is held without a question, so the number never fills alone.
+
+**A named pair holds a catalog field.** A filter, a card and a search may declare `joiners`: the words that join two items in their language, each one word, such as `{ or: ["or"], and: ["and"] }`, or `{ or: ["o", "u"], and: ["y", "e"] }` in Spanish. The package ships none, so without them nothing is held this way. A request that names two items of one catalog field, and no third, with a joiner between the names and up to two other words, holds that field before its gate, whatever its pick: "Acme or Northwind invoices". So does a slash, alone or between two joiner words ("Acme/Northwind", "and/or"), and a comma with nothing else between the names ("Acme, Northwind"). An item is named by its `id`, read exactly, or by one of its `names`, exactly or with a clear typo, ignoring case and accents. The result names the two in `pair`, on the field for a filter or a card and on `search.pair` for a search (ADR 0010, 0011). A filter's catalog field may declare `heldByPair: false` to fill on its pick alone; a card and a search have no such switch.
 
 ### Over HTTP and in React
 
@@ -322,6 +325,7 @@ import { tags, vendors } from "./catalog";
 export const expense = {
   description: "expense the person paid",
   gate: 0.9,
+  joiners: { or: ["or"], and: ["and"] },
   fields: {
     vendor: { kind: "catalog", description: "the vendor who was paid", gate: 0.8, shortlist: fuzzyShortlist(vendors, { limit: 10 }) },
     tags: { kind: "catalog", several: true, description: "the expense's tags", gate: 0.8, shortlist: () => tags },
@@ -355,6 +359,7 @@ As with a filter, a field below its gate is left out of `card.value`, and `card.
 - **amount** fields fill with `{ value, currency? }`, one question over every number found. With the `local_currency` fact set, the question says a number with no currency written is in the local currency when it is money, so "Swiftlane 74" fills `{ value: 74 }`; the currency stays out, since the host knows its own. A filter's questions do not say it.
 - **catalog** fields that take one item are held when the pick is an item the request names only negated ("Larkspur wasn't it"), by the words the card declares in `negations: { before, after }`, per language; the result names them in `negated`. Declare none and nothing is held this way.
 - **catalog** fields with `several: true` ask one yes-or-no question per shortlisted item, so combinations are never enumerated, and fill with the items asked for. The field is held when any item's pick is below the gate, or says a word could be this item or another.
+- **named pairs** hold a card's catalog field as they hold a filter's (see [Filter](#filter)), except that an `and` word or a comma holds only a field that takes one item, since a field with `several: true` can take both, and a pair with an item the request names only negated is no pair (ADR 0016).
 
 ### Card over HTTP and in React
 
