@@ -7,6 +7,7 @@ import {
 	parseFilterEvalSet,
 } from "justask/eval";
 import { describe, expect, it } from "vitest";
+import { CARD_GATES, FILTER_GATES, GATE } from "../demo/server/handler.ts";
 import { diagnosticsOf } from "./typecheck.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -96,5 +97,49 @@ describe("the README", () => {
 			const [, of] = /^\/\/ in (\S+?)[,\s]/.exec(code) ?? [];
 			expect(blocks.map(({ name }) => name)).toContain(of);
 		}
+	});
+});
+
+/** The README's paragraph on the demo's gates, the one that names the search's. */
+const gatesParagraph =
+	readme
+		.split("\n\n")
+		.find((paragraph) => paragraph.startsWith("The demo's gate (")) ?? "";
+
+/** The latest round an eval doc gives a result for. */
+function latestRound(doc: string): number {
+	const text = readFileSync(join(root, "docs", doc), "utf8");
+	return Math.max(
+		...[...text.matchAll(/^## Round (\d+): result$/gm)].map(([, n]) =>
+			Number(n),
+		),
+	);
+}
+
+describe("the README's demo gates", () => {
+	it("quote each flow's gates as the demo serves them", () => {
+		const gates = (entries: Record<string, number>) =>
+			Object.entries(entries)
+				.map(([name, gate]) => `${name} ${gate}`)
+				.join(", ");
+
+		expect(gatesParagraph).toContain(`The demo's gate (${GATE})`);
+		expect(gatesParagraph).toContain(`(${gates(FILTER_GATES)})`);
+		expect(gatesParagraph).toContain(`(${gates(CARD_GATES)})`);
+	});
+
+	it.each([
+		["search", "search-eval.md"],
+		["filter", "filter-eval.md"],
+		["card", "card-eval.md"],
+	])("cite the %s eval's latest round", (flow, doc) => {
+		const sentence =
+			gatesParagraph
+				.split(/(?<=\.) /)
+				.find((part) => part.includes(`docs/${doc}`)) ?? "";
+
+		expect(sentence, flow).toMatch(
+			new RegExp(`\\bround ${latestRound(doc)}\\b`),
+		);
 	});
 });
