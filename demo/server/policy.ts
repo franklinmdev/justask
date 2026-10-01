@@ -1,4 +1,5 @@
 import type { HandlerBadRequest } from "justask";
+import { readCapped } from "../../src/capped-body.ts";
 import { REQUEST_LIMIT } from "../src/api.ts";
 
 /**
@@ -31,34 +32,16 @@ export async function refusal(request: Request): Promise<Response | undefined> {
 }
 
 /**
- * The core handler's cap on a body, 16 KiB (README): the policy reads no
- * further, so a body that never ends holds no memory here either.
- */
-const BODY_LIMIT = 16 * 1024;
-
-/**
  * The posted request's text, or undefined when the body is not one or is
- * over the core handler's cap; the core handler answers those.
+ * over the core handler's cap; the core handler answers those. Read from a
+ * clone with the core handler's own reader, so the policy reads no further
+ * than its cap either.
  */
 async function requestText(request: Request): Promise<string | undefined> {
-	const reader = request.clone().body?.getReader();
-	if (!reader) return undefined;
-	const decoder = new TextDecoder();
-	let size = 0;
-	let json = "";
 	try {
-		for (;;) {
-			const { done, value } = await reader.read();
-			if (done) break;
-			size += value.byteLength;
-			if (size > BODY_LIMIT) {
-				// A clone's cancel settles only once the handler's copy is cancelled too, so it is not awaited.
-				reader.cancel().catch(() => {});
-				return undefined;
-			}
-			json += decoder.decode(value, { stream: true });
-		}
-		const body: unknown = JSON.parse(json + decoder.decode());
+		const json = await readCapped(request.clone());
+		if (json === null) return undefined;
+		const body: unknown = JSON.parse(json);
 		const text = (body as { request?: unknown } | null)?.request;
 		return typeof text === "string" ? text : undefined;
 	} catch {

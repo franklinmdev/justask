@@ -10,6 +10,7 @@ import {
 	type Spent,
 	spent,
 } from "./ask.ts";
+import { MAX_BODY_BYTES, readCapped } from "./capped-body.ts";
 import type { Card, CardFields, CardResult } from "./card.ts";
 import type { Fields, Filter, FilterResult } from "./filter.ts";
 import type { Facts, Provider } from "./provider.ts";
@@ -156,13 +157,6 @@ type AskBase = Omit<AskInput<unknown>, "search">;
  */
 const MAX_REQUEST_LENGTH = 1_000;
 
-/**
- * The largest body a handler reads, in bytes: room for the longest request
- * with every character escaped, and its time zone. Past it the handler stops
- * reading, so no body can hold the server's memory.
- */
-const MAX_BODY_BYTES = 16 * 1024;
-
 /** The longest refused time zone a 400 names, twice as long as any IANA name. */
 const MAX_TIME_ZONE_ECHO = 64;
 
@@ -289,31 +283,6 @@ function wellFormed(text: string): string {
 		/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g,
 		"\uFFFD",
 	);
-}
-
-/**
- * The body as text, or null past MAX_BODY_BYTES: refused on its declared
- * length before a byte is read, else read no further than the cap.
- */
-async function readCapped(httpRequest: Request): Promise<string | null> {
-	if (Number(httpRequest.headers.get("content-length")) > MAX_BODY_BYTES) {
-		return null;
-	}
-	if (!httpRequest.body) return "";
-	const reader = httpRequest.body.getReader();
-	const decoder = new TextDecoder();
-	let size = 0;
-	let text = "";
-	for (;;) {
-		const { done, value } = await reader.read();
-		if (done) return text + decoder.decode();
-		size += value.byteLength;
-		if (size > MAX_BODY_BYTES) {
-			await reader.cancel();
-			return null;
-		}
-		text += decoder.decode(value, { stream: true });
-	}
 }
 
 function sentAsJson(httpRequest: Request): boolean {
