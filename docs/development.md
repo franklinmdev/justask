@@ -28,3 +28,7 @@ pnpm build && scripts/react-peer.sh 19.0.0
 ```
 
 It packs the package, installs it in a temporary project with that React, renders every piece on the server and makes one call per hook in jsdom, with no real provider.
+
+## Releasing
+
+A release is a version bump merged to `main`. On every push to `main`, `.github/workflows/release.yml` runs every CI job, then publishes `package.json`'s version with provenance if npm does not have it yet; a push without a bump publishes nothing, and a re-run never republishes. It authenticates through npm trusted publishing, so no npm token is stored: npm accepts a publish only from that workflow file, through the GitHub environment `npm-publish`, and renaming either breaks it. After a publish, tag it with `gh release create v<version> --generate-notes`.
