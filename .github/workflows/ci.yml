@@ -1,8 +1,12 @@
 name: CI
 
 on:
+  # main is checked by release.yml, which calls this workflow before it
+  # publishes (#259).
   push:
+    branches-ignore: [main]
   pull_request:
+  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
