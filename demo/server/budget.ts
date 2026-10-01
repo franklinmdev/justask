@@ -26,12 +26,12 @@ export type Ledger = {
 	spent(day: string): Promise<number>;
 	add(day: string, usd: number): Promise<void>;
 	/**
-	 * Counts one call from `address` (visitorAddress) at `now`, or answers
-	 * which of the visitor's limits refuses it, counting nothing. Holds only a
-	 * hash of the address with the UTC day's salt, and drops the earlier days'
-	 * counts and salt on a new day's first call.
+	 * Counts one call from `addresses` (visitorAddresses) at `now`, against
+	 * each, or answers which limit refuses it, counting nothing. Holds only a
+	 * hash of each address with the UTC day's salt, and drops the earlier
+	 * days' counts and salt on a new day's first call.
 	 */
-	visit(address: string, now: Date): Promise<VisitorLimit | null>;
+	visit(addresses: string[], now: Date): Promise<VisitorLimit | null>;
 };
 
 /** The dev server's real ledger, and the tests': it lasts as long as the process. */
@@ -49,17 +49,28 @@ export function memoryLedger(): Ledger {
 		async add(day, usd) {
 			days.set(day, (days.get(day) ?? 0) + usd);
 		},
-		async visit(address, now) {
+		async visit(addresses, now) {
 			const day = utcDay(now);
 			if (visitors.day < day) {
 				visitors = { day, salt: newSalt(), counts: new Map() };
 			}
 			// Held across the hash, so a new day meanwhile cannot take this call.
 			const { salt, counts } = visitors;
-			const key = await visitorKey(salt, address);
-			const counted = countCall(counts.get(key), utcMinute(now));
+			const keys = await Promise.all(
+				addresses.map((address) => visitorKey(salt, address)),
+			);
+			const counted = countCall(
+				addresses.map((address, i) => ({
+					address,
+					count: counts.get(keys[i] ?? ""),
+				})),
+				utcMinute(now),
+			);
 			if ("limit" in counted) return counted.limit;
-			counts.set(key, counted.count);
+			keys.forEach((key, i) => {
+				const count = counted.counts[i];
+				if (count) counts.set(key, count);
+			});
 			return null;
 		},
 	};

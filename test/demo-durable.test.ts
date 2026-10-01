@@ -4,7 +4,7 @@ import {
 	type TestHarness,
 	unstable_readConfig,
 } from "wrangler";
-import { utcMinute } from "../demo/server/visitors.ts";
+import { NETWORK_MINUTE_LIMIT, utcMinute } from "../demo/server/visitors.ts";
 import {
 	BUDGET_EXCEEDED,
 	DEMO_PAUSED,
@@ -162,6 +162,30 @@ describe("the Worker's per-visitor limits, in the same Durable Object", {
 
 		expect(afterEviction).toBe(402);
 	});
+
+	it(`answers an IPv6 /48's ${NETWORK_MINUTE_LIMIT + 1}st call in a minute 402, from a /64 with calls to spare (#250)`, async () => {
+		const { allowed, refused } = await inOneMinute(async () => {
+			const allowed: number[] = [];
+			for (
+				let visitor = 0;
+				visitor * VISITOR_MINUTE_LIMIT < NETWORK_MINUTE_LIMIT;
+				visitor++
+			) {
+				allowed.push(
+					...(await statuses(VISITOR_MINUTE_LIMIT, `2001:db8:1:${visitor}::a`)),
+				);
+			}
+			const response = await search(server, "2001:db8:1:ff::a");
+			return {
+				allowed,
+				refused: { status: response.status, body: await response.json() },
+			};
+		});
+
+		expect(allowed).toEqual(Array(NETWORK_MINUTE_LIMIT).fill(200));
+		expect(refused).toEqual({ status: 402, body: VISITOR_MINUTE_USED });
+		// Three times the other tests' calls, and maybe twice over.
+	}, 140_000);
 });
 
 describe("the Worker's kill switch", () => {

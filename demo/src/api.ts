@@ -49,6 +49,8 @@ export const DEMO_PAUSED = {
 /**
  * Each visitor's calls on the owner's key, counted by IP, an IPv6 address by
  * its /64, with no cookie: an office behind one address shares them (#110).
+ * An IPv6 /48 has looser limits of its own (NETWORK_MINUTE_LIMIT in
+ * demo/server/visitors.ts, #250), refused with the same answers.
  */
 export const VISITOR_MINUTE_LIMIT = 20;
 export const VISITOR_DAY_LIMIT = 200;

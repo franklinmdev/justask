@@ -38,7 +38,7 @@ import {
 	utcDay,
 } from "./budget.ts";
 import { refusal } from "./policy.ts";
-import { type VisitorLimit, visitorAddress } from "./visitors.ts";
+import { type VisitorLimit, visitorAddresses } from "./visitors.ts";
 
 /**
  * Fixed by the owner for round 2, before its rows existed: round 1 failed at
@@ -271,11 +271,13 @@ export function createDemoHandler(
 				status: 402,
 			});
 		}
-		const address = visitorAddress(request.headers.get("cf-connecting-ip"));
+		const addresses = visitorAddresses(request.headers.get("cf-connecting-ip"));
 		const calls = counted(provider, ledger);
 		const visitor = visiting(
 			calls,
-			address ? () => ledger.visit(address, new Date()) : async () => null,
+			addresses.length > 0
+				? () => ledger.visit(addresses, new Date())
+				: async () => null,
 		);
 		const response = await route({
 			provider: visitor,

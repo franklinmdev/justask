@@ -55,14 +55,14 @@ async function renderDemo({
 	if (spent) await ledger.add(utcDay(new Date()), DAILY_BUDGET_USD);
 	if (used === "minute") {
 		for (let i = 0; i < VISITOR_MINUTE_LIMIT; i++) {
-			await ledger.visit(VISITOR, new Date());
+			await ledger.visit([VISITOR], new Date());
 		}
 	}
 	if (used === "day") {
 		// One call every 10 s, under the minute's limit, ending before now.
 		const start = Date.now() - VISITOR_DAY_LIMIT * 10_000;
 		for (let i = 0; i < VISITOR_DAY_LIMIT; i++) {
-			await ledger.visit(VISITOR, new Date(start + i * 10_000));
+			await ledger.visit([VISITOR], new Date(start + i * 10_000));
 		}
 	}
 	const handler = createDemoHandler(provider, { ledger, killSwitch });
