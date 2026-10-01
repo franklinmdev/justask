@@ -2,6 +2,8 @@
 
 Turns what a person types in plain language into an app's own state: search results, table filters, a filled record card. Code finds the candidates (parsed dates, times and amounts; a shortlist of the host app's catalog rows), a provider model picks one label per question with a probability for every label, and code builds the result. A field the model is unsure of stays empty for the person to fill, and nothing reaches the host app until the person confirms.
 
+**A filled field is a suggestion the person confirms, never a saved value.** The model can be confidently wrong: the pre-launch QA found 8 of 470 fills confident and wrong (1.7%) on a broad probe set, most from parser candidates fixed since ([the measurement](https://github.com/franklinmdev/justask/issues/172#issuecomment-5850635833); the latest rerun of its probes is in [docs/card-eval.md](docs/card-eval.md#calibration-probes)). Keep the confirm step in the host app.
+
 The first provider is Jev (TypeSafe, `@typesafe-ai/sdk`). Any model that answers every question in one call with a probability for every label can be added without touching the core.
 
 ## Status
