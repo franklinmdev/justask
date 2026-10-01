@@ -415,6 +415,30 @@ describe("times", () => {
 	it("does not read the hour of a time as an amount", () => {
 		expect(amounts("a las 4 de la tarde")).toEqual([]);
 	});
+
+	it.each([
+		["almuerzo a las 12.30", "a las 12.30", ["12:30"]],
+		["cita para las 8.15", "para las 8.15", ["08:15", "20:15"]],
+		["como a las 9.05 de la noche", "como a las 9.05 de la noche", ["21:05"]],
+		["pagué las 3.45", "las 3.45", ["03:45", "15:45"]],
+	])(
+		"reads a dot between hour and minutes after 'las' as a time (#241): %s",
+		(text, span, at) => {
+			expect(times(text)).toEqual(at.map((time) => [span, time]));
+			expect(amounts(text)).toEqual([]);
+		},
+	);
+
+	it.each([
+		["taxi a las 12.99", 12.99],
+		["lunch at 12.30", 12.3],
+	])(
+		"still reads %s as money: minutes past 59, or 'at' (#241)",
+		(text, value) => {
+			expect(times(text)).toEqual([]);
+			expect(amounts(text).map(([, v]) => v)).toEqual([value]);
+		},
+	);
 });
 
 describe("month names", () => {

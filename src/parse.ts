@@ -1425,8 +1425,11 @@ const HOURS: Record<string, number> = {
 };
 const HOUR = `(\\d{1,2}|${byLength(Object.keys(HOURS))})`;
 /** ":30", " y media", " y cuarto", " y 15", " menos cuarto", " and a half", " y pico" (no minute said), "h". */
-const MINUTES =
-	"(?::(\\d{2})|\\s+y\\s+(media|cuarto|pico|algo|\\d{1,2})|\\s+(menos\\s+cuarto)|\\s+and\\s+a\\s+half|\\s*(?:h|hrs?)(?![a-z]))?";
+const minutes = (colon: string) =>
+	`(?:${colon}(\\d{2})|\\s+y\\s+(media|cuarto|pico|algo|\\d{1,2})|\\s+(menos\\s+cuarto)|\\s+and\\s+a\\s+half|\\s*(?:h|hrs?)(?![a-z]))?`;
+const MINUTES = minutes(":");
+/** After "las" a dot may stand for the colon, "a las 12.30" (#241); after "at" it stays money, "coffee at 4.50". */
+const LAS_MINUTES = minutes("[:.]");
 const MERIDIEM =
 	"(?:\\s*(a\\.?\\s?m\\.?|p\\.?\\s?m\\.?)(?![a-z])|\\s+(?:de\\s+la|en\\s+la|por\\s+la|in\\s+the)\\s+(manana|tarde|noche|morning|afternoon|evening|night)|\\s+at\\s+night)?";
 /** Not money, a share, an ordinal or a day of a month: "at 4.50", "at 5 dollars", "a las 3 de mayo". */
@@ -1496,9 +1499,17 @@ function readClock(m: RegExpExecArray, offset: number): TimeHit[] | null {
 
 const TIME_RULES: TimeRule[] = [
 	{
-		// "a las 4", "para las 4:30", "at 4pm", "@ 3", "a la una".
+		// "a las 4", "para las 4:30", "a las 12.30", "a la una".
 		re: new RegExp(
-			`${b}(?:a\\s+las?|para\\s+las?|como\\s+a\\s+las?|tipo|at|around|@)\\s*${HOUR}${MINUTES}${MERIDIEM}${e}${NOT_A_TIME}`,
+			`${b}(?:a\\s+las?|para\\s+las?|como\\s+a\\s+las?)\\s*${HOUR}${LAS_MINUTES}${MERIDIEM}${e}${NOT_A_TIME}`,
+			"g",
+		),
+		read: (m) => readClock(m, 1),
+	},
+	{
+		// "at 4pm", "@ 3", "tipo 4:30".
+		re: new RegExp(
+			`${b}(?:tipo|at|around|@)\\s*${HOUR}${MINUTES}${MERIDIEM}${e}${NOT_A_TIME}`,
 			"g",
 		),
 		read: (m) => readClock(m, 1),
@@ -1506,7 +1517,7 @@ const TIME_RULES: TimeRule[] = [
 	{
 		// "las 10 de la mañana", "la una y media", "las 12.": after "las" alone only with minutes, a part of the day or nothing after, so "las 3 facturas" is a count.
 		re: new RegExp(
-			`${b}las?\\s+${HOUR}${MINUTES}${MERIDIEM}${e}${NOT_A_TIME}`,
+			`${b}las?\\s+${HOUR}${LAS_MINUTES}${MERIDIEM}${e}${NOT_A_TIME}`,
 			"g",
 		),
 		read: (m) =>
