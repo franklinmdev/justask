@@ -2,6 +2,10 @@ import {
 	type AskError,
 	type AskInput,
 	ask,
+	checkCard,
+	checkFilter,
+	checkSearch,
+	checkTimeout,
 	type SearchResult,
 	type Spent,
 	spent,
@@ -25,7 +29,11 @@ type HandlerConfig = {
 	 * time zone the browser sends, so it cannot be configured.
 	 */
 	facts?: Facts;
-	/** Called with the full error, cause included, which never reaches the browser. */
+	/**
+	 * Called with the full error, cause included, which never reaches the
+	 * browser. Without it, the handler logs the error with `console.error`, so
+	 * a missing or refused key says so on the server.
+	 */
 	onError?: (error: AskError) => void;
 };
 
@@ -72,7 +80,7 @@ export type CardHandlerResponse<F extends CardFields> = Spent & {
 	error?: HandlerError;
 };
 
-/** The body of a 400 response. */
+/** The body of a 400, 413 or 415 response. */
 export type HandlerBadRequest = {
 	error: { kind: "request"; message: string };
 };
@@ -88,6 +96,7 @@ export function createSearchHandler<T>(
 	config: SearchHandlerConfig<T>,
 ): (httpRequest: Request) => Promise<Response> {
 	const { search } = config;
+	checkSearch(search);
 	return serve(config, async (input) => {
 		const result = await ask({ ...input, search });
 		const response: SearchHandlerResponse<T> = {
@@ -107,6 +116,7 @@ export function createFilterHandler<F extends Fields>(
 	config: FilterHandlerConfig<F>,
 ): (httpRequest: Request) => Promise<Response> {
 	const { filter } = config;
+	checkFilter(filter);
 	return serve(config, async (input) => {
 		const result = await ask({ ...input, filter });
 		const response: FilterHandlerResponse<F> = {
@@ -126,6 +136,7 @@ export function createCardHandler<F extends CardFields>(
 	config: CardHandlerConfig<F>,
 ): (httpRequest: Request) => Promise<Response> {
 	const { card } = config;
+	checkCard(card);
 	return serve(config, async (input) => {
 		const result = await ask({ ...input, card });
 		const response: CardHandlerResponse<F> = {
@@ -138,14 +149,35 @@ export function createCardHandler<F extends CardFields>(
 
 type AskBase = Omit<AskInput<unknown>, "search">;
 
+/**
+ * The longest request a handler takes, in characters as JavaScript counts
+ * them. What a person types is far shorter; the cap bounds what one call
+ * parses, and asks the provider.
+ */
+const MAX_REQUEST_LENGTH = 1_000;
+
+/**
+ * The largest body a handler reads, in bytes: room for the longest request
+ * with every character escaped, and its time zone. Past it the handler stops
+ * reading, so no body can hold the server's memory.
+ */
+const MAX_BODY_BYTES = 16 * 1024;
+
+/** The longest refused time zone a 400 names, twice as long as any IANA name. */
+const MAX_TIME_ZONE_ECHO = 64;
+
+/** The status for a request the browser dropped before its answer, as nginx names it. */
+const CLIENT_CLOSED = 499;
+
 /** What every handler shares: POST only, the body read, today written, errors kept on the server. */
 function serve(
-	{ provider, timeoutMs, facts = {}, onError }: HandlerConfig,
+	{ provider, timeoutMs, facts = {}, onError = logError }: HandlerConfig,
 	run: (input: AskBase) => Promise<{
 		response: { error?: HandlerError };
 		error: AskError | undefined;
 	}>,
 ): (httpRequest: Request) => Promise<Response> {
+	checkTimeout(timeoutMs);
 	if ("today" in facts) {
 		throw new TypeError(
 			'justask: the handler writes the "today" fact from the browser\'s time zone; leave it out of facts',
@@ -156,18 +188,40 @@ function serve(
 		if (httpRequest.method !== "POST") {
 			return new Response(null, { status: 405, headers: { allow: "POST" } });
 		}
+		// Another site's page can post a form or plain text with no preflight,
+		// and spend the host's budget; a JSON post needs the host's CORS consent.
+		if (!sentAsJson(httpRequest)) {
+			return badRequest("The body must be sent as application/json", 415);
+		}
 		const read = await readBody(httpRequest);
-		if ("error" in read) return badRequest(read.error);
+		if ("error" in read) return badRequest(read.error, read.status);
 
 		const now = new Date();
-		const { response, error } = await run({
-			request: read.body.request,
-			facts: { today: todayFact(now, read.body.timeZone), ...facts },
-			provider,
-			timeoutMs,
-		});
+		let answered: Awaited<ReturnType<typeof run>>;
+		try {
+			answered = await run({
+				request: read.body.request,
+				facts: { today: todayFact(now, read.body.timeZone), ...facts },
+				provider,
+				timeoutMs,
+				signal: httpRequest.signal,
+			});
+		} catch (error) {
+			// The browser went away, and its call with it: nobody reads this answer.
+			// Any other error, even one thrown as it left, is the host's to answer.
+			if (httpRequest.signal.aborted && error === httpRequest.signal.reason) {
+				return new Response(null, { status: CLIENT_CLOSED });
+			}
+			throw error;
+		}
+		const { response, error } = answered;
 		if (error) {
-			onError?.(error);
+			try {
+				onError(error);
+			} catch (thrown) {
+				// A broken logger must not cost the person a perfectly good held answer.
+				console.error("justask: onError threw", thrown);
+			}
 			response.error = forBrowser(error);
 		}
 		return Response.json(response);
@@ -176,10 +230,21 @@ function serve(
 
 async function readBody(
 	httpRequest: Request,
-): Promise<{ body: HandlerRequest } | { error: string }> {
+): Promise<{ body: HandlerRequest } | { error: string; status?: 413 }> {
+	const text = await readCapped(httpRequest);
+	if (text === null) {
+		return { error: `The body is over ${MAX_BODY_BYTES} bytes`, status: 413 };
+	}
+	if (text === "") {
+		// Most often a body parser mounted before the handler read it.
+		return {
+			error:
+				"The body is empty: was it read before the handler, as express.json() does?",
+		};
+	}
 	let body: unknown;
 	try {
-		body = await httpRequest.json();
+		body = JSON.parse(text);
 	} catch {
 		return { error: "The body is not JSON" };
 	}
@@ -190,20 +255,74 @@ async function readBody(
 	if (typeof request !== "string") {
 		return { error: '"request" must be a string' };
 	}
+	if (request.length > MAX_REQUEST_LENGTH) {
+		return { error: `The request is over ${MAX_REQUEST_LENGTH} characters` };
+	}
 	if (typeof timeZone !== "string") {
 		return { error: '"timeZone" must be the browser\'s IANA time zone' };
 	}
 	try {
 		new Intl.DateTimeFormat("en", { timeZone });
 	} catch {
-		return { error: `"${timeZone}" is not a time zone` };
+		// Named when it could be one, so a long value is not sent back in full.
+		const named = timeZone.length <= MAX_TIME_ZONE_ECHO ? timeZone : "timeZone";
+		return { error: `"${named}" is not a time zone` };
 	}
-	return { body: { request, timeZone } };
+	return { body: { request: wellFormed(request), timeZone } };
 }
 
-function badRequest(message: string): Response {
+/**
+ * The text with each lone surrogate, which the provider refuses as invalid
+ * Unicode, replaced by U+FFFD, as `String.prototype.toWellFormed` does.
+ */
+function wellFormed(text: string): string {
+	return text.replace(
+		/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g,
+		"\uFFFD",
+	);
+}
+
+/**
+ * The body as text, or null past MAX_BODY_BYTES: refused on its declared
+ * length before a byte is read, else read no further than the cap.
+ */
+async function readCapped(httpRequest: Request): Promise<string | null> {
+	if (Number(httpRequest.headers.get("content-length")) > MAX_BODY_BYTES) {
+		return null;
+	}
+	if (!httpRequest.body) return "";
+	const reader = httpRequest.body.getReader();
+	const decoder = new TextDecoder();
+	let size = 0;
+	let text = "";
+	for (;;) {
+		const { done, value } = await reader.read();
+		if (done) return text + decoder.decode();
+		size += value.byteLength;
+		if (size > MAX_BODY_BYTES) {
+			await reader.cancel();
+			return null;
+		}
+		text += decoder.decode(value, { stream: true });
+	}
+}
+
+function sentAsJson(httpRequest: Request): boolean {
+	const type = httpRequest.headers.get("content-type") ?? "";
+	return type.split(";")[0]?.trim().toLowerCase() === "application/json";
+}
+
+function badRequest(message: string, status: 400 | 413 | 415 = 400): Response {
 	const body: HandlerBadRequest = { error: { kind: "request", message } };
-	return Response.json(body, { status: 400 });
+	return Response.json(body, { status });
+}
+
+/** The default `onError`: the message and, for a provider error, its cause. */
+function logError(error: AskError): void {
+	console.error(
+		`justask: ${error.message}`,
+		...(error.kind === "provider" ? [error.cause] : []),
+	);
 }
 
 /** The cause, and a provider's own message, may carry server details such as the key. */

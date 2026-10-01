@@ -9,6 +9,7 @@ import type {
 	DateField,
 	DateRange,
 	Joiners,
+	Negations,
 	SeveralCatalogField,
 } from "justask";
 export type Language = "en" | "es";
@@ -59,7 +60,8 @@ export type FieldHeldReason =
 	| { kind: "not-available" }
 	| { kind: "below-gate"; probability: string; gate: string }
 	| { kind: "conflict" }
-	| { kind: "pair"; text: string };
+	| { kind: "pair"; text: string }
+	| { kind: "marker"; text: string };
 
 /** How an expense is tagged; several can apply to one. */
 export type Tag = "meals" | "travel" | "office" | "client";
@@ -80,7 +82,9 @@ export type CardHeldReason =
 	| { kind: "not-a-record" }
 	| { kind: "foreign-currency"; mark: string }
 	| { kind: "ambiguous"; text: string }
-	| { kind: "period"; text: string };
+	| { kind: "period"; text: string }
+	| { kind: "after-today"; text: string }
+	| { kind: "negated"; text: string };
 
 /** Why the intent question let the fields fill, or held them all. */
 export type IntentReason =
@@ -90,7 +94,8 @@ export type IntentReason =
 	| { kind: "not-available" }
 	| { kind: "tie" }
 	| { kind: "failed" }
-	| ({ kind: "command" } & CardCommand);
+	| ({ kind: "command" } & CardCommand)
+	| { kind: "marker"; text: string };
 
 /** A calendar popover's words: its name, the month steps and the clear button. */
 export type CalendarCopy = {
@@ -116,8 +121,12 @@ export type CardCopy = {
 	fromRequest: string;
 	/** Beside the tags' label while their value is the one the vendor implied (ADR 0012). */
 	fromVendor: string;
-	/** What a screen reader hears, and the page shows, once an answer comes back. */
-	announce: (filled: string[], waiting: string[]) => string;
+	/**
+	 * What a screen reader hears, and the page shows, once an answer comes
+	 * back: the fields it filled, the ones the person set during the call,
+	 * which it kept, and the ones left to fill.
+	 */
+	announce: (filled: string[], waiting: string[], kept: string[]) => string;
 	/** What the page says when the answer failed: the card stays as it was. */
 	unanswered: string;
 	pickDay: string;
@@ -229,6 +238,11 @@ export type HeldReason =
 	| { kind: "no-candidates" }
 	| { kind: "provider" }
 	| { kind: "timeout"; timeoutMs: number }
+	| { kind: "refused"; message: string }
+	| { kind: "too-large" }
+	| { kind: "unsupported" }
+	| { kind: "rate-limited"; retryAfterMs: number | null }
+	| { kind: "server"; status: number }
 	| { kind: "unreachable"; message: string };
 
 /**
@@ -262,6 +276,8 @@ export type Copy = {
 	strip: string;
 	stripIdle: string;
 	notReported: string;
+	/** Under the request box once a paste or a key ran into its limit: the box cut the rest (#225). */
+	cut: (limit: number) => string;
 	jsonIdle: string;
 	showLabel: string;
 	app: string;
@@ -379,6 +395,11 @@ export type Content = {
 	 * filter and the card hold (ADR 0010, 0011).
 	 */
 	joiners: Joiners;
+	/**
+	 * The words that negate a vendor's name on the card, so a vendor the
+	 * request names only negated is held (ADR 0016).
+	 */
+	cardNegations: Negations;
 };
 
 /**

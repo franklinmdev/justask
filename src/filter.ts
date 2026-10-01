@@ -143,6 +143,11 @@ export type FieldResult<F extends Field> =
 export type FilterResult<F extends Fields> = {
 	value: FilterValue<F>;
 	fields: { [K in keyof F]: FieldResult<F[K]> };
+	/**
+	 * The role marker that held every field whatever its pick, as the request
+	 * writes it (ADR 0015). The picks are still reported.
+	 */
+	marker?: string;
 };
 
 /**
@@ -353,15 +358,20 @@ export function describeTime({ text, time, note }: TimeReading): string {
 
 const currencyNames = new Intl.DisplayNames("en", { type: "currency" });
 
-/** What the provider reads about an amount candidate: its value is already read. */
-export function describeAmount({
-	text,
-	value,
-	currency,
-}: AmountReading): string {
+/**
+ * What the provider reads about an amount candidate: its value is already
+ * read. Where a number with no currency is in the local one (a card with the
+ * `local_currency` fact, #191), it only says none is written.
+ */
+export function describeAmount(
+	{ text, value, currency, unresolved }: AmountReading,
+	bareIsLocal = false,
+): string {
 	const named = currency
 		? `${value} ${currency} (${currencyNames.of(currency)})`
-		: `${value}, the request does not say in which currency`;
+		: bareIsLocal && unresolved === undefined
+			? `${value}, no currency written`
+			: `${value}, the request does not say in which currency`;
 	return `"${text}": ${named}`;
 }
 

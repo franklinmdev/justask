@@ -21,19 +21,29 @@ export type Joiners = { or: string[]; and: string[] };
 const GAP = 2;
 
 /**
+ * What sits between two names: words, with a slash kept inside one ("y/o",
+ * "and/or") or closing one ("w/", with), and a slash or a comma standing
+ * alone.
+ */
+const GAP_TOKEN = /[\p{L}\p{M}\p{N}]+(?:[-'’/][\p{L}\p{M}\p{N}]+)*\/?|[/,]/gu;
+
+/**
  * A word: letters, combining marks and digits, joined by hyphens and
  * apostrophes, so "either-or" is one word and "Tallyroot's" another.
  */
 const WORD = /[\p{L}\p{M}\p{N}]+(?:[-'’][\p{L}\p{M}\p{N}]+)*/gu;
 
-type Word = { folded: string; start: number; end: number };
+export type Word = { folded: string; start: number; end: number };
 
-/** Folded, and a possessive dropped: "Tallyroot's" reads "tallyroot". */
-function foldWord(word: string): string {
-	return fold(word).replace(/['’]s$/, "");
+/**
+ * Folded, a curly apostrophe read as a straight one, and a possessive
+ * dropped: "Tallyroot's" reads "tallyroot", "wasn’t" reads "wasn't".
+ */
+export function foldWord(word: string): string {
+	return fold(word).replace(/’/g, "'").replace(/'s$/, "");
 }
 
-function words(text: string): Word[] {
+export function words(text: string): Word[] {
 	return [...text.matchAll(WORD)].map((found) => ({
 		folded: foldWord(found[0]),
 		start: found.index,
@@ -100,10 +110,13 @@ function namesItem(naming: Naming, run: Word[]): boolean {
 	);
 }
 
-type Mention = { id: string; first: number; last: number };
+export type Mention = { id: string; first: number; last: number };
 
 /** The items the request names, in order, the longest naming first where two start on one word. */
-function mentions(text: Word[], candidates: Candidate<unknown>[]): Mention[] {
+export function mentions(
+	text: Word[],
+	candidates: Candidate<unknown>[],
+): Mention[] {
 	const all = namings(candidates)
 		.filter(({ words }) => words.length > 0)
 		.sort((a, b) => b.words.length - a.words.length);
@@ -145,15 +158,20 @@ export function findPair(
 			foldWord(joiner.trim()),
 		),
 	);
+	const joinerWords = new Set(
+		[...joiners.or, ...joiners.and].map((joiner) => foldWord(joiner.trim())),
+	);
 	const named = mentions(said, candidates);
 	if (new Set(named.map(({ id }) => id)).size !== 2) return undefined;
 	for (let n = 1; n < named.length; n++) {
 		const a = named[n - 1] as Mention;
 		const b = named[n] as Mention;
 		if (a.id === b.id) continue;
-		const between = said.slice(a.last + 1, b.first);
-		const joined = between.filter(({ folded }) => joining.has(folded));
-		if (joined.length !== 1 || between.length - 1 > GAP) continue;
+		const gap = text.slice(
+			(said[a.last] as Word).end,
+			(said[b.first] as Word).start,
+		);
+		if (!joins(gap, joining, joinerWords, several)) continue;
 		return {
 			ids: [a.id, b.id],
 			text: text.slice(
@@ -163,6 +181,37 @@ export function findPair(
 		};
 	}
 	return undefined;
+}
+
+/**
+ * Whether the text between two names joins them: one joiner word and up to
+ * two other words; or, with no joiner word, one slash, alone or between two
+ * joiner words ("y/o", "and/or"), which offers a choice as "or" does; or a
+ * comma and nothing else, which lists both as "and" does, so only on a field
+ * that takes one item (#185).
+ */
+function joins(
+	gap: string,
+	joining: Set<string>,
+	joinerWords: Set<string>,
+	several: boolean,
+): boolean {
+	const tokens = [...gap.matchAll(GAP_TOKEN)].map(([token]) => token);
+	const slashes = tokens.filter(
+		(token) =>
+			token === "/" ||
+			(token.includes("/") &&
+				token.split("/").every((part) => joinerWords.has(foldWord(part)))),
+	);
+	const others = tokens.filter(
+		(token) => token !== "," && !slashes.includes(token),
+	);
+	const joined = others.filter((token) => joining.has(foldWord(token)));
+	if (joined.length > 0) {
+		return joined.length === 1 && others.length - 1 <= GAP;
+	}
+	if (slashes.length > 0) return slashes.length === 1 && others.length <= GAP;
+	return !several && tokens.length === 1 && tokens[0] === ",";
 }
 
 /**

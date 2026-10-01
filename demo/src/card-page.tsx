@@ -9,7 +9,7 @@ import {
 	useCard,
 } from "justask/react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { cardEndpoint, REQUEST_LIMIT } from "./api.ts";
+import { cardEndpoint } from "./api.ts";
 import { CardPanel, impliedByOf } from "./card-panel.tsx";
 import type { Content, ExpenseFields, ExpenseName } from "./content/types.ts";
 import { DayPicker } from "./day-picker.tsx";
@@ -17,9 +17,11 @@ import { foreignCurrency, formats, parseAmount } from "./format.ts";
 import {
 	answerKey,
 	CaseHead,
+	LimitNote,
 	Saved,
 	Suggestions,
 	settleAt,
+	useRequestLimit,
 	useStillAnswer,
 	useTypedText,
 } from "./parts.tsx";
@@ -101,6 +103,7 @@ export function CardPage({
 	}, [pressed]);
 	replay.follow(markingSends);
 	const box = replay.stoppedBy(markingSends);
+	const limit = useRequestLimit(box.request, "card-box-limit");
 	const suggest = useSuggest(box);
 	// A field the person sets ends the replay, so its answer never writes over their choice.
 	const fields: typeof card = {
@@ -143,7 +146,8 @@ export function CardPage({
 					{copy.card.fields[name]}
 				</span>
 			)}
-			{filledBy === "answer" && (
+			{/* After a failed call the card stays as it was, but its fill came from no request in the box (#218). */}
+			{filledBy === "answer" && !card.error && (
 				<span className="entry-source">
 					{card.result && impliedByOf(name, card.result)
 						? copy.card.fromVendor
@@ -177,9 +181,11 @@ export function CardPage({
 					className="box"
 					autoComplete="off"
 					spellCheck={false}
-					maxLength={REQUEST_LIMIT}
 					enterKeyHint="go"
-					aria-describedby="card-box-hint"
+					{...limit.box}
+					aria-describedby={
+						limit.cut ? `card-box-hint ${limit.id}` : "card-box-hint"
+					}
 				/>
 				{/* Sends what Enter sends; off while the box is blank, as Save is with nothing to save. */}
 				<button
@@ -203,6 +209,7 @@ export function CardPage({
 			<p id="card-box-hint" className="hint fill-hint">
 				{unsent ? copy.card.fillHint : ""}
 			</p>
+			<LimitNote content={content} limit={limit} />
 			<Saved
 				content={content}
 				cost={costOf(formControls(card.result?.value ?? {}))}
@@ -211,10 +218,11 @@ export function CardPage({
 			<CardStatus
 				card={card}
 				className="hint card-status"
-				announce={({ filled, waiting }) =>
+				announce={({ filled, waiting, kept }) =>
 					copy.card.announce(
 						filled.map((name) => copy.card.fields[name]),
 						waiting.map((name) => copy.card.fields[name]),
+						kept.map((name) => copy.card.fields[name]),
 					)
 				}
 				unanswered={copy.card.unanswered}

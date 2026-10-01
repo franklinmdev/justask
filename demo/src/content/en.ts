@@ -1,3 +1,4 @@
+import { waitOf } from "../format.ts";
 import {
 	type Content,
 	type FieldHeldReason,
@@ -31,6 +32,8 @@ function fieldHeldBecause(reason: FieldHeldReason): string {
 			return "The picks do not add up to one filter, so the code held the field.";
 		case "pair":
 			return `The request names two candidates (“${reason.text}”), so the code held the field whatever the pick.`;
+		case "marker":
+			return `The request speaks as the system or an admin (“${reason.text}”), not as the person, so the code held the field whatever the pick.`;
 	}
 }
 
@@ -55,7 +58,7 @@ export const english: Content = {
 			},
 			minute: {
 				title: "You have used your 20 live requests this minute",
-				body: "Each visitor gets 20 live requests a minute and 200 a day on the demo's key, counted by IP address. They come back in about a minute. Until then every case's recorded run still plays, and a clone of justask runs on your own key.",
+				body: "Each visitor gets 20 live requests a minute and 200 a day on the demo's key, counted by IP address. They come back within a minute. Until then every case's recorded run still plays, and a clone of justask runs on your own key.",
 			},
 			day: {
 				title: "You have used your 200 live requests today",
@@ -75,6 +78,8 @@ export const english: Content = {
 		strip: "This call",
 		stripIdle: "Latency, tokens and cost show after the first call.",
 		notReported: "Not reported",
+		cut: (limit) =>
+			`Requests stop at ${limit} characters, so the rest was left out.`,
 		jsonIdle: "The result shows here after the first call.",
 		showLabel: "Show",
 		app: "App",
@@ -89,8 +94,7 @@ export const english: Content = {
 		ambiguous: "Could mean two",
 		nothing: "Nothing to find",
 		empty: "No vendor matches",
-		unanswered:
-			"The request could not be read, so no vendor is shown. Try again.",
+		unanswered: "No answer came back, so no vendor is shown. Try again.",
 		choices: "Which one?",
 		severalFit: "More than one vendor could fit",
 		closest: "Closest",
@@ -134,6 +138,25 @@ export const english: Content = {
 					return "The provider failed, so nothing is shown. The server log has the details.";
 				case "timeout":
 					return `The provider did not answer within ${reason.timeoutMs}\u00a0ms, so nothing is shown.`;
+				case "refused":
+					return `The server refused the request: ${reason.message}`;
+				case "too-large":
+					return "The request was too large for the server, so nothing is shown.";
+				case "unsupported":
+					return "The server did not take the request as JSON, so nothing is shown.";
+				case "rate-limited": {
+					if (reason.retryAfterMs === null) {
+						return "The server is taking too many requests. Try again in a moment.";
+					}
+					const wait = waitOf(reason.retryAfterMs);
+					const after =
+						"seconds" in wait
+							? `${wait.seconds} ${wait.seconds === 1 ? "second" : "seconds"}`
+							: `${wait.minutes} ${wait.minutes === 1 ? "minute" : "minutes"}`;
+					return `The server is taking too many requests. Try again in ${after}.`;
+				}
+				case "server":
+					return `The server failed (${reason.status}), so nothing is shown. Try again.`;
 				case "unreachable":
 					return `The server could not be reached: ${reason.message}`;
 			}
@@ -171,7 +194,7 @@ export const english: Content = {
 			},
 			empty: "Nothing in that request filters the transactions.",
 			unanswered:
-				"The request could not be read, so the table stays as it was. Try again.",
+				"No answer came back, so the table stays as it was. Try again.",
 			applied: "Applied",
 			appliedFields: (set, held) =>
 				[
@@ -275,18 +298,23 @@ export const english: Content = {
 			chooseVendor: "Choose a vendor",
 			fromRequest: "from the request",
 			fromVendor: "from the vendor",
-			announce: (filled, waiting) => {
+			announce: (filled, waiting, kept) => {
 				const list = (names: string[]) =>
 					listFormat.format(names.map((name) => name.toLowerCase()));
-				if (filled.length === 0) {
-					return `Nothing filled. For you to fill: ${list(waiting)}.`;
-				}
-				return waiting.length === 0
-					? `Filled: ${list(filled)}. Nothing left to fill.`
-					: `Filled: ${list(filled)}. For you to fill: ${list(waiting)}.`;
+				return [
+					filled.length > 0
+						? `Filled: ${list(filled)}.`
+						: kept.length === 0 && "Nothing filled.",
+					kept.length > 0 && `Kept your changes: ${list(kept)}.`,
+					waiting.length > 0
+						? `For you to fill: ${list(waiting)}.`
+						: "Nothing left to fill.",
+				]
+					.filter(Boolean)
+					.join(" ");
 			},
 			unanswered:
-				"The request could not be read, so the card stays as it was. Fill it in by hand.",
+				"No answer came back, so the card stays as it was. Fill it in by hand.",
 			pickDay: "Pick a day",
 			calendar: {
 				label: "Choose the day",
@@ -325,6 +353,8 @@ export const english: Content = {
 						return "No answer came back, so every field is held.";
 					case "command":
 						return `The request acts on an expense already recorded (“${reason.verb}”, “${reason.reference}”), so the code held every field whatever the pick.`;
+					case "marker":
+						return `The request speaks as the system or an admin (“${reason.text}”), not as the person, so the code held every field whatever the pick.`;
 				}
 			},
 			heldBecause: (reason) => {
@@ -337,12 +367,16 @@ export const english: Content = {
 						return `“${reason.text}” reads two ways, so the code held the field whatever its probability.`;
 					case "period":
 						return `“${reason.text}” is a period, not one day, so the code held the field.`;
+					case "negated":
+						return `The request says it was not this vendor (“${reason.text}”), so the code held the field whatever the pick.`;
+					case "after-today":
+						return `“${reason.text}” is after today, and an expense’s day has already happened, so the code held the field.`;
 					default:
 						return fieldHeldBecause(reason);
 				}
 			},
 			impliedBecause: (vendor, tags) =>
-				`Filled from the vendor: every sale at ${vendor} is tagged ${tags.toLowerCase()}, and no tag's answer said otherwise.`,
+				`Filled from the vendor: every purchase from ${vendor} is tagged ${tags.toLowerCase()}, and no tag's answer said otherwise.`,
 			tagQuestion: (name) => `Tagged ${name.toLowerCase()}?`,
 			yes: "the request asks for it",
 			unresolved: (mark) => `“${mark}” is not the local currency`,
@@ -565,7 +599,24 @@ export const english: Content = {
 			"the invoices",
 		],
 	},
-	joiners: { or: ["or"], and: ["and"] },
+	joiners: { or: ["or", "vs", "versus"], and: ["and"] },
+	cardNegations: {
+		before: [
+			"not",
+			"never",
+			"no",
+			"wasn't",
+			"wasnt",
+			"was not",
+			"isn't",
+			"isnt",
+			"is not",
+			"didn't",
+			"didnt",
+			"did not",
+		],
+		after: ["wasn't", "wasnt", "was not", "isn't", "isnt", "is not"],
+	},
 
 	cardSuggestions: {
 		fills: [

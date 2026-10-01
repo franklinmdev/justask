@@ -17,7 +17,10 @@ export type ProviderInput = {
 	request: string;
 	facts: Facts;
 	questions: Question[];
-	/** Aborted when the developer's timeout runs out; an adapter passes it to its SDK. */
+	/**
+	 * Aborted when the developer's timeout runs out, or when the caller no
+	 * longer wants the answer; an adapter passes it to its SDK.
+	 */
 	signal: AbortSignal;
 };
 
@@ -36,12 +39,13 @@ export type Usage = {
 
 /**
  * Each figure a call reported, picked by name, and none it left out: a
- * provider's result, or `ask`'s, whose other fields stay behind.
+ * provider's result, or `ask`'s, whose other fields stay behind. A figure
+ * that is not a finite number is unknown too, so no budget adds a NaN.
  */
 export function usageOf({ costUsd, inputTokens }: Usage): Usage {
 	return {
-		...(costUsd !== undefined && { costUsd }),
-		...(inputTokens !== undefined && { inputTokens }),
+		...(Number.isFinite(costUsd) && { costUsd }),
+		...(Number.isFinite(inputTokens) && { inputTokens }),
 	};
 }
 

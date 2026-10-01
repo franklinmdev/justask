@@ -49,9 +49,10 @@ export type FilterMiss = {
 	/**
 	 * `shortlist` or `parser` when no candidate could build the expected value,
 	 * so no pick could have been right; `pair` when a named pair held the
-	 * field (ADR 0011); `provider` otherwise.
+	 * field (ADR 0011); `marker` when a role marker held every field (ADR
+	 * 0015); `provider` otherwise.
 	 */
-	blame: "shortlist" | "parser" | "pair" | "provider";
+	blame: "shortlist" | "parser" | "pair" | "marker" | "provider";
 };
 
 export type FilterReport = {
@@ -111,9 +112,19 @@ const UNASKED: FieldReading = { value: null, probability: null, label: null };
 /**
  * A field's value at a gate, as `ask` builds it: a catalog field's candidate
  * id, a date range or an amount. Null when the field is held, as it is at
- * every gate when a named pair held it (ADR 0011).
+ * every gate when a named pair held it (ADR 0011) or a role marker held the
+ * whole request (ADR 0015); its pick is still read.
  */
 export function readField(
+	row: FilterRunRow,
+	name: string,
+	gate: number,
+): FieldReading {
+	const reading = readAnswer(row, name, gate);
+	return row.marker ? { ...reading, value: null } : reading;
+}
+
+function readAnswer(
 	row: FilterRunRow,
 	name: string,
 	gate: number,
@@ -316,7 +327,7 @@ function fieldStats(
 			if (got !== null && sameValue(got, expected)) stats.right++;
 		}
 		if (got !== null && !sameValue(got, expected)) stats.wrong++;
-		// A field a pair held reads null at every gate, so its pick fixes none.
+		// A field a pair or a role marker held reads null at every gate, so its pick fixes none.
 		const bare = readField(row, name, NO_GATE);
 		if (bare.value === null || bare.probability === null) continue;
 		notePick(stats, sameValue(bare.value, expected), bare.probability);
@@ -333,6 +344,7 @@ function blame(
 	const logged = row.fields[name];
 	if (expected === null || !logged) return "provider";
 	if (row.pairs?.[name]) return "pair";
+	if (row.marker) return "marker";
 	if (logged.kind === "catalog") {
 		return logged.candidates.some(({ id }) => id === expected)
 			? "provider"

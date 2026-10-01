@@ -1,6 +1,17 @@
 import type { Usage } from "justask";
 import type { SearchError } from "justask/react";
-import { type CSSProperties, useState } from "react";
+import {
+	type ClipboardEvent,
+	type CSSProperties,
+	createContext,
+	type InputEvent,
+	type KeyboardEvent,
+	use,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
+import { REQUEST_LIMIT } from "./api.ts";
 import type { Content, Cost, HeldReason } from "./content/types.ts";
 import { formats } from "./format.ts";
 import { dayOf, type Recording } from "./recording.ts";
@@ -19,7 +30,16 @@ export function failureOf(error: SearchError): HeldReason {
 			return { kind: "provider" };
 		case "timeout":
 			return { kind: "timeout", timeoutMs: error.timeoutMs };
-		default:
+		case "request":
+			return { kind: "refused", message: error.message };
+		case "too-large":
+		case "unsupported":
+			return { kind: error.kind };
+		case "rate-limited":
+			return { kind: "rate-limited", retryAfterMs: error.retryAfterMs };
+		case "server":
+			return { kind: "server", status: error.status };
+		case "network":
 			return { kind: "unreachable", message: error.message };
 	}
 }
@@ -135,6 +155,72 @@ export function useStillAnswer(answer: number, still: boolean): boolean {
 }
 
 /**
+ * The request box's limit, and whether a paste or a key ran into it: the
+ * box's maxLength cuts what does not fit and says nothing, and what was cut
+ * may be the amount or the date (#225). It stops saying so once the request
+ * is under the limit again. Spread `box` on the box, and render `LimitNote`.
+ */
+export function useRequestLimit(request: string, id: string) {
+	// The request when a paste or a key ran into the limit; a paste's own text lands after it.
+	const [cutAt, setCutAt] = useState<string | null>(null);
+	if (cutAt !== null && request !== cutAt && request.length < REQUEST_LIMIT) {
+		setCutAt(null);
+	}
+	const cut = cutAt !== null;
+	const kept = (input: HTMLInputElement) =>
+		input.value.length -
+		((input.selectionEnd ?? 0) - (input.selectionStart ?? 0));
+	return {
+		cut,
+		id,
+		box: {
+			maxLength: REQUEST_LIMIT,
+			...(cut && { "aria-describedby": id }),
+			onPaste: (event: ClipboardEvent<HTMLInputElement>) => {
+				const pasted = event.clipboardData.getData("text/plain");
+				if (kept(event.currentTarget) + pasted.length > REQUEST_LIMIT) {
+					setCutAt(request);
+				}
+			},
+			onKeyDown: (event: KeyboardEvent<HTMLInputElement>) => {
+				const typed =
+					event.key.length === 1 && !event.ctrlKey && !event.metaKey;
+				if (typed && kept(event.currentTarget) >= REQUEST_LIMIT) {
+					setCutAt(request);
+				}
+			},
+			// A phone's keyboard names no key ("Unidentified"), so its text is caught as it goes in.
+			onBeforeInput: (event: InputEvent<HTMLInputElement>) => {
+				if (event.data && kept(event.currentTarget) >= REQUEST_LIMIT) {
+					setCutAt(request);
+				}
+			},
+		},
+	};
+}
+
+/** Under the box: what `useRequestLimit` found, empty until a paste or a key ran into the limit. */
+export function LimitNote({
+	content,
+	limit,
+}: {
+	content: Content;
+	limit: ReturnType<typeof useRequestLimit>;
+}) {
+	return (
+		<p id={limit.id} className="hint limit-note" role="status">
+			{limit.cut ? content.copy.cut(REQUEST_LIMIT) : ""}
+		</p>
+	);
+}
+
+/**
+ * True while the shown case was opened from the stopped notice's replay: its
+ * heading takes the focus the notice held, as the notice took the box's (#222).
+ */
+export const FocusCaseContext = createContext(false);
+
+/**
  * A case's heading, labelled with the day its recorded run ran while the
  * display is the recording's, then the live region that says the replay
  * started. `said` goes first when the page has something newer to say.
@@ -156,10 +242,17 @@ export function CaseHead({
 }) {
 	const { copy } = content;
 	const day = recording ? formats(content.locale).date(dayOf(recording)) : "";
+	const focus = use(FocusCaseContext);
+	const heading = useRef<HTMLHeadingElement>(null);
+	useEffect(() => {
+		if (focus) heading.current?.focus();
+	}, [focus]);
 	return (
 		<>
 			<div className="case-head">
-				<h2 id={id}>{title}</h2>
+				<h2 id={id} ref={heading} tabIndex={-1}>
+					{title}
+				</h2>
 				{recording && replay.recorded && (
 					<p className="recorded">{copy.recorded(day)}</p>
 				)}

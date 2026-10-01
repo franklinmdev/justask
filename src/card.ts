@@ -11,6 +11,7 @@ import {
 	type ParsedFieldResult,
 } from "./filter.ts";
 import type { Joiners, NamedPair } from "./named-pair.ts";
+import type { NegatedItem, Negations } from "./negation.ts";
 import type {
 	AmountReading,
 	DateReading,
@@ -58,6 +59,13 @@ export type CardDateField = {
 	gate: number;
 };
 
+/**
+ * A date field's candidate on a card: the parsers' reading, marked when it
+ * lies after today on a field that reads the past, which never fills with it
+ * (ADR 0008).
+ */
+export type CardDateReading = DateReading & { afterToday?: true };
+
 /** A card's time field: a time of day, read from the parsers. */
 export type TimeField = {
 	kind: "time";
@@ -69,7 +77,9 @@ export type TimeField = {
 
 /** One named part of a card, declared with its kind, description and gate. */
 export type CardField =
-	| CatalogField<unknown>
+	// `several` absent, so a catalog field whose `kind` widened to a string
+	// fails on its kind, not on a missing `several` (#195).
+	| (CatalogField<unknown> & { several?: never })
 	| SeveralCatalogField<unknown>
 	| CardDateField
 	| TimeField
@@ -104,6 +114,16 @@ export type Card<F extends CardFields> = {
 	 * (ADR 0010).
 	 */
 	joiners?: Joiners;
+	/**
+	 * Words that negate an item's name, in the card's language, each a word
+	 * or a phrase, right beside the name with no clause mark between:
+	 * `before` words straight before it ("wasn't", "not"; "no fue"), `after`
+	 * words straight after it ("wasn't"; "no fue"). A field that takes one
+	 * item is held when its pick is an item the request names only negated,
+	 * whatever its probability, and a pair with a negated item is no pair
+	 * (ADR 0016).
+	 */
+	negations?: Negations;
 };
 
 /** A card's command words: "quite", "envíe"; "el gasto", "la factura". */
@@ -154,12 +174,15 @@ export type CardFieldResult<F extends CardField> =
 	F extends SeveralCatalogField<infer T>
 		? ParsedFieldResult<T> & Paired & Implied
 		: F extends CatalogField<infer T>
-			? CatalogFieldResult<T> & Paired
+			? CatalogFieldResult<T> & Paired & Negated
 			: F extends CardDateField
-				? CatalogFieldResult<DateReading>
+				? CatalogFieldResult<CardDateReading>
 				: F extends TimeField
 					? CatalogFieldResult<TimeReading>
 					: CatalogFieldResult<AmountReading>;
+
+/** The items a field that takes one item names only negated; its pick on one holds it (ADR 0016). */
+export type Negated = { negated?: NegatedItem[] };
 
 /** A field filled from another field's item, where its own questions left a gap (ADR 0012). */
 export type Implied = {
@@ -176,11 +199,13 @@ export type IntentResult = {
 	gate: number;
 	/**
 	 * True when the intent lets the card fill: new_record picked at or above
-	 * the gate, and no command held it.
+	 * the gate, and no command or role marker held it.
 	 */
 	passes: boolean;
 	/** The command that held the card before its gate, whatever the pick. */
 	command?: CardCommand;
+	/** The role marker that held the card before its gate, whatever the pick, as the request writes it (ADR 0015). */
+	marker?: string;
 };
 
 export type CardResult<F extends CardFields> = {
@@ -192,24 +217,33 @@ export type CardResult<F extends CardFields> = {
 /** The ids a card field's questions take, so two fields, or a field and the intent question, never share one. */
 export function cardQuestionIds(name: string, field: CardField): RegExp {
 	const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-	return "several" in field
+	return field.kind === "catalog" && field.several === true
 		? new RegExp(`^${escaped}_.+$`)
 		: new RegExp(`^${escaped}$`);
 }
 
-/** Whether the intent pick clears the card's gate; a command holds it whatever the pick. */
+/**
+ * Whether the intent pick clears the card's gate; a command or a role marker
+ * holds it whatever the pick.
+ */
 export function readIntent(
 	probabilities: Probabilities,
 	gate: number,
 	command?: CardCommand,
+	marker?: string,
 ): IntentResult {
 	const pick = readPick(probabilities);
 	return {
 		pick,
 		probabilities,
 		gate,
-		passes: !command && pick?.label === NEW_RECORD && pick.probability >= gate,
+		passes:
+			!command &&
+			!marker &&
+			pick?.label === NEW_RECORD &&
+			pick.probability >= gate,
 		...(command && { command }),
+		...(marker && { marker }),
 	};
 }
 
@@ -302,9 +336,11 @@ export function intentQuestion(card: Card<CardFields>): Question {
 
 /** The parsers' readings of one request, as candidates. */
 export type CandidateReadings = {
-	dates: Candidate<DateReading>[];
+	dates: Candidate<CardDateReading>[];
 	times: Candidate<TimeReading>[];
 	amounts: Candidate<AmountReading>[];
+	/** A number with no currency is in the local one: the `local_currency` fact is set (#191). */
+	bareIsLocal?: true;
 };
 
 export const NO_READINGS: CandidateReadings = {
@@ -315,8 +351,9 @@ export const NO_READINGS: CandidateReadings = {
 
 /**
  * A field that one question fills: a single catalog row, a day, a time or an
- * amount. The pick's candidate holds the field when a parser marked it
- * ambiguous, whatever its probability, before the gate is read. `fill` holds
+ * amount. The pick's candidate holds the field when `refuses` says so (a
+ * reading a parser marked ambiguous, or a day after today on a field that
+ * reads the past), whatever its probability, before the gate is read. `fill` holds
  * it too, by returning undefined, for a candidate that cannot be the field's
  * value (a period for a day).
  */
@@ -327,9 +364,14 @@ function choicePlan<T>(
 	gate: number,
 	fill: (value: T) => unknown,
 	{
-		ambiguous = () => false,
+		refuses = () => false,
 		pair,
-	}: { ambiguous?: (value: T) => boolean; pair?: NamedPair | undefined } = {},
+		negated = [],
+	}: {
+		refuses?: (value: T) => boolean;
+		pair?: NamedPair | undefined;
+		negated?: NegatedItem[];
+	} = {},
 ): FieldPlan {
 	const held = {
 		candidates,
@@ -337,6 +379,7 @@ function choicePlan<T>(
 		probabilities: {},
 		gate,
 		...(pair && { pair }),
+		...(negated.length > 0 && { negated }),
 	};
 	return {
 		questions: question ? [question] : [],
@@ -346,7 +389,13 @@ function choicePlan<T>(
 			const pick = readPick(probabilities);
 			const result = { ...held, pick, probabilities };
 			const winner = candidates.find(({ id }) => id === pick?.label);
-			if (pair || !winner || !pick || ambiguous(winner.value)) {
+			if (
+				pair ||
+				!winner ||
+				!pick ||
+				refuses(winner.value) ||
+				negated.some(({ id }) => id === winner.id)
+			) {
 				return { result };
 			}
 			if (pick.probability < gate) return { result };
@@ -359,7 +408,8 @@ function choicePlan<T>(
 /**
  * A card field's questions, and how to build its value from the provider's
  * picks. A catalog field the request names a pair of is held whatever its
- * picks (ADR 0010).
+ * picks (ADR 0010), and so is one that takes one item whose pick the request
+ * names only negated (ADR 0016).
  */
 export function cardPlan(
 	name: string,
@@ -368,8 +418,9 @@ export function cardPlan(
 	catalog: Candidate<unknown>[],
 	readings: CandidateReadings,
 	pair?: NamedPair,
+	negated?: NegatedItem[],
 ): FieldPlan {
-	if (field.kind === "catalog" && "several" in field) {
+	if (field.kind === "catalog" && field.several === true) {
 		return severalPlan(name, card, field, catalog, pair);
 	}
 	const ask = <T>(candidates: Candidate<T>[], rules: string) =>
@@ -380,18 +431,22 @@ export function cardPlan(
 		case "catalog":
 			return choicePlan(name, ask(catalog, ""), catalog, field.gate, (v) => v, {
 				pair,
+				...(negated && { negated }),
 			});
 		case "date":
 			return choicePlan(
 				name,
 				ask(
 					readings.dates,
-					" Each candidate is a date or period the code already read from the request; never compute a date yourself. When one piece of text has two readings, pick the reading the language of the request uses.",
+					` Each candidate is a date or period the code already read from the request; never compute a date yourself. When one piece of text has two readings, pick the reading the language of the request uses. A weekday named alone, with no "last" or "next" ("Friday", "el viernes"), means ${field.reads === "past" ? "the most recent one before today" : "the first one after today"}, so its candidate is the day the request names.`,
 				),
 				readings.dates,
 				field.gate,
 				({ from, to }) => (from === to ? from : undefined),
-				{ ambiguous: ({ ambiguous }) => ambiguous === true },
+				{
+					refuses: ({ ambiguous, afterToday }) =>
+						ambiguous === true || afterToday === true,
+				},
 			);
 		case "time":
 			return choicePlan(
@@ -403,14 +458,22 @@ export function cardPlan(
 				readings.times,
 				field.gate,
 				({ time }) => time,
-				{ ambiguous: ({ ambiguous }) => ambiguous === true },
+				{ refuses: ({ ambiguous }) => ambiguous === true },
 			);
 		case "amount":
 			return choicePlan(
 				name,
 				ask(
 					readings.amounts,
-					" Each candidate is a number the code already read from the request, its value and currency already read.",
+					` Each candidate is a number the code already read from the request, its value and currency already read.${
+						readings.bareIsLocal &&
+						readings.amounts.some(
+							({ value }) =>
+								value.currency === null && value.unresolved === undefined,
+						)
+							? " When a number with no currency written is money, it is in the local currency."
+							: ""
+					}`,
 				),
 				readings.amounts,
 				field.gate,
@@ -529,7 +592,7 @@ export function checkImplies(
 ): void {
 	for (const { id, implies } of candidates) {
 		if (!implies) continue;
-		if (field.kind === "catalog" && "several" in field) {
+		if (field.kind === "catalog" && field.several === true) {
 			throw new TypeError(
 				`justask: item "${id}" of field "${name}" implies a value, but only an item of a field that takes one can`,
 			);
@@ -541,7 +604,7 @@ export function checkImplies(
 					`justask: item "${id}" implies a value for field "${target}", which the card does not declare`,
 				);
 			}
-			if (!(declared.kind === "catalog" && "several" in declared)) {
+			if (!(declared.kind === "catalog" && declared.several === true)) {
 				throw new TypeError(
 					`justask: item "${id}" implies a value for field "${target}", which is not a catalog field where several items may apply`,
 				);

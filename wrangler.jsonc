@@ -7,8 +7,10 @@
 	"name": "justask-demo",
 	"main": "demo/worker/main.ts",
 	"compatibility_date": "2026-09-21",
-	// Fills process.env from the Worker's secrets, where the TypeSafe SDK reads the key.
-	"compatibility_flags": ["nodejs_compat"],
+	// nodejs_compat fills process.env from the Worker's secrets, where the TypeSafe SDK reads the key.
+	// enable_request_signal fires request.signal when the browser leaves, so the handler stops the
+	// provider call (#176); it has no default-on date (compatibility flags docs, read 2026-09-26).
+	"compatibility_flags": ["nodejs_compat", "enable_request_signal"],
 	"assets": {
 		"directory": "demo/dist",
 		// Only the API reaches the Worker; every other path is a static file, which costs no Worker CPU.
