@@ -1424,9 +1424,9 @@ const HOURS: Record<string, number> = {
 	twelve: 12,
 };
 const HOUR = `(\\d{1,2}|${byLength(Object.keys(HOURS))})`;
-/** ":30", " y media", " y cuarto", " y 15", " menos cuarto", " and a half", " y pico" (no minute said), "h". */
-const minutes = (colon: string) =>
-	`(?:${colon}(\\d{2})|\\s+y\\s+(media|cuarto|pico|algo|\\d{1,2})|\\s+(menos\\s+cuarto)|\\s+and\\s+a\\s+half|\\s*(?:h|hrs?)(?![a-z]))?`;
+/** ":30" or ":30h" (or what `separator` allows), " y media", " y cuarto", " y 15", " menos cuarto", " and a half", " y pico" (no minute said), "h". */
+const minutes = (separator: string) =>
+	`(?:${separator}(\\d{2})(?:\\s*(?:h|hrs?)(?![a-z]))?|\\s+y\\s+(media|cuarto|pico|algo|\\d{1,2})|\\s+(menos\\s+cuarto)|\\s+and\\s+a\\s+half|\\s*(?:h|hrs?)(?![a-z]))?`;
 const MINUTES = minutes(":");
 /** After "las" a dot may stand for the colon, "a las 12.30" (#241); after "at" it stays money, "coffee at 4.50". */
 const LAS_MINUTES = minutes("[:.]");

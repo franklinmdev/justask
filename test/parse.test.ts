@@ -421,6 +421,8 @@ describe("times", () => {
 		["cita para las 8.15", "para las 8.15", ["08:15", "20:15"]],
 		["como a las 9.05 de la noche", "como a las 9.05 de la noche", ["21:05"]],
 		["pagué las 3.45", "las 3.45", ["03:45", "15:45"]],
+		["cierre a las 12.30h", "a las 12.30h", ["12:30"]],
+		["cierre a las 12:30h", "a las 12:30h", ["12:30"]],
 	])(
 		"reads a dot between hour and minutes after 'las' as a time (#241): %s",
 		(text, span, at) => {
