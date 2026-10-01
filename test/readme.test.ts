@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -7,6 +7,7 @@ import {
 	parseFilterEvalSet,
 } from "@justask/core/eval";
 import { describe, expect, it } from "vitest";
+import gif from "../demo/recordings/gif-en.json" with { type: "json" };
 import { CARD_GATES, FILTER_GATES, GATE } from "../demo/server/handler.ts";
 import { diagnosticsOf } from "./typecheck.ts";
 
@@ -140,6 +141,30 @@ describe("the README's demo gates", () => {
 
 		expect(sentence, flow).toMatch(
 			new RegExp(`\\bround ${latestRound(doc)}\\b`),
+		);
+	});
+});
+
+describe("the README's GIF", () => {
+	/** The GIF's image tag at the top of the README, and the paragraph under it. */
+	const [image = "", next = ""] =
+		/^(<img src="docs\/readme-card\.gif"[^>]*>)\n\n(.*)$/m
+			.exec(readme)
+			?.slice(1) ?? [];
+
+	it("sits above the first section, and its alt text types the recorded sentence", () => {
+		expect(readme.indexOf(image)).toBeLessThan(readme.indexOf("\n## "));
+		expect(image).toContain(`alt="`);
+		expect(image).toContain(`“${gif.request}”`);
+	});
+
+	it("is followed directly by the opening paragraph, with no caption", () => {
+		expect(next).toMatch(/^Turns what a person types/);
+	});
+
+	it("stays under 3 MB, to load fast on GitHub and npm", () => {
+		expect(statSync(join(root, "docs", "readme-card.gif")).size).toBeLessThan(
+			3 * 1024 * 1024,
 		);
 	});
 });
