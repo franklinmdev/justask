@@ -1,0 +1,359 @@
+{
+	"set": "card-en.round7.jsonl",
+	"row": "en-r7-061",
+	"recordedAt": "2026-10-01T15:26:42.615Z",
+	"timeZone": "America/Santo_Domingo",
+	"request": "Larkspur dinner with our client from Halden Corp, $230 on September 12",
+	"latencyMs": 309,
+	"response": {
+		"card": {
+			"intent": {
+				"pick": {
+					"label": "new_record",
+					"probability": 0.83
+				},
+				"probabilities": {
+					"not_available": 0.05,
+					"not_mentioned": 0.12,
+					"new_record": 0.83
+				},
+				"gate": 0.45,
+				"passes": true
+			},
+			"value": {
+				"vendor": {
+					"id": "larkspur",
+					"name": "Larkspur Catering",
+					"supplies": "catering and office lunches"
+				},
+				"tags": ["meals", "client"],
+				"spent_on": "2026-09-12",
+				"total": {
+					"value": 230,
+					"currency": "USD"
+				}
+			},
+			"fields": {
+				"vendor": {
+					"candidates": [
+						{
+							"id": "papergrove",
+							"description": "Papergrove Supplies, office paper, toner and stationery",
+							"value": {
+								"id": "papergrove",
+								"name": "Papergrove Supplies",
+								"supplies": "office paper, toner and stationery"
+							},
+							"names": ["Papergrove"],
+							"implies": {
+								"tags": ["office"]
+							}
+						},
+						{
+							"id": "larkspur",
+							"description": "Larkspur Catering, catering and office lunches",
+							"value": {
+								"id": "larkspur",
+								"name": "Larkspur Catering",
+								"supplies": "catering and office lunches"
+							},
+							"names": ["Larkspur"]
+						},
+						{
+							"id": "cloudberth",
+							"description": "Cloudberth Hosting, website hosting and cloud servers",
+							"value": {
+								"id": "cloudberth",
+								"name": "Cloudberth Hosting",
+								"supplies": "website hosting and cloud servers"
+							},
+							"names": ["Cloudberth"],
+							"implies": {
+								"tags": ["office"]
+							}
+						},
+						{
+							"id": "brightmop",
+							"description": "Brightmop Cleaning, nightly office cleaning",
+							"value": {
+								"id": "brightmop",
+								"name": "Brightmop Cleaning",
+								"supplies": "nightly office cleaning"
+							},
+							"names": ["Brightmop"],
+							"implies": {
+								"tags": ["office"]
+							}
+						},
+						{
+							"id": "glasswell",
+							"description": "Glasswell Janitorial, office cleaning and window washing",
+							"value": {
+								"id": "glasswell",
+								"name": "Glasswell Janitorial",
+								"supplies": "office cleaning and window washing"
+							},
+							"names": ["Glasswell"],
+							"implies": {
+								"tags": ["office"]
+							}
+						},
+						{
+							"id": "inkhollow",
+							"description": "Inkhollow Print, business cards, flyers and signs",
+							"value": {
+								"id": "inkhollow",
+								"name": "Inkhollow Print",
+								"supplies": "business cards, flyers and signs"
+							},
+							"names": ["Inkhollow"],
+							"implies": {
+								"tags": ["office"]
+							}
+						},
+						{
+							"id": "farwander",
+							"description": "Farwander Travel, flights and hotels for staff trips",
+							"value": {
+								"id": "farwander",
+								"name": "Farwander Travel",
+								"supplies": "flights and hotels for staff trips"
+							},
+							"names": ["Farwander"]
+						},
+						{
+							"id": "tallyroot",
+							"description": "Tallyroot Software, accounting software licenses",
+							"value": {
+								"id": "tallyroot",
+								"name": "Tallyroot Software",
+								"supplies": "accounting software licenses"
+							},
+							"names": ["Tallyroot"],
+							"implies": {
+								"tags": ["office"]
+							}
+						},
+						{
+							"id": "beanhaven",
+							"description": "Beanhaven Coffee, coffee beans and coffee machine rental",
+							"value": {
+								"id": "beanhaven",
+								"name": "Beanhaven Coffee",
+								"supplies": "coffee beans and coffee machine rental"
+							},
+							"names": ["Beanhaven"]
+						},
+						{
+							"id": "swiftlane",
+							"description": "Swiftlane Couriers, same-day courier deliveries",
+							"value": {
+								"id": "swiftlane",
+								"name": "Swiftlane Couriers",
+								"supplies": "same-day courier deliveries"
+							},
+							"names": ["Swiftlane"],
+							"implies": {
+								"tags": ["office"]
+							}
+						},
+						{
+							"id": "clausewood",
+							"description": "Clausewood Legal, contract review and legal advice",
+							"value": {
+								"id": "clausewood",
+								"name": "Clausewood Legal",
+								"supplies": "contract review and legal advice"
+							},
+							"names": ["Clausewood"],
+							"implies": {
+								"tags": ["office"]
+							}
+						},
+						{
+							"id": "fixbright",
+							"description": "Fixbright IT, laptop repair and IT support",
+							"value": {
+								"id": "fixbright",
+								"name": "Fixbright IT",
+								"supplies": "laptop repair and IT support"
+							},
+							"names": ["Fixbright"],
+							"implies": {
+								"tags": ["office"]
+							}
+						},
+						{
+							"id": "paydale",
+							"description": "Paydale Payroll, payroll and HR services",
+							"value": {
+								"id": "paydale",
+								"name": "Paydale Payroll",
+								"supplies": "payroll and HR services"
+							},
+							"names": ["Paydale"],
+							"implies": {
+								"tags": ["office"]
+							}
+						},
+						{
+							"id": "sureharbor",
+							"description": "Sureharbor Insurance, business insurance",
+							"value": {
+								"id": "sureharbor",
+								"name": "Sureharbor Insurance",
+								"supplies": "business insurance"
+							},
+							"names": ["Sureharbor"],
+							"implies": {
+								"tags": ["office"]
+							}
+						}
+					],
+					"pick": {
+						"label": "larkspur",
+						"probability": 0.96
+					},
+					"probabilities": {
+						"brightmop": 0,
+						"cloudberth": 0,
+						"fixbright": 0,
+						"larkspur": 0.96,
+						"papergrove": 0,
+						"beanhaven": 0,
+						"inkhollow": 0,
+						"farwander": 0,
+						"paydale": 0,
+						"swiftlane": 0,
+						"not_mentioned": 0.01,
+						"tallyroot": 0,
+						"glasswell": 0,
+						"clausewood": 0,
+						"not_available": 0.03,
+						"sureharbor": 0
+					},
+					"gate": 0.7
+				},
+				"tags": {
+					"candidates": [
+						{
+							"id": "meals",
+							"description": "meals: food and drink, such as lunch, dinner, coffee, snacks and catering",
+							"value": "meals"
+						},
+						{
+							"id": "travel",
+							"description": "travel: flights, hotels, taxis and trains",
+							"value": "travel"
+						},
+						{
+							"id": "office",
+							"description": "office: what keeps the business running, such as supplies, equipment, software, hosting, repairs, cleaning and window washing, printing, couriers, payroll and HR, legal advice and insurance",
+							"value": "office"
+						},
+						{
+							"id": "client",
+							"description": "billable to a client, or spent with a client, when the request says so for certain, not when it says maybe",
+							"value": "client"
+						}
+					],
+					"answers": {
+						"meals": {
+							"pick": {
+								"label": "yes",
+								"probability": 0.93
+							},
+							"probabilities": {
+								"not_available": 0.03,
+								"not_mentioned": 0.04,
+								"yes": 0.93
+							}
+						},
+						"travel": {
+							"pick": {
+								"label": "not_mentioned",
+								"probability": 1
+							},
+							"probabilities": {
+								"not_available": 0,
+								"not_mentioned": 1,
+								"yes": 0
+							}
+						},
+						"office": {
+							"pick": {
+								"label": "not_mentioned",
+								"probability": 1
+							},
+							"probabilities": {
+								"not_available": 0,
+								"not_mentioned": 1,
+								"yes": 0
+							}
+						},
+						"client": {
+							"pick": {
+								"label": "yes",
+								"probability": 0.83
+							},
+							"probabilities": {
+								"not_available": 0.01,
+								"not_mentioned": 0.16,
+								"yes": 0.83
+							}
+						}
+					},
+					"gate": 0.4
+				},
+				"spent_on": {
+					"candidates": [
+						{
+							"id": "d0",
+							"description": "\"September 12\": the single day Sat 2026-09-12",
+							"value": {
+								"text": "September 12",
+								"from": "2026-09-12",
+								"to": "2026-09-12"
+							}
+						}
+					],
+					"pick": {
+						"label": "d0",
+						"probability": 1
+					},
+					"probabilities": {
+						"not_mentioned": 0,
+						"d0": 1,
+						"not_available": 0
+					},
+					"gate": 0.8
+				},
+				"total": {
+					"candidates": [
+						{
+							"id": "a0",
+							"description": "\"$230\": 230 USD (US Dollar)",
+							"value": {
+								"text": "$230",
+								"value": 230,
+								"currency": "USD"
+							}
+						}
+					],
+					"pick": {
+						"label": "a0",
+						"probability": 1
+					},
+					"probabilities": {
+						"not_available": 0,
+						"a0": 1,
+						"not_mentioned": 0
+					},
+					"gate": 0.9
+				}
+			}
+		},
+		"costUsd": 0.00009151800000000001,
+		"inputTokens": 2179
+	}
+}
