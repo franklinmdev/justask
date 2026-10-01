@@ -40,6 +40,14 @@ jobs:
           registry-url: https://registry.npmjs.org
           package-manager-cache: false
 
+      # An older npm fails the OIDC exchange with a bare 404, so say why first.
+      - run: |
+          NPM="$(npm --version)"
+          if ! node -e 'const [a, b, c] = process.argv[1].split(".").map(Number); process.exit(a > 11 || (a === 11 && (b > 5 || (b === 5 && c >= 1))) ? 0 : 1)' "$NPM"; then
+            echo "::error::Trusted publishing needs npm 11.5.1 or later, this runner has ${NPM}."
+            exit 1
+          fi
+
       # Publish only when package.json's version is not on npm, so a push
       # without a version bump is a no-op and a re-run never republishes.
       # npm view exits non-zero both for a missing version (E404, publish)
