@@ -14,5 +14,5 @@ Say what is affected (the package, which entry point, or the demo), how to repro
 ## Known limits, not vulnerabilities
 
 - A request can carry instructions for the provider, and the provider may follow them. The role-marker check holds only the obvious cases ([ADR 0015](docs/adr/0015-a-role-marker-holds-the-request.md)); a host that passes text the person did not write keeps a step where the person checks the result. See [Text the person did not write](README.md#text-the-person-did-not-write).
-- A filled field can be confidently wrong; see [the README](README.md) on why the person confirms it.
+- A filled field can be confidently wrong; see [the README](README.md#limits) on why the person confirms it.
 - The demo runs on Cloudflare's free plan, whose account-wide request quota can take it down until 00:00 UTC. The owner accepted this for launch.

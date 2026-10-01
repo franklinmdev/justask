@@ -17,13 +17,13 @@ import { fakeProvider, hangingProvider } from "./fake-provider.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
-/** The README's `toNode`, as a person copies it: the code block that declares it. */
+/** The handlers doc's `toNode`, as a person copies it: the code block that declares it. */
 const snippet = (() => {
-	const readme = readFileSync(join(root, "README.md"), "utf8");
-	const block = [...readme.matchAll(/```ts\n([\s\S]*?)```/g)]
+	const doc = readFileSync(join(root, "docs", "handlers.md"), "utf8");
+	const block = [...doc.matchAll(/```ts\n([\s\S]*?)```/g)]
 		.map(([, code]) => code ?? "")
 		.find((code) => code.includes("export function toNode"));
-	if (!block) throw new Error("README.md has no toNode block");
+	if (!block) throw new Error("docs/handlers.md has no toNode block");
 	return block;
 })();
 
@@ -31,7 +31,7 @@ type ToNode = (
 	handler: (request: Request) => Promise<Response>,
 ) => (req: IncomingMessage, res: ServerResponse) => Promise<void>;
 
-const temp = mkdtempSync(join(tmpdir(), "justask-readme-node-"));
+const temp = mkdtempSync(join(tmpdir(), "justask-handlers-node-"));
 let toNode: ToNode;
 const search = {
 	description: "the vendor the request means",
@@ -54,7 +54,7 @@ afterAll(() => {
 	rmSync(temp, { recursive: true, force: true });
 });
 
-/** The README's Node server around a handler, on a free port. */
+/** The handlers doc's Node server around a handler, on a free port. */
 async function serve(
 	handler: (request: Request) => Promise<Response>,
 ): Promise<number> {
@@ -104,7 +104,7 @@ const asked = JSON.stringify({
 	timeZone: "UTC",
 });
 
-describe("the README's toNode", () => {
+describe("the handlers doc's toNode", () => {
 	it("answers a request", async () => {
 		const port = await serve(
 			createSearchHandler({

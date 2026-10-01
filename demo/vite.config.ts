@@ -51,7 +51,7 @@ function justaskHandler(): Plugin {
 			server.middlewares.use("/api", async (req, res, next) => {
 				try {
 					const { handle } = await devModule();
-					// Aborts the provider call when the browser goes away, as the README's toNode does.
+					// Aborts the provider call when the browser goes away, as the toNode in docs/handlers.md does.
 					const browser = new AbortController();
 					res.on("close", () => browser.abort());
 					const response = await handle(
