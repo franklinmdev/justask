@@ -1,5 +1,9 @@
 # justask
 
+[![npm](https://img.shields.io/npm/v/@justask/core.svg)](https://www.npmjs.com/package/@justask/core)
+[![CI and release](https://github.com/franklinmdev/justask/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/franklinmdev/justask/actions/workflows/release.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 <img src="docs/readme-card.gif" width="852" alt="The demo's New expense card. The sentence “Larkspur dinner with our client from Halden Corp, $230 on September 12” is typed into its box and sent with Enter, and the card fills itself in field order: vendor Larkspur Catering, the Meals and Client tags, the day Sep 12, 2026 and the amount $230.00, each with an emerald line drawn along its top.">
 
 Try it: [live demo](https://justask-demo.franklinmdev.workers.dev), in English and Spanish.
