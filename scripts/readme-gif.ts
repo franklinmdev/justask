@@ -133,6 +133,7 @@ try {
 		});
 		const start = Date.now();
 		await page.clock.install({ time: start });
+		// Stopped before the page loads, so no timer of the replay runs until a frame steps it.
 		await page.clock.pauseAt(start + 1);
 		await page.goto(`${url}?case=form`);
 		await page.evaluate(() => document.fonts.ready);

@@ -4,10 +4,10 @@
 //   node --conditions=justask-source demo/recordings/record.ts [table|search|form|gif ...]
 //
 // Writes demo/recordings/<case>-<language>.json for the named cases, every
-// case when none is named, in English and Spanish (the README GIF's in English
-// only), each case's sentence taken
-// from a frozen eval row. The eval runners' warm-up goes first, discarded,
-// so a cold start never falls on a recorded call. A call whose result is not
+// case when none is named, in English and Spanish (the README GIF's in
+// English only), each case's sentence taken from a frozen eval row. The eval
+// runners' warm-up goes first, discarded, so a cold start never falls on a
+// recorded call. A call whose result is not
 // the row's expected one writes nothing, and neither do the others, so every
 // recording shows the gates passing its row. Nothing in a recording is
 // edited by hand: after a change to the gates, run this again for the cases
