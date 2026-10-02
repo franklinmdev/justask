@@ -1,4 +1,5 @@
 # Paths where markdown may live, in addition to the built-in defaults in
 # scripts/check-docs-location.sh (root canonicals, docs/, dot-directories,
-# packages/<pkg>/README.md). One extended regex per line. Empty for now: the
-# repo layout comes out of the grilling.
+# packages/<pkg>/README.md). One extended regex per line.
+# The agent skill npx skills installs and the npm package ships (#173).
+^skills/justask/SKILL\.md$

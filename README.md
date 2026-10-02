@@ -270,6 +270,16 @@ The handler sends data to two places:
 
 The provider's key, the provider's own error messages and the error's cause never reach the browser.
 
+## Agent skill
+
+justask ships an agent skill, [`skills/justask/SKILL.md`](skills/justask/SKILL.md), for coding agents that read [Agent Skills](https://agentskills.io) (Claude Code, Cursor, Codex, Copilot and others). It teaches what agents get wrong with justask: the provider picks and never writes, gates have no default, a held field is no failure, the key stays on the server, and when justask is the wrong tool. It sends the agent to this README and the guides for the API itself.
+
+```sh
+npx skills add franklinmdev/justask --skill justask
+```
+
+Releases after 0.1.0 also ship it in the npm package, in `node_modules/@justask/core/skills/`.
+
 ## More
 
 - [The live demo](https://justask-demo.franklinmdev.workers.dev): a fictional invoicing app with a Table, Form and Search case, in English and Spanish, each showing what the model picked and why. How it is built is in [docs/demo.md](docs/demo.md).
