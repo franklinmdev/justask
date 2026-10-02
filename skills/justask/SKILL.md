@@ -128,9 +128,9 @@ Build the provider (`jevProvider()`, which reads `TYPESAFE_API_KEY`) in server
 code only, pass it to a handler, and mount one handler per flow at its own
 `POST` route. Handlers take a standard `Request` and return a `Response`, so
 they mount as is in fetch-style servers; Node and Express need the adapter in
-`docs/handlers.md`, mounted before `express.json()`. The browser hook posts only the request and its time zone,
-and the handler writes `today` itself, so never pass a `today` fact to a
-handler (it refuses at boot). Import a declaration into browser code as
+`docs/handlers.md`, mounted before `express.json()`. The browser hook posts
+only the request and its time zone, and the handler writes `today` itself, so
+never pass a `today` fact to a handler (it refuses at boot). Import a declaration into browser code as
 `import type` only: the catalog stays on the server.
 
 Declare with `satisfies Card<CardFields>` or `satisfies Filter<Fields>`. A
