@@ -61,6 +61,42 @@ describe("the demo's server policy", () => {
 		expect(provider.calls).toHaveLength(1);
 	});
 
+	it("refuses a Worker's subrequest, which can name any visitor address, with no provider call (#263)", async () => {
+		const response = await handler(
+			new Request(new URL(searchEndpoint("en"), DEMO), {
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+					"cf-worker": "elsewhere.workers.dev",
+					"cf-connecting-ip": "203.0.113.1",
+				},
+				body: JSON.stringify({
+					request: "the caterers",
+					timeZone: "America/Santo_Domingo",
+				}),
+			}),
+		);
+
+		expect(response.status).toBe(403);
+		expect(provider.calls).toHaveLength(0);
+	});
+
+	it("refuses a Worker's subrequest before the budget's answer (#263)", async () => {
+		const paused = createDemoHandler(provider, { killSwitch: true });
+		const response = await paused(
+			new Request(new URL(searchEndpoint("en"), DEMO), {
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+					"cf-worker": "elsewhere.workers.dev",
+				},
+				body: JSON.stringify({ request: "the caterers" }),
+			}),
+		);
+
+		expect(response.status).toBe(403);
+	});
+
 	it("answers a request that names no origin, as a script's does", async () => {
 		const response = await search("the caterers");
 

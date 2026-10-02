@@ -14,8 +14,16 @@ import { REQUEST_LIMIT } from "../src/api.ts";
  * so refusing it would stop only the demo's own recording script. The owner
  * kept it so on 2026-09-24: the check is friction, and the real limits are
  * the budget's and the per-visitor limits' (#109, #110).
+ *
+ * A Worker's subrequest is refused: Cloudflare adds `CF-Worker` to every one,
+ * and in one from the same zone `CF-Connecting-IP` reflects an `x-real-ip` the
+ * calling Worker sets, so it could name a new visitor on each call. Browsers
+ * never send the header (#263).
  */
 export async function refusal(request: Request): Promise<Response | undefined> {
+	if (request.headers.has("cf-worker")) {
+		return new Response(null, { status: 403 });
+	}
 	const origin = request.headers.get("origin");
 	if (origin !== null && origin !== new URL(request.url).origin) {
 		return new Response(null, { status: 403 });
