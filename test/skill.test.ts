@@ -1,8 +1,13 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import * as core from "@justask/core";
+import * as evals from "@justask/core/eval";
+import * as jev from "@justask/core/jev";
+import * as react from "@justask/core/react";
 import { describe, expect, it } from "vitest";
 import pkg from "../package.json" with { type: "json" };
+import { diagnosticsOf } from "./typecheck.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (path: string) => readFileSync(join(root, path), "utf8");
@@ -17,20 +22,20 @@ const frontmatter = Object.fromEntries(
 		.map(([, key, value]) => [key, value]),
 );
 
-/** The four entry points' sources, where every name the skill teaches must still be exported. */
-const entries = [
-	"src/index.ts",
-	"src/react/index.ts",
-	"src/jev/index.ts",
-	"src/eval/index.ts",
-]
-	.map(read)
-	.join("\n");
+/** What the four entry points export at run time: functions, hooks and pieces. */
+const exported: Record<string, unknown> = {
+	...core,
+	...evals,
+	...jev,
+	...react,
+};
 
 /**
  * The package names the skill writes in backticks: its functions and hooks
  * (`ask`, `create...`, `use...`, `run...`, `jevProvider`) and its types and
- * pieces (any capitalised name), the web platform's own left out.
+ * pieces (any capitalised name), the web platform's own left out. A piece is
+ * checked at run time; a type leaves nothing there, so it is typechecked as
+ * an import from the core, where every type the skill names lives.
  */
 const names = [
 	...new Set(
@@ -42,6 +47,15 @@ const names = [
 					/^[A-Z][a-z]\w*$/.test(name),
 			)
 			.filter((name) => !["Request", "Response"].includes(name)),
+	),
+];
+
+/** The ADRs the skill cites by number, as `ADR 0005, 0007` names two. */
+const adrs = [
+	...new Set(
+		[...skill.matchAll(/ADR (\d{4}(?:, \d{4})*)/g)].flatMap(
+			([, numbers = ""]) => numbers.split(", "),
+		),
 	),
 ];
 
@@ -60,14 +74,38 @@ describe("the agent skill", () => {
 		expect(frontmatter.description?.length).toBeLessThanOrEqual(1024);
 	});
 
-	it("finds names to check", () => {
+	it("finds names and ADRs to check", () => {
 		expect(names).toEqual(
 			expect.arrayContaining(["createCardHandler", "useCard", "Card"]),
 		);
+		expect(adrs).toEqual(expect.arrayContaining(["0002", "0003", "0008"]));
 	});
 
-	it.each(names)("teaches %s, which the package still exports", (name) => {
-		expect(entries).toMatch(new RegExp(`\\b${name}\\b`));
+	it.each(names.filter((name) => !/^[A-Z]/.test(name) || name in exported))(
+		"teaches %s, which the package still exports",
+		(name) => {
+			expect(exported[name]).toBeDefined();
+		},
+	);
+
+	it("teaches types the core still exports", () => {
+		const types = names.filter(
+			(name) => /^[A-Z]/.test(name) && !(name in exported),
+		);
+		expect(types).toEqual(expect.arrayContaining(["Card", "Filter", "Search"]));
+		expect(
+			diagnosticsOf({
+				"types.ts": `import type { ${types.join(", ")} } from "@justask/core";\nexport type { ${types.join(", ")} };\n`,
+			}),
+		).toBe("");
+	});
+
+	it.each(adrs)("cites ADR %s, which exists", (number) => {
+		expect(
+			readdirSync(join(root, "docs/adr")).some((file) =>
+				file.startsWith(`${number}-`),
+			),
+		).toBe(true);
 	});
 
 	it.each(links)("links %s, which exists", (path) => {

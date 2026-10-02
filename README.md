@@ -272,7 +272,7 @@ The provider's key, the provider's own error messages and the error's cause neve
 
 ## Agent skill
 
-justask ships an agent skill, [`skills/justask/SKILL.md`](skills/justask/SKILL.md), for coding agents that read [Agent Skills](https://agentskills.io) (Claude Code, Cursor, Codex, Copilot and others). It teaches what agents get wrong with justask: the provider picks and never writes, gates have no default, a held field is no failure, the key stays on the server, and when justask is the wrong tool. It sends the agent to this README and the guides for the API itself.
+justask ships an agent skill, [`skills/justask/SKILL.md`](skills/justask/SKILL.md), for coding agents that read [Agent Skills](https://agentskills.io), such as Claude Code. It teaches what agents get wrong with justask: the provider picks and never writes, gates have no default, a held field is no failure, the key stays on the server, and when justask is the wrong tool. It sends the agent to this README and the guides for the API itself.
 
 ```sh
 npx skills add franklinmdev/justask --skill justask

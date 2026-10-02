@@ -6,7 +6,7 @@ description: Write correct code with justask (@justask/core), the TypeScript and
 # justask
 
 justask turns a typed request into the exact object an app already
-understands: a search result, a filter object, a filled record. Code finds the
+understands: a search's item, a filter object, a filled record. Code finds the
 candidates (parsed dates, times and amounts; a shortlist of the host app's
 catalog rows), a provider model picks one label per question with a
 probability for every label, and code builds the result. A field the model is
@@ -14,9 +14,8 @@ unsure of stays empty for the person to fill, and nothing reaches the host app
 until the person confirms.
 
 Most mistakes with justask come from treating it like a general LLM wrapper:
-expecting it to write values, giving it a default gate, treating an empty
-field as an error, or calling the provider from the browser. This skill exists
-to prevent those.
+expecting it to write values, inventing a gate, treating an empty field as an
+error, or calling the provider from the browser.
 
 ## Read the live docs first
 
@@ -76,15 +75,12 @@ reaches the browser, so keep secrets out of `value`, `names` and `implies`.
 
 Every search, filter field, card and card field declares a `gate`, a number
 strictly between 0 and 1, and a declaration without one does not compile.
-Timeouts (`timeoutMs`) and `debounceMs` have no default either. Do not invent
-a number and present it as right. Write a placeholder the developer will
-recognise, with a comment saying it must be measured, and point them to
-`docs/measuring-gates.md`: an eval set of real requests (JSONL rows of kind
-`item`/`record`/`filterable`, `nothing` and `ambiguous`), kill lines written
-before the first run, `runEval`, `runFilterEval` or `runCardEval` with the
-real provider, by hand and never in CI since every row is a paid call. Rescore
-a saved run log at another gate for free, but a gate chosen after seeing the
-run gives no verdict.
+Timeouts (`timeoutMs`) and `debounceMs` have no default either. The failure
+is a guessed number presented as right, which then ships unmeasured. Write a
+placeholder with a comment saying it must be measured, and point to
+`docs/measuring-gates.md`: an eval set of real requests, kill lines written
+before the first run, then `runEval`, `runFilterEval` or `runCardEval` with
+the real provider, by hand and never in CI, since every row is a paid call.
 
 A search gate reads the other way: the item is held once the `none` or
 `several` label reaches the gate (ADR 0005, 0007), so a lower search gate is
@@ -94,7 +90,7 @@ stricter.
 
 An empty field means the system did its job: the model was unsure, the
 request did not mention it, or code saw an ambiguity. The result is a `200`
-with the field left out of `value`. Do not retry the call, raise an error,
+with the field left out of `value`. Do not call again, raise an error,
 lower the gate on the spot, or fill the field with a guess. Render it empty for
 the person to fill with the app's own control. Only `error` (kind `provider`
 or `timeout`, from a `200`) means the provider failed, and even then every
@@ -131,24 +127,26 @@ is a working reference.
 Build the provider (`jevProvider()`, which reads `TYPESAFE_API_KEY`) in server
 code only, pass it to a handler, and mount one handler per flow at its own
 `POST` route. Handlers take a standard `Request` and return a `Response`, so
-they mount as is in Next.js route handlers, Hono, Remix, Bun, Deno and Workers;
-Node and Express need the small adapter in `docs/handlers.md`, mounted before
-`express.json()`. The browser hook posts only the request and its time zone,
+they mount as is in fetch-style servers; Node and Express need the adapter in
+`docs/handlers.md`, mounted before `express.json()`. The browser hook posts only the request and its time zone,
 and the handler writes `today` itself, so never pass a `today` fact to a
 handler (it refuses at boot). Import a declaration into browser code as
 `import type` only: the catalog stays on the server.
 
-Declare with `satisfies Card<CardFields>` or `satisfies Filter<Fields>`, never
-a type annotation or a plain const, so `typeof expense.fields` keeps each
-field's kind for the hook's generic.
+Declare with `satisfies Card<CardFields>` or `satisfies Filter<Fields>`. A
+type annotation loses each field's kind, so `useCard<typeof expense.fields>`
+types every value loosely, and a plain const fails to compile where it is
+used (`Type 'string' is not assignable to type '"catalog"'`).
 
 ### A card date declares its direction (ADR 0008)
 
 Every card `date` field needs `reads: "past"` (an expense's day) or
 `reads: "future"` (a due date, an appointment), with no default. It decides
-what "Friday" or "March 3" means. A past-reading field holds any day after
-today, even "tomorrow". One card can hold both directions. A filter always
-reads the past.
+what "Friday" or "March 3" means. The failure is copying one direction onto
+every date: an expense's day read forward fills a Friday that has not
+happened, and a due date read backward fills one already gone. A past-reading
+field holds any day after today, even "tomorrow". One card can hold both
+directions. A filter always reads the past.
 
 ### The card calls on Enter
 
@@ -162,9 +160,11 @@ when its filters are cheap to undo; a record never auto-saves.
 
 ### Text the person did not write
 
-The request is read as the person's own words. Do not feed it email bodies,
-pasted documents or OCR without a step where the person checks the result.
-The role-marker hold catches only obvious cases.
+The request is read as the person's own words, and the provider may follow
+instructions written inside it. The failure is wiring an inbox, a pasted
+document or OCR straight into a card that saves: one crafted email then
+records whatever it says. Keep a step where the person checks the result. The
+role-marker hold catches only obvious cases.
 
 ## When justask is the wrong tool
 

@@ -2,7 +2,9 @@
 
 How the agent skill, [`skills/justask/SKILL.md`](../skills/justask/SKILL.md), was measured before it shipped (#173), with skill-creator's eval loop: task evals, where an agent does a real task with the skill and without it, and trigger evals, where an agent sees only the skill's description and decides whether to load it. Both run by hand, never in CI, since every run is a model call. The sets are in [`skill-eval/`](skill-eval/).
 
-`test/skill.test.ts` keeps the skill true to the package with no model call: every function, hook, type and piece it names in backticks must still be exported by one of the four entry points, every repository path it links must exist, its name and description must meet the Agent Skills spec, and `package.json`'s `files` must ship it.
+`test/skill.test.ts` keeps the skill true to the package with no model call: every function, hook and piece it names in backticks must still be exported by one of the four entry points, every type it names must typecheck as an import from the core, every ADR it cites and every repository path it links must exist, its name and description must meet the Agent Skills spec, and `package.json`'s `files` must ship it.
+
+Both evals ran on the skill's first draft (commit 0119af1). The code review then reworded it: three sections now name the failure they prevent, and two sentences were shortened. The evals were not rerun after that.
 
 ## Task evals
 
