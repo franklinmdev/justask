@@ -278,7 +278,7 @@ justask ships an agent skill, [`skills/justask/SKILL.md`](skills/justask/SKILL.m
 npx skills add franklinmdev/justask --skill justask
 ```
 
-Releases after 0.1.0 also ship it in the npm package, in `node_modules/@justask/core/skills/`.
+Releases after 0.1.0 also ship it in the npm package, in `node_modules/@justask/core/skills/`. How it was measured is in [docs/skill-eval.md](docs/skill-eval.md).
 
 ## More
 

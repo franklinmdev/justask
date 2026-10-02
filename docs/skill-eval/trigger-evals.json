@@ -1,0 +1,82 @@
+[
+	{
+		"query": "in our next.js app the expense form has merchant, category, date, amount. pm wants a single text box where people type 'uber to the airport 34 bucks yesterday' and the fields fill in, then they review and save. how should I build this? merchants are in postgres",
+		"should_trigger": true
+	},
+	{
+		"query": "I've got @justask/core installed and createFilterHandler set up at /api/filter but filter.value comes back without the customer key half the time. what's going on and how do I show the user why?",
+		"should_trigger": true
+	},
+	{
+		"query": "Our invoices table (React, TanStack Table) has like 8 filter dropdowns and nobody uses them. I want a 'filter in plain english' input: 'unpaid invoices from acme over 500 last quarter' -> our existing InvoiceFilter object. Typescript. Ideas + code?",
+		"should_trigger": true
+	},
+	{
+		"query": "add natural language search to the customer picker in src/components/CustomerPicker.tsx: typing 'the dentist in brooklyn we billed last week' should resolve to one customer row from our list, or nothing if it's unclear",
+		"should_trigger": true
+	},
+	{
+		"query": "what gate value should I use for the vendor field in my justask card? 0.8 like the readme?",
+		"should_trigger": true
+	},
+	{
+		"query": "I was going to write an OpenAI call that returns JSON matching my appointment form (service, staff member, day, time) from what the receptionist types. Is there a better way so it doesn't make up a staff member that doesn't exist?",
+		"should_trigger": true
+	},
+	{
+		"query": "useCard from @justask/core/react: the person picks a vendor by hand while the request is in flight and then the answer overwrites... or does it? also how do I wire undo after confirm",
+		"should_trigger": true
+	},
+	{
+		"query": "pon una caja de texto en el formulario de gastos para que el usuario escriba 'almuerzo con cliente en La Cazuela 1,200 pesos el viernes' y se llenen los campos (proveedor, monto, fecha). Es React + TS, los proveedores vienen de nuestra tabla",
+		"should_trigger": true
+	},
+	{
+		"query": "set up the jev provider on the server for justask with cloudflare workers, and the search handler for our product catalog",
+		"should_trigger": true
+	},
+	{
+		"query": "build a support chatbot for our SaaS that answers questions about billing using our help center articles, react frontend, streaming responses",
+		"should_trigger": false
+	},
+	{
+		"query": "use TypeSafe's Jev to classify incoming support tickets into billing / bug / feature request with probabilities, python backend",
+		"should_trigger": false
+	},
+	{
+		"query": "write a zod schema + react-hook-form setup for our expense form (merchant, category, date, amount, note) with validation that amount is positive and date isn't in the future",
+		"should_trigger": false
+	},
+	{
+		"query": "we need full-text search over 2M product descriptions with typo tolerance and facets. algolia vs meilisearch vs postgres tsvector, which one and how to set it up in next.js?",
+		"should_trigger": false
+	},
+	{
+		"query": "extract line items, totals and vendor names from 10k scanned PDF invoices into our database overnight, batch job, accuracy matters",
+		"should_trigger": false
+	},
+	{
+		"query": "write a function that parses dates like 'next friday', 'in 3 days', 'march 3rd' into Date objects in typescript, needs to handle timezones",
+		"should_trigger": false
+	},
+	{
+		"query": "add a 'summarize this ticket' button that writes a 2-sentence summary of the conversation with claude, in our react admin panel",
+		"should_trigger": false
+	},
+	{
+		"query": "our table filters are slow, the /api/invoices?status=unpaid&from=... query takes 4s in postgres. here's the EXPLAIN output, how do I index this",
+		"should_trigger": false
+	},
+	{
+		"query": "make the filter sidebar on the invoices page collapsible on mobile and remember its state in localStorage",
+		"should_trigger": false
+	},
+	{
+		"query": "build a slack bot where people type '/expense lunch 23' and it posts the expense straight into our accounting system without asking",
+		"should_trigger": false
+	},
+	{
+		"query": "fine-tune a small model to map free-text product requests to SKUs, we have 50k labeled examples, what's the pipeline",
+		"should_trigger": false
+	}
+]
