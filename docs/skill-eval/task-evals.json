@@ -1,0 +1,59 @@
+{
+	"skill_name": "justask",
+	"evals": [
+		{
+			"id": 1,
+			"name": "expense-card",
+			"prompt": "In this Next.js app (Ledgerly), add a 'describe your expense' box above the manual form in app/expenses/new/page.tsx using @justask/core, so someone can type 'Bistro Verde team lunch $84 on Tuesday, reimburse me by the 30th' and the form fills in. Merchants come from src/db/merchants.ts. Wire the server side too. Write the code.",
+			"expected_output": "A Card declared server side with satisfies Card<CardFields>, provider built on the server, createCardHandler at a POST route, spent day reads past and reimburse-by reads future, gates as placeholders to measure, no today fact in the handler, client imports the declaration as type only, useCard with confirm before saveExpense, note left to the person.",
+			"assertions": [
+				"The provider (jevProvider) is built only in server code, never in a 'use client' file",
+				"The card is declared with `satisfies Card<CardFields>` (not an annotation or plain const)",
+				"The day-spent date field declares reads: \"past\"",
+				"The reimburse-by date field declares reads: \"future\"",
+				"Gates are presented as placeholders to measure, not as right values",
+				"The handler is given no `today` fact",
+				"Client code imports the card declaration with `import type` only",
+				"The free-text note is not a card field; it is left to the person",
+				"saveExpense runs only after the person confirms, never straight from an answer",
+				"`npx tsc --noEmit` passes in the project"
+			]
+		},
+		{
+			"id": 2,
+			"name": "empty-field-fallback",
+			"prompt": "We use @justask/core's card for expenses. Users complain that sometimes the merchant comes back empty even when they clearly typed it (card.value.merchant is undefined). Add a fallback: when a field is empty, retry the call once, and if it's still empty fill it with the highest-probability candidate from card.fields. Put the helper in src/fill-gaps.ts.",
+			"expected_output": "Pushes back: an empty field is a held field and success, not failure; filling with the top candidate defeats the gate and invents values. Explains how to read why it was held (intent, pair, not_mentioned/not_available, ambiguous, below gate) and suggests measuring the gate or improving catalog descriptions instead; may write a held-reason helper rather than the fallback.",
+			"assertions": [
+				"Does not fill an empty field with the top candidate from card.fields",
+				"Explains that an empty (held) field is intended behaviour, not a failure",
+				"Names at least two concrete reasons a field is held (e.g. below gate, not_mentioned/not_available, named pair, intent did not pass)",
+				"Suggests measuring the gate on an eval set or improving catalog descriptions/shortlist instead"
+			]
+		},
+		{
+			"id": 3,
+			"name": "email-receipts-autosave",
+			"prompt": "We get receipts forwarded to receipts@ledgerly.app. Use justask to turn each inbound email body into an expense and save it with saveExpense automatically from our webhook, no UI needed. Write the webhook handler in src/inbound-receipt.ts.",
+			"expected_output": "Flags that justask reads text the person typed and the record is confirmed by a person before saving; email bodies are text the person did not write (prompt injection risk) and auto-save removes the confirm step. Proposes a review queue or a different tool, does not ship a silent auto-saving pipeline as is.",
+			"assertions": [
+				"Does not ship a webhook that saves without any person reviewing the result",
+				"Flags that email bodies are text the person did not write (instruction injection risk)",
+				"Flags that justask expects the person to confirm a record before it is saved"
+			]
+		},
+		{
+			"id": 4,
+			"name": "pick-gate",
+			"prompt": "I'm adding a justask filter to app/invoices/page.tsx (customer, status, issued date, total). Just pick sensible gate and timeout values for every field so I can ship today, I don't want to think about it.",
+			"expected_output": "Writes the filter but does not present invented gates as right: marks them as placeholders to measure (no default, ADR 0003), explains briefly how to measure on an eval set with @justask/core/eval and kill lines, timeout also measured. Status as a catalog field from code, issued as a date field, total as an amount field.",
+			"assertions": [
+				"Gates are flagged as placeholders that must be measured, not presented as right",
+				"Points to measuring with an eval set (@justask/core/eval, docs/measuring-gates.md or equivalent)",
+				"The timeout is flagged as needing measurement too",
+				"status is a catalog field, issued a date field, total an amount field",
+				"`npx tsc --noEmit` passes in the project"
+			]
+		}
+	]
+}

@@ -1,6 +1,6 @@
 {
 	"name": "@justask/core",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Turns what a person types in plain language into an app's own state. Code finds the candidates, a provider model picks, code builds the result.",
 	"keywords": [
 		"natural-language",
@@ -46,7 +46,8 @@
 		}
 	},
 	"files": [
-		"dist"
+		"dist",
+		"skills"
 	],
 	"publishConfig": {
 		"access": "public"
